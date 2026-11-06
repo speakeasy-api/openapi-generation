@@ -7,16 +7,18 @@ namespace {{getScopeNamespace "utils"}}
     using System.Globalization;
     using System.Net;
     using System.Net.Http;
+    using System.Text;
     using System.Text.Json;
     using System.Text.Json.Serialization.Metadata;
 
     internal static class URLBuilder
     {
-        public static string ReplacePathParam(string url, string name, object? value, string style, bool explode)
+        public static string ReplacePathParam(string url, string name, object? value, string style, bool explode, bool allowReserved = false)
         {
             if (value == null) return url.Replace("{" + name + "}", "");
             var serialized = SerializePathParam(name, value, style, explode);
-            return url.Replace("{" + name + "}", Uri.EscapeDataString(serialized));
+            var escaped = allowReserved ? EscapeExceptReserved(serialized) : Uri.EscapeDataString(serialized);
+            return url.Replace("{" + name + "}", escaped);
         }
 
         public static string ReplacePathParamJson<T>(string url, string name, T? value, JsonTypeInfo<T> typeInfo) where T : class
@@ -26,7 +28,7 @@ namespace {{getScopeNamespace "utils"}}
             return url.Replace("{" + name + "}", Uri.EscapeDataString(serialized));
         }
 
-        public static void AppendQueryParam(List<string> qs, string name, object? value, string style, bool explode, bool allowEmpty)
+        public static void AppendQueryParam(List<string> qs, string name, object? value, string style, bool explode, bool allowEmpty, bool allowReserved = false)
         {
             if (value == null)
             {
@@ -43,13 +45,13 @@ namespace {{getScopeNamespace "utils"}}
             switch (style)
             {
                 case "form":
-                    AppendFormQueryParam(qs, name, value, explode, ",");
+                    AppendFormQueryParam(qs, name, value, explode, ",", allowReserved);
                     break;
                 case "pipeDelimited":
-                    AppendFormQueryParam(qs, name, value, explode, "|");
+                    AppendFormQueryParam(qs, name, value, explode, "|", allowReserved);
                     break;
                 case "deepObject":
-                    AppendDeepObjectQueryParam(qs, name, value);
+                    AppendDeepObjectQueryParam(qs, name, value, allowReserved);
                     break;
                 default:
                     throw new NotSupportedException($"Unsupported query param style: {style}");
@@ -104,20 +106,20 @@ namespace {{getScopeNamespace "utils"}}
             return Utilities.ToString(value);
         }
 
-        private static void AppendFormQueryParam(List<string> qs, string name, object value, bool explode, string sep)
+        private static void AppendFormQueryParam(List<string> qs, string name, object value, bool explode, string sep, bool allowReserved)
         {
             if (value is IList list && !(value is string))
             {
                 if (explode)
                 {
                     foreach (var item in list)
-                        qs.Add(name + "=" + WebUtility.UrlEncode(Utilities.ToString(item)));
+                        qs.Add(name + "=" + EscapeQueryValue(Utilities.ToString(item), allowReserved));
                 }
                 else
                 {
                     var items = new List<string>(list.Count);
                     foreach (var item in list) items.Add(Utilities.ToString(item));
-                    qs.Add(name + "=" + WebUtility.UrlEncode(string.Join(sep, items)));
+                    qs.Add(name + "=" + EscapeQueryValue(string.Join(sep, items), allowReserved));
                 }
                 return;
             }
@@ -127,7 +129,7 @@ namespace {{getScopeNamespace "utils"}}
                 if (explode)
                 {
                     foreach (DictionaryEntry e in dict)
-                        qs.Add(WebUtility.UrlEncode(Utilities.ToString(e.Key)) + "=" + WebUtility.UrlEncode(Utilities.ToString(e.Value)));
+                        qs.Add(WebUtility.UrlEncode(Utilities.ToString(e.Key)) + "=" + EscapeQueryValue(Utilities.ToString(e.Value), allowReserved));
                 }
                 else
                 {
@@ -137,15 +139,15 @@ namespace {{getScopeNamespace "utils"}}
                         items.Add(Utilities.ToString(e.Key));
                         items.Add(Utilities.ToString(e.Value));
                     }
-                    qs.Add(name + "=" + WebUtility.UrlEncode(string.Join(sep, items)));
+                    qs.Add(name + "=" + EscapeQueryValue(string.Join(sep, items), allowReserved));
                 }
                 return;
             }
 
-            qs.Add(name + "=" + WebUtility.UrlEncode(Utilities.ToString(value)));
+            qs.Add(name + "=" + EscapeQueryValue(Utilities.ToString(value), allowReserved));
         }
 
-        private static void AppendDeepObjectQueryParam(List<string> qs, string name, object value)
+        private static void AppendDeepObjectQueryParam(List<string> qs, string name, object value, bool allowReserved)
         {
             if (value is IDictionary dict)
             {
@@ -156,11 +158,11 @@ namespace {{getScopeNamespace "utils"}}
                     if (v is IList vl && !(v is string))
                     {
                         foreach (var item in vl)
-                            qs.Add(name + "[" + WebUtility.UrlEncode(k) + "]=" + WebUtility.UrlEncode(Utilities.ToString(item)));
+                            qs.Add(name + "[" + WebUtility.UrlEncode(k) + "]=" + EscapeQueryValue(Utilities.ToString(item), allowReserved));
                     }
                     else
                     {
-                        qs.Add(name + "[" + WebUtility.UrlEncode(k) + "]=" + WebUtility.UrlEncode(Utilities.ToString(v)));
+                        qs.Add(name + "[" + WebUtility.UrlEncode(k) + "]=" + EscapeQueryValue(Utilities.ToString(v), allowReserved));
                     }
                 }
                 return;
@@ -170,6 +172,30 @@ namespace {{getScopeNamespace "utils"}}
             // Falling through means caller passed a non-dict object — likely a generation gap.
             throw new NotSupportedException(
                 $"deepObject query param '{name}' on object of type {value.GetType().FullName} requires template-time per-field emission");
+        }
+
+        private static string EscapeQueryValue(string value, bool allowReserved)
+            => allowReserved ? EscapeExceptReserved(value) : WebUtility.UrlEncode(value);
+
+        internal static string EscapeExceptReserved(string value)
+        {
+            const string reservedChars = ":/?#[]@!$&'()*+,;=";
+            var sb = new StringBuilder(value.Length);
+            foreach (var b in Encoding.UTF8.GetBytes(value))
+            {
+                var isUnreserved =
+                    (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') || (b >= '0' && b <= '9')
+                    || b == '-' || b == '.' || b == '_' || b == '~';
+                if (isUnreserved || reservedChars.IndexOf((char)b) >= 0)
+                {
+                    sb.Append((char)b);
+                }
+                else
+                {
+                    sb.Append('%').Append(b.ToString("X2"));
+                }
+            }
+            return sb.ToString();
         }
 
         private static string SerializeHeader(object value, bool explode)

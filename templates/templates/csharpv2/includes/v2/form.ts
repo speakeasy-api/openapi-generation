@@ -155,22 +155,47 @@ function csharpTypeForJsonContext(typeDef: TypeDef): string {
   }
 }
 
-function scalarValueExpr(prop: string, field: FieldDef): string {
-  if (field.Type.Type.toString() !== "enum") return prop;
-
-  const enumType = field.Type.Enum?.Type?.Type?.toString();
-  const supported =
+function isWireEnum(typeDef: TypeDef | undefined): boolean {
+  if (typeDef?.Type.toString() !== "enum") return false;
+  const enumType = typeDef.Enum?.Type?.Type?.toString();
+  return (
     enumType === "string" ||
     enumType === "int32" ||
     enumType === "int64" ||
-    enumType === "integer";
-  if (!supported) return prop;
+    enumType === "integer"
+  );
+}
 
-  if (field.Nullable || field.Optional) {
-    prop += "?";
+// Utilities.ValueToString cannot map a closed enum to its wire value without reflection
+// (it would emit the member name) and does not know class-based open enums, so enum values,
+// including collection items, are converted at the call site.
+function wireValueExpr(
+  access: string,
+  typeDef: TypeDef,
+  nullable: boolean,
+): string {
+  const kind = typeDef.Type.toString();
+  if (isWireEnum(typeDef)) {
+    const acc = nullable ? `${access}?` : access;
+    return typeDef.Enum?.Open ? `${acc}.Value` : `${acc}.Value()`;
   }
+  if ((kind !== "array" && kind !== "map") || !isWireEnum(typeDef.ItemType)) {
+    return access;
+  }
+  const linq = "global::System.Linq.Enumerable";
+  const item = (v: string) =>
+    wireValueExpr(v, typeDef.ItemType, typeDef.ContainsNull);
+  const projected =
+    kind === "array"
+      ? `${linq}.ToList(${linq}.Select(${access}, __e => ${item("__e")}))`
+      : `${linq}.ToDictionary(${access}, __kv => __kv.Key, __kv => ${item(
+          "__kv.Value",
+        )})`;
+  return nullable ? `(${access} == null ? null : ${projected})` : projected;
+}
 
-  return field.Type.Enum?.Open ? `${prop}.Value` : `${prop}.Value()`;
+function scalarValueExpr(prop: string, field: FieldDef): string {
+  return wireValueExpr(prop, field.Type, field.Nullable || field.Optional);
 }
 
 function jsonTypeInfoName(typeDef: TypeDef): string {
@@ -255,9 +280,19 @@ function emitFormField(
 
   switch (field.Type.Type.toString()) {
     case "array":
-      return [`${fs}.AddList(${pairsVar}, "${name}", ${prop}, ${explode});`];
+      return [
+        `${fs}.AddList(${pairsVar}, "${name}", ${scalarValueExpr(
+          prop,
+          field,
+        )}, ${explode});`,
+      ];
     case "map":
-      return [`${fs}.AddMap(${pairsVar}, "${name}", ${prop}, ${explode});`];
+      return [
+        `${fs}.AddMap(${pairsVar}, "${name}", ${scalarValueExpr(
+          prop,
+          field,
+        )}, ${explode});`,
+      ];
     case "class":
       return emitFormObject(pairsVar, prop, field.Type, name, explode);
     default:
@@ -390,18 +425,24 @@ ${indentString(nestedLines.join("\n"), 2)}
 function emitDirectFormBody(
   pairsVar: string,
   sourceExpr: string,
-  bodyField: FieldDef,
+  typeDef: TypeDef,
+  name: string,
+  nullable = true,
 ): string[] {
   const utilsNs = getScopeNamespace("utils", true);
   const fs = `global::${utilsNs}.FormSerializer`;
-  switch (bodyField.Type.Type.toString()) {
+  switch (typeDef.Type.toString()) {
     case "map":
       return [
         `if (${sourceExpr} != null)
 {
     foreach (var kv in ${sourceExpr})
     {
-        ${pairsVar}.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(kv.Key, global::${utilsNs}.Utilities.ValueToString(kv.Value)));
+        ${pairsVar}.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(kv.Key, global::${utilsNs}.Utilities.ValueToString(${wireValueExpr(
+          "kv.Value",
+          typeDef.ItemType,
+          typeDef.ContainsNull,
+        )})));
     }
 }`,
       ];
@@ -409,25 +450,56 @@ function emitDirectFormBody(
       return [
         `if (${sourceExpr} != null)
 {
-    ${fs}.AddList(${pairsVar}, "${escapeString(
-      bodyField.Name,
-    )}", ${sourceExpr}, true);
+    ${fs}.AddList(${pairsVar}, "${escapeString(name)}", ${wireValueExpr(
+      sourceExpr,
+      typeDef,
+      false,
+    )}, true);
 }`,
       ];
     case "class":
       return emitFormFields(
         pairsVar,
         sourceExpr,
-        bodyField.Type.Fields ?? [],
-        bodyField.Type,
+        typeDef.Fields ?? [],
+        typeDef,
       );
+    case "union":
+      return emitFormUnion(pairsVar, sourceExpr, typeDef, name);
     default:
       return [
-        `${fs}.AddScalar(${pairsVar}, "${escapeString(
-          bodyField.Name,
-        )}", ${sourceExpr});`,
+        `${fs}.AddScalar(${pairsVar}, "${escapeString(name)}", ${wireValueExpr(
+          sourceExpr,
+          typeDef,
+          nullable,
+        )});`,
       ];
   }
+}
+
+function emitFormUnion(
+  pairsVar: string,
+  sourceExpr: string,
+  typeDef: TypeDef,
+  name: string,
+): string[] {
+  const variants = typeDef.Discriminator?.Mapping
+    ? typeDef.Discriminator.Mapping.map((m) => m.Type)
+    : typeDef.AssociatedTypes ?? [];
+  const seen = new Set<string>();
+  const branches: string[] = [];
+  for (const variant of variants) {
+    const property = sanitizeFieldName(sanitizeUnionTypeName(variant));
+    if (seen.has(property)) continue;
+    seen.add(property);
+    const access = `${sourceExpr}.${property}`;
+    const body = emitDirectFormBody(pairsVar, access, variant, name);
+    branches.push(`if (${access} != null)
+{
+${indentString(body.join("\n"), 1)}
+}`);
+  }
+  return branches.length > 0 ? [branches.join("\nelse ")] : [];
 }
 
 // @ts-ignore
@@ -463,7 +535,13 @@ function templateApplyFormBody(op: Operation): string {
           requestType.Fields ?? [],
           requestType,
         )
-      : emitDirectFormBody(pairsVar, sourceExpr, bodyField);
+      : emitDirectFormBody(
+          pairsVar,
+          sourceExpr,
+          bodyField.Type,
+          bodyField.Name,
+          bodyField.Nullable || bodyField.Optional,
+        );
 
   return `if (request == null)
 {

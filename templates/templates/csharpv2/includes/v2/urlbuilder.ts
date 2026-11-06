@@ -43,23 +43,6 @@ function urlBuilderObjectFieldsSorted(typeDef: TypeDef): FieldDef[] {
   return fields;
 }
 
-function urlBuilderDictValueExpr(propAccess: string, field: FieldDef): string {
-  if (field.Type.Type.toString() === "enum") {
-    const enumType = field.Type.Enum?.Type?.Type?.toString();
-    const supported =
-      enumType === "string" ||
-      enumType === "int32" ||
-      enumType === "int64" ||
-      enumType === "integer";
-    if (supported) {
-      const acc =
-        field.Nullable || field.Optional ? `${propAccess}?` : propAccess;
-      return field.Type.Enum?.Open ? `${acc}.Value` : `${acc}.Value()`;
-    }
-  }
-  return propAccess;
-}
-
 function urlBuilderEmitObjectDict(
   dictVar: string,
   sourceExpr: string,
@@ -75,7 +58,7 @@ function urlBuilderEmitObjectDict(
       `${sourceExpr}.${sanitizeField(f, objType)}`,
       f,
     );
-    const valueExpr = urlBuilderDictValueExpr(propAccess, f);
+    const valueExpr = scalarValueExpr(propAccess, f);
     const assign = `${dictVar}["${escaped}"] = ${valueExpr};`;
     if (canFieldBeNull(f)) {
       lines.push(`if (${propAccess} != null) { ${assign} }`);
@@ -88,20 +71,6 @@ function urlBuilderEmitObjectDict(
 
 function urlBuilderIsObjectParam(field: FieldDef): boolean {
   return field.Type.Type.toString() === "class";
-}
-
-// A class-based open enum is not a C# enum, so Utilities.ToString cannot stringify it as a
-// scalar path/query/header param. Emit its underlying `.Value` (a primitive) at the call
-// site. Native (closed) enums are real C# enums and serialize fine as-is.
-function urlBuilderScalarParamExpr(
-  propAccess: string,
-  field: FieldDef,
-): string {
-  if (field.Type.Type.toString() === "enum" && field.Type.Enum?.Open) {
-    const nullSafe = field.Nullable || field.Optional ? "?" : "";
-    return `${propAccess}${nullSafe}.Value`;
-  }
-  return propAccess;
 }
 
 // @ts-ignore
@@ -121,8 +90,9 @@ function templateBuildURL(op: Operation): string {
       op.Request.Field.Type,
     )}`;
     const style = param.Style || "simple";
+    const allowReserved = param.AllowReserved ? ", true" : "";
     const templateReplacement = (d: string) =>
-      `urlString = ${ub}.ReplacePathParam(urlString, "${param.Name}", ${d}, "${style}", ${param.Explode});`;
+      `urlString = ${ub}.ReplacePathParam(urlString, "${param.Name}", ${d}, "${style}", ${param.Explode}${allowReserved});`;
     if (param.Serialization === "json") {
       lines.push(
         `urlString = ${ub}.ReplacePathParamJson(urlString, "${
@@ -144,9 +114,7 @@ ${dict}
 }`,
       );
     } else {
-      lines.push(
-        templateReplacement(urlBuilderScalarParamExpr(propAccess, field)),
-      );
+      lines.push(templateReplacement(scalarValueExpr(propAccess, field)));
     }
   }
 
@@ -164,8 +132,9 @@ ${dict}
       )}`;
       const style = param.Style || "form";
       const allowEmpty = allowEmptyByField.get(field.Name) ? "true" : "false";
+      const allowReserved = param.AllowReserved ? ", true" : "";
       const templateAppend = (d: string) =>
-        `${ub}.AppendQueryParam(__qs, "${param.Name}", ${d}, "${style}", ${param.Explode}, ${allowEmpty});`;
+        `${ub}.AppendQueryParam(__qs, "${param.Name}", ${d}, "${style}", ${param.Explode}, ${allowEmpty}${allowReserved});`;
       if (param.Serialization === "json") {
         lines.push(
           `${ub}.AppendQueryParamJson(__qs, "${
@@ -185,9 +154,7 @@ ${dict}
 }`,
         );
       } else {
-        lines.push(
-          templateAppend(urlBuilderScalarParamExpr(propAccess, field)),
-        );
+        lines.push(templateAppend(scalarValueExpr(propAccess, field)));
       }
     }
     lines.push(`urlString = ${ub}.Finalize(urlString, __qs);`);
@@ -229,7 +196,7 @@ ${dict}
 }`,
       );
     } else {
-      lines.push(templateAppend(urlBuilderScalarParamExpr(propAccess, field)));
+      lines.push(templateAppend(scalarValueExpr(propAccess, field)));
     }
   }
   return lines.join("\n            ");
