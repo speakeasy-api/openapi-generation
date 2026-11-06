@@ -17,15 +17,23 @@ import (
 )
 
 func TestArtifactResultResponseIDNote(t *testing.T) {
-	for _, id := range []string{"job-123", "", "job\n\x1b[31m"} {
-		t.Run(fmt.Sprintf("%q", id), func(t *testing.T) {
+	for _, tc := range []struct {
+		id, mimeType, filename string
+	}{
+		{id: "job-123", mimeType: "image/png", filename: "asset.png"},
+		{id: "", mimeType: "image/png", filename: "asset.png"},
+		{id: "job\n\x1b[31m", mimeType: "image/png", filename: "asset.png"},
+		{id: "job-123", mimeType: "image/png;\n\x1b[31m", filename: "asset.png"},
+		{id: "job-123", mimeType: "image/png;\n\x1b[31m", filename: "asset.jpg"},
+	} {
+		t.Run(fmt.Sprintf("%q/%q/%s", tc.id, tc.mimeType, tc.filename), func(t *testing.T) {
 			ResetAgentMode()
 			ResetPreparsedRendering()
 			var stdout, stderr bytes.Buffer
 			cmd := &cobra.Command{}
 			cmd.SetOut(&stdout)
 			cmd.SetErr(&stderr)
-			cmd.Flags().String("out", filepath.Join(t.TempDir(), "asset.png"), "")
+			cmd.Flags().String("out", filepath.Join(t.TempDir(), tc.filename), "")
 			cmd.Flags().String("output-format", "pretty", "")
 			if err := cmd.Flags().Set("output-format", "pretty"); err != nil {
 				t.Fatal(err)
@@ -43,23 +51,33 @@ func TestArtifactResultResponseIDNote(t *testing.T) {
 				IDField:       "job_id",
 			}
 			body := map[string]interface{}{
-				"job_id": id,
+				"job_id": tc.id,
 				"items": []interface{}{
-					map[string]interface{}{"type": "image", "data": "eA==", "mime_type": "image/png"},
+					map[string]interface{}{"type": "image", "data": "eA==", "mime_type": tc.mimeType},
 				},
 			}
 			if err := artifactResult(cmd, body, cfg); err != nil {
 				t.Fatal(err)
 			}
-			if id == "" {
+			if tc.id == "" {
 				if strings.Contains(stderr.String(), "response ID") {
 					t.Fatalf("missing ID must not add a note: %q", stderr.String())
 				}
-			} else if want := fmt.Sprintf("response ID %q", id); !strings.Contains(stderr.String(), want) {
+			} else if want := fmt.Sprintf("response ID %q", tc.id); !strings.Contains(stderr.String(), want) {
 				t.Fatalf("expected %q in %q", want, stderr.String())
 			}
-			if strings.Count(stderr.String(), "\n") != 1 || strings.Contains(stderr.String(), "\x1b") {
-				t.Fatalf("the artifact note must stay on one uncoloured line: %q", stderr.String())
+			if want := fmt.Sprintf(", %q", tc.mimeType); !strings.Contains(stderr.String(), want) {
+				t.Fatalf("expected quoted MIME %q in %q", want, stderr.String())
+			}
+			lines := 1
+			if strings.HasSuffix(tc.filename, ".jpg") {
+				lines++
+				if want := fmt.Sprintf("contains %q content", tc.mimeType); !strings.Contains(stderr.String(), want) {
+					t.Fatalf("expected quoted mismatch MIME %q in %q", want, stderr.String())
+				}
+			}
+			if strings.Count(stderr.String(), "\n") != lines || strings.Contains(stderr.String(), "\x1b") {
+				t.Fatalf("artifact notes must not contain unescaped control characters: %q", stderr.String())
 			}
 			if !filepath.IsAbs(strings.TrimSpace(stdout.String())) || strings.Count(stdout.String(), "\n") != 1 {
 				t.Fatalf("stdout must contain only the absolute path: %q", stdout.String())

@@ -168,7 +168,7 @@ func artifactResult(cmd *cobra.Command, res interface{}, cfg *artifactConfig) er
 		return err
 	}
 	if extensionMismatch && !IsMachineMode(cmd) {
-		fmt.Fprintf(cmd.ErrOrStderr(), "Note: %s contains %s content; its extension does not match\n", filepath.Base(finalPath), mimeType)
+		fmt.Fprintf(cmd.ErrOrStderr(), "Note: %s contains %q content; its extension does not match\n", filepath.Base(finalPath), mimeType)
 	}
 	absPath, err := filepath.Abs(finalPath)
 	if err != nil {
@@ -204,7 +204,7 @@ func artifactResult(cmd *cobra.Command, res interface{}, cfg *artifactConfig) er
 	if !IsMachineMode(cmd) {
 		mimeNote := ""
 		if mimeType != "" {
-			mimeNote = ", " + mimeType
+			mimeNote = fmt.Sprintf(", %q", mimeType)
 		}
 		idNote := ""
 		if id, ok := envelope["response_id"].(string); ok {

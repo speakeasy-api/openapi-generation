@@ -148,7 +148,7 @@ func TestArtifact_OutKeepsRequestedExtension(t *testing.T) {
 	assert.Equal(t, artifactTestBytes, string(written))
 	_, err = os.Stat(filepath.Join(dir, "photo.png"))
 	assert.True(t, os.IsNotExist(err), "the requested path is not renamed")
-	assert.Equal(t, 1, strings.Count(h.GetStderr(), "Note: photo.jpg contains image/png content; its extension does not match"), h.GetStderr())
+	assert.Equal(t, 1, strings.Count(h.GetStderr(), "Note: photo.jpg contains \"image/png\" content; its extension does not match"), h.GetStderr())
 }
 
 func TestArtifact_OutWithoutExtensionAppendsSilently(t *testing.T) {
@@ -305,6 +305,17 @@ func TestArtifact_RawResponseBypassesFile(t *testing.T) {
 				require.Error(t, runArtifact(t, h, url, dir, args...))
 				assert.Empty(t, h.GetStdout())
 				assert.Equal(t, tc.structured, json.Valid([]byte(h.GetStderr())), "apiFailure=%t: %s", apiFailure, h.GetStderr())
+				if tc.structured {
+					var envelope map[string]interface{}
+					require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope))
+					assert.Equal(t, float64(2), envelope["exit_code"])
+					assert.Equal(t, "validation_error", envelope["error_type"])
+					if apiFailure {
+						assert.Equal(t, float64(http.StatusBadRequest), envelope["status_code"])
+					} else {
+						assert.Contains(t, envelope["error"], "cannot be combined with --out")
+					}
+				}
 			}
 		})
 	}
