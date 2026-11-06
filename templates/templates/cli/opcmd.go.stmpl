@@ -538,6 +538,30 @@ func {{$executeFuncName}}(cmd *cobra.Command, args []string, asyncIntent bool) (
         sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
     }
     {{- end}}
+    {{- if and $op.Request (operationHasContinuation $op)}}
+    if !asyncIntent && output.ContinuationActive(cmd) {
+        hop := func() (interface{}, error) {
+            {{- if or (hasStreamingResponse $op) (not (operationHasDeferredBody $op))}}
+            stopProgress := output.StartRequestProgress(cmd)
+            defer stopProgress()
+            {{- end}}
+            res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
+            if err != nil {
+                return nil, err
+            }
+            {{- if and (hasResponseTransform $op) (not (hasStreamingResponse $op))}}
+            output.DrainRawBody(res)
+            {{- end}}
+            return res, nil
+        }
+        {{- if hasStreamingResponse $op}}
+        if !client.IsDryRun(cmd) {
+            return nil, output.ContinuationStream(cmd, &{{$reqObjName}}, hop, "{{getStreamingFieldName $op}}")
+        }
+        {{- end}}
+        return nil, output.ContinuationResult(cmd, &{{$reqObjName}}, hop)
+    }
+    {{- end}}
     {{- if hasStreamingResponse $op}}
     if !client.IsDryRun(cmd) && !asyncIntent {
         stopProgress := output.StartRequestProgress(cmd)

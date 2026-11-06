@@ -1012,6 +1012,33 @@ func TestUnknownSubcommandKeepsHelpAndCompletionWorking(t *testing.T) {
 	}
 }
 
+func TestOutcomeStreamStatePointerOrder(t *testing.T) {
+	cmd := &cobra.Command{Use: "compose"}
+	cfg := &outcomeConfig{
+		StreamStatePointers: []string{"/data/status", "/data/widget/status"},
+		States:              map[string]string{"done": "success", "failed": "failure"},
+	}
+	for _, tc := range []struct {
+		name        string
+		status      interface{}
+		wantFailure bool
+	}{
+		{"first wins", "done", false},
+		{"empty falls through", "", true},
+		{"non-string falls through", false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			frame := map[string]interface{}{"data": map[string]interface{}{
+				"status": tc.status,
+				"widget": map[string]interface{}{"status": "failed"},
+			}}
+			if got := outcomeStreamFailure(cmd, cfg, nil, frame); (got != nil) != tc.wantFailure {
+				t.Fatalf("failure = %v, want failure %v", got, tc.wantFailure)
+			}
+		})
+	}
+}
+
 func TestUnknownSubcommandHonoursDisableSuggestions(t *testing.T) {
 	root, _ := unknownCommandTestTree()
 	group, _, _ := root.Find([]string{"errors"})
