@@ -215,7 +215,10 @@ function templateEventStreamHandler(
   const sseDataRequired = isSSEDataRequired(content.Content.Type.ItemType);
   const dataRequiredArg = sseDataRequired ? "" : ", dataRequired: false";
   const typeInfoRef = jsonTypeInfoRef(content.Content.Type.ItemType);
-  const eventStreamInit = `httpResponse.AsAsyncEnumerable<${resultType}>(${typeInfoRef}, ${sentinel}${dataRequiredArg});`;
+  const cancellationArg = context.Global.Config.EnableCancellationToken
+    ? ", cancellationToken: cancellationToken ?? default"
+    : "";
+  const eventStreamInit = `httpResponse.AsAsyncEnumerable<${resultType}>(${typeInfoRef}, ${sentinel}${dataRequiredArg}${cancellationArg});`;
 
   const buildResponse = (extra?: ResponseBodyContent) =>
     templateResponseBuilder(
