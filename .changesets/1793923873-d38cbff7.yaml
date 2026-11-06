@@ -1,0 +1,10 @@
+id: 1793923873-d38cbff7
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: preserve error output modes for raw responses and show artifact response IDs
+author: TristanSpeakEasy
+date: "2026-11-06"
