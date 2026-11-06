@@ -1,0 +1,12 @@
+id: 1791821427-978d0d8a
+features:
+    - unions
+targets:
+    - go
+    - cli
+    - terraform
+type: fix
+bump: patch
+description: union decode errors no longer embed the raw JSON input when the union can hold a value marked sensitive; other unions keep the input in the error
+author: ThomasRooney
+date: "2026-10-12"

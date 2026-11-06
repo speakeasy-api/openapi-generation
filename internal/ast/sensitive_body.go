@@ -203,6 +203,12 @@ func sensitiveBodyFieldName(field *FieldDef) string {
 	return field.Name
 }
 
+// HasSensitiveValues reports whether t or any type below it, through object
+// properties, items, map values and union members, is marked sensitive.
+func (t *TypeDef) HasSensitiveValues() bool {
+	return containsSensitiveBodyType(t)
+}
+
 // containsSensitiveBodyType reports whether t or any type below it is marked
 // sensitive, so that schemas without sensitive values are not walked further.
 func containsSensitiveBodyType(t *TypeDef) bool {
