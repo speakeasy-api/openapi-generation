@@ -13,9 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.utils.Blob;
 
 public interface HTTPClient {
-    HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(java.time.Duration.ofSeconds(30))
-            .build();
+    HttpClient client = HttpClient.newHttpClient();
 
     /**
      * Sends an HTTP request and returns the response.

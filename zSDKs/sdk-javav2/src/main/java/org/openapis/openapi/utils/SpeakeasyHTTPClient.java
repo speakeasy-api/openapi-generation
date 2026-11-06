@@ -15,7 +15,6 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -44,12 +43,9 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     // uppercase
     private static Set<String> redactedHeaders = Set.of("AUTHORIZATION", "X-API-KEY");
 
-    private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(30);
-
     private static final ScheduledThreadPoolExecutor DEADLINES = deadlineScheduler();
 
-    private final HttpClient client =
-            HttpClient.newBuilder().connectTimeout(DEFAULT_CONNECT_TIMEOUT).build();
+    private final HttpClient client = HttpClient.newHttpClient();
 
     private static final Set<String> STREAMING_MEDIA_TYPES =
             Set.of("text/event-stream", "application/x-ndjson", "application/jsonl");
