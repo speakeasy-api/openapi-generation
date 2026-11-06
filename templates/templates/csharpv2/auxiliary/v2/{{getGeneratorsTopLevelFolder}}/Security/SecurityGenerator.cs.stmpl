@@ -144,10 +144,29 @@ public class SecurityGenerator : IIncrementalGenerator
 
     private static string GenerateOptionBody(System.Collections.Generic.List<SecurityPropModel> props)
     {
+        var options = props.Where(p => p.Option && p.PropTypeName != null).ToList();
+        if (options.Count == 0) return string.Empty;
+
         var lines = new System.Text.StringBuilder();
-        foreach (var prop in props.Where(p => p.Option))
+        lines.AppendLine("        if (allowedFields != null)");
+        lines.AppendLine("        {");
+        lines.AppendLine("            foreach (var __af in allowedFields)");
+        lines.AppendLine("            {");
+        lines.AppendLine("                switch (__af)");
+        lines.AppendLine("                {");
+        foreach (var prop in options)
         {
-            if (prop.PropTypeName == null) continue;
+            lines.AppendLine($"                    case \"{prop.PropName}\":");
+            lines.AppendLine($"                        if (security.{prop.PropName} != null)");
+            lines.AppendLine($"                            return {prop.PropTypeName}Applier.Apply(() => security.{prop.PropName}, request);");
+            lines.AppendLine("                        break;");
+        }
+        lines.AppendLine("                }");
+        lines.AppendLine("            }");
+        lines.AppendLine("            return request;");
+        lines.AppendLine("        }");
+        foreach (var prop in options)
+        {
             lines.AppendLine($"        if (security.{prop.PropName} != null)");
             lines.AppendLine($"            return {prop.PropTypeName}Applier.Apply(() => security.{prop.PropName}, request);");
         }
