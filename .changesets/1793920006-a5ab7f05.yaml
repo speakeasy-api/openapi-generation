@@ -1,0 +1,10 @@
+id: 1793920006-a5ab7f05
+features:
+    - nullables
+targets:
+    - csharp
+type: feat
+bump: patch
+description: templateVersion v2 rejects missing required fields and explicit nulls for non-nullable fields when deserializing JSON, matching v1
+author: 2ynn
+date: "2026-11-05"

@@ -115,11 +115,16 @@ function templateJSONAnnotation(
     return "[System.Text.Json.Serialization.JsonIgnore]";
   }
 
-  const fieldName = fieldDef.IsAdditionalProperties
+  const escaped = fieldDef.IsAdditionalProperties
     ? "additionalProperties"
-    : escapeString(annotation.FieldName);
-  const escaped = fieldName.replaceAll(`\\`, `\\\\`).replaceAll(`"`, `\\"`);
+    : jsonFieldNameLiteral(annotation);
   return `[System.Text.Json.Serialization.JsonPropertyName("${escaped}")]`;
+}
+
+function jsonFieldNameLiteral(annotation: JSONAnnotation): string {
+  return escapeString(annotation.FieldName)
+    .replaceAll(`\\`, `\\\\`)
+    .replaceAll(`"`, `\\"`);
 }
 
 // @ts-ignore

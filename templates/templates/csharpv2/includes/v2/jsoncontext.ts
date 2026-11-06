@@ -140,34 +140,40 @@ function collectOperationJsonShapes(
   perBucket: Map<string, Map<string, { Type: string; Name: string }>>,
   visited: Set<string>,
 ): void {
+  for (const typeDef of collectOperationJsonTypeDefs(sdk)) {
+    recordOperationShape(typeDef, perBucket, visited);
+  }
+}
+
+function collectOperationJsonTypeDefs(
+  sdk: SDK,
+  typeDefs: TypeDef[] = [],
+): TypeDef[] {
   for (const op of sdk.Operations ?? []) {
     if (
       `${op.SerializationMethod ?? ""}` === "json" &&
       op.Request?.RequestBody?.Type
     ) {
-      recordOperationShape(op.Request.RequestBody.Type, perBucket, visited);
+      typeDefs.push(op.Request.RequestBody.Type);
     }
     for (const response of op.Response?.Responses ?? []) {
       for (const content of response.Content ?? []) {
         const method = `${content.SerializationMethod ?? ""}`;
         if (method === "json" && content.Content?.Type) {
-          recordOperationShape(content.Content.Type, perBucket, visited);
+          typeDefs.push(content.Content.Type);
         } else if (
           method === "eventstream" &&
           content.Content?.Type?.ItemType
         ) {
-          recordOperationShape(
-            content.Content.Type.ItemType,
-            perBucket,
-            visited,
-          );
+          typeDefs.push(content.Content.Type.ItemType);
         }
       }
     }
   }
   for (const subSDK of sdk.SubSDKs ?? []) {
-    collectOperationJsonShapes(subSDK, perBucket, visited);
+    collectOperationJsonTypeDefs(subSDK, typeDefs);
   }
+  return typeDefs;
 }
 
 function bucketKeyForShape(typeDef: TypeDef): string {
@@ -376,6 +382,64 @@ function collectJsonTypeInfos(
   return [...byName.values()];
 }
 
+interface NullCheckedType {
+  Type: string;
+  Fields: { JsonName: string; Required: boolean }[];
+}
+
+function collectNullCheckedTypes(): NullCheckedType[] {
+  const result: NullCheckedType[] = [];
+  const visited = new Set<string>();
+
+  const visit = (t: TypeDef | undefined) => {
+    while (t?.Type?.toString() === "array" || t?.Type?.toString() === "map") {
+      t = t.ItemType;
+    }
+    if (!t || t.Truncated) return;
+    const kind = t.Type?.toString() ?? "";
+    if (!SERIALIZABLE_TYPES.includes(kind)) return;
+    const type = csharpTypeForJsonContext(t);
+    if (visited.has(type)) return;
+    visited.add(type);
+
+    if (kind === "class" || kind === "error") {
+      const fields = (t.Fields ?? [])
+        .filter((f) => {
+          const state = requiredState(f);
+          return (
+            (state === "DisallowNull" ||
+              (state === "Always" && !isValueType(f.Type))) &&
+            v2RequiredEligible(f)
+          );
+        })
+        .map((f) => ({
+          JsonName: jsonFieldNameLiteral(getJsonAnnotation(f)!),
+          Required: requiredState(f) === "Always",
+        }));
+      if (fields.length > 0) result.push({ Type: type, Fields: fields });
+    }
+
+    for (const field of t.Fields ?? []) visit(field.Type);
+    for (const assoc of t.AssociatedTypes ?? []) visit(assoc);
+    for (const m of t.Discriminator?.Mapping ?? []) visit(m.Type);
+  };
+
+  for (const [, buckets] of sequencedMapEntries(
+    context.Global.AST.BucketedTypes,
+  )) {
+    for (const [, typeDefs] of sequencedMapEntries(buckets)) {
+      for (const typeDef of typeDefs) visit(typeDef);
+    }
+  }
+  for (const typeDef of collectOperationJsonTypeDefs(
+    context.Global.AST.MainSDK,
+  )) {
+    visit(typeDef);
+  }
+
+  return result;
+}
+
 // @ts-ignore
 function getJsonContextJobs(): Job[] {
   return collectJsonContextRegistrations().map(({ OutputLocation, Types }) => {
@@ -418,6 +482,8 @@ function getJsonOptionsJobs(): Job[] {
         Namespace: rootNamespace,
         Converters: getJsonContextConverters(),
         NumberHandling: JSON_NUMBER_HANDLING,
+        NullCheckedTypes: collectNullCheckedTypes(),
+        HasOpenUnion: hasAnyOpenUnion(),
       },
     ),
     createTemplateFileJob(

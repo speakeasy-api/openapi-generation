@@ -4,5 +4,9 @@ namespace {{if isCsharpV2}}{{getModelNamespace ""}}{{else}}{{getScopeNamespace "
     public interface IOpenUnion
     {
         bool IsUnknown();
+{{- if isCsharpV2}}
+
+        System.Text.Json.JsonElement? GetUnknownRaw();
+{{- end}}
     }
 }
