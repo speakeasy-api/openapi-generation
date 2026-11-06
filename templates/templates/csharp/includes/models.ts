@@ -4,6 +4,18 @@ type CSharpModel = {
   OutputLocation: string;
 };
 
+// @ts-ignore
+function getJsonAnnotation(fieldDef: FieldDef): JSONAnnotation | undefined {
+  return Array.from(fieldDef.Annotations).find(
+    (a) => a.Type().toString() === "json",
+  ) as JSONAnnotation | undefined;
+}
+
+// @ts-ignore
+function hasJsonAnnotation(fieldDef: FieldDef): boolean {
+  return getJsonAnnotation(fieldDef) !== undefined;
+}
+
 // Returns true when a field must be emitted as OptionalNullable<T> rather than
 // plain T?. Wrapping is required only when the spec distinguishes three
 // states — absent / explicit null / set — which happens for optional+nullable
@@ -31,7 +43,7 @@ function needsOptionalNullableWrapper(fieldDef: FieldDef): boolean {
     fieldDef.Nullable &&
     !fieldDef.Const &&
     !isScalarOptionalNullableDecimal(fieldDef) &&
-    Array.from(fieldDef.Annotations).some((a) => a.Type().toString() === "json")
+    hasJsonAnnotation(fieldDef)
   );
 }
 registerTemplateFunc(

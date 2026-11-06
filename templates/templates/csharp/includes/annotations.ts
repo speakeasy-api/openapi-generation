@@ -187,6 +187,14 @@ function needsCustomJsonConverter(fieldDef: FieldDef): boolean {
   }
 }
 
+type RequiredState = "Always" | "AllowNull" | "DisallowNull" | "Default";
+
+// @ts-ignore
+function requiredState(fieldDef: FieldDef): RequiredState {
+  if (!fieldDef.Optional) return fieldDef.Nullable ? "AllowNull" : "Always";
+  return fieldDef.Nullable ? "Default" : "DisallowNull";
+}
+
 // @ts-ignore
 function templateJSONAnnotation(
   fieldDef: FieldDef,
@@ -239,16 +247,9 @@ function templateJSONAnnotation(
     context.Global.Config.PresenceAwareJSONSerialization && !annotation.Ignore;
 
   if (presenceAware) {
-    const requiredAnno = ((f: FieldDef) => {
-      const required = !f.Optional;
-      const nullable = f.Nullable;
-      if (required && !nullable) return "Newtonsoft.Json.Required.Always";
-      if (required && nullable) return "Newtonsoft.Json.Required.AllowNull";
-      if (!required && !nullable)
-        return "Newtonsoft.Json.Required.DisallowNull";
-      return "Newtonsoft.Json.Required.Default";
-    })(fieldDef);
-    jsonProperties.push(`Required = ${requiredAnno}`);
+    jsonProperties.push(
+      `Required = Newtonsoft.Json.Required.${requiredState(fieldDef)}`,
+    );
   }
 
   // Override global NullValueHandling.Ignore to write/read an explicit null

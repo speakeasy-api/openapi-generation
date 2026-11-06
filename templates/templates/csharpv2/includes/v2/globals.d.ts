@@ -126,6 +126,12 @@ declare global {
 
   // models.ts (csharp v1, presence-aware serialization)
   function needsOptionalNullableWrapper(fieldDef: FieldDef): boolean;
+  function getJsonAnnotation(fieldDef: FieldDef): JSONAnnotation | undefined;
+
+  // annotations.ts (csharp v1)
+  function requiredState(
+    fieldDef: FieldDef,
+  ): "Always" | "AllowNull" | "DisallowNull" | "Default";
 
   // sanitization.ts (csharp v1)
   function isValueType(typeDef: TypeDef): boolean;
