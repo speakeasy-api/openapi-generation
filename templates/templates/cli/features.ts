@@ -363,6 +363,7 @@ function isTestSkipped(test: string): boolean {
     "auth-global-security-flattening-empty",
     "unknown-fields-json-round-trip",
     "parameters-default-path-params",
+    "hooks-client-credentials-scopes-from-env",
     "debug-env-var-false-keeps-logging-off",
     "unions-body-variant-overloads-discriminated",
     "unions-body-variant-overloads-non-body-arguments",

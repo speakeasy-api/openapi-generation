@@ -522,6 +522,7 @@ const (
 	TestHooksClientCredentialsSuccessAltTokenURL
 	TestHooksClientCredentialsOptionSuccess
 	TestHooksClientCredentialsOptionSuccessAltTokenURL
+	TestHooksClientCredentialsScopesFromEnv
 	TestHooksClientCredentialsBasicSuccess
 	TestHooksClientCredentialsBasicSuccessGlobalServer
 	TestHooksClientCredentialsBasicSuccessAltTokenURL

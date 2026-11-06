@@ -442,6 +442,8 @@ func (t Test) String() string {
         return "hooks-client-credentials-option-success"
     case TestHooksClientCredentialsOptionSuccessAltTokenURL:
         return "hooks-client-credentials-option-success-alt-token-url"
+    case TestHooksClientCredentialsScopesFromEnv:
+        return "hooks-client-credentials-scopes-from-env"
     case TestHooksClientCredentialsSuccess:
         return "hooks-client-credentials-success"
     case TestHooksClientCredentialsSuccessAltTokenURL:
@@ -1994,6 +1996,8 @@ func TestFromString(s string) Test {
         return TestHooksClientCredentialsOptionSuccess
     case "hooks-client-credentials-option-success-alt-token-url":
         return TestHooksClientCredentialsOptionSuccessAltTokenURL
+    case "hooks-client-credentials-scopes-from-env":
+        return TestHooksClientCredentialsScopesFromEnv
     case "hooks-client-credentials-success":
         return TestHooksClientCredentialsSuccess
     case "hooks-client-credentials-success-alt-token-url":
@@ -3326,6 +3330,7 @@ var testList = []Test{
     TestHooksClientCredentialsNoScopes,
     TestHooksClientCredentialsOptionSuccess,
     TestHooksClientCredentialsOptionSuccessAltTokenURL,
+    TestHooksClientCredentialsScopesFromEnv,
     TestHooksClientCredentialsSuccess,
     TestHooksClientCredentialsSuccessAltTokenURL,
     TestHooksClientCredentialsSuccessGlobalServer,
