@@ -6,9 +6,8 @@ import (
 	"context"
 	{{- end}}
 	"encoding/json"
-	{{- if hasCliAsyncIntents}}
 	"errors"
-	{{- end}}
+	"fmt"
 	{{- if or hasCliAsyncIntents anyOperationHasPagination}}
 	"io"
 	"net/http"
@@ -20,8 +19,52 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"{{getGolangPackage}}/internal/clierrors"
 	"{{getGolangPackage}}/internal/config"
+	"{{getGolangPackage}}/internal/sdk/sdkinternal/utils"
 )
+
+func TestPathParameterErrorsAreUsageErrors(t *testing.T) {
+	for _, format := range []string{"pretty", "json"} {
+		for _, wrapped := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/wrapped=%t", format, wrapped), func(t *testing.T) {
+				ResetAgentMode()
+				ResetPreparsedRendering()
+				var stderr bytes.Buffer
+				cmd := &cobra.Command{}
+				cmd.SetErr(&stderr)
+				cmd.Flags().String("output-format", "", "")
+				if err := cmd.Flags().Set("output-format", format); err != nil {
+					t.Fatal(err)
+				}
+				var err error = &utils.InvalidPathParameterError{Name: "resource"}
+				if wrapped {
+					err = fmt.Errorf("construct request: %w", err)
+				}
+				classification := Classify(cmd, err)
+				if classification.Type != ErrorTypeValidation || classification.Reason != ReasonCLIValidation || classification.Origin != ErrorOriginCLI || classification.StatusCode != 0 {
+					t.Fatalf("unexpected classification: %+v", classification)
+				}
+				rendered := Error(cmd, err)
+				if clierrors.ExitCode(rendered) != clierrors.ExitUsage {
+					t.Fatalf("expected exit 2, got %v", rendered)
+				}
+				var invalidPath *utils.InvalidPathParameterError
+				if !errors.As(rendered, &invalidPath) || invalidPath.Name != "resource" {
+					t.Fatalf("typed path error lost during rendering: %v", rendered)
+				}
+				if got := json.Valid(stderr.Bytes()); got != (format == "json") {
+					t.Fatalf("wrong error format: %s", stderr.String())
+				}
+				stderr.Reset()
+				untyped := Classify(cmd, errors.New(err.Error()))
+				if untyped.Reason == ReasonCLIValidation {
+					t.Fatal("an untyped error must not be classified by matching its text")
+				}
+			})
+		}
+	}
+}
 
 type tableTestRow struct {
 	ID   int64  `json:"id"`
