@@ -215,8 +215,7 @@ func (u BadRequest) MarshalJSON() ([]byte, error) {
 func (u BadRequest) Error() string {
 	switch u.Type {
 	case BadRequestTypeErr:
-		data, _ := json.Marshal(u.ErrorInfo)
-		return string(data)
+		return u.ErrorInfo.Message
 	case BadRequestTypeOther:
 		data, _ := json.Marshal(u.OtherError)
 		return string(data)

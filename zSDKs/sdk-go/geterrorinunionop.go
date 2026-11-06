@@ -145,8 +145,7 @@ func (u GetErrorInUnionInternalServerError) Error() string {
 	case GetErrorInUnionInternalServerErrorTypeErrorsError:
 		return u.ErrorsError.Error_
 	case GetErrorInUnionInternalServerErrorTypeTaggedError1:
-		data, _ := json.Marshal(u.TaggedError1)
-		return string(data)
+		return u.TaggedError1.Message
 	case GetErrorInUnionInternalServerErrorTypeUnknown:
 		if u.UnknownRaw != nil {
 			return string(u.UnknownRaw)

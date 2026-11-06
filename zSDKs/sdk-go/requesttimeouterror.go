@@ -16,6 +16,10 @@ type RequestTimeoutError struct {
 var _ error = &RequestTimeoutError{}
 
 func (e *RequestTimeoutError) Error() string {
+	if e.Message != nil {
+		return *e.Message
+	}
+
 	data, _ := json.Marshal(e)
 	return string(data)
 }

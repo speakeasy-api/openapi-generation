@@ -3,7 +3,6 @@
 package openapi
 
 import (
-	"encoding/json"
 	"example.com/openapi-go-sdk/internal/utils"
 )
 
@@ -41,6 +40,5 @@ type TaggedError2 struct {
 var _ error = &TaggedError2{}
 
 func (e *TaggedError2) Error() string {
-	data, _ := json.Marshal(e)
-	return string(data)
+	return e.Error_.Message
 }
