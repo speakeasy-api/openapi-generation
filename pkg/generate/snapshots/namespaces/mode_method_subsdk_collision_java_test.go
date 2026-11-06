@@ -93,11 +93,13 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.AsyncRequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.models.operations.async.GetFederationStatusRequestBuilder;
 import org.openapis.openapi.models.operations.async.GetFederationStatusResponse;
 import org.openapis.openapi.operations.GetFederationStatus;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 
 public class AsyncFederation {
@@ -142,13 +144,23 @@ public class AsyncFederation {
     }
 
     /**
-     * Makes an async request
+     * Makes an async request(required parameters only).
      * 
      * @return {@code CompletableFuture<GetFederationStatusResponse>} - The async response
      */
     public CompletableFuture<GetFederationStatusResponse> getFederationStatusDirect() {
+        return getFederationStatus(null);
+    }
+
+    /**
+     * Makes an async request
+     * 
+     * @param options additional options
+     * @return {@code CompletableFuture<GetFederationStatusResponse>} - The async response
+     */
+    public CompletableFuture<GetFederationStatusResponse> getFederationStatus(@Nullable Options options) {
         AsyncRequestlessOperation<GetFederationStatusResponse> operation
-            = new GetFederationStatus.Async(sdkConfiguration, _headers);
+            = new GetFederationStatus.Async(sdkConfiguration, options, _headers);
         return operation.doRequest()
             .thenCompose(operation::handleResponse);
     }
@@ -166,10 +178,12 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import org.openapis.openapi.models.operations.GetFederationStatusRequestBuilder;
 import org.openapis.openapi.models.operations.GetFederationStatusResponse;
 import org.openapis.openapi.operations.GetFederationStatus;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 
 public class Federation {
@@ -213,14 +227,25 @@ public class Federation {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      * 
      * @return The response from the API call
      * @throws RuntimeException subclass if the API call fails
      */
     public GetFederationStatusResponse getFederationStatusDirect() {
+        return getFederationStatus(null);
+    }
+
+    /**
+     * Makes a request.
+     * 
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetFederationStatusResponse getFederationStatus(@Nullable Options options) {
         RequestlessOperation<GetFederationStatusResponse> operation
-            = new GetFederationStatus.Sync(sdkConfiguration, _headers);
+            = new GetFederationStatus.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -264,11 +289,13 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.AsyncRequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.models.operations.async.GetFederationStatusRequestBuilder;
 import org.openapis.openapi.models.operations.async.GetFederationStatusResponse;
 import org.openapis.openapi.operations.GetFederationStatus;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 
 public class AsyncFederation {
@@ -313,13 +340,23 @@ public class AsyncFederation {
     }
 
     /**
-     * Makes an async request
+     * Makes an async request(required parameters only).
      * 
      * @return {@code CompletableFuture<GetFederationStatusResponse>} - The async response
      */
     public CompletableFuture<GetFederationStatusResponse> getFederationStatusDirect() {
+        return getFederationStatus(null);
+    }
+
+    /**
+     * Makes an async request
+     * 
+     * @param options additional options
+     * @return {@code CompletableFuture<GetFederationStatusResponse>} - The async response
+     */
+    public CompletableFuture<GetFederationStatusResponse> getFederationStatus(@Nullable Options options) {
         AsyncRequestlessOperation<GetFederationStatusResponse> operation
-            = new GetFederationStatus.Async(sdkConfiguration, _headers);
+            = new GetFederationStatus.Async(sdkConfiguration, options, _headers);
         return operation.doRequest()
             .thenCompose(operation::handleResponse);
     }
@@ -337,10 +374,12 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import org.openapis.openapi.models.operations.GetFederationStatusRequestBuilder;
 import org.openapis.openapi.models.operations.GetFederationStatusResponse;
 import org.openapis.openapi.operations.GetFederationStatus;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 
 public class Federation {
@@ -384,14 +423,25 @@ public class Federation {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      * 
      * @return The response from the API call
      * @throws RuntimeException subclass if the API call fails
      */
     public GetFederationStatusResponse getFederationStatusDirect() {
+        return getFederationStatus(null);
+    }
+
+    /**
+     * Makes a request.
+     * 
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetFederationStatusResponse getFederationStatus(@Nullable Options options) {
         RequestlessOperation<GetFederationStatusResponse> operation
-            = new GetFederationStatus.Sync(sdkConfiguration, _headers);
+            = new GetFederationStatus.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -478,11 +528,13 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.AsyncRequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.models.operations.async.GetFederationStatusRequestBuilder;
 import org.openapis.openapi.models.operations.async.GetFederationStatusResponse;
 import org.openapis.openapi.operations.GetFederationStatus;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 
 public class AsyncFederation {
@@ -521,13 +573,23 @@ public class AsyncFederation {
     }
 
     /**
-     * Makes an async request
+     * Makes an async request(required parameters only).
      * 
      * @return {@code CompletableFuture<GetFederationStatusResponse>} - The async response
      */
     public CompletableFuture<GetFederationStatusResponse> getFederationStatusDirect() {
+        return getFederationStatus(null);
+    }
+
+    /**
+     * Makes an async request
+     * 
+     * @param options additional options
+     * @return {@code CompletableFuture<GetFederationStatusResponse>} - The async response
+     */
+    public CompletableFuture<GetFederationStatusResponse> getFederationStatus(@Nullable Options options) {
         AsyncRequestlessOperation<GetFederationStatusResponse> operation
-            = new GetFederationStatus.Async(sdkConfiguration, _headers);
+            = new GetFederationStatus.Async(sdkConfiguration, options, _headers);
         return operation.doRequest()
             .thenCompose(operation::handleResponse);
     }
@@ -545,10 +607,12 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import org.openapis.openapi.models.operations.GetFederationStatusRequestBuilder;
 import org.openapis.openapi.models.operations.GetFederationStatusResponse;
 import org.openapis.openapi.operations.GetFederationStatus;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 
 public class Federation {
@@ -586,14 +650,25 @@ public class Federation {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      * 
      * @return The response from the API call
      * @throws RuntimeException subclass if the API call fails
      */
     public GetFederationStatusResponse getFederationStatusDirect() {
+        return getFederationStatus(null);
+    }
+
+    /**
+     * Makes a request.
+     * 
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetFederationStatusResponse getFederationStatus(@Nullable Options options) {
         RequestlessOperation<GetFederationStatusResponse> operation
-            = new GetFederationStatus.Sync(sdkConfiguration, _headers);
+            = new GetFederationStatus.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 

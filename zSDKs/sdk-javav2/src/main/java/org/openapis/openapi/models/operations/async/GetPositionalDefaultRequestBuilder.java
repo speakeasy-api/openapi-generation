@@ -6,12 +6,15 @@ package org.openapis.openapi.models.operations.async;
 import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.lang.String;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.operations.GetPositionalDefaultRequest;
 import org.openapis.openapi.operations.GetPositionalDefault;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class GetPositionalDefaultRequestBuilder {
@@ -19,16 +22,23 @@ public class GetPositionalDefaultRequestBuilder {
     private final Headers _headers = new Headers();
     private final GetPositionalDefaultRequest.Builder pojoBuilder;
     private GetPositionalDefaultRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public GetPositionalDefaultRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = GetPositionalDefaultRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public GetPositionalDefaultRequestBuilder id(@Nonnull String id) {
         this.pojoBuilder.id(id);
         this._setterCalled = true;
+        return this;
+    }
+
+    public GetPositionalDefaultRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -52,8 +62,9 @@ public class GetPositionalDefaultRequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<GetPositionalDefaultResponse> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<GetPositionalDefaultRequest, GetPositionalDefaultResponse> operation =
-                new GetPositionalDefault.Async(sdkConfiguration, _headers);
+                new GetPositionalDefault.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse);
     }
 }

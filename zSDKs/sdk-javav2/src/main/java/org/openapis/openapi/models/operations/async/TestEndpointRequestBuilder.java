@@ -6,13 +6,16 @@ package org.openapis.openapi.models.operations.async;
 import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.lang.String;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.operations.TestEndpointRequest;
 import org.openapis.openapi.models.operations.TestEndpointRequestBody;
 import org.openapis.openapi.operations.TestEndpoint;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class TestEndpointRequestBuilder {
@@ -20,11 +23,13 @@ public class TestEndpointRequestBuilder {
     private final Headers _headers = new Headers();
     private final TestEndpointRequest.Builder pojoBuilder;
     private TestEndpointRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public TestEndpointRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = TestEndpointRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public TestEndpointRequestBuilder testName(@Nonnull String testName) {
@@ -36,6 +41,11 @@ public class TestEndpointRequestBuilder {
     public TestEndpointRequestBuilder requestBody(@Nonnull TestEndpointRequestBody requestBody) {
         this.pojoBuilder.requestBody(requestBody);
         this._setterCalled = true;
+        return this;
+    }
+
+    public TestEndpointRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -59,8 +69,9 @@ public class TestEndpointRequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<TestEndpointResponse> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<TestEndpointRequest, TestEndpointResponse> operation =
-                new TestEndpoint.Async(sdkConfiguration, _headers);
+                new TestEndpoint.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse);
     }
 }

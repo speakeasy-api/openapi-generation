@@ -6,12 +6,15 @@ package org.openapis.openapi.models.operations.async;
 import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.lang.String;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.operations.GetUserRequest;
 import org.openapis.openapi.operations.GetUser;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class GetUserRequestBuilder {
@@ -19,16 +22,23 @@ public class GetUserRequestBuilder {
     private final Headers _headers = new Headers();
     private final GetUserRequest.Builder pojoBuilder;
     private GetUserRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public GetUserRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = GetUserRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public GetUserRequestBuilder id(@Nonnull String id) {
         this.pojoBuilder.id(id);
         this._setterCalled = true;
+        return this;
+    }
+
+    public GetUserRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -52,8 +62,9 @@ public class GetUserRequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<GetUserResponse> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<GetUserRequest, GetUserResponse> operation =
-                new GetUser.Async(sdkConfiguration, _headers);
+                new GetUser.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse);
     }
 }

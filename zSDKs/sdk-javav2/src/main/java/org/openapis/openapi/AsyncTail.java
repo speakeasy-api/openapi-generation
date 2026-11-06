@@ -5,11 +5,13 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.AsyncRequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.models.operations.async.NestedGroupOpRequestBuilder;
 import org.openapis.openapi.models.operations.async.NestedGroupOpResponse;
 import org.openapis.openapi.operations.NestedGroupOp;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class AsyncTail {
     private static final Headers _headers = Headers.EMPTY;
@@ -49,8 +51,20 @@ public class AsyncTail {
      * @return {@code CompletableFuture<NestedGroupOpResponse>} - The async response
      */
     public CompletableFuture<NestedGroupOpResponse> nestedGroupOpDirect() {
+        return nestedGroupOp(null);
+    }
+
+    /**
+     * An operation at the group's deepest level
+     *
+     * <p>Notice that 'group.flattened' has no operations.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<NestedGroupOpResponse>} - The async response
+     */
+    public CompletableFuture<NestedGroupOpResponse> nestedGroupOp(@Nullable Options options) {
         AsyncRequestlessOperation<NestedGroupOpResponse> operation =
-                new NestedGroupOp.Async(sdkConfiguration, _headers);
+                new NestedGroupOp.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 }

@@ -12,6 +12,7 @@ import org.openapis.openapi.models.operations.Deprecated1RequestBuilder;
 import org.openapis.openapi.models.operations.Deprecated1Response;
 import org.openapis.openapi.operations.Deprecated1;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 /**
  * A subSDK in which all operations are deprecated.
@@ -55,7 +56,7 @@ public class Obsolete {
      */
     @Deprecated
     public Deprecated1Response deprecated1Direct() {
-        return deprecated1(null);
+        return deprecated1(null, null);
     }
 
     /**
@@ -68,8 +69,22 @@ public class Obsolete {
      */
     @Deprecated
     public Deprecated1Response deprecated1(@Nullable String serverURL) {
+        return deprecated1(serverURL, null);
+    }
+
+    /**
+     * Deprecated Operation
+     *
+     * @param serverURL Overrides the server URL.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     * @deprecated method: This endpoint is deprecated.. Use getRequestBodyFlattenedAway instead.
+     */
+    @Deprecated
+    public Deprecated1Response deprecated1(@Nullable String serverURL, @Nullable Options options) {
         RequestlessOperation<Deprecated1Response> operation =
-                new Deprecated1.Sync(sdkConfiguration, serverURL, _headers);
+                new Deprecated1.Sync(sdkConfiguration, serverURL, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }

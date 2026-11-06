@@ -5,17 +5,27 @@ package org.openapis.openapi.models.operations;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.SubGroupOp;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class SubGroupOpRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
+    private final Options.Builder optionsBuilder;
 
     public SubGroupOpRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public SubGroupOpRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public SubGroupOpRequestBuilder header(String name, String value) {
@@ -31,7 +41,8 @@ public class SubGroupOpRequestBuilder {
      * @return The response from the server.
      */
     public SubGroupOpResponse call() {
-        RequestlessOperation<SubGroupOpResponse> operation = new SubGroupOp.Sync(sdkConfiguration, _headers);
+        Options options = optionsBuilder.build();
+        RequestlessOperation<SubGroupOpResponse> operation = new SubGroupOp.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }

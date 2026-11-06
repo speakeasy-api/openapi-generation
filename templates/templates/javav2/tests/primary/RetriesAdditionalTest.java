@@ -2,8 +2,11 @@ package org.openapis.openapi;
 
 import java.io.UncheckedIOException;
 import java.net.ConnectException;
+import java.net.http.HttpConnectTimeoutException;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -19,6 +22,7 @@ import org.openapis.openapi.models.operations.RetriesGetResponse;
 import org.openapis.openapi.models.operations.RetriesPostRequestBody;
 import org.openapis.openapi.models.operations.RetriesPostResponse;
 import org.openapis.openapi.utils.BackoffStrategy;
+import org.openapis.openapi.utils.Retries;
 import org.openapis.openapi.utils.RetryConfig;
 
 public class RetriesAdditionalTest {
@@ -244,5 +248,28 @@ public class RetriesAdditionalTest {
 
         assertEquals("API error occurred", error.message());
         assertEquals(503, error.code());
+    }
+
+    @Test
+    public void testConnectTimeoutNotRetriedAsReadTimeout() {
+        AtomicInteger attempts = new AtomicInteger();
+        Retries retries = Retries.builder()
+                .action(attempt -> {
+                    attempts.incrementAndGet();
+                    throw new HttpConnectTimeoutException("HTTP connect timed out");
+                })
+                .retryConfig(RetryConfig.builder().backoff(BackoffStrategy.builder()
+                        .initialInterval(10, TimeUnit.MILLISECONDS)
+                        .maxInterval(50, TimeUnit.MILLISECONDS)
+                        .maxElapsedTime(2000, TimeUnit.MILLISECONDS)
+                        .retryConnectError(false)
+                        .retryReadTimeoutError(true)
+                        .build()).build())
+                .statusCodes(List.of("5XX"))
+                .build();
+
+        Exception thrown = assertThrows(Exception.class, retries::run);
+        assertTrue(thrown instanceof HttpConnectTimeoutException, String.valueOf(thrown));
+        assertEquals(1, attempts.get());
     }
 }

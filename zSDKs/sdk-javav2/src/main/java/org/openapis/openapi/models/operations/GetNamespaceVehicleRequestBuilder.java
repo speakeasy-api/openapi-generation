@@ -5,17 +5,27 @@ package org.openapis.openapi.models.operations;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.GetNamespaceVehicle;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class GetNamespaceVehicleRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
+    private final Options.Builder optionsBuilder;
 
     public GetNamespaceVehicleRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public GetNamespaceVehicleRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public GetNamespaceVehicleRequestBuilder header(String name, String value) {
@@ -31,8 +41,9 @@ public class GetNamespaceVehicleRequestBuilder {
      * @return The response from the server.
      */
     public GetNamespaceVehicleResponse call() {
+        Options options = optionsBuilder.build();
         RequestlessOperation<GetNamespaceVehicleResponse> operation =
-                new GetNamespaceVehicle.Sync(sdkConfiguration, _headers);
+                new GetNamespaceVehicle.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }

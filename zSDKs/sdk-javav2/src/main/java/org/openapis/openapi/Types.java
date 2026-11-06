@@ -5,6 +5,7 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import org.openapis.openapi.models.operations.GetNamespaceAnimalRequestBuilder;
 import org.openapis.openapi.models.operations.GetNamespaceAnimalResponse;
 import org.openapis.openapi.models.operations.GetNamespaceOrganizationRequestBuilder;
@@ -18,6 +19,7 @@ import org.openapis.openapi.operations.GetNamespaceOrganization;
 import org.openapis.openapi.operations.GetNamespaceTypes;
 import org.openapis.openapi.operations.GetNamespaceVehicle;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class Types {
     private static final Headers _headers = Headers.EMPTY;
@@ -60,8 +62,22 @@ public class Types {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetNamespaceTypesResponse getNamespaceTypesDirect() {
+        return getNamespaceTypes(null);
+    }
+
+    /**
+     * Get Namespace Types Test
+     *
+     * <p>This endpoint tests x-speakeasy-model-namespace with enums, discriminated unions,
+     * non-discriminated unions, and models with nested inline schemas.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetNamespaceTypesResponse getNamespaceTypes(@Nullable Options options) {
         RequestlessOperation<GetNamespaceTypesResponse> operation =
-                new GetNamespaceTypes.Sync(sdkConfiguration, _headers);
+                new GetNamespaceTypes.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -87,8 +103,22 @@ public class Types {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetNamespaceAnimalResponse getNamespaceAnimalDirect() {
+        return getNamespaceAnimal(null);
+    }
+
+    /**
+     * Get Namespace Animal (Discriminated Union)
+     *
+     * <p>This endpoint tests a discriminated union type in a custom namespace.
+     * The response can be either a foo.Dog or foo.Cat.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetNamespaceAnimalResponse getNamespaceAnimal(@Nullable Options options) {
         RequestlessOperation<GetNamespaceAnimalResponse> operation =
-                new GetNamespaceAnimal.Sync(sdkConfiguration, _headers);
+                new GetNamespaceAnimal.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -114,8 +144,22 @@ public class Types {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetNamespaceVehicleResponse getNamespaceVehicleDirect() {
+        return getNamespaceVehicle(null);
+    }
+
+    /**
+     * Get Namespace Vehicle (Non-Discriminated Union)
+     *
+     * <p>This endpoint tests a non-discriminated union type in a custom namespace.
+     * The response can be either a bar.Car or bar.Bike.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetNamespaceVehicleResponse getNamespaceVehicle(@Nullable Options options) {
         RequestlessOperation<GetNamespaceVehicleResponse> operation =
-                new GetNamespaceVehicle.Sync(sdkConfiguration, _headers);
+                new GetNamespaceVehicle.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -143,8 +187,23 @@ public class Types {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetNamespaceOrganizationResponse getNamespaceOrganizationDirect() {
+        return getNamespaceOrganization(null);
+    }
+
+    /**
+     * Get Namespace Organization (Nested Inline Schemas)
+     *
+     * <p>This endpoint tests nested inline object schemas in a custom namespace.
+     * The organization model contains nested address and department types that
+     * should inherit the foo namespace.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetNamespaceOrganizationResponse getNamespaceOrganization(@Nullable Options options) {
         RequestlessOperation<GetNamespaceOrganizationResponse> operation =
-                new GetNamespaceOrganization.Sync(sdkConfiguration, _headers);
+                new GetNamespaceOrganization.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }

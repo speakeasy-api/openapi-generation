@@ -1659,6 +1659,8 @@ public final class Utils {
     public static <T> T unmarshal(HttpResponse<InputStream> response, TypeReference<T> typeReference) {
         try {
             return mapper().readValue(Utils.extractByteArrayFromBody(response), typeReference);
+        } catch (java.io.InterruptedIOException | java.net.http.HttpTimeoutException e) {
+            throw new java.io.UncheckedIOException(e);
         } catch (Exception e) {
             throw SDKException.from("Error deserializing response body: " + e.getMessage(), response, e);
         }
@@ -1668,6 +1670,13 @@ public final class Utils {
         return response.body().toByteArray().handle((bytes, err) -> {
             // if a body read error occurs, we want to transform the exception
             if (err != null) {
+                Throwable cause = err instanceof java.util.concurrent.CompletionException && err.getCause() != null
+                        ? err.getCause()
+                        : err;
+                if (cause instanceof java.io.InterruptedIOException
+                        || cause instanceof java.net.http.HttpTimeoutException) {
+                    throw new java.io.UncheckedIOException((java.io.IOException) cause);
+                }
                 throw new AsyncSDKException(
                         "Error reading response body: " + err.getMessage(), response.statusCode(), null, response, err);
             }

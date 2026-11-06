@@ -206,6 +206,23 @@ package {{$pkg}};
         }
 
         /**
+         * Sets the default timeout for each request attempt. A per-call {@code timeout}
+         * takes precedence; this takes precedence over {@code x-speakeasy-timeout}.
+         * It bounds the whole call, including reading the response body.
+         *
+         * @param timeout The timeout to apply to every request; must be positive.
+         * @return The builder instance.
+         */
+        public Builder timeout({{javaImport "java.time.Duration"}} timeout) {
+            {{javaImportUtils}}.checkNotNull(timeout, "timeout");
+            if (timeout.isZero() || timeout.isNegative()) {
+                throw new {{javaImport "java.lang.IllegalArgumentException"}}("timeout must be positive");
+            }
+            this.sdkConfiguration.setTimeout({{javaImportOptional}}.of(timeout));
+            return this;
+        }
+
+        /**
          * Enables debug logging for HTTP requests and responses, including JSON body content.
          * <p>
          * Convenience method that calls {@link {{javaImportLocal "utils.HTTPClient"}}#enableDebugLogging(boolean)}.

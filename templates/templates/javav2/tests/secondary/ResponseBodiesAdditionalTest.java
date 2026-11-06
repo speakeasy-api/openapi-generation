@@ -2,15 +2,27 @@ package org.openapis.secondary.openapi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.openapis.secondary.openapi.Helpers.HTTPBIN_URL;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.openapis.secondary.openapi.models.operations.ResponseBodyBytesGetResponse;
 import org.openapis.secondary.openapi.models.operations.ResponseBodyStringGetResponse;
+import org.openapis.secondary.openapi.utils.Headers;
+import org.openapis.secondary.openapi.utils.Utils;
+import org.openapis.secondary.openapi.utils.transport.HttpRequest;
+import org.openapis.secondary.openapi.utils.transport.HttpResponse;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -47,5 +59,20 @@ public class ResponseBodiesAdditionalTest {
         assertEquals(200, res.statusCode());
         assertNotNull(res.html());
         assertTrue(res.html().contains("Herman Melville - Moby-Dick"));
+    }
+
+    @Test
+    public void testUnmarshalSurfacesBodyTimeoutsAsUncheckedIO() {
+        HttpRequest request = HttpRequest.builder().method("GET").uri(URI.create("http://localhost/test")).build();
+        InputStream timingOut = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw new InterruptedIOException("timeout");
+            }
+        };
+        HttpResponse<InputStream> response = new HttpResponse<>(request, 200, new Headers(), timingOut);
+        UncheckedIOException thrown = assertThrows(UncheckedIOException.class,
+                () -> Utils.unmarshal(response, new TypeReference<Map<String, Object>>() {}));
+        assertTrue(thrown.getCause() instanceof InterruptedIOException, String.valueOf(thrown.getCause()));
     }
 }

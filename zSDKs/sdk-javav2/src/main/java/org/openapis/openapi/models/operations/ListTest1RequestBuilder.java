@@ -15,11 +15,13 @@ import java.lang.Iterable;
 import java.lang.Long;
 import java.lang.String;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.stream.Stream;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.ListTest1;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 import org.openapis.openapi.utils.pagination.Paginator;
 import org.openapis.openapi.utils.pagination.ResultsPageTracker;
@@ -30,11 +32,13 @@ public class ListTest1RequestBuilder {
     private final ListTest1Request.Builder pojoBuilder;
     private ListTest1Request request;
     private String serverURL;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public ListTest1RequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = ListTest1Request.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public ListTest1RequestBuilder page(long page) {
@@ -58,6 +62,11 @@ public class ListTest1RequestBuilder {
     public ListTest1RequestBuilder headerParam1(@Nonnull String headerParam1) {
         this.pojoBuilder.headerParam1(headerParam1);
         this._setterCalled = true;
+        return this;
+    }
+
+    public ListTest1RequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -86,8 +95,9 @@ public class ListTest1RequestBuilder {
      * @return The response from the server.
      */
     public ListTest1Response call() {
+        Options options = optionsBuilder.build();
         RequestOperation<ListTest1Request, ListTest1Response> operation =
-                new ListTest1.Sync(sdkConfiguration, serverURL, _headers);
+                new ListTest1.Sync(sdkConfiguration, serverURL, options, _headers);
         return operation.handleResponse(operation.doRequest(this._buildRequest()));
     }
 
@@ -106,8 +116,9 @@ public class ListTest1RequestBuilder {
      */
     public Iterable<ListTest1Response> callAsIterable() {
         ListTest1Request request = pojoBuilder.build();
+        Options options = optionsBuilder.build();
         RequestOperation<ListTest1Request, ListTest1Response> operation =
-                new ListTest1.Sync(sdkConfiguration, serverURL, _headers);
+                new ListTest1.Sync(sdkConfiguration, serverURL, options, _headers);
 
         Iterator<HttpResponse<InputStream>> iterator = new Paginator<>(
                 request,

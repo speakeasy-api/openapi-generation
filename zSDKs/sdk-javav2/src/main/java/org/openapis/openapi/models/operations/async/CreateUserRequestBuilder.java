@@ -6,20 +6,30 @@ package org.openapis.openapi.models.operations.async;
 import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.shared.BaseUser;
 import org.openapis.openapi.operations.CreateUser;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class CreateUserRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
     private BaseUser request;
+    private final Options.Builder optionsBuilder;
 
     public CreateUserRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public CreateUserRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public CreateUserRequestBuilder request(@Nonnull BaseUser request) {
@@ -44,8 +54,9 @@ public class CreateUserRequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<CreateUserResponse> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<BaseUser, CreateUserResponse> operation =
-                new CreateUser.Async(sdkConfiguration, _headers);
+                new CreateUser.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse);
     }
 }

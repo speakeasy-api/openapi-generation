@@ -41,6 +41,7 @@ public class {{$className}} {
         final {{javaImport (sanitizeClass $op.Security.Type "operation" false)}} security;
         {{- end}}
         final {{javaImportLocal "SecuritySource"}} securitySource;
+        final {{javaImportOptional}}<{{javaImport "java.time.Duration"}}> timeout;
         {{- if $retries}}
         final {{javaImportList}}<{{javaImportString}}> retryStatusCodes;
         final {{javaImportLocal "utils.RetryConfig"}} retryConfig;
@@ -73,9 +74,15 @@ public class {{$className}} {
             {{- else }}
             this.securitySource = null;
             {{- end}}
-            {{- if $retries}}
+            {{- if $hasOptions}}
             {{if $nullFriendlyParameters}}{{javaImportOptional}}.ofNullable(options){{else}}options{{end}}
-                    .ifPresent(o -> o.validate({{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{javaImportLocal "utils.Options"}}.Option.RETRY_CONFIG)));
+                    .ifPresent(o -> o.validate({{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{range $i, $o := $options}}{{if $i}}, {{end}}{{javaImportLocal "utils.Options"}}.Option.{{optionEnumName $o.Name}}{{end}})));
+            {{- $opts := "options"}}{{if $nullFriendlyParameters}}{{$opts = (print javaImportOptional ".ofNullable(options)")}}{{end}}
+            this.timeout = {{templateTimeoutResolution $op $opts}};
+            {{- else}}
+            this.timeout = {{templateTimeoutResolution $op ""}};
+            {{- end}}
+            {{- if $retries}}
             this.retryStatusCodes = {{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{- range $i, $v := $retries.StatusCodes -}}
                     "{{$v}}"{{if lt $i (sub (len $retries.StatusCodes) 1)}}, {{end}}
                 {{- end -}});
@@ -168,7 +175,8 @@ public class {{$className}} {
                     this.baseUrl,
                     "{{$op.Path}}");
             {{- end}}
-            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}");
+            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}")
+                    .timeout(this.timeout);
             {{- if and $op.Request $op.SerializationMethod }}
             {{javaImport "java.lang.Object"}} convertedRequest = {{javaImportUtils}}.convertToShape(
                     request,
@@ -223,7 +231,8 @@ public class {{$className}} {
         {{javaHttpRequestType}} buildRequest({{javaImportString}} urlOverride) throws {{javaImportException}} {
         {{- end}}
             {{javaImportString}} url = urlOverride;
-            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}");
+            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}")
+                    .timeout(this.timeout);
             {{- if and $op.Request $op.SerializationMethod }}
             {{javaImport "java.lang.Object"}} convertedRequest = {{javaImportUtils}}.convertToShape(
                     request,
@@ -278,6 +287,7 @@ public class {{$className}} {
             {{- else}}
             implements {{javaImportStatic "operations.Operations.RequestlessOperation" true}}<{{javaImportType $resType}}> {
             {{- end}}
+{{- templateLegacyConstructor $op false "Sync"}}
         public Sync({{templateMethodParams $methodParams true 16 2}}) {
             super({{templateMethodCallArgs $methodParams true 18 2}});
         }
@@ -405,6 +415,7 @@ public class {{$className}} {
         private final {{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler;
         {{- end}}
 
+{{- templateLegacyConstructor $op true "Async"}}
         public Async({{templateMethodParams $asyncMethodParams true 16 2}}) {
             super({{templateMethodCallArgs $methodParams true 18 2}});
             {{- if $retries}}
@@ -648,6 +659,7 @@ public class {{$className}} {
         final {{javaImport (sanitizeClass $op.Security.Type "operation" false)}} security;
         {{- end}}
         final {{javaImportLocal "SecuritySource"}} securitySource;
+        final {{javaImportOptional}}<{{javaImport "java.time.Duration"}}> timeout;
         {{- if $retries}}
         final {{javaImportList}}<{{javaImportString}}> retryStatusCodes;
         final {{javaImportLocal "utils.RetryConfig"}} retryConfig;
@@ -680,9 +692,15 @@ public class {{$className}} {
             {{- else }}
             this.securitySource = null;
             {{- end}}
-            {{- if $retries}}
+            {{- if $hasOptions}}
             {{if $nullFriendlyParameters}}{{javaImportOptional}}.ofNullable(options){{else}}options{{end}}
-                    .ifPresent(o -> o.validate({{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{javaImportLocal "utils.Options"}}.Option.RETRY_CONFIG)));
+                    .ifPresent(o -> o.validate({{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{range $i, $o := $options}}{{if $i}}, {{end}}{{javaImportLocal "utils.Options"}}.Option.{{optionEnumName $o.Name}}{{end}})));
+            {{- $opts := "options"}}{{if $nullFriendlyParameters}}{{$opts = (print javaImportOptional ".ofNullable(options)")}}{{end}}
+            this.timeout = {{templateTimeoutResolution $op $opts}};
+            {{- else}}
+            this.timeout = {{templateTimeoutResolution $op ""}};
+            {{- end}}
+            {{- if $retries}}
             this.retryStatusCodes = {{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{- range $i, $v := $retries.StatusCodes -}}
                     "{{$v}}"{{if lt $i (sub (len $retries.StatusCodes) 1)}}, {{end}}
                 {{- end -}});
@@ -771,7 +789,8 @@ public class {{$className}} {
                     this.baseUrl,
                     "{{$op.Path}}");
             {{- end}}
-            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}");
+            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}")
+                    .timeout(this.timeout);
             {{- if and $op.Request $op.SerializationMethod }}
             {{javaImport "java.lang.Object"}} convertedRequest = {{javaImportUtils}}.convertToShape(
                     request,
@@ -826,7 +845,8 @@ public class {{$className}} {
         {{javaHttpRequestType}} buildRequest({{javaImportString}} urlOverride) throws {{javaImportException}} {
         {{- end}}
             {{javaImportString}} url = urlOverride;
-            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}");
+            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}")
+                    .timeout(this.timeout);
             {{- if and $op.Request $op.SerializationMethod }}
             {{javaImport "java.lang.Object"}} convertedRequest = {{javaImportUtils}}.convertToShape(
                     request,
@@ -881,6 +901,7 @@ public class {{$className}} {
             {{- else}}
             implements {{javaImportStatic "operations.Operations.RequestlessOperation" true}}<{{javaImportType $resType}}> {
             {{- end}}
+{{- templateLegacyConstructor $op false "Sync"}}
         public Sync({{templateMethodParams $methodParams true 16 2}}) {
             super({{templateMethodCallArgs $methodParams true 18 2}});
         }
@@ -1009,6 +1030,7 @@ public class {{$className}} {
         private final {{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler;
         {{- end}}
 
+{{- templateLegacyConstructor $op true "Async"}}
         public Async({{templateMethodParams $asyncMethodParams true 16 2}}) {
             super({{templateMethodCallArgs $methodParams true 18 2}});
             {{- if $retries}}

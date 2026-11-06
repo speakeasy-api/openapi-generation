@@ -5,11 +5,13 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.AsyncRequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.models.operations.async.SubGroupOpRequestBuilder;
 import org.openapis.openapi.models.operations.async.SubGroupOpResponse;
 import org.openapis.openapi.operations.SubGroupOp;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class AsyncSubGroup {
     private static final Headers _headers = Headers.EMPTY;
@@ -51,7 +53,18 @@ public class AsyncSubGroup {
      * @return {@code CompletableFuture<SubGroupOpResponse>} - The async response
      */
     public CompletableFuture<SubGroupOpResponse> subGroupOpDirect() {
-        AsyncRequestlessOperation<SubGroupOpResponse> operation = new SubGroupOp.Async(sdkConfiguration, _headers);
+        return subGroupOp(null);
+    }
+
+    /**
+     * An operation at the group's top level
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<SubGroupOpResponse>} - The async response
+     */
+    public CompletableFuture<SubGroupOpResponse> subGroupOp(@Nullable Options options) {
+        AsyncRequestlessOperation<SubGroupOpResponse> operation =
+                new SubGroupOp.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 }
