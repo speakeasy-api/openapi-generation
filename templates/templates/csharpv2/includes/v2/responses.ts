@@ -80,9 +80,7 @@ function templateJSONHandler(
     const errorMessage = `Failed to deserialize response body into ${targetType}.`;
     const typeInfoRef = jsonTypeInfoRef(typeDef);
     const deserialize = `JsonSerializer.Deserialize(httpResponseBody, ${typeInfoRef})`;
-    const isNonNullableStruct =
-      isValueType(typeDef) && !targetType.endsWith("?");
-    const assignment = isNonNullableStruct
+    const assignment = isValueType(typeDef)
       ? deserialize
       : `${deserialize} ?? throw new JsonException("Deserialization error: ${targetType} cannot be null.")`;
 

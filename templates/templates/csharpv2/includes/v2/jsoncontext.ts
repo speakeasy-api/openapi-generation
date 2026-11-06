@@ -279,6 +279,10 @@ function recordOperationShape(
   record("");
 }
 
+function getObjectJsonConverterType(): string {
+  return `global::${getJsonContextNamespace()}.ObjectJsonConverter`;
+}
+
 // Source-gen contexts need our runtime converters baked into their `.Default`
 // options so each generated JsonTypeInfo<T> resolves property-level converters
 // against them. In particular, `object`-typed properties pick up
@@ -286,10 +290,9 @@ function recordOperationShape(
 // JsonElement. The same list is mirrored at runtime in JsonOptions.SerializerOptions
 // so direct callsites and the resolver chain agree on conversion behavior.
 function getJsonContextConverters(): string[] {
-  const rootNs = getJsonContextNamespace();
   const utilsNs = getScopeNamespace("utils", true);
   return [
-    `global::${rootNs}.ObjectJsonConverter`,
+    getObjectJsonConverterType(),
     `global::${utilsNs}.BigIntegerJsonConverterFactory`,
     `global::${utilsNs}.DecimalJsonConverterFactory`,
     `global::${utilsNs}.DateTimeJsonConverterFactory`,
@@ -477,9 +480,8 @@ function collectNullCheckedTypes(): NullCheckedType[] {
   return result;
 }
 
-// @ts-ignore
-function getJsonContextJobs(): Job[] {
-  return collectJsonContextRegistrations().map(({ OutputLocation, Types }) => {
+function getJsonContextJobs(registrations: JsonContextRegistration[]): Job[] {
+  return registrations.map(({ OutputLocation, Types }) => {
     const className = getJsonContextClassName(OutputLocation);
     return createTemplateFileJob(
       "json-context.cs.stmpl",
@@ -497,9 +499,7 @@ function getJsonContextJobs(): Job[] {
   });
 }
 
-// @ts-ignore
-function getJsonOptionsJobs(): Job[] {
-  const registrations = collectJsonContextRegistrations();
+function getJsonOptionsJobs(registrations: JsonContextRegistration[]): Job[] {
   const resolvers = registrations.map(
     ({ OutputLocation }) =>
       `${getJsonContextNamespace(OutputLocation)}.${getJsonContextClassName(
@@ -517,7 +517,11 @@ function getJsonOptionsJobs(): Job[] {
       {
         Resolvers: resolvers.join(",\n            "),
         Namespace: rootNamespace,
-        Converters: getJsonContextConverters(),
+        Converters: getJsonContextConverters().map((c) =>
+          c === getObjectJsonConverterType()
+            ? "_objectConverter"
+            : `new ${c}()`,
+        ),
         NumberHandling: JSON_NUMBER_HANDLING,
         NullCheckedTypes: collectNullCheckedTypes(),
         HasOpenUnion: hasAnyOpenUnion(),

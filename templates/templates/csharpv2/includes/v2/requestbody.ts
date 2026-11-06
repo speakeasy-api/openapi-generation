@@ -162,14 +162,18 @@ function templateSerializeRequestBody(op: Operation): string {
     );
   }
 
-  const typeInfoRef = jsonTypeInfoRef(bodyTypeDef);
   const bodyTypeName = sanitizeType(bodyTypeDef, false);
-  const helper =
-    format === "string" ? "SerializeJsonBodyAsString" : "SerializeJsonBody";
+  const call =
+    format === "string"
+      ? (b: string) =>
+          `RequestBodySerializer.SerializeJsonBodyAsString<${bodyTypeName}>(${b})`
+      : (b: string) =>
+          `RequestBodySerializer.SerializeJsonBody<${bodyTypeName}>(${b}, ${jsonTypeInfoRef(
+            bodyTypeDef,
+          )})`;
   return emitBodyDispatch(
     bodyExpr,
-    (b) =>
-      `RequestBodySerializer.${helper}<${bodyTypeName}>(${b}, ${typeInfoRef})`,
+    call,
     nullable,
     optional,
     true,

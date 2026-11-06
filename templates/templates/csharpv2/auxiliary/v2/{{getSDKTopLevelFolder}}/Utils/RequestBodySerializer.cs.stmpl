@@ -24,7 +24,7 @@ namespace {{getScopeNamespace "utils"}}
 
         // Wire-format=string for top-level decimal/BigInteger. Re-resolves the
         // typeinfo against options that prepend the string-wire factories.
-        public static HttpContent SerializeJsonBodyAsString<T>(T body, JsonTypeInfo<T> typeInfo)
+        public static HttpContent SerializeJsonBodyAsString<T>(T body)
         {
             var stringTypeInfo = (JsonTypeInfo<T>)_stringFormatOptions.GetTypeInfo(typeof(T));
             var json = JsonSerializer.Serialize(body, stringTypeInfo);
