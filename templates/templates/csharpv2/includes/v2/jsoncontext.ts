@@ -134,8 +134,7 @@ function collectFormJsonContextTypes(
 // serialized as JSON, collecting primitive / array / map / empty-location
 // shapes that don't otherwise live in BucketedTypes. Result is keyed by
 // target output-location (the bucket whose JsonContext should register the
-// shape), so the registration ends up where `jsonTypeInfoRef` will look for
-// it at the call site.
+// shape).
 function collectOperationJsonShapes(
   sdk: SDK,
   perBucket: Map<string, Map<string, { Type: string; Name: string }>>,
@@ -270,30 +269,15 @@ function collectOpShapesForMainSDK(): Map<
   return opShapesPerBucket;
 }
 
-// @ts-ignore
-function getJsonContextJobs(): Job[] {
-  const jobs: Job[] = [];
+const JSON_NUMBER_HANDLING = "AllowReadingFromString";
 
-  const pushContextJob = (
-    outputLocation: string,
-    types: { Type: string; Name: string }[],
-  ) => {
-    const className = getJsonContextClassName(outputLocation);
-    jobs.push(
-      createTemplateFileJob(
-        "json-context.cs.stmpl",
-        `${getSDKTopLevelFolder()}/${getJsonContextLocation(
-          outputLocation,
-        )}/${className}.cs`,
-        {
-          Types: types,
-          Namespace: getJsonContextNamespace(outputLocation),
-          ClassName: className,
-          Converters: getJsonContextConverters(),
-        },
-      ),
-    );
-  };
+interface JsonContextRegistration {
+  OutputLocation: string;
+  Types: { Type: string; Name: string }[];
+}
+
+function collectJsonContextRegistrations(): JsonContextRegistration[] {
+  const registrations: JsonContextRegistration[] = [];
 
   const opShapesPerBucket = collectOpShapesForMainSDK();
 
@@ -348,7 +332,7 @@ function getJsonContextJobs(): Job[] {
       if (!existingTypes.has(dep.Type)) typeRefs.push(dep);
     }
 
-    pushContextJob(outputLocation, typeRefs);
+    registrations.push({ OutputLocation: outputLocation, Types: typeRefs });
 
     bucketsWithRefs.add(outputLocation);
   }
@@ -361,39 +345,66 @@ function getJsonContextJobs(): Job[] {
   for (const [outputLocation, deps] of opShapesPerBucket) {
     if (bucketsWithRefs.has(outputLocation)) continue;
     if (deps.size === 0) continue;
-    pushContextJob(outputLocation, [...deps.values()]);
+    registrations.push({
+      OutputLocation: outputLocation,
+      Types: [...deps.values()],
+    });
   }
 
-  return jobs;
+  return registrations;
+}
+
+function collectJsonTypeInfos(
+  registrations: JsonContextRegistration[],
+): { Type: string; Name: string }[] {
+  const byName = new Map<string, { Type: string; Name: string }>();
+  for (const registration of registrations) {
+    for (const ref of registration.Types) {
+      const existing = byName.get(ref.Name);
+      if (!existing) {
+        byName.set(ref.Name, ref);
+        continue;
+      }
+      const normalize = (t: string) => t.replaceAll("global::", "");
+      if (normalize(existing.Type) !== normalize(ref.Type)) {
+        throw new Error(
+          `JsonTypeInfo name ${ref.Name} maps to both ${existing.Type} and ${ref.Type}`,
+        );
+      }
+    }
+  }
+  return [...byName.values()];
+}
+
+// @ts-ignore
+function getJsonContextJobs(): Job[] {
+  return collectJsonContextRegistrations().map(({ OutputLocation, Types }) => {
+    const className = getJsonContextClassName(OutputLocation);
+    return createTemplateFileJob(
+      "json-context.cs.stmpl",
+      `${getSDKTopLevelFolder()}/${getJsonContextLocation(
+        OutputLocation,
+      )}/${className}.cs`,
+      {
+        Types,
+        Namespace: getJsonContextNamespace(OutputLocation),
+        ClassName: className,
+        Converters: getJsonContextConverters(),
+        NumberHandling: JSON_NUMBER_HANDLING,
+      },
+    );
+  });
 }
 
 // @ts-ignore
 function getJsonOptionsJobs(): Job[] {
-  const contexts: { Namespace: string; ClassName: string }[] = [];
-  const bucketedTypes = sequencedMapEntries(context.Global.AST.BucketedTypes);
-
-  const seenLocations = new Set<string>();
-  for (const [outputLocation] of bucketedTypes) {
-    contexts.push({
-      Namespace: getJsonContextNamespace(outputLocation),
-      ClassName: getJsonContextClassName(outputLocation),
-    });
-    seenLocations.add(outputLocation);
-  }
-
-  // Operation-driven primitives / array / map shapes may produce additional
-  // contexts (most notably the top-level ModelsJsonContext for empty bucket).
-  // Register them as resolvers too so JsonOptions.SerializerOptions can find
-  // their JsonTypeInfo<T> entries at runtime.
-  const opShapesPerBucket = collectOpShapesForMainSDK();
-  for (const [outputLocation, deps] of opShapesPerBucket) {
-    if (deps.size === 0 || seenLocations.has(outputLocation)) continue;
-    contexts.push({
-      Namespace: getJsonContextNamespace(outputLocation),
-      ClassName: getJsonContextClassName(outputLocation),
-    });
-    seenLocations.add(outputLocation);
-  }
+  const registrations = collectJsonContextRegistrations();
+  const resolvers = registrations.map(
+    ({ OutputLocation }) =>
+      `${getJsonContextNamespace(OutputLocation)}.${getJsonContextClassName(
+        OutputLocation,
+      )}.Default`,
+  );
 
   const rootLocation = getJsonContextLocation("");
   const rootNamespace = getJsonContextNamespace();
@@ -403,10 +414,17 @@ function getJsonOptionsJobs(): Job[] {
       "json-options.cs.stmpl",
       `${getSDKTopLevelFolder()}/${rootLocation}/JsonOptions.cs`,
       {
-        Contexts: contexts,
-        Resolvers: contexts
-          .map((ctx) => `${ctx.Namespace}.${ctx.ClassName}.Default`)
-          .join(",\n            "),
+        Resolvers: resolvers.join(",\n            "),
+        Namespace: rootNamespace,
+        Converters: getJsonContextConverters(),
+        NumberHandling: JSON_NUMBER_HANDLING,
+      },
+    ),
+    createTemplateFileJob(
+      "json-type-infos.cs.stmpl",
+      `${getSDKTopLevelFolder()}/${rootLocation}/JsonTypeInfos.cs`,
+      {
+        Types: collectJsonTypeInfos(registrations),
         Namespace: rootNamespace,
       },
     ),

@@ -24,21 +24,6 @@ namespace {{getScopeNamespace "utils"}}
 
         // Wire-format=string for top-level decimal/BigInteger. Re-resolves the
         // typeinfo against options that prepend the string-wire factories.
-        // The re-resolve uses runtime type lookup, so this stays AOT-hostile
-        // and is quarantined here. P1b will replace this with per-T
-        // string-format contexts and the attribute can drop.
-{{- if isNetstandard2}}
-#if NET5_0_OR_GREATER
-{{- end}}
-        [RequiresUnreferencedCode("format=\"string\" re-resolves JsonTypeInfo<T> at runtime. Avoid under trim.")]
-{{- if isNetstandard2}}
-#endif
-#if NET7_0_OR_GREATER
-{{- end}}
-        [RequiresDynamicCode("format=\"string\" re-resolves JsonTypeInfo<T> at runtime. Avoid under AOT.")]
-{{- if isNetstandard2}}
-#endif
-{{- end}}
         public static HttpContent SerializeJsonBodyAsString<T>(T body, JsonTypeInfo<T> typeInfo)
         {
             var stringTypeInfo = (JsonTypeInfo<T>)_stringFormatOptions.GetTypeInfo(typeof(T));

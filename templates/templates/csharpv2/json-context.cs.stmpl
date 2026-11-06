@@ -14,7 +14,7 @@ namespace {{.Local.Namespace}};
 [JsonSourceGenerationOptions(
     WriteIndented = false,
     GenerationMode = JsonSourceGenerationMode.Default,
-    NumberHandling = JsonNumberHandling.AllowReadingFromString,
+    NumberHandling = JsonNumberHandling.{{.Local.NumberHandling}},
     Converters = new[]
     {
 {{- range $i, $c := .Local.Converters}}

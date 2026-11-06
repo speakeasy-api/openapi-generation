@@ -647,6 +647,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/csharpv2/includes/v2/urlbuilder.ts":            0o644,
 	"templates/csharpv2/json-context.cs.stmpl":                0o644,
 	"templates/csharpv2/json-options.cs.stmpl":                0o644,
+	"templates/csharpv2/json-type-infos.cs.stmpl":             0o644,
 	"templates/csharpv2/object-json-converter.cs.stmpl":       0o644,
 	"templates/csharpv2/pagination.cs.stmpl":                  0o644,
 	"templates/csharpv2/template.yaml":                        0o644,

@@ -221,14 +221,7 @@ function jsonTypeInfoName(typeDef: TypeDef): string {
 }
 
 function jsonTypeInfoRef(typeDef: TypeDef): string {
-  let outputLocation = typeDef.OutputLocation || "";
-  const kind = typeDef.Type?.toString() ?? "";
-  if (!outputLocation && (kind === "array" || kind === "map")) {
-    outputLocation = typeDef.ItemType?.OutputLocation || "";
-  }
-  return `global::${getJsonContextNamespace(
-    outputLocation,
-  )}.${getJsonContextClassName(outputLocation)}.Default.${jsonTypeInfoName(
+  return `global::${getJsonContextNamespace()}.JsonTypeInfos.${jsonTypeInfoName(
     typeDef,
   )}`;
 }
