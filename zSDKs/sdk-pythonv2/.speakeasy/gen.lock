@@ -744,7 +744,7 @@ trackedFiles:
   src/speakeasy/new_openapi/types/__init__.py:
     last_write_checksum: sha1:166eb50af851c4200ed67fe47c64b1d58b99ed72
   src/speakeasy/new_openapi/types/base64fileinput.py:
-    last_write_checksum: sha1:1522687ae3398374c35710cad993a6e82b5ab99d
+    last_write_checksum: sha1:c19bf64381de399574902cfabc8f6832f73694c6
   src/speakeasy/new_openapi/types/basemodel.py:
     last_write_checksum: sha1:99c644208e340c4974b94bbe6d52019c80fedb97
   src/speakeasy/new_openapi/types_.py:

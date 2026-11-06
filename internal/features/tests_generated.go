@@ -854,6 +854,8 @@ func (t Test) String() string {
         return "relative-servers"
     case TestRequestBodiesBase64FileInputIdempotent:
         return "request-bodies-base64-file-input-idempotent"
+    case TestRequestBodiesBase64FileInputRawBytes:
+        return "request-bodies-base64-file-input-raw-bytes"
     case TestRequestBodiesBase64InputModeFileSharedComponent:
         return "request-bodies-base64-input-mode-file-shared-component"
     case TestRequestBodiesBase64InputModeFileSplitComponents:
@@ -2408,6 +2410,8 @@ func TestFromString(s string) Test {
         return TestRelativeServers
     case "request-bodies-base64-file-input-idempotent":
         return TestRequestBodiesBase64FileInputIdempotent
+    case "request-bodies-base64-file-input-raw-bytes":
+        return TestRequestBodiesBase64FileInputRawBytes
     case "request-bodies-base64-input-mode-file-shared-component":
         return TestRequestBodiesBase64InputModeFileSharedComponent
     case "request-bodies-base64-input-mode-file-split-components":
@@ -3536,6 +3540,7 @@ var testList = []Test{
     TestRedirectsAreFollowed,
     TestRelativeServers,
     TestRequestBodiesBase64FileInputIdempotent,
+    TestRequestBodiesBase64FileInputRawBytes,
     TestRequestBodiesBase64InputModeFileSharedComponent,
     TestRequestBodiesBase64InputModeFileSplitComponents,
     TestRequestBodiesComplexNumberTypes,

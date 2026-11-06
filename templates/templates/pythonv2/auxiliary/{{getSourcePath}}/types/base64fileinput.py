@@ -9,30 +9,31 @@ from pydantic.functional_validators import BeforeValidator
 from typing_extensions import Annotated
 
 
-Base64FileInput = Union[IO[bytes], PathLike[str]]
+Base64FileInput = Union[bytes, bytearray, memoryview, IO[bytes], PathLike[str]]
 
 
 def encode_base64_file_input(value: Any) -> Any:
-    """Convert PathLike or IO[bytes] inputs to a base64 string. All standard binary streams
-       that inherit from io.IOBase are handled. Other values pass through.
+    """Convert raw bytes-like, PathLike or IO[bytes] inputs to a base64 string. All standard
+       binary streams that inherit from io.IOBase are handled. Other values pass through.
     """
-    if isinstance(value, (PathLike, io.IOBase)):
-        if isinstance(value, PathLike):
-            with open(value, "rb") as fh:
-                binary = fh.read()
-        else:
-            # Restore position after reading: pydantic may validate the same stream more than once.
-            position = value.tell() if value.seekable() else None
-            binary = value.read()
-            if position is not None:
-                value.seek(position)
-            if isinstance(binary, str):
-                binary = binary.encode()
-        if not isinstance(binary, (bytes, bytearray)):
+    if isinstance(value, PathLike):
+        with open(value, "rb") as fh:
+            value = fh.read()
+    elif isinstance(value, io.IOBase):
+        # Restore position after reading: pydantic may validate the same stream more than once.
+        position = value.tell() if value.seekable() else None
+        binary = value.read()
+        if position is not None:
+            value.seek(position)
+        if isinstance(binary, str):
+            binary = binary.encode()
+        if not isinstance(binary, (bytes, bytearray, memoryview)):
             raise TypeError(
                 f"Base64FileInput expected binary IO returning bytes; got {type(binary).__name__}"
             )
-        return base64.b64encode(binary).decode("ascii")
+        value = binary
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return base64.b64encode(bytes(value)).decode("ascii")
     return value
 
 

@@ -406,6 +406,54 @@ def test_request_bodies_base64_file_input_read_is_idempotent():
     assert encode_base64_file_input(prefixed) == expected
 
 
+def test_request_bodies_base64_file_input_raw_bytes():
+    """Raw bytes-like inputs are base64-encoded rather than decoded as str."""
+    import io
+    from openapi.types.base64fileinput import encode_base64_file_input
+
+    record_test("request-bodies-base64-file-input-raw-bytes")
+
+    ascii_bytes = b"plain-ascii-payload"
+
+    s = SDK()
+    res = s.request_bodies.post_base64_input_mode(
+        data_byte=_BASE64_NON_UTF8_BYTES,
+        data_content_encoding=bytearray(ascii_bytes),
+        data_plain="plain-value",
+    )
+
+    assert res.res is not None and res.res.json_ is not None
+    assert res.res.json_.data_byte == _b64(_BASE64_NON_UTF8_BYTES)
+    assert res.res.json_.data_content_encoding == _b64(ascii_bytes)
+
+    # Input type, not content, decides encoding: base64-looking bytes are raw content.
+    res = s.request_bodies.post_base64_input_mode(
+        data_byte=b"YWJj",
+        data_content_encoding=memoryview(_BASE64_NON_UTF8_BYTES)[::2],
+        data_plain="plain-value",
+    )
+
+    assert res.res is not None and res.res.json_ is not None
+    assert res.res.json_.data_byte == "WVdKag=="
+    assert res.res.json_.data_content_encoding == _b64(_BASE64_NON_UTF8_BYTES[::2])
+    assert encode_base64_file_input("YWJj") == "YWJj"
+
+    assert encode_base64_file_input(memoryview(_BASE64_NON_UTF8_BYTES)) == _b64(
+        _BASE64_NON_UTF8_BYTES
+    )
+    assert encode_base64_file_input(memoryview(_BASE64_NON_UTF8_BYTES)[::2]) == _b64(
+        _BASE64_NON_UTF8_BYTES[::2]
+    )
+
+    class MemoryviewStream(io.IOBase):
+        def read(self) -> memoryview:
+            return memoryview(_BASE64_NON_UTF8_BYTES)[::2]
+
+    assert encode_base64_file_input(MemoryviewStream()) == _b64(
+        _BASE64_NON_UTF8_BYTES[::2]
+    )
+
+
 # Coverage for the uuidFormat config flag. With uuidFormat enabled,
 # `format: uuid` string schemas generate as uuid.UUID instead of str. Exercises
 # the `customer_id` (format: uuid) field on optionalRequestBodyPost through the
