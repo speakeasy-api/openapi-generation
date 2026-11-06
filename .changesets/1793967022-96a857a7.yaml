@@ -1,0 +1,10 @@
+id: 1793967022-96a857a7
+features:
+    - mcpServer
+targets:
+    - mcp-typescript
+type: feat
+bump: patch
+description: document http auth for MCP Registry publishing in the generated README
+author: AshGodfrey
+date: "2026-11-06"
