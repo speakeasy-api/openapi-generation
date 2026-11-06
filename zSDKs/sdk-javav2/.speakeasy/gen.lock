@@ -617,13 +617,13 @@ trackedFiles:
   src/main/java/org/openapis/openapi/models/errors/AuthException.java:
     last_write_checksum: sha1:e1d682f3ba7ee4defc29ce963711dd78aaf67e81
   src/main/java/org/openapis/openapi/models/errors/BadRequestResponseException.java:
-    last_write_checksum: sha1:68e77fde309ba6fcedc2c0bf4b779b9d40f68c52
+    last_write_checksum: sha1:242e35886b4b008638c356263822e382cf34b519
   src/main/java/org/openapis/openapi/models/errors/Error.java:
     last_write_checksum: sha1:77fd793a82cbd4c3a61a312c5cece9349dba4d5a
   src/main/java/org/openapis/openapi/models/errors/FailedResponseException.java:
     last_write_checksum: sha1:dfcb2e4c99e1db1cb6c692a9bad0b14a3c4085cb
   src/main/java/org/openapis/openapi/models/errors/RequestTimeoutError.java:
-    last_write_checksum: sha1:656c80ff057f229522ee793fe571e7f84abd35ee
+    last_write_checksum: sha1:e3a34f4431ebda095bac821efd2e22a22cdcccc9
   src/main/java/org/openapis/openapi/models/errors/SDKBaseException.java:
     last_write_checksum: sha1:ad4df631881555bd52a3a172f9d8c6750075dba2
   src/main/java/org/openapis/openapi/models/errors/SDKException.java:
