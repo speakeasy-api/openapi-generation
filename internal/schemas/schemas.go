@@ -2607,7 +2607,7 @@ func (s *Schemas) handleString(ctx context.Context, params Params, nullable bool
 		}
 	case "byte":
 		// format:byte denotes a base64-encoded string. The string surface stays — opt-in
-		// to richer input ergonomics (file/PathLike/IO) is signaled via the
+		// to richer input ergonomics (raw bytes/PathLike/IO) is signaled via the
 		// x-speakeasy-base64-input-mode extension, handled after typeDef construction.
 		format = schema.GetFormat()
 	case "int64":
