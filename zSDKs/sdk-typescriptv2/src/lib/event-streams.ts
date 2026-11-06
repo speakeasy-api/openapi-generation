@@ -17,9 +17,11 @@ declare global {
 }
 
 type StreamIterator<T> = ReadableStream<T> extends {
-  [Symbol.asyncIterator](options?: any): infer I;
-  [Symbol.asyncIterator](): any;
-} ? I
+  [Symbol.asyncIterator](options?: any): infer A;
+  [Symbol.asyncIterator](options?: any): infer B;
+  [Symbol.asyncIterator](options?: any): infer C;
+  [Symbol.asyncIterator](options?: any): infer D;
+} ? A & B & C & D
   : never;
 
 export type SseMessage<T> = {
@@ -103,7 +105,10 @@ export class Stream<T> extends ReadableStream<T> {
     };
     const iterator = {
       next: async () => {
-        const r = await reader.read();
+        const r = await reader.read().catch((e: unknown) => {
+          release();
+          throw e;
+        });
         if (r.done) {
           release();
           return { done: true, value: undefined };

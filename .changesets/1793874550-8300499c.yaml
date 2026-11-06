@@ -5,6 +5,6 @@ targets:
     - typescriptv2
 type: fix
 bump: patch
-description: event streams type-check for consumers whose TypeScript and Node.js type definitions declare an async-disposable ReadableStream iterator
+description: event streams type-check for consumers whose TypeScript and Node.js type definitions declare an async-disposable ReadableStream iterator, including when several generated SDKs are used together, and the fallback iterator supports async disposal
 author: AshGodfrey
 date: "2026-11-05"
