@@ -312,6 +312,16 @@ func TestOptionalNullableNestedErrorMessage(t *testing.T) {
 	}
 }
 
+func TestOptionalNullableNestedErrorMessageExplicitNull(t *testing.T) {
+	var nullCause apierrors.NestedNullableOptionalErrorMessage
+	require.NoError(t, json.Unmarshal([]byte(`{"code":"512","cause":null}`), &nullCause))
+	assert.Equal(t, `{"code":"512"}`, nullCause.Error())
+
+	var nullMessage apierrors.NestedNullableOptionalErrorMessage
+	require.NoError(t, json.Unmarshal([]byte(`{"code":"512","cause":{"message":null}}`), &nullMessage))
+	assert.Equal(t, `{"cause":{},"code":"512"}`, nullMessage.Error())
+}
+
 func TestErrorUnionRedecodePreservesHTTPMeta(t *testing.T) {
 	t.Run("discriminated", func(t *testing.T) {
 		var u apierrors.ErrorUnionDiscriminatedPostResponseBody
