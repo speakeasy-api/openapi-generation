@@ -1355,9 +1355,15 @@ function errorMessageExpression(type: TypeDef): string {
   }
   // we wrap with Utils.valueOrElse to unwrap Optional or JSONNullable
   const utils = javaImportUtils();
-  const leafType = path[path.length - 1].Type.Type.toString();
-  const leafIsString = leafType == "string";
-  if (path.length == 1 && leafIsString) {
+  const leaf = path[path.length - 1];
+  const leafOwner = path.length > 1 ? path[path.length - 2].Type : type;
+  const leafType = leaf.Type.Type.toString();
+  // discriminator getters return String regardless of the field's enum type
+  const leafIsString =
+    leafType == "string" || isDiscriminatorFieldName(leafOwner, leaf.Name);
+  // Utils.valueOrElse(JsonNullable, ...) dereferences its argument and passes
+  // an explicit null through, so optional+nullable leaves take the Optional chain
+  if (path.length == 1 && leafIsString && !(leaf.Optional && leaf.Nullable)) {
     return `${utils}.valueOrElse(data == null ? null : data.${sanitizeFieldName(
       path[0].Name,
     )}(), "${defaultErrorMessage}")`;

@@ -232,6 +232,24 @@ public class ErrorAdditionalTest {
     }
 
     @Test
+    void testOptionalNullableErrorMessageFallback() throws Exception {
+        var rawResponse = new Helpers.StubHttpResponse<>();
+
+        var noData = new NullableOptionalErrorMessage(512, new byte[0], rawResponse, null, null);
+        assertEquals("API error occurred", noData.getMessage());
+
+        var explicitNull = new NullableOptionalErrorMessage(512, new byte[0], rawResponse,
+                Utils.mapper().readValue("{\"code\":\"512\",\"message\":null}", NullableOptionalErrorMessage.Data.class),
+                null);
+        assertEquals("API error occurred", explicitNull.getMessage());
+
+        var missing = new NullableOptionalErrorMessage(512, new byte[0], rawResponse,
+                Utils.mapper().readValue("{\"code\":\"512\"}", NullableOptionalErrorMessage.Data.class),
+                null);
+        assertEquals("API error occurred", missing.getMessage());
+    }
+
+    @Test
     void testOptionalNullableNestedErrorMessage() throws Exception {
         CommonHelpers.recordTest("errors-optional-nullable-error-message-nested");
         SDK s = SDK.builder().build();
