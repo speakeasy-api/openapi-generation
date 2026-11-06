@@ -6,11 +6,20 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <NoWarn>$(NoWarn);CS0618</NoWarn>
+{{- if isCsharpV2}}
+{{- /* v2 tests compile warning-free; v1 tests carry nullable warnings from shared sources. */}}
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+{{- end}}
   </PropertyGroup>
 
   <ItemGroup>
 {{ templateTestDependencies }}
     <PackageReference Include="Microsoft.TestPlatform.TestHost" Version="17.11.1" />
+{{- if isCsharpV2}}
+{{- /* v2-only: v2 SDK has no Newtonsoft dependency, so tests must not compile against it either. */}}
+    <!-- Microsoft.TestPlatform.TestHost depends on Newtonsoft.Json; excluding compile assets keeps tests from using it. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" ExcludeAssets="compile" />
+{{- end}}
   </ItemGroup>
 
   <ItemGroup>

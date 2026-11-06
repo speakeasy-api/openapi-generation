@@ -1,19 +1,10 @@
 using System.Collections.Generic;
-{{- if not isCsharpV2}}
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-{{- end}}
 using Openapi.Models.Shared;
 using Openapi.Utils;
 using Xunit;
 
 public class OpenUnionsShould
 {
-{{- if not isCsharpV2}}
-    private static readonly JsonSerializerSettings Settings =
-        Utilities.GetDefaultJsonDeserializerSettings();
-{{- end}}
-
     private static Vehicle Deserialize(string json)
     {
         return Compat.DeserializeWithDefaultSettings<Vehicle>(json)!;
@@ -204,31 +195,4 @@ public class OpenUnionsShould
         Assert.True(future.Choice!.IsUnknown());
         Assert.Equal("future", Compat.RawString(future.Choice.UnknownRaw, "kind"));
     }
-{{- if not isCsharpV2}}
-
-    [Fact]
-    public void LoseToGenuineSiblingMatchInSmartUnion()
-    {
-        CommonHelpers.RecordTest("open-union-smart-union-interop");
-
-        // An open discriminated union candidate can always "succeed" by producing
-        // Unknown, so scoring demotes an Unknown result below any sibling with a
-        // genuine match.
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<Vehicle>("A", 0, 0);
-        pool.Add<string>("B", 1, 1);
-
-        var (stringWinner, stringValue) = pool.PickBest(JToken.Parse("\"hello\""), Settings);
-        Assert.Equal(typeof(string), stringWinner?.Type);
-        Assert.Equal("hello", stringValue);
-
-        // A known discriminator still wins for the union candidate.
-        var (vehicleWinner, vehicleValue) = pool.PickBest(
-            JToken.Parse("{\"vehicleType\":\"car\",\"wheelsType\":\"four\"}"),
-            Settings
-        );
-        Assert.Equal(typeof(Vehicle), vehicleWinner?.Type);
-        Assert.False(((Vehicle)vehicleValue!).IsUnknown());
-    }
-{{- end}}
 }

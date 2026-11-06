@@ -1263,7 +1263,7 @@ public class RequestBodiesShould
         var res = await sdk.RequestBodies.RequestBodyPutMultipartDeepAsync(obj);
 
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
-        Assert.Equal(Compat.ToString(obj.Arr), res.Res.Form.Arr);
+        Assert.Equal(Compat.ToString(obj.Arr), res.Res!.Form.Arr);
         Assert.Equal("true", res.Res.Form.Bool);
         Assert.Equal("1", res.Res.Form.Int);
         Assert.Equal(Compat.ToString(obj.Map), res.Res.Form.Map);

@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using NodaTime;
 using Company.Product.Feature.Subnamespace.Models.Shared;
 using Company.Product.Feature.Subnamespace.Utils;
@@ -48,7 +47,7 @@ public static class Helpers
 
     public static async Task<string> GetSerializedBodyJson(object request, string format = "")
     {
-        var serializedBody = RequestBodySerializer.Serialize(request, "Request", "json", false, false, format);
+        var serializedBody = Compat.SerializeRequestBody(request, "Request", "json", false, false, format);
         Assert.NotNull(serializedBody);
         return await serializedBody!.ReadAsStringAsync();
     }

@@ -19,7 +19,7 @@ public class EventStreamAdditionalShould
         Assert.NotNull(res);
         Assert.Equal(200, res.StatusCode);
 
-        var stream = res.TextEvent;
+        var stream = Compat.Events(res.TextEvent);
         Assert.NotNull(stream);
         var events = new List<TextEvent>();
         await foreach (var e in stream)
@@ -48,7 +48,7 @@ public class EventStreamAdditionalShould
         Assert.NotNull(res);
         Assert.Equal(200, res.StatusCode);
 
-        var stream = res.TextEvent;
+        var stream = Compat.Events(res.TextEvent);
         Assert.NotNull(stream);
         var events = new List<TextEvent>();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>

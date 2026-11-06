@@ -14,7 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-public class EventStreamAdditionalShould : IDisposable
+public partial class EventStreamAdditionalShould : IDisposable
 {
     private readonly SDK _sdk;
     private readonly CustomHttpClientWithTimeout _httpClient;
@@ -429,7 +429,6 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Null(eventAfterDisposal);
     }
 
-{{- if not isCsharpV2}}
     [Fact]
     public async Task StreamEarlyTermination()
     {
@@ -440,7 +439,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.NotNull(res);
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
-        var stream = res.TextEvent;
+        var stream = Compat.Events(res.TextEvent);
         Assert.NotNull(stream);
         using (stream)
         {
@@ -454,8 +453,6 @@ public class EventStreamAdditionalShould : IDisposable
         // Stream disposal should be handled properly even with early termination
         Assert.True(stream.IsClosed, "Stream should be closed after using block");
     }
-
-{{- end}}
 
     [Fact]
     public async Task MultipleStreamConsumption()
@@ -703,7 +700,6 @@ public class EventStreamAdditionalShould : IDisposable
         }
     }
 
-
     [Fact]
     public async Task EventStreamWithCancellationToken()
     {
@@ -913,7 +909,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.NotNull(res);
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
-        var stream = res.TextEvent;
+        var stream = Compat.Events(res.TextEvent);
         Assert.NotNull(stream);
 
         var events = new List<TextEvent>();
@@ -935,9 +931,7 @@ public class EventStreamAdditionalShould : IDisposable
             e => Assert.Equal("world", e.Data),
             e => Assert.Equal("!", e.Data));
         Assert.Empty(repeatedEvents);
-{{- if not isCsharpV2}}
         Assert.True(stream.IsClosed);
-{{- end}}
     }
 
     [Fact]
@@ -952,7 +946,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.NotNull(res);
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
-        var stream = res.TextEvent;
+        var stream = Compat.Events(res.TextEvent);
         Assert.NotNull(stream);
 
         var events = new List<TextEvent>();
@@ -966,94 +960,8 @@ public class EventStreamAdditionalShould : IDisposable
         });
 
         Assert.Collection(events, e => Assert.Equal("Hello", e.Data));
-{{- if not isCsharpV2}}
-        Assert.True(stream.IsClosed);
-{{- end}}
-    }
-
-{{- if not isCsharpV2}}
-    [Fact]
-    public async Task AsyncEnumerableBreakPreservesCallerOwnedStream()
-    {
-        var underlying = new MemoryStream(Encoding.UTF8.GetBytes("data: first\n\ndata: second\n\n"));
-        var stream = new Openapi.Utils.Sse.EventStream<string>(underlying);
-
-        await foreach (var e in stream)
-        {
-            Assert.Equal("first", e);
-            break;
-        }
-
-        Assert.True(stream.IsClosed, "EventStream should be disposed when enumeration exits early");
-        Assert.True(underlying.CanRead, "A stream passed to the public constructor should remain open");
-    }
-
-    [Fact]
-    public async Task AsyncEnumerableBreakClosesResponseStream()
-    {
-        var underlying = new MemoryStream(Encoding.UTF8.GetBytes("data: first\n\ndata: second\n\n"));
-        using var response = new HttpResponseMessage
-        {
-            Content = new StreamContent(underlying),
-        };
-        response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/event-stream");
-        var stream = await Openapi.Utils.Sse.SseStreamExtensions.AsServerSentEventStream<string>(response);
-
-        await foreach (var e in stream)
-        {
-            Assert.Equal("first", e);
-            break;
-        }
-
-        Assert.True(stream.IsClosed, "EventStream should be disposed when enumeration exits early");
-        Assert.False(underlying.CanRead, "The response stream should be closed when enumeration exits early");
-    }
-
-    [Fact]
-    public async Task AwaitUsingClosesWithoutEnumeration()
-    {
-        var stream = new Openapi.Utils.Sse.EventStream<string>(new MemoryStream());
-
-        await using (stream)
-        {
-        }
-
         Assert.True(stream.IsClosed);
     }
-
-    [Fact]
-    public async Task AsyncEnumerableEmitsDefaultValueTypeEventOnce()
-    {
-        var stream = new Openapi.Utils.Sse.EventStream<ValueTypeEvent>(
-            new MemoryStream(Encoding.UTF8.GetBytes("data: 0\n\n")));
-        var events = new List<ValueTypeEvent>();
-
-        await foreach (var e in stream)
-        {
-            events.Add(e);
-        }
-
-        var value = Assert.Single(events);
-        Assert.Equal(0, value.Data);
-    }
-
-    [Fact]
-    public async Task NextPropagatesCancellationDuringRead()
-    {
-        using var cts = new CancellationTokenSource();
-        await using var stream = new Openapi.Utils.Sse.EventStream<string>(
-            new CancellableReadStream("data: Hello\n\n"));
-
-        Assert.Equal("Hello", await stream.Next(cts.Token));
-
-        var pendingRead = stream.Next(cts.Token);
-        cts.Cancel();
-
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pendingRead);
-        Assert.True(stream.IsClosed);
-    }
-
-{{- end}}
 
     [Fact]
     public async Task ParseLargeEventSplitAcrossSmallChunks()
@@ -1086,37 +994,5 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal('S', big[0]);
         Assert.Equal('E', big[big.Length - 1]);
         Assert.Equal(new string('a', (int)size - 2), big.Substring(1, big.Length - 2));
-    }
-
-    private sealed class CancellableReadStream : MemoryStream
-    {
-        public CancellableReadStream(string contents) : base(Encoding.UTF8.GetBytes(contents))
-        {
-        }
-
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            return Position < Length
-                ? base.ReadAsync(buffer, cancellationToken)
-                : new ValueTask<int>(WaitForCancellation(cancellationToken));
-        }
-
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            return Position < Length
-                ? base.ReadAsync(buffer, offset, count, cancellationToken)
-                : WaitForCancellation(cancellationToken);
-        }
-
-        private static async Task<int> WaitForCancellation(CancellationToken cancellationToken)
-        {
-            await Task.Delay(Timeout.Infinite, cancellationToken);
-            return 0;
-        }
-    }
-
-    private struct ValueTypeEvent
-    {
-        public int Data { get; set; }
     }
 }

@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 {{- if isCsharpV2}}
+{{- /* JSON normalization helpers use each SDK's own serializer (STJ in v2, Newtonsoft in v1). */}}
 using System.Text.Json;
 using System.Text.Json.Nodes;
 {{- else}}
@@ -197,6 +198,7 @@ public class CommonHelpers
     }
 
 {{- if not isCsharpV2}}
+{{- /* Newtonsoft settings derived from v1 Utilities; v2 normalizes through JsonOptions. */}}
 
     // Derive test canonicalization settings from the SDK's serializer settings to prevent drift.
     private static readonly JsonSerializerSettings NormalizedJsonSettings = BuildNormalizedJsonSettings();
@@ -230,6 +232,7 @@ public class CommonHelpers
     public static string NormalizeJson(object? obj)
     {
 {{- if isCsharpV2}}
+{{- /* Serialize with the SDK's own serializer settings. */}}
         var json = JsonSerializer.Serialize(obj, global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions);
 {{- else}}
         var json = JsonConvert.SerializeObject(obj, NormalizedJsonSettings);
@@ -240,6 +243,7 @@ public class CommonHelpers
     }
 
 {{- if isCsharpV2}}
+{{- /* Key sorting walks JsonNode in v2 and JToken in v1. */}}
 
     public static string SortJSONObjectKeys(string? value, params string[] fields)
     {

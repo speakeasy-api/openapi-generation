@@ -6,7 +6,7 @@ using Openapi;
 using Openapi.Utils;
 using Xunit;
 
-public class ParametersAllowReservedShould
+public partial class ParametersAllowReservedShould
 {
     // Reserved characters with no structural meaning inside a path segment: they
     // survive URL parsing, so the request reaches the server intact.
@@ -62,61 +62,6 @@ public class ParametersAllowReservedShould
         );
     }
 
-{{- if not isCsharpV2}}
-    // Two occurrences of the same key AND the same value, where only one of
-    // them came from an allowReserved parameter. A (key, value) set cannot
-    // tell these apart; positions can.
-    [Fact]
-    public void SerializeQueryParamsAppliesReservedPerOccurrence()
-    {
-        var queryParams = new Dictionary<string, List<string>>
-        {
-            ["color"] = new List<string> { "a/b", "a/b" },
-        };
-        var allowReserved = new Dictionary<string, HashSet<int>>
-        {
-            ["color"] = new HashSet<int> { 1 },
-        };
-
-        Assert.Equal(
-            "color=a%2Fb&color=a/b",
-            URLBuilder.SerializeQueryParams(queryParams, allowReserved)
-        );
-    }
-
-    // An exploded object contributes a member named "color", and an ordinary
-    // parameter of the same name contributes an identical value. Only the
-    // exploded member is allowReserved.
-    [Fact]
-    public void SerializeQueryParamsSeparatesExplodedObjectFromOrdinaryParam()
-    {
-        var queryParams = new Dictionary<string, List<string>>
-        {
-            ["color"] = new List<string> { "x/y", "x/y" },
-            ["shape"] = new List<string> { "p:q" },
-        };
-        var allowReserved = new Dictionary<string, HashSet<int>>
-        {
-            ["color"] = new HashSet<int> { 0 },
-        };
-
-        Assert.Equal(
-            "color=x/y&color=x%2Fy&shape=p%3Aq",
-            URLBuilder.SerializeQueryParams(queryParams, allowReserved)
-        );
-    }
-
-    [Fact]
-    public void SerializeQueryParamsWithoutTrackingEncodesEverything()
-    {
-        var queryParams = new Dictionary<string, List<string>>
-        {
-            ["color"] = new List<string> { "a/b" },
-        };
-
-        Assert.Equal("color=a%2Fb", URLBuilder.SerializeQueryParams(queryParams));
-    }
-
     [Theory]
     [InlineData(":/?#[]@!$&'()*+,;=", ":/?#[]@!$&'()*+,;=")]
     [InlineData("a b", "a%20b")]
@@ -128,5 +73,4 @@ public class ParametersAllowReservedShould
     {
         Assert.Equal(expected, URLBuilder.EscapeExceptReserved(input));
     }
-{{- end}}
 }

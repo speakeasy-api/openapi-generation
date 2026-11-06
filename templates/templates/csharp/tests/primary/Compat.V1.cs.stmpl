@@ -1,3 +1,5 @@
+{{- /* v1-only: v2 Compat lives in csharpv2/tests/Common/Compat.cs.stmpl. */ -}}
+{{- if not isCsharpV2 -}}
 #nullable enable
 using System;
 using System.IO;
@@ -16,7 +18,7 @@ using Xunit;
 // helpers directly. Instead they call Compat.* — each variant ships its own
 // Compat.cs with the same signatures but variant-native implementations.
 //
-// v2's override lives at templates/csharpv2/tests/primary/Compat.cs.
+// v2's implementation lives at templates/csharpv2/tests/Common/Compat.cs.stmpl.
 public static class Compat
 {
     public static T DeserializeJson<T>(string json) =>
@@ -58,6 +60,9 @@ public static class Compat
     public static Exception AssertThrowsJsonSerializationException(Action action) =>
         Assert.Throws<JsonSerializationException>(action);
 
+    public static Exception AssertThrowsUnionNoMatch(Action action) =>
+        Assert.Throws<ResponseBodyDeserializer.DeserializationException>(action);
+
     public static readonly Type OptionalNullableType = typeof(OptionalNullable<>);
 
     // v1 streams expose Next()/Dispose()/IsClosed natively; v2 wraps its IAsyncEnumerable.
@@ -67,6 +72,8 @@ public static class Compat
         "Unknown union value has no raw payload; construct via CreateUnknown(JToken).";
 
     public const string RequiredPropertyMissingFragment = "Required property";
+
+    public const string FormExplodedArrayKeySuffix = "[]";
 
     public static JToken ParseRaw(string json)
     {
@@ -87,3 +94,4 @@ public static class Compat
     public static Exception AssertThrowsAnyJsonException(Action action) =>
         Assert.ThrowsAny<JsonException>(action);
 }
+{{ end -}}

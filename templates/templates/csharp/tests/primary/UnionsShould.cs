@@ -4,7 +4,6 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web;
 using FluentAssertions;
-using Newtonsoft.Json;
 using Openapi.Models.Errors;
 using Openapi.Models.Operations;
 using Openapi.Models.Shared;
@@ -864,12 +863,15 @@ public class UnionsShould
         };
 
         var req1 = UnionNestedEnumsFormRequestBody.CreateNestedEnumArray(obj1);
+        var enumsKey = $"enums{Compat.FormExplodedArrayKeySuffix}";
         var serializedForm1 = Compat.SerializeRequestBody(req1, "Request", "form", false, false);
-        var form1 = HttpUtility.UrlDecode(await serializedForm1.ReadAsStringAsync());
-        Assert.Equal("enums[]=one&enums[]=two&tags=one,two", form1);
+        var form1 = HttpUtility.UrlDecode(await serializedForm1!.ReadAsStringAsync());
+        Assert.Equal($"{enumsKey}=one&{enumsKey}=two&tags=one,two", form1);
 
         var res1 = await sdk.Unions.UnionNestedEnumsFormAsync(req1);
         Assert.Equal(HttpStatusCode.OK, res1.HttpMeta.Response.StatusCode);
+        Assert.Equal("[\"one\",\"two\"]", Compat.SerializeJson(res1.Res!.Form[enumsKey]));
+        Assert.Equal("one,two", res1.Res!.Form["tags"].ToString());
 
         var obj2 = new NestedEnumMap()
         {
@@ -883,11 +885,13 @@ public class UnionsShould
 
         var req2 = UnionNestedEnumsFormRequestBody.CreateNestedEnumMap(obj2);
         var serializedForm2 = Compat.SerializeRequestBody(req2, "Request", "form", false, false);
-        var form2 = HttpUtility.UrlDecode(await serializedForm2.ReadAsStringAsync());
+        var form2 = HttpUtility.UrlDecode(await serializedForm2!.ReadAsStringAsync());
         Assert.Equal("enums={\"key2\":\"two\",\"key3\":\"three\"}&tags=two,three", form2);
 
         var res2 = await sdk.Unions.UnionNestedEnumsFormAsync(req2);
         Assert.Equal(HttpStatusCode.OK, res2.HttpMeta.Response.StatusCode);
+        Assert.Equal("{\"key2\":\"two\",\"key3\":\"three\"}", res2.Res!.Form["enums"].ToString());
+        Assert.Equal("two,three", res2.Res!.Form["tags"].ToString());
     }
 
     [Fact]
@@ -1476,7 +1480,6 @@ public class UnionsShould
         Assert.Null(skipShipping.SelectedEvent.ShipmentUnion);
     }
 
-{{- if not isCsharpV2}}
     [Fact]
     public void SmartUnionNullableUnionNullableFields()
     {
@@ -1488,9 +1491,8 @@ public class UnionsShould
         // for the reference type; otherwise ObjectWithNullableInteger is penalized (Inexact)
         // and the scorer flips to the later-declared ObjectWithNullableObject. ObjectWithNullableInteger
         // is declared first, so it must win the tie.
-        var union = JsonConvert.DeserializeObject<NullableUnionWithNullableFields>(
-            "{\"value\":null}",
-            Utilities.GetDefaultJsonDeserializerSettings()
+        var union = Compat.DeserializeWithDefaultSettings<NullableUnionWithNullableFields>(
+            "{\"value\":null}"
         )!;
 
         Assert.Equal("ObjectWithNullableInteger", union.Type.ToString());
@@ -1500,108 +1502,11 @@ public class UnionsShould
 
         // The union carries a `null` member, so a top-level null payload resolves
         // to the null variant rather than either object member.
-        var nullUnion = JsonConvert.DeserializeObject<NullableUnionWithNullableFields>(
-            "null",
-            Utilities.GetDefaultJsonDeserializerSettings()
+        var nullUnion = Compat.DeserializeWithDefaultSettings<NullableUnionWithNullableFields>(
+            "null"
         );
         Assert.Null(nullUnion);
     }
-
-    [Fact]
-    public void SmartUnionScoring_DoesNotDoubleCountObjectFieldPresence()
-    {
-        var candidates = new UnionCandidatePool<string>();
-        candidates.Add<ShallowTwoFields>("Shallow", 0, "shallow");
-        candidates.Add<DeepSingleLeaf>("Deep", 1, "deep");
-
-        var json = Newtonsoft.Json.Linq.JToken.Parse(
-            "{\"a\":{\"b\":{\"c\":{\"d\":\"leaf\"}}},\"z\":\"present\"}"
-        );
-
-        var (winner, _) = candidates.PickBest(
-            json,
-            Utilities.GetDefaultJsonDeserializerSettings()
-        );
-
-        Assert.Equal("shallow", winner?.TypeName);
-    }
-
-    private class ShallowTwoFields
-    {
-        [JsonProperty("a")]
-        public object A { get; set; }
-
-        [JsonProperty("z")]
-        public string Z { get; set; }
-    }
-
-    private class DeepSingleLeaf
-    {
-        [JsonProperty("a")]
-        public DeepA A { get; set; }
-    }
-
-    private class DeepA
-    {
-        [JsonProperty("b")]
-        public DeepB B { get; set; }
-    }
-
-    private class DeepB
-    {
-        [JsonProperty("c")]
-        public DeepC C { get; set; }
-    }
-
-    private class DeepC
-    {
-        [JsonProperty("d")]
-        public string D { get; set; }
-    }
-
-    [Fact]
-    public void ScoreUnion_AdditionalPropertiesWins()
-    {
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<ScoreOnlyA>("A", 0, 0);
-        pool.Add<ScoreBWithExtras>("B", 1, 1);
-        // C# does not yet spread additionalProperties on the wire - extras are
-        // nested under a literal "additionalProperties" key to be captured. Once wire format
-        // is fixed switch this payload to: {"a":"","b":"","c":""}
-        Assert.Equal(
-            typeof(ScoreBWithExtras),
-            PickWinnerType(pool, "{\"a\":\"\",\"b\":\"\",\"additionalProperties\":{\"c\":\"\"}}")
-        );
-    }
-
-    [Fact]
-    public void ScoreUnion_AdditionalPropertiesVsExactField()
-    {
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<ScoreIdWithExtras>("A", 0, 0);
-        pool.Add<ScoreFoo>("B", 1, 1);
-
-        // ScoreFoo wins on an exact field match; ScoreIdWithExtras only has an absent field plus
-        // an empty catch-all, so an exact match must outrank additionalProperties capture.
-        Assert.Equal(typeof(ScoreFoo), PickWinnerType(pool, "{\"foo\":\"\"}"));
-    }
-
-    [Fact]
-    public void ScoreUnion_AllCandidatesFailPreCheck_ReturnsNoWinner()
-    {
-        // Every candidate declares a Required.Always field the payload omits, so all are
-        // rejected at PreCheck before scoring. PickBest must yield no winner; the generated
-        // union converter turns this into a DeserializationException (fallback path).
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<ReqAlwaysFoo>("A", 0, 0);
-        pool.Add<ReqAlwaysBar>("B", 1, 1);
-
-        Assert.Null(PickWinnerType(pool, "{\"other\":\"x\"}"));
-        // Explicit null for a Required.Always field also fails PreCheck.
-        Assert.Null(PickWinnerType(pool, "{\"foo\":null}"));
-    }
-
-{{- end}}
 
     [Fact]
     public void SmartUnion_AllCandidatesFail_OpenUnionFallsBackToUnknown()
@@ -1617,62 +1522,16 @@ public class UnionsShould
         Assert.Equal(SmartUnionOpenEnumsJsonType.Unknown.ToString(), res.Type.ToString());
         Assert.NotNull(res.UnknownRaw);
     }
-{{- if not isCsharpV2}}
 
     [Fact]
     public void SmartUnion_AllCandidatesFail_ClosedUnionStillThrows()
     {
         // Closed-union counterpart: the request-side cat | dog union is request-only, so the
         // response default does not open it and the no-winner case must keep throwing.
-        var ex = Assert.Throws<ResponseBodyDeserializer.DeserializationException>(
-            () => JsonConvert.DeserializeObject<SmartUnionOpenEnumsRequestBody>(
-                "{}",
-                Utilities.GetDefaultJsonDeserializerSettings()
-            )
+        var ex = Compat.AssertThrowsUnionNoMatch(
+            () => Compat.DeserializeWithDefaultSettings<SmartUnionOpenEnumsRequestBody>("{}")
         );
         Assert.Contains("SmartUnionOpenEnumsRequestBody", ex.Message);
-    }
-
-    [Fact]
-    public void SmartUnion_IntegerOpenEnum_ScoresByTokenShapeAndKnownness()
-    {
-        // HeroWidth is IOpenEnum<long>; scoring must rank it by token shape and
-        // knownness like string open enums, not blanket-match every token.
-        var settings = Utilities.GetDefaultJsonDeserializerSettings();
-
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<HeroWidth>("A", 0, 0);
-        pool.Add<string>("B", 1, 1);
-
-        // "720" coerces to long and is a known value, but the string token
-        // shape alone demotes HeroWidth so string sibling wins.
-        var (stringWinner, stringValue) = pool.PickBest(
-            Newtonsoft.Json.Linq.JToken.Parse("\"720\""), settings);
-        Assert.Equal(typeof(string), stringWinner?.Type);
-        Assert.Equal("720", stringValue);
-
-        // A known integer value does win over the string sibling.
-        var (knownWinner, knownValue) = pool.PickBest(
-            Newtonsoft.Json.Linq.JToken.Parse("720"), settings);
-        Assert.Equal(typeof(HeroWidth), knownWinner?.Type);
-        Assert.True(((HeroWidth)knownValue!).IsKnown());
-
-        // An unknown value still deserializes but ranks below an
-        // exact primitive sibling.
-        var numericPool = new UnionCandidatePool<int>();
-        numericPool.Add<HeroWidth>("A", 0, 0);
-        numericPool.Add<long>("B", 1, 1);
-        var (unknownWinner, unknownValue) = numericPool.PickBest(
-            Newtonsoft.Json.Linq.JToken.Parse("999"), settings);
-        Assert.Equal(typeof(long), unknownWinner?.Type);
-        Assert.Equal(999L, unknownValue);
-
-        // Plain long candidate gets eliminated at Precheck (lossy coercion)
-        // Open enum only gets demoted, so it wins as the sole surviving candidate.
-        var (fallbackWinner, fallbackValue) = numericPool.PickBest(
-            Newtonsoft.Json.Linq.JToken.Parse("\"720\""), settings);
-        Assert.Equal(typeof(HeroWidth), fallbackWinner?.Type);
-        Assert.Equal(HeroWidth.Of(720), fallbackValue);
     }
 
     [Fact]
@@ -1680,12 +1539,10 @@ public class UnionsShould
     {
         CommonHelpers.RecordTest("unions-discriminated-open-enum");
         var s = new Openapi.SDK();
-        var settings = Utilities.GetDefaultJsonDeserializerSettings();
 
         // The union discriminates on `status`, an open enum on both variants.
-        var activeReq = JsonConvert.DeserializeObject<DiscriminatedOpenEnumUnion>(
-            "{\"status\":\"active\",\"userId\":\"user-123\",\"activeAt\":\"2024-01-15T10:30:00Z\"}",
-            settings
+        var activeReq = Compat.DeserializeWithDefaultSettings<DiscriminatedOpenEnumUnion>(
+            "{\"status\":\"active\",\"userId\":\"user-123\",\"activeAt\":\"2024-01-15T10:30:00Z\"}"
         )!;
         var activeRes = await s.Unions.DiscriminatedOpenEnumAsync(activeReq);
         Assert.Equal(HttpStatusCode.OK, activeRes.HttpMeta.Response.StatusCode);
@@ -1697,9 +1554,8 @@ public class UnionsShould
         Assert.NotNull(activeJson.ObjectWithOpenEnumStatus1);
         Assert.Equal("user-123", activeJson.ObjectWithOpenEnumStatus1!.UserId);
 
-        var inactiveReq = JsonConvert.DeserializeObject<DiscriminatedOpenEnumUnion>(
-            "{\"status\":\"inactive\",\"reason\":\"User requested deactivation\",\"inactiveSince\":\"2024-01-10T15:45:00Z\"}",
-            settings
+        var inactiveReq = Compat.DeserializeWithDefaultSettings<DiscriminatedOpenEnumUnion>(
+            "{\"status\":\"inactive\",\"reason\":\"User requested deactivation\",\"inactiveSince\":\"2024-01-10T15:45:00Z\"}"
         )!;
         var inactiveRes = await s.Unions.DiscriminatedOpenEnumAsync(inactiveReq);
         Assert.Equal(HttpStatusCode.OK, inactiveRes.HttpMeta.Response.StatusCode);
@@ -1714,8 +1570,6 @@ public class UnionsShould
             inactiveJson.ObjectWithOpenEnumStatus2!.Reason
         );
     }
-
-{{- end}}
 
     [Fact]
     public async Task DiscriminatedMultipleMemberships()
@@ -1739,315 +1593,4 @@ public class UnionsShould
         Assert.Equal("car", answer.Car!.VehicleType);
         Assert.Equal("four", answer.Car!.WheelsType);
     }
-
-{{- if not isCsharpV2}}
-    [Fact]
-    public void ScoreUnion_PopulatedPrimitivePreferredOverCoerced()
-    {
-        // A string payload matches the string variant exactly (Matched); the int variant can
-        // only take it as a type mismatch (Inexact). Exact type must outrank coercion.
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<ScoreStrV>("A", 0, 0);
-        pool.Add<ScoreIntV>("B", 1, 1);
-
-        Assert.Equal(typeof(ScoreStrV), PickWinnerType(pool, "{\"v\":\"5\"}"));
-        // An empty string is still a populated string token, so the string variant wins.
-        Assert.Equal(typeof(ScoreStrV), PickWinnerType(pool, "{\"v\":\"\"}"));
-    }
-
-    [Fact]
-    public void ScoreUnion_TopLevelLossyPrimitiveEliminated()
-    {
-        // Payload 1.5 is a Float token. Newtonsoft would coerce it into `long` (banker's
-        // rounding -> 2), letting a candidate Go rejects survive with a corrupted value.
-        // The double candidate must win with the exact value; the long must be eliminated.
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<long>("A", 0, 0);
-        pool.Add<double>("B", 1, 1);
-
-        var (winner, value) = pool.PickBest(
-            Newtonsoft.Json.Linq.JToken.Parse("1.5"),
-            new JsonSerializerSettings { Converters = Utilities.GetDefaultJsonDeserializers() }
-        );
-        Assert.Equal(typeof(double), winner?.Type);
-        Assert.Equal("B", winner?.PropertyName);
-        Assert.Equal(1.5, value);
-
-        // With no lossless candidate, the lossy long must be eliminated, not coerced to 2.
-        var lossyPool = new UnionCandidatePool<int>();
-        lossyPool.Add<long>("A", 0, 0);
-        lossyPool.Add<ScoreFoo>("B", 1, 1);
-        Assert.Null(PickWinnerType(lossyPool, "1.5"));
-    }
-
-    [Fact]
-    public void ScoreUnion_TopLevelStringToNumericEliminated()
-    {
-        // "7" is a String token; Newtonsoft would parse it into long. String -> numeric is
-        // lossy coercion, so the long candidate must be eliminated (no winner here).
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<long>("A", 0, 0);
-        pool.Add<ScoreFoo>("B", 1, 1);
-        Assert.Null(PickWinnerType(pool, "\"7\""));
-    }
-
-    [Fact]
-    public void ScoreUnion_TopLevelIntegerWideningAllowed()
-    {
-        // Integer token 1 widens losslessly into double (JSON does not distinguish 1 from 1.0).
-        // The double candidate must still be selectable.
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<double>("A", 0, 0);
-        Assert.Equal(typeof(double), PickWinnerType(pool, "1"));
-    }
-
-    [Fact]
-    public void ScoreUnion_ConstFieldDiscrimination()
-    {
-        // The scorer discriminates by field presence, not const value: the variant whose
-        // fields are all present (b and c) outranks the two that leave a field unmatched.
-        // NOTE: C# does not validate const value on read, unlike Go (json.go const check)
-        // and Python (validate_const), so const-only-discriminated unions can pick a
-        // different winner cross-target. Full const-on-read support is not yet implemented.
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<ConstAB>("A", 0, 0);
-        pool.Add<ConstAC>("B", 1, 1);
-        pool.Add<ConstBC>("C", 2, 2);
-
-        Assert.Equal(typeof(ConstBC), PickWinnerType(pool, "{\"b\":\"1\",\"c\":\"1\"}"));
-    }
-
-    [Fact]
-    public void ScoreUnion_MoreMatchedFieldsWins()
-    {
-        // Both variants match on `a`; the two-field variant also matches `b`, so its higher
-        // Matched count wins the primary comparison.
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<ScoreOneField>("A", 0, 0);
-        pool.Add<ScoreTwoFields>("B", 1, 1);
-
-        Assert.Equal(typeof(ScoreTwoFields), PickWinnerType(pool, "{\"a\":\"x\",\"b\":\"y\"}"));
-    }
-
-    [Fact]
-    public void ScoreUnion_PureTie_FirstDeclaredWins()
-    {
-        // Structurally identical variants score equally; the final tiebreak is DeclarationIndex,
-        // so the earlier-declared variant must win.
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<TieA>("A", 0, 0);
-        pool.Add<TieB>("B", 1, 1);
-
-        Assert.Equal(typeof(TieA), PickWinnerType(pool, "{\"a\":\"x\"}"));
-    }
-
-    [Fact]
-    public void ScoreUnion_NestedArrayElementScoring()
-    {
-        // Scoring recurses into array elements: the variant whose element type matches more
-        // fields per item (x and y) beats the one matching only x.
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<ArrShallow>("A", 0, 0);
-        pool.Add<ArrDeep>("B", 1, 1);
-
-        Assert.Equal(typeof(ArrDeep), PickWinnerType(pool, "{\"items\":[{\"x\":\"1\",\"y\":\"2\"}]}"));
-    }
-
-    [Fact]
-    public void ScoreUnion_OpenEnumUnrecognized_LosesToExactString()
-    {
-        // Open enum (declared first) takes any string, but an unrecognized value scores
-        // Matched+Inexact; the exact string member scores Matched only. On the Matched tie
-        // the string wins despite its later declaration — matching Go's ranking.
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<EnumUsedInRequestExplicitlyOpen>("A", 0, 0);
-        pool.Add<string>("B", 1, 1);
-
-        Assert.Equal(typeof(string), PickWinnerType(pool, "\"delta\""));
-    }
-
-    [Fact]
-    public void ScoreUnion_OpenEnumRecognized_WinsTieOnDeclarationOrder()
-    {
-        // A declared member scores Matched only (no Inexact), tying the string member; the
-        // earlier-declared open enum then wins on DeclarationIndex.
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<EnumUsedInRequestExplicitlyOpen>("A", 0, 0);
-        pool.Add<string>("B", 1, 1);
-
-        Assert.Equal(typeof(EnumUsedInRequestExplicitlyOpen), PickWinnerType(pool, "\"alpha\""));
-    }
-
-    [Fact]
-    public void ScoreUnion_NestedOpenEnumUnrecognized_LosesToStringMember()
-    {
-        // Scoring recurses into object members: the `kind` open enum takes "delta" as
-        // Matched+Inexact, while the `kind` string member takes it as Matched. The string
-        // member wins despite the enum member being declared first.
-        var pool = new UnionCandidatePool<int>();
-        pool.Add<ScoreKindEnum>("A", 0, 0);
-        pool.Add<ScoreKindStr>("B", 1, 1);
-
-        Assert.Equal(typeof(ScoreKindStr), PickWinnerType(pool, "{\"kind\":\"delta\"}"));
-    }
-
-    private static System.Type PickWinnerType(UnionCandidatePool<int> pool, string payload)
-    {
-        var (winner, _) = pool.PickBest(
-            Newtonsoft.Json.Linq.JToken.Parse(payload),
-            new JsonSerializerSettings { Converters = Utilities.GetDefaultJsonDeserializers() }
-        );
-        return winner?.Type;
-    }
-
-    private class ReqAlwaysFoo
-    {
-        [JsonProperty("foo", Required = Required.Always)]
-        public string Foo { get; set; } = "";
-    }
-
-    private class ReqAlwaysBar
-    {
-        [JsonProperty("bar", Required = Required.Always)]
-        public string Bar { get; set; } = "";
-    }
-
-    private class ScoreStrV
-    {
-        [JsonProperty("v")]
-        public string V { get; set; }
-    }
-
-    // EnumUsedInRequestExplicitlyOpen is a real generated open enum (components.yaml):
-    // declared members alpha/beta/gamma, x-speakeasy-unknown-values: allow. It implements
-    // IOpenEnum via enum-open.cs.stmpl, so these tests exercise the generated type.
-    private class ScoreKindEnum
-    {
-        [JsonProperty("kind")]
-        public EnumUsedInRequestExplicitlyOpen Kind { get; set; }
-    }
-
-    private class ScoreKindStr
-    {
-        [JsonProperty("kind")]
-        public string Kind { get; set; }
-    }
-
-    private class ScoreIntV
-    {
-        [JsonProperty("v")]
-        public int V { get; set; }
-    }
-
-    private class ConstAB
-    {
-        [JsonProperty("a")]
-        public string A { get; set; }
-
-        [JsonProperty("b")]
-        public string B { get; set; }
-    }
-
-    private class ConstAC
-    {
-        [JsonProperty("a")]
-        public string A { get; set; }
-
-        [JsonProperty("c")]
-        public string C { get; set; }
-    }
-
-    private class ConstBC
-    {
-        [JsonProperty("b")]
-        public string B { get; set; }
-
-        [JsonProperty("c")]
-        public string C { get; set; }
-    }
-
-    private class ScoreOneField
-    {
-        [JsonProperty("a")]
-        public string A { get; set; }
-    }
-
-    private class ScoreTwoFields
-    {
-        [JsonProperty("a")]
-        public string A { get; set; }
-
-        [JsonProperty("b")]
-        public string B { get; set; }
-    }
-
-    private class TieA
-    {
-        [JsonProperty("a")]
-        public string A { get; set; }
-    }
-
-    private class TieB
-    {
-        [JsonProperty("a")]
-        public string A { get; set; }
-    }
-
-    private class ArrShallow
-    {
-        [JsonProperty("items")]
-        public List<ArrShallowElem> Items { get; set; }
-    }
-
-    private class ArrShallowElem
-    {
-        [JsonProperty("x")]
-        public string X { get; set; }
-    }
-
-    private class ArrDeep
-    {
-        [JsonProperty("items")]
-        public List<ArrDeepElem> Items { get; set; }
-    }
-
-    private class ArrDeepElem
-    {
-        [JsonProperty("x")]
-        public string X { get; set; }
-
-        [JsonProperty("y")]
-        public string Y { get; set; }
-    }
-
-    private class ScoreOnlyA
-    {
-        [JsonProperty("a")]
-        public string A { get; set; }
-    }
-
-    private class ScoreBWithExtras
-    {
-        [JsonProperty("b")]
-        public string B { get; set; }
-
-        [JsonProperty("additionalProperties")]
-        public Dictionary<string, string> AdditionalProperties { get; set; }
-    }
-
-    private class ScoreIdWithExtras
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; }
-
-        [JsonProperty("additionalProperties")]
-        public Dictionary<string, string> AdditionalProperties { get; set; }
-    }
-
-    private class ScoreFoo
-    {
-        [JsonProperty("foo")]
-        public string Foo { get; set; }
-    }
-{{- end}}
 }
