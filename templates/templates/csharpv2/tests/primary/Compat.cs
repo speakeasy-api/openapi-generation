@@ -100,6 +100,8 @@ public static class Compat
     public const string UnknownNoRawPayloadMessage =
         "Unknown union value has no raw payload; construct via CreateUnknown(JsonElement).";
 
+    public const string RequiredPropertyMissingFragment = "missing required properties";
+
     public static JsonElement ParseRaw(string json)
     {
         using var doc = JsonDocument.Parse(json);

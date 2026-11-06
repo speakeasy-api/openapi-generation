@@ -66,6 +66,8 @@ public static class Compat
     public const string UnknownNoRawPayloadMessage =
         "Unknown union value has no raw payload; construct via CreateUnknown(JToken).";
 
+    public const string RequiredPropertyMissingFragment = "Required property";
+
     public static JToken ParseRaw(string json)
     {
         using var reader = new JsonTextReader(new StringReader(json)) { DateParseHandling = DateParseHandling.None };

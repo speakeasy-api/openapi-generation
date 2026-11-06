@@ -1668,7 +1668,7 @@ public class RequestBodiesShould
         var ex = Compat.AssertThrowsJsonSerializationException(
             () => Compat.DeserializeWithDefaultSettings<ComplexNumberTypes>(incompleteJson)
         );
-        Assert.Contains("Required property", ex.Message);
+        Assert.Contains(Compat.RequiredPropertyMissingFragment, ex.Message);
     }
 
     [Fact]
