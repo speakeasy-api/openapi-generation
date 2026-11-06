@@ -16,11 +16,14 @@ declare global {
   }
 }
 
-type StreamIterator<T> = ReadableStream<T> extends {
-  [Symbol.asyncIterator](options?: any): infer A;
-  [Symbol.asyncIterator](options?: any): infer B;
-  [Symbol.asyncIterator](options?: any): infer C;
-  [Symbol.asyncIterator](options?: any): infer D;
+type StreamIterator<T> = (
+  & ReadableStream<T>[typeof Symbol.asyncIterator]
+  & (() => unknown)
+) extends {
+  (options?: any): infer A;
+  (options?: any): infer B;
+  (options?: any): infer C;
+  (options?: any): infer D;
 } ? A & B & C & D
   : never;
 
@@ -105,6 +108,7 @@ export class Stream<T> extends ReadableStream<T> {
     };
     const iterator = {
       next: async () => {
+        if (released) return { done: true, value: undefined };
         const r = await reader.read().catch((e: unknown) => {
           release();
           throw e;
@@ -116,11 +120,13 @@ export class Stream<T> extends ReadableStream<T> {
         return { done: false, value: r.value };
       },
       throw: async (e?: unknown) => {
+        if (released) return { done: true, value: undefined };
         await reader.cancel(e);
         release();
         return { done: true, value: undefined };
       },
       return: async () => {
+        if (released) return { done: true, value: undefined };
         await reader.cancel("done");
         release();
         return { done: true, value: undefined };
@@ -132,7 +138,7 @@ export class Stream<T> extends ReadableStream<T> {
     const asyncDispose = (Symbol as any).asyncDispose;
     if (asyncDispose) {
       (iterator as any)[asyncDispose] = async () => {
-        if (!released) await iterator.return();
+        await iterator.return();
       };
     }
     return iterator as unknown as StreamIterator<T>;

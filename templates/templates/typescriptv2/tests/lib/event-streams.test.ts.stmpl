@@ -94,6 +94,7 @@ test("parses a large event split across many small chunks in linear time", async
 test.each([
   { sdkCount: 1, description: "one SDK" },
   { sdkCount: 2, description: "two SDKs in the same program" },
+  { sdkCount: 5, description: "five SDKs in the same program" },
 ])(
   "type-checks where ReadableStream iteration is async-disposable: $description",
   ({ sdkCount }) => {
@@ -157,7 +158,10 @@ async function withoutNativeStreamIteration(
 }
 
 function dispose(iterator: object): Promise<void> {
-  return (iterator as any)[(Symbol as any).asyncDispose]();
+  const asyncDispose = (Symbol as any).asyncDispose;
+  return asyncDispose
+    ? (iterator as any)[asyncDispose]()
+    : (iterator as any).return();
 }
 
 test("fallback iterator cancels the stream and releases its lock when disposed", async () => {
@@ -180,7 +184,7 @@ test("fallback iterator cancels the stream and releases its lock when disposed",
   });
 });
 
-test("fallback iterator releases its lock and disposes cleanly after a failed read", async () => {
+test("fallback iterator releases its lock and finishes cleanly after a failed read", async () => {
   await withoutNativeStreamIteration(async () => {
     const failure = new Error("upstream failed");
     const stream = new {{eventStreamClassName}}(
@@ -191,8 +195,12 @@ test("fallback iterator releases its lock and disposes cleanly after a failed re
     );
     const events = stream[Symbol.asyncIterator]();
     await expect(events.next()).rejects.toBe(failure);
-    await dispose(events);
     expect(stream.locked).toBe(false);
+    const finished = { done: true, value: undefined };
+    await expect((events as any).return()).resolves.toEqual(finished);
+    await expect((events as any).throw(failure)).resolves.toEqual(finished);
+    await expect(events.next()).resolves.toEqual(finished);
+    await dispose(events);
   });
 });
 {{- end}}
