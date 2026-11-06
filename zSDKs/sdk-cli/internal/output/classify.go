@@ -17,6 +17,7 @@ import (
 
 	"openapi/internal/clierrors"
 	"openapi/internal/flagutil"
+	"openapi/internal/sdk/sdkinternal/utils"
 )
 
 type ErrorType string
@@ -167,6 +168,10 @@ func Classify(cmd *cobra.Command, err error) Classification {
 	}
 	if classification, ok := ClassificationFrom(err); ok {
 		return classification
+	}
+	var invalidPath *utils.InvalidPathParameterError
+	if errors.As(err, &invalidPath) {
+		err = flagutil.WithCLIValidation(err)
 	}
 
 	c := Classification{

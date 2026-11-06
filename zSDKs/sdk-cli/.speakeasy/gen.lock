@@ -274,7 +274,7 @@ trackedFiles:
   internal/output/binary.go:
     last_write_checksum: sha1:6fd77172cad1bd29dc9f157b931345f96a172223
   internal/output/classify.go:
-    last_write_checksum: sha1:b21e34c493f5e773cdffcf0e3670af2c6e8bbffa
+    last_write_checksum: sha1:cc4f38eeacdf495b1ae8b35a84a85f11a073cc5f
   internal/output/color.go:
     last_write_checksum: sha1:c6f41f9691f6209f480d153c15c3424d8ca5883d
   internal/output/errortable.go:
@@ -288,7 +288,7 @@ trackedFiles:
   internal/output/output.go:
     last_write_checksum: sha1:c3d9ae8711b9eebb2505bda166ce42e047461550
   internal/output/output_test.go:
-    last_write_checksum: sha1:84a8a6cf79bfa62ae9635f992bc7578a2bbbcce3
+    last_write_checksum: sha1:e7f48221aac9559fa8b9a1d571c9e83a767bb707
   internal/output/outputitems.go:
     last_write_checksum: sha1:d327eee8d9a395821fef201257e033bae50cda51
   internal/output/paginated.go:
@@ -608,7 +608,7 @@ trackedFiles:
   internal/sdk/sdkinternal/utils/oauth2_sessions.go:
     last_write_checksum: sha1:c4af99567451b6931fce12b06dca8300d07b79f1
   internal/sdk/sdkinternal/utils/pathparams.go:
-    last_write_checksum: sha1:b0d54a74c4404a8ce2124527c358ab7c062cde22
+    last_write_checksum: sha1:0da29d1587b29be2450b8a776c0aa4c493475c00
   internal/sdk/sdkinternal/utils/queryparams.go:
     last_write_checksum: sha1:abd61ab1be48a6080b875d4a77603aa2c369195f
   internal/sdk/sdkinternal/utils/requestbody.go:
