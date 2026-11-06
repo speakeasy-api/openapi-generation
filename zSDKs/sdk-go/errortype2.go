@@ -40,6 +40,10 @@ type ErrorType2 struct {
 var _ error = &ErrorType2{}
 
 func (e *ErrorType2) Error() string {
+	if e != nil {
+		return e.Error_.Message
+	}
+
 	data, _ := json.Marshal(e)
 	return string(data)
 }

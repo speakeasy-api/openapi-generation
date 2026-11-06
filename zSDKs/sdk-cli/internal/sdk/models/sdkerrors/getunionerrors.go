@@ -140,9 +140,17 @@ func (u ClientError) MarshalJSON() ([]byte, error) {
 func (u ClientError) Error() string {
 	switch u.Type {
 	case ClientErrorTypeTag1:
+		if u.TaggedError1 != nil {
+			return u.TaggedError1.Message
+		}
+
 		data, _ := json.Marshal(u.TaggedError1)
 		return string(data)
 	case ClientErrorTypeTag2:
+		if u.TaggedError2 != nil {
+			return u.TaggedError2.ErrorInfo.Message
+		}
+
 		data, _ := json.Marshal(u.TaggedError2)
 		return string(data)
 	case ClientErrorTypeUnknown:
@@ -291,6 +299,10 @@ func (u GetUnionErrorsInternalServerError) Error() string {
 		data, _ := json.Marshal(u.ErrorType1)
 		return string(data)
 	case GetUnionErrorsInternalServerErrorTypeErrorType2:
+		if u.ErrorType2 != nil {
+			return u.ErrorType2.ErrorInfo.Message
+		}
+
 		data, _ := json.Marshal(u.ErrorType2)
 		return string(data)
 	case GetUnionErrorsInternalServerErrorTypeUnknown:
