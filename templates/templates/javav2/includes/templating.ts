@@ -1338,26 +1338,45 @@ function errorMessageExpression(type: TypeDef): string {
     return "";
   }
   const defaultErrorMessage = "API error occurred";
-  var result: string;
   // if the type is an error then we need to call super(message) in
   // the constructor and honour the x-speakeasy-error-message extension
-  const errorMessageFields = type.Fields.filter((f) => f.ErrorMessage);
-  if (errorMessageFields.length == 0) {
-    result = `"${defaultErrorMessage}"`;
-  } else {
-    if (errorMessageFields.length > 1) {
-      logger().Warn(
-        type.Name +
-          " has more than one field annotated with x-speakeasy-error-message. The first one will be used to construct the super call.",
-      );
-    }
-    const messageField = errorMessageFields[0];
-    // we wrap with Utils.valueOrElse to unwrap Optional or JSONNullable
-    result = `${javaImportUtils()}.valueOrElse(data == null ? null : data.${sanitizeFieldName(
-      messageField.Name,
+  if (type.Fields.filter((f) => f.ErrorMessage).length > 1) {
+    logger().Warn(
+      type.Name +
+        " has more than one field annotated with x-speakeasy-error-message. The first one will be used to construct the super call.",
+    );
+  }
+  const topLevelField = getErrorMessageField(type);
+  const path = topLevelField
+    ? [topLevelField]
+    : getOrInferErrorMessageFieldDeep(type);
+  if (!path?.length) {
+    return `"${defaultErrorMessage}"`;
+  }
+  // we wrap with Utils.valueOrElse to unwrap Optional or JSONNullable
+  const utils = javaImportUtils();
+  const leafType = path[path.length - 1].Type.Type.toString();
+  const leafIsString = leafType == "string";
+  if (path.length == 1 && leafIsString) {
+    return `${utils}.valueOrElse(data == null ? null : data.${sanitizeFieldName(
+      path[0].Name,
     )}(), "${defaultErrorMessage}")`;
   }
-  return result;
+  const hops = path
+    .map(
+      (f, i) =>
+        `.map(v${i} -> ${utils}.valueOrNull(v${i}.${sanitizeFieldName(
+          f.Name,
+        )}()))`,
+    )
+    .join("");
+  const leafVar = `v${path.length}`;
+  const stringify = leafIsString
+    ? ""
+    : leafType == "enum"
+    ? `.map(${leafVar} -> String.valueOf(${leafVar}.value()))`
+    : ".map(Object::toString)";
+  return `${utils}.valueOrElse(${javaImportOptional()}.ofNullable(data)${hops}${stringify}.orElse(null), "${defaultErrorMessage}")`;
 }
 
 registerTemplateFunc("errorMessageExpression", errorMessageExpression);

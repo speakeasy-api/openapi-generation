@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.openapis.openapi.models.errors.APIException;
 import org.openapis.openapi.models.errors.Error;
 import org.openapis.openapi.models.errors.JvmParamLimitError;
+import org.openapis.openapi.models.errors.NestedNullableOptionalErrorMessage;
+import org.openapis.openapi.models.errors.NullableOptionalErrorMessage;
 import org.openapis.openapi.models.operations.Shape;
 import org.openapis.openapi.models.operations.StatusGetErrorResponse;
 import org.openapis.openapi.models.operations.StatusGetXSpeakeasyErrorsResponse;
@@ -217,6 +219,36 @@ public class ErrorAdditionalTest {
         assertEquals("happening", err.data().get().additionalProperties().get("category"));
     }
     
+    @Test
+    void testOptionalNullableErrorMessage() throws Exception {
+        CommonHelpers.recordTest("errors-optional-nullable-error-message");
+        SDK s = SDK.builder().build();
+
+        var err = assertThrows(NullableOptionalErrorMessage.class, () -> {
+            s.errors().getNullableOptionalErrorMessageDirect();
+        });
+        assertEquals("an error occurred", err.getMessage());
+        assertEquals("an error occurred", err.data().get().message().get());
+    }
+
+    @Test
+    void testOptionalNullableNestedErrorMessage() throws Exception {
+        CommonHelpers.recordTest("errors-optional-nullable-error-message-nested");
+        SDK s = SDK.builder().build();
+
+        var err = assertThrows(NestedNullableOptionalErrorMessage.class, () -> {
+            s.errors().getNestedNullableOptionalErrorMessage(true);
+        });
+        assertEquals("underlying cause", err.getMessage());
+        assertEquals("underlying cause", err.data().get().cause().get().message().get());
+
+        var noCause = assertThrows(NestedNullableOptionalErrorMessage.class, () -> {
+            s.errors().getNestedNullableOptionalErrorMessage(false);
+        });
+        assertEquals("API error occurred", noCause.getMessage());
+        assertFalse(noCause.data().get().cause().isPresent());
+    }
+
     @Test
     public void testErrorMessageExtension() throws JsonMappingException, JsonProcessingException {
         String json = "{\"message\":\"something happened\", \"code\": \"500\"}";
