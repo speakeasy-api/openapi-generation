@@ -96,29 +96,41 @@ export class Stream<T> extends ReadableStream<T> {
     const fn = (ReadableStream.prototype as any)[Symbol.asyncIterator];
     if (typeof fn === "function") return fn.call(this);
     const reader = this.getReader();
-    return {
+    let released = false;
+    const release = () => {
+      released = true;
+      reader.releaseLock();
+    };
+    const iterator = {
       next: async () => {
         const r = await reader.read();
         if (r.done) {
-          reader.releaseLock();
+          release();
           return { done: true, value: undefined };
         }
         return { done: false, value: r.value };
       },
       throw: async (e?: unknown) => {
         await reader.cancel(e);
-        reader.releaseLock();
+        release();
         return { done: true, value: undefined };
       },
       return: async () => {
         await reader.cancel("done");
-        reader.releaseLock();
+        release();
         return { done: true, value: undefined };
       },
       [Symbol.asyncIterator]() {
         return this;
       },
-    } as unknown as StreamIterator<T>;
+    };
+    const asyncDispose = (Symbol as any).asyncDispose;
+    if (asyncDispose) {
+      (iterator as any)[asyncDispose] = async () => {
+        if (!released) await iterator.return();
+      };
+    }
+    return iterator as unknown as StreamIterator<T>;
   }
 }
 
