@@ -260,7 +260,8 @@ func TestArtifact_RawResponseBypassesFile(t *testing.T) {
 	dir := t.TempDir()
 	h := NewCLITestHarness(t)
 
-	require.NoError(t, runArtifact(t, h, server.URL, dir, "--raw-response", "--output-format", "json"))
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--raw-response"))
+	assert.True(t, json.Valid([]byte(h.GetStdout())), h.GetStdout())
 	assert.Contains(t, h.GetStdout(), "YXJ0aWZhY3QtYnl0ZXM=", "raw response must include the API payload")
 	entries, err := os.ReadDir(dir)
 	require.NoError(t, err)
@@ -270,6 +271,43 @@ func TestArtifact_RawResponseBypassesFile(t *testing.T) {
 	err = runArtifact(t, h2, server.URL, dir, "--raw-response", "--out", filepath.Join(dir, "x"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot be combined with --out")
+	assert.False(t, json.Valid([]byte(h2.GetStderr())), h2.GetStderr())
+
+	failureServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message":"request rejected"}`))
+	}))
+	t.Cleanup(failureServer.Close)
+	for _, tc := range []struct {
+		name       string
+		flags      []string
+		structured bool
+	}{
+		{name: "default"},
+		{name: "pretty", flags: []string{"--output-format", "pretty"}},
+		{name: "table", flags: []string{"--output-format", "table"}},
+		{name: "json", flags: []string{"--output-format", "json"}, structured: true},
+		{name: "yaml", flags: []string{"--output-format", "yaml"}},
+		{name: "toon", flags: []string{"--output-format", "toon"}, structured: true},
+		{name: "jq", flags: []string{"--jq", "."}, structured: true},
+		{name: "agent", flags: []string{"--agent-mode"}, structured: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, apiFailure := range []bool{false, true} {
+				h := NewCLITestHarness(t)
+				args := append([]string{"--raw-response"}, tc.flags...)
+				url := failureServer.URL
+				if !apiFailure {
+					url = server.URL
+					args = append(args, "--out", filepath.Join(dir, "unused"))
+				}
+				require.Error(t, runArtifact(t, h, url, dir, args...))
+				assert.Empty(t, h.GetStdout())
+				assert.Equal(t, tc.structured, json.Valid([]byte(h.GetStderr())), "apiFailure=%t: %s", apiFailure, h.GetStderr())
+			}
+		})
+	}
 }
 
 func TestArtifact_OutputFormatValueSuggestsOut(t *testing.T) {

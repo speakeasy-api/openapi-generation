@@ -182,14 +182,6 @@ func artifactResult(cmd *cobra.Command, res interface{}, cfg *artifactConfig) er
 		return fmt.Errorf("the written %s artifact is empty: %s", cfg.Kind, absPath)
 	}
 
-	if !IsMachineMode(cmd) {
-		mimeNote := ""
-		if mimeType != "" {
-			mimeNote = ", " + mimeType
-		}
-		fmt.Fprintf(cmd.ErrOrStderr(), "Wrote %s to %s (%d bytes%s)\n", cfg.Kind, absPath, written.Size(), mimeNote)
-	}
-
 	envelope := map[string]interface{}{
 		"path":       absPath,
 		"kind":       cfg.Kind,
@@ -208,6 +200,17 @@ func artifactResult(cmd *cobra.Command, res interface{}, cfg *artifactConfig) er
 		if status, ok := m[cfg.StatusField].(string); ok && status != "" {
 			envelope["status"] = status
 		}
+	}
+	if !IsMachineMode(cmd) {
+		mimeNote := ""
+		if mimeType != "" {
+			mimeNote = ", " + mimeType
+		}
+		idNote := ""
+		if id, ok := envelope["response_id"].(string); ok {
+			idNote = fmt.Sprintf(", response ID %q", id)
+		}
+		fmt.Fprintf(cmd.ErrOrStderr(), "Wrote %s to %s (%d bytes%s%s)\n", cfg.Kind, absPath, written.Size(), mimeNote, idNote)
 	}
 	return renderArtifactEnvelope(cmd, absPath, envelope)
 }
