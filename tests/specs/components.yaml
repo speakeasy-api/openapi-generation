@@ -3077,8 +3077,8 @@ components:
     base64InputFileModeRequest:
       description: |-
         Exercises x-speakeasy-base64-input-mode: file on string fields.
-        Each opted-in property accepts pre-encoded base64 string, PathLike,
-        or binary IO; the generator must serialize non-string inputs to base64
+        Each opted-in property accepts pre-encoded base64 string, raw bytes,
+        PathLike, or binary IO; the generator must serialize non-string inputs to base64
         before sending JSON. Control field stays plain string.
       type: object
       required:

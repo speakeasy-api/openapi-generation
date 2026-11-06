@@ -258,6 +258,7 @@ const (
 	TestRequestBodiesBase64InputModeFileSplitComponents
 	TestRequestBodiesBase64InputModeFileSharedComponent
 	TestRequestBodiesBase64FileInputIdempotent
+	TestRequestBodiesBase64FileInputRawBytes
 	TestRequestBodiesUUIDFormat
 	TestRequestBodiesDurationFormat
 	TestResponseBodiesJSONGet
