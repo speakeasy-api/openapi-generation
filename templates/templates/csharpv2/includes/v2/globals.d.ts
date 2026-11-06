@@ -123,6 +123,10 @@ declare global {
   function getDataTypeFormat(request: RequestDef): string;
   function canTypeBeNull(typeDef: TypeDef): boolean;
   function canFieldBeNull(field: FieldDef): boolean;
+  function bodyVariantOverloadTargets(op: Operation): {
+    bodyIndex: number;
+    conversions: { Member: TypeDef }[];
+  };
 
   // models.ts (csharp v1, presence-aware serialization)
   function needsOptionalNullableWrapper(fieldDef: FieldDef): boolean;

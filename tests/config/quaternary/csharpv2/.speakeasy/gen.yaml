@@ -34,3 +34,4 @@ csharp:
   disableNamespacePascalCasingApr2024: false
   responseFormat: envelope
   useNodatime: true
+  bodyVariantOverloads: true
