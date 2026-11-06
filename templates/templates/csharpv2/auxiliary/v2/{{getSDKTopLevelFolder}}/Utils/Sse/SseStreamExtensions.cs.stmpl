@@ -144,14 +144,17 @@ namespace {{getScopeNamespace "utils"}}.Sse
                     writer.WriteNumber("retry", ev.Retry.Value);
                 }
 
-                writer.WritePropertyName("data");
-                if (dataIsPlainText || string.IsNullOrWhiteSpace(ev.Data))
+                if (ev.Data != null)
                 {
-                    writer.WriteStringValue(ev.Data);
-                }
-                else
-                {
-                    writer.WriteRawValue(ev.Data!);
+                    writer.WritePropertyName("data");
+                    if (dataIsPlainText || string.IsNullOrWhiteSpace(ev.Data))
+                    {
+                        writer.WriteStringValue(ev.Data);
+                    }
+                    else
+                    {
+                        writer.WriteRawValue(ev.Data);
+                    }
                 }
 
                 writer.WriteEndObject();
