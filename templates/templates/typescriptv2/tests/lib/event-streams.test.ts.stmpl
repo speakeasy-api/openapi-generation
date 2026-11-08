@@ -203,4 +203,25 @@ test("fallback iterator releases its lock and finishes cleanly after a failed re
     await dispose(events);
   });
 });
+
+test("fallback iterator releases its lock when cancelling the stream fails", async () => {
+  await withoutNativeStreamIteration(async () => {
+    const failure = new Error("cancel failed");
+    const stream = new {{eventStreamClassName}}(
+      new ReadableStream<Uint8Array>({
+        pull: (controller) => controller.enqueue(bytes("data: x\n\n")),
+        cancel: () => Promise.reject(failure),
+      }),
+      (m) => ({ done: false, value: { data: m.data } }),
+    );
+    const events = stream[Symbol.asyncIterator]();
+    expect((await events.next()).value).toEqual({ data: "x" });
+    await expect(dispose(events)).rejects.toBe(failure);
+    expect(stream.locked).toBe(false);
+    const finished = { done: true, value: undefined };
+    await expect((events as any).return()).resolves.toEqual(finished);
+    await expect((events as any).throw(failure)).resolves.toEqual(finished);
+    await expect(events.next()).resolves.toEqual(finished);
+  });
+});
 {{- end}}

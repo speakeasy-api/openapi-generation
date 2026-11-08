@@ -121,14 +121,20 @@ export class Stream<T> extends ReadableStream<T> {
       },
       throw: async (e?: unknown) => {
         if (released) return { done: true, value: undefined };
-        await reader.cancel(e);
-        release();
+        try {
+          await reader.cancel(e);
+        } finally {
+          release();
+        }
         return { done: true, value: undefined };
       },
       return: async () => {
         if (released) return { done: true, value: undefined };
-        await reader.cancel("done");
-        release();
+        try {
+          await reader.cancel("done");
+        } finally {
+          release();
+        }
         return { done: true, value: undefined };
       },
       [Symbol.asyncIterator]() {
