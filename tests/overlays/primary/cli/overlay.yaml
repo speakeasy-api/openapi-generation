@@ -181,7 +181,43 @@ actions:
                   equals: false
             merge: $.steps
             sum: [$.usage.inputUnits, $.usage.outputUnits]
+        continuationDispatch:
+          output:
+            outcome:
+              statePointer: $.status
+              states:
+                in_progress: pending
+                more_required: continue
+                budget_reached: success
+                completed: success
+                failed: failure
+                needs_input: handoff
+          continuation:
+            bind:
+              - from: $.resumeToken
+                to: $.resumeToken
+              - from: $.id
+                to: $.previousId
+                optional: true
+            merge: $.steps
       commands:
+        compose-choice:
+          routes:
+            alpha:
+              op: continuationDispatch#ContinuationAlphaRequest
+              selector: alpha
+            beta:
+              op: continuationDispatch#ContinuationBetaRequest
+              selector: beta
+          args:
+            prompt:
+              to: $.prompt
+              variadic: true
+          flags:
+            alpha:
+              to: $.alpha
+            beta:
+              to: $.beta
         compose:
           category: Create
           summary: Compose a widget, continuing automatically while the response asks for more (continuation inherited from the operation entry)
@@ -873,6 +909,33 @@ actions:
               application/json:
                 schema:
                   $ref: '#/components/schemas/continuationWidget'
+    /continuation/dispatch:
+      post:
+        operationId: continuationDispatch
+        tags: [continuation]
+        description: Each request-body union variant preserves its own fields when the same operation is called again with response resume values.
+        parameters:
+          - name: tag
+            in: query
+            schema:
+              type: string
+        servers:
+        - url: http://localhost:35456
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ContinuationAlphaRequest'
+                  - $ref: '#/components/schemas/ContinuationBetaRequest'
+        responses:
+          "200":
+            description: One response of the composition.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/continuationWidget'
     /continuation/compose/stream:
       post:
         operationId: continuationStream
@@ -952,6 +1015,30 @@ actions:
           type: string
         retain:
           type: [boolean, "null"]
+    ContinuationAlphaRequest:
+      type: object
+      required: [prompt, alpha]
+      properties:
+        prompt:
+          type: string
+        alpha:
+          type: string
+        resumeToken:
+          type: string
+        previousId:
+          type: string
+    ContinuationBetaRequest:
+      type: object
+      required: [prompt, beta]
+      properties:
+        prompt:
+          type: string
+        beta:
+          type: string
+        resumeToken:
+          type: string
+        previousId:
+          type: string
     continuationWidget:
       type: object
       required: [status]

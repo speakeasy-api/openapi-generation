@@ -351,7 +351,7 @@ func (d *cliManifestDecoder) linkContinuationRequestCondition(owner, opID string
 				}
 				property, exists := resolved.properties[segment.Name]
 				if !exists {
-					return fmt.Errorf("%s continuation.bind.unlessRequest.path %s is absent from request body variant %s of operation %q", owner, condition.Path, segment.Name, opID)
+					return fmt.Errorf("%s continuation.bind.unlessRequest.path %s is absent from request body variant %d of operation %q", owner, condition.Path, index+1, opID)
 				}
 				next = append(next, d.continuationTargetVariants(property)...)
 			}

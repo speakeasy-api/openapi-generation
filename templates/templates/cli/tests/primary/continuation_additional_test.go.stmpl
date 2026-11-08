@@ -52,7 +52,7 @@ func newContinuationServer(t *testing.T, reply func(n int) continuationReply) *c
 			return
 		}
 		switch r.URL.Path {
-		case "/continuation/compose":
+		case "/continuation/compose", "/continuation/dispatch":
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, answer.body)
 		case "/continuation/compose/stream":
@@ -193,6 +193,31 @@ func TestContinuationDiscrete(t *testing.T) {
 		h, err := runOutcome(t, srv.URL, composeArgs("--output-format", "json")...)
 		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
 		assert.Contains(t, h.GetStdout(), `"usage":{"inputUnits":9223372036854775808,"outputUnits":3}`)
+	})
+
+	t.Run("dispatch variants inherit continuation and outcome", func(t *testing.T) {
+		for _, selector := range []string{"alpha", "beta"} {
+			for _, finalState := range []string{"completed", "failed"} {
+				t.Run(selector+"/"+finalState, func(t *testing.T) {
+					srv := newContinuationServer(t, scriptedReplies(
+						discreteReply("w1", "more_required", "tok1", "a", 0, 0),
+						discreteReply("w2", finalState, "", "b", 0, 0),
+					))
+					h, err := runOutcome(t, srv.URL, "compose-choice", "hello", "--"+selector, "variant-value", "--output-format", "json")
+					if finalState == "failed" {
+						require.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+						assert.Equal(t, "CLI_OUTCOME_FAILED", outcomeErrorEnvelope(t, h.GetStderr())["error_reason"])
+					} else {
+						require.NoError(t, err, h.GetStderr())
+					}
+					sent := srv.sent()
+					require.Len(t, sent, 2)
+					assert.Equal(t, map[string]interface{}{"prompt": "hello", selector: "variant-value"}, sent[0])
+					assert.Equal(t, map[string]interface{}{"prompt": "hello", selector: "variant-value", "resumeToken": "tok1", "previousId": "w1"}, sent[1])
+					assert.Equal(t, []string{"a", "b"}, stepTexts(decodeJSONObject(t, h.GetStdout())))
+				})
+			}
+		}
 	})
 
 	t.Run("three responses report the hop count", func(t *testing.T) {

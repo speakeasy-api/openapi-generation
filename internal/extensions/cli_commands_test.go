@@ -5540,7 +5540,6 @@ func TestCLICommands_OutcomeErrors(t *testing.T) {
 		{"state pointer not an enum", strings.Replace(base, "        statePointer: $.status\n        states:\n          in_progress", "        statePointer: $.id\n        states:\n          in_progress", 1), "selected state must declare a non-empty enum"},
 		{"stream pointer on discrete operation", strings.Replace(base, "        statePointer: $.status\n        states:\n          in_progress", "        streamStatePointer: $.status\n        states:\n          in_progress", 1), "has no streaming (text/event-stream or JSONL) success response"},
 		{"stream pointer misses every event", strings.Replace(base, "streamStatePointer: $.data.reason", "streamStatePointer: $.data.outcome", 1), "does not resolve in any event shape"},
-
 		{"error pointer must be object or array", strings.Replace(base, "errorPointer: $.steps", "errorPointer: $.id", 1), "selected failure detail must be an object or an array"},
 		{"error pointer misses every response variant", strings.Replace(base, "errorPointer: $.steps", "errorPointer: $.step", 1), `output.outcome.errorPointer $.step does not resolve in any application/json 2xx response variant of operation "GetTask" (did you mean "steps"?)`},
 		{"stream state not an enum member", strings.Replace(base, "          done: success\n          cancelled: failure", "          done: success\n          canceled: failure", 1), `output.outcome.states classifies "canceled", which is not an enum member at $.data.reason in operation "StreamTask" (did you mean "cancelled"?)`},
@@ -6030,7 +6029,7 @@ func TestCLICommands_ContinuationUnlessRequest(t *testing.T) {
 	missingPath := strings.Replace(manifest, "path: $.stream", "path: $.unknown", 1)
 	_, _, err = decodeCLIWithSpec(t, spec, missingPath)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "is absent from request body variant")
+	assert.Contains(t, err.Error(), `continuation.bind.unlessRequest.path $.unknown is absent from request body variant 1 of operation "ComposeWidget"`)
 }
 
 func TestCLICommands_ContinuationAsyncCreateDoesNotBlockOperationRecipe(t *testing.T) {
@@ -6083,7 +6082,6 @@ func TestCLICommands_ContinuationErrors(t *testing.T) {
 		{"merge on stream op", strings.Replace(base, "      maxHops: 4\n", "      maxHops: 4\n      merge: $.data.widget.steps\n", 1), "apply to application/json responses"},
 		{"bad classification", strings.Replace(base, "more_required: continue, budget_reached: success, completed: success, failed: failure}\n    continuation", "more_required: resume, budget_reached: success, completed: success, failed: failure}\n    continuation", 1), `has unsupported classification "resume"`},
 		{"reserved flag", strings.Replace(base, "      previous-id: {to: $.previousId}\n", "      previous-id: {to: $.previousId}\n      auto-continue: {to: $.prompt}\n", 1), "auto-continue"},
-
 		{"async and continuation", strings.Replace(base, "  watch:\n    op: StreamWidget\n", "  watch:\n    op: StreamWidget\n    async:\n      op: GetWidget\n      id: {from: $.id, to: {in: path, name: id}}\n      statePointer: $.status\n      states: {completed: success}\n", 1), "declares both async and output.stream"},
 		{"planned command", "version: 1\ncommands:\n  later:\n    planned: later\n    continuation:\n      bind: [{from: $.id, to: $.previousId}]\n", "planned command and cannot declare continuation"},
 		{"command continue state without recipe", strings.Replace(base, "    continuation:\n      bind:\n        - streamFrom: [$.data.resumeToken, $.data.widget.resumeToken]\n          to: $.resumeToken\n        - streamFrom: $.data.widget.id\n          to: $.previousId\n          optional: true\n      maxHops: 4\n      default: false\n", "", 1), `command "watch" classifies output.outcome state "more_required" as continue but declares no continuation recipe`},
