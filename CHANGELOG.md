@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.960.1] - 2026-11-08
+### :bug: Bug Fixes
+- [`bddb8cc`](https://github.com/speakeasy-api/openapi-generation/commit/bddb8ccce0cd9672232a0f83c9d076abdb268559) - **typescript**: type-check event streams against async-disposable ReadableStream iterators ([#196](https://github.com/speakeasy-api/openapi-generation/pull/196)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.960.0] - 2026-11-05
 ### :bee: New Features
 - [`116500b`](https://github.com/speakeasy-api/openapi-generation/commit/116500bddf871466c649599648e486430c01cc9c) - **csharp**: add bodyVariantOverloads option for union request bodies ([#188](https://github.com/speakeasy-api/openapi-generation/pull/188)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20938,3 +20943,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.959.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.959.0...v2.959.1
 [v2.959.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.959.1...v2.959.2
 [v2.960.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.959.2...v2.960.0
+[v2.960.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.0...v2.960.1
