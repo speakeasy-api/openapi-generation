@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.31.9",
+  core: "3.31.11",
   flattening: "2.82.1",
   globalSecurity: "2.82.16",
   methodSecurity: "2.82.8",
@@ -431,6 +431,13 @@ function isTestSkipped(test: string): boolean {
     "request-bodies-post-application-json-map-of-any-large-integers",
     "request-bodies-post-application-json-map-of-any-large-integers-jq",
     "intent-supplied-body-requires-declared-inputs",
+    "unions-body-variant-overloads-discriminated",
+    "unions-body-variant-overloads-non-body-arguments",
+    "unions-body-variant-overloads-non-discriminated",
+    "unions-body-variant-overloads-renamed-argument",
+    "unions-body-variant-overloads-request-body",
+    "unions-body-variant-overloads-nested-union",
+    "unions-body-variant-overloads-open-enum",
   ].includes(test);
 }
 

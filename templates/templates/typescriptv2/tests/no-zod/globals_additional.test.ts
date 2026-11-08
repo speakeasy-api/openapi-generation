@@ -1,7 +1,7 @@
 import { vi, expect, test, afterEach } from "vitest";
 
 import { SDK } from "../index.js";
-import { resetEnv } from "../lib/env.js";
+import { env, resetEnv } from "../lib/env.js";
 import { HTTPClient } from "../lib/http.js";
 import { GlobalPathParameterGetResponse } from "../sdk/models/operations/globalpathparameterget.js";
 import { GlobalsHeaderGetResponse } from "../sdk/models/operations/globalsheaderget.js";
@@ -13,6 +13,8 @@ import { recordTest, HTTPBIN_URL } from "./common_helpers.js";
 afterEach(() => {
   resetEnv();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 test("Test Globals Query Parameter Get Uses Global", async () => {
@@ -207,4 +209,58 @@ test("Test Globals Kebab Case Param Get", async () => {
 
   expect(res.httpMeta.response.status).toBe(200);
   expect(res.res?.args["kebab-case-param"]).toBe("kebab-case-value");
+});
+
+test("Test Debug Env Var False Keeps Logging Off", async () => {
+  recordTest("debug-env-var-false-keeps-logging-off");
+
+  const group = vi.spyOn(console, "group").mockImplementation(() => {});
+  vi.spyOn(console, "log").mockImplementation(() => {});
+  vi.spyOn(console, "groupEnd").mockImplementation(() => {});
+
+  for (const value of ["false", "0", "off", "no", "", "debug", "FALSE"]) {
+    resetEnv();
+    vi.stubEnv("SPEAKEASY_DEBUG", value);
+
+    const sdk = new SDK({ serverURL: HTTPBIN_URL });
+    const res = await sdk.globals.globalsQueryParameterGet("local");
+
+    expect(res.httpMeta.response.status).toBe(200);
+    expect(group).not.toHaveBeenCalled();
+  }
+
+  for (const value of ["true", "1", "yes", "on", "TRUE", "Yes", " on "]) {
+    group.mockClear();
+    resetEnv();
+    vi.stubEnv("SPEAKEASY_DEBUG", value);
+
+    const sdk = new SDK({ serverURL: HTTPBIN_URL });
+    const res = await sdk.globals.globalsQueryParameterGet("local");
+
+    expect(res.httpMeta.response.status).toBe(200);
+    expect(group).toHaveBeenCalled();
+  }
+
+  resetEnv();
+  const sdk = new SDK({ serverURL: HTTPBIN_URL });
+  vi.stubEnv("SPEAKEASY_OAUTH2", "Bearer set-after-construction");
+
+  const res = await sdk.auth.globalBearerAuth();
+
+  expect(res.token?.token).toBe("set-after-construction");
+
+  for (const [value, expected] of [
+    [true, true],
+    [1, true],
+    [false, false],
+    [0, false],
+  ]) {
+    resetEnv();
+    vi.stubGlobal("process", { env: { SPEAKEASY_DEBUG: value } });
+
+    const debug = env().SPEAKEASY_DEBUG;
+
+    vi.unstubAllGlobals();
+    expect(debug).toBe(expected);
+  }
 });

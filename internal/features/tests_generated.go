@@ -188,6 +188,8 @@ func (t Test) String() string {
         return "customclient-request-parameters-retained"
     case TestCustomclientRequestParametersRetainedLegacy:
         return "customclient-request-parameters-retained-legacy"
+    case TestDebugEnvVarFalseKeepsLoggingOff:
+        return "debug-env-var-false-keeps-logging-off"
     case TestDuplicateHeaderParameterAtOperationLevelDoesNotError:
         return "duplicate-header-parameter-at-operation-level-does-not-error"
     case TestDuplicateHeaderParameterAtPathLevelDoesNotError:
@@ -440,6 +442,8 @@ func (t Test) String() string {
         return "hooks-client-credentials-option-success"
     case TestHooksClientCredentialsOptionSuccessAltTokenURL:
         return "hooks-client-credentials-option-success-alt-token-url"
+    case TestHooksClientCredentialsScopesFromEnv:
+        return "hooks-client-credentials-scopes-from-env"
     case TestHooksClientCredentialsSuccess:
         return "hooks-client-credentials-success"
     case TestHooksClientCredentialsSuccessAltTokenURL:
@@ -1416,6 +1420,20 @@ func (t Test) String() string {
         return "unions-array-of-discriminated-unions-map"
     case TestUnionsBigintStrDecimal:
         return "unions-bigint-str-decimal"
+    case TestUnionsBodyVariantOverloadsDiscriminated:
+        return "unions-body-variant-overloads-discriminated"
+    case TestUnionsBodyVariantOverloadsNestedUnion:
+        return "unions-body-variant-overloads-nested-union"
+    case TestUnionsBodyVariantOverloadsNonBodyArguments:
+        return "unions-body-variant-overloads-non-body-arguments"
+    case TestUnionsBodyVariantOverloadsNonDiscriminated:
+        return "unions-body-variant-overloads-non-discriminated"
+    case TestUnionsBodyVariantOverloadsOpenEnum:
+        return "unions-body-variant-overloads-open-enum"
+    case TestUnionsBodyVariantOverloadsRenamedArgument:
+        return "unions-body-variant-overloads-renamed-argument"
+    case TestUnionsBodyVariantOverloadsRequestBody:
+        return "unions-body-variant-overloads-request-body"
     case TestUnionsCircularReferenceRecursiveOneOf:
         return "unions-circular-reference-recursive-one-of"
     case TestUnionsCollectionsOneOfPost:
@@ -1724,6 +1742,8 @@ func TestFromString(s string) Test {
         return TestCustomclientRequestParametersRetained
     case "customclient-request-parameters-retained-legacy":
         return TestCustomclientRequestParametersRetainedLegacy
+    case "debug-env-var-false-keeps-logging-off":
+        return TestDebugEnvVarFalseKeepsLoggingOff
     case "duplicate-header-parameter-at-operation-level-does-not-error":
         return TestDuplicateHeaderParameterAtOperationLevelDoesNotError
     case "duplicate-header-parameter-at-path-level-does-not-error":
@@ -1976,6 +1996,8 @@ func TestFromString(s string) Test {
         return TestHooksClientCredentialsOptionSuccess
     case "hooks-client-credentials-option-success-alt-token-url":
         return TestHooksClientCredentialsOptionSuccessAltTokenURL
+    case "hooks-client-credentials-scopes-from-env":
+        return TestHooksClientCredentialsScopesFromEnv
     case "hooks-client-credentials-success":
         return TestHooksClientCredentialsSuccess
     case "hooks-client-credentials-success-alt-token-url":
@@ -2952,6 +2974,20 @@ func TestFromString(s string) Test {
         return TestUnionsArrayOfDiscriminatedUnionsMap
     case "unions-bigint-str-decimal":
         return TestUnionsBigintStrDecimal
+    case "unions-body-variant-overloads-discriminated":
+        return TestUnionsBodyVariantOverloadsDiscriminated
+    case "unions-body-variant-overloads-nested-union":
+        return TestUnionsBodyVariantOverloadsNestedUnion
+    case "unions-body-variant-overloads-non-body-arguments":
+        return TestUnionsBodyVariantOverloadsNonBodyArguments
+    case "unions-body-variant-overloads-non-discriminated":
+        return TestUnionsBodyVariantOverloadsNonDiscriminated
+    case "unions-body-variant-overloads-open-enum":
+        return TestUnionsBodyVariantOverloadsOpenEnum
+    case "unions-body-variant-overloads-renamed-argument":
+        return TestUnionsBodyVariantOverloadsRenamedArgument
+    case "unions-body-variant-overloads-request-body":
+        return TestUnionsBodyVariantOverloadsRequestBody
     case "unions-circular-reference-recursive-one-of":
         return TestUnionsCircularReferenceRecursiveOneOf
     case "unions-collections-one-of-post":
@@ -3167,6 +3203,7 @@ var testList = []Test{
     TestCustomCodeRegionSubSdkMethodWithImports,
     TestCustomclientRequestParametersRetained,
     TestCustomclientRequestParametersRetainedLegacy,
+    TestDebugEnvVarFalseKeepsLoggingOff,
     TestDuplicateHeaderParameterAtOperationLevelDoesNotError,
     TestDuplicateHeaderParameterAtPathLevelDoesNotError,
     TestDuplicatePathParameterAtOperationLevelDoesNotError,
@@ -3293,6 +3330,7 @@ var testList = []Test{
     TestHooksClientCredentialsNoScopes,
     TestHooksClientCredentialsOptionSuccess,
     TestHooksClientCredentialsOptionSuccessAltTokenURL,
+    TestHooksClientCredentialsScopesFromEnv,
     TestHooksClientCredentialsSuccess,
     TestHooksClientCredentialsSuccessAltTokenURL,
     TestHooksClientCredentialsSuccessGlobalServer,
@@ -3781,6 +3819,13 @@ var testList = []Test{
     TestUnionsArrayOfDiscriminatedUnions,
     TestUnionsArrayOfDiscriminatedUnionsMap,
     TestUnionsBigintStrDecimal,
+    TestUnionsBodyVariantOverloadsDiscriminated,
+    TestUnionsBodyVariantOverloadsNestedUnion,
+    TestUnionsBodyVariantOverloadsNonBodyArguments,
+    TestUnionsBodyVariantOverloadsNonDiscriminated,
+    TestUnionsBodyVariantOverloadsOpenEnum,
+    TestUnionsBodyVariantOverloadsRenamedArgument,
+    TestUnionsBodyVariantOverloadsRequestBody,
     TestUnionsCircularReferenceRecursiveOneOf,
     TestUnionsCollectionsOneOfPost,
     TestUnionsConflictingDiscriminatorMappingKey,

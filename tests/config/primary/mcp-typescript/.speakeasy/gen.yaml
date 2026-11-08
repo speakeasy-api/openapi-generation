@@ -12,6 +12,7 @@ generation:
 mcp-typescript:
   inferUnionDiscriminators: true
   author: Speakeasy
+  envVarPrefix: SPEAKEASY
   packageName: openapi
   version: 0.0.1
   responseFormat: envelope

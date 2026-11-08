@@ -18,7 +18,7 @@ def get_body_content(req: httpx.Request) -> str:
 
 def get_default_logger() -> Logger:
     {{- if .Global.Config.EnvVarPrefix }}
-    if os.getenv("{{templateDebugEnvVar}}"):
+    if os.getenv("{{templateDebugEnvVar}}", "").strip().lower() in ("true", "1", "yes", "on"):
         logging.basicConfig(level=logging.DEBUG)
         return logging.getLogger("{{ getAbsoluteModuleImport }}")
     {{- end }}

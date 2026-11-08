@@ -17,7 +17,7 @@ features:
     bigint: 1.0.0
     configurableModuleName: 0.2.0
     constsAndDefaults: 1.0.8
-    core: 6.1.13
+    core: 6.1.14
     customCodeRegions: 0.1.2
     customSecuritySchemes: 0.1.0
     decimal: 1.0.0
@@ -766,7 +766,7 @@ trackedFiles:
   src/speakeasy/new_openapi/utils/headers.py:
     last_write_checksum: sha1:7c6df233ee006332b566a8afa9ce9a245941d935
   src/speakeasy/new_openapi/utils/logger.py:
-    last_write_checksum: sha1:9bc9d4ed4be2716b533eff592a95665b67fb2c6b
+    last_write_checksum: sha1:e6f4dfeb800af9a54bd14e21a754d79fd7430a8e
   src/speakeasy/new_openapi/utils/metadata.py:
     last_write_checksum: sha1:e703e5cbb5255144aacf86898d1420529afaaff8
   src/speakeasy/new_openapi/utils/queryparams.py:

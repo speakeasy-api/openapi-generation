@@ -16,7 +16,7 @@ features:
     additionalProperties: 0.1.4
     bigint: 0.0.3
     constsAndDefaults: 0.1.14
-    core: 3.31.9
+    core: 3.31.11
     customCodeRegions: 0.1.1
     customSecuritySchemes: 0.1.2
     decimal: 0.1.2
@@ -1069,7 +1069,7 @@ trackedFiles:
   src/lib/encodings.ts:
     last_write_checksum: sha1:a257d6f6108693db2197617c579400bc8f0da914
   src/lib/env.ts:
-    last_write_checksum: sha1:e4e763791ca181205cee88f90fabb01359c8d5f0
+    last_write_checksum: sha1:59b75f63084b005f8c452bcfa93f6eb697d210d6
   src/lib/event-streams.ts:
     last_write_checksum: sha1:c1975fd9880517ff313f9370d96a5152db74bf18
   src/lib/files.ts:
