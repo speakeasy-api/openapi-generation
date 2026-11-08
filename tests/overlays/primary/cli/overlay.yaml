@@ -201,23 +201,6 @@ actions:
                 optional: true
             merge: $.steps
       commands:
-        compose-choice:
-          routes:
-            alpha:
-              op: continuationDispatch#ContinuationAlphaRequest
-              selector: alpha
-            beta:
-              op: continuationDispatch#ContinuationBetaRequest
-              selector: beta
-          args:
-            prompt:
-              to: $.prompt
-              variadic: true
-          flags:
-            alpha:
-              to: $.alpha
-            beta:
-              to: $.beta
         compose:
           category: Create
           summary: Compose a widget, continuing automatically while the response asks for more (continuation inherited from the operation entry)
@@ -241,6 +224,23 @@ actions:
               to: $.retain
               type: bool
               summary: Retain the initial previous response ID
+        compose-choice:
+          routes:
+            alpha:
+              op: continuationDispatch#ContinuationAlphaRequest
+              selector: alpha
+            beta:
+              op: continuationDispatch#ContinuationBetaRequest
+              selector: beta
+          args:
+            prompt:
+              to: $.prompt
+              variadic: true
+          flags:
+            alpha:
+              to: $.alpha
+            beta:
+              to: $.beta
         compose-job:
           category: Create
           summary: Start a composition and optionally poll it to completion
