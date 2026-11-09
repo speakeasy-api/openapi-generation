@@ -114,7 +114,7 @@ jobs:
       - id: changelog
         name: Update CHANGELOG
         if: steps.conventionalcommits.outputs.skipped == 'false'
-        uses: speakeasy-api/changelog-action@40b363faa9ea3040290bb4d2fc05319ace934f4a # v1
+        uses: speakeasy-api/changelog-action@dc59e58667f95bc254351c83c1116b2736a5105d # v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fromTag: ${{ steps.release-source.outputs.sha }}
