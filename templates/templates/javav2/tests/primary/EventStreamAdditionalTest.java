@@ -389,7 +389,7 @@ public class EventStreamAdditionalTest {
         }).build();
         TeapotJSONError e = assertThrows(TeapotJSONError.class, () -> s.eventstreams().text().call());
         assertEquals("I'm a teapot", e.data().get().message().get());
-        assertEquals("API error occurred", e.getMessage());
+        assertEquals("I'm a teapot", e.getMessage());
     }
 
     // ===== ASYNCHRONOUS/REACTIVE EVENT STREAM TESTS =====
