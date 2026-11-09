@@ -85,6 +85,12 @@ function getConfigFields(
       ...v1Fields.partialTypes,
       DefaultValue: true,
     },
+    unionStrategy: {
+      ...v1Fields.unionStrategy,
+      DefaultValue: "populated-fields",
+      Description:
+        "Strategy for deserializing undiscriminated union types. templateVersion v2 supports 'populated-fields' only, which scores candidates by field-presence match. 'left-to-right' is replaced by 'populated-fields' with a warning.",
+    },
     dotnetVersion: {
       Name: "dotnetVersion",
       Required: false,
@@ -122,6 +128,22 @@ function upgradeConfig(oldVersion, newVersion, cfg, defaults) {
 // @ts-ignore
 function resolveConfig(cfg: Record<string, any>) {
   cfg.presenceAwareJsonSerialization = true;
+  resolveUnionStrategy(cfg);
+}
+
+// @ts-ignore
+function resolveUnionStrategy(cfg: Record<string, any>) {
+  if (
+    cfg.unionStrategy !== undefined &&
+    cfg.unionStrategy !== "populated-fields"
+  ) {
+    console.warn(
+      `csharp: unionStrategy ${JSON.stringify(
+        cfg.unionStrategy,
+      )} is not supported with templateVersion: v2. Using "populated-fields".`,
+    );
+  }
+  cfg.unionStrategy = "populated-fields";
 }
 
 // @ts-ignore
