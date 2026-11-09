@@ -440,8 +440,6 @@ function isTestSkipped(test: string): boolean {
     "intent-supplied-body-requires-declared-inputs",
     "hooks-client-credentials-scopes-from-env",
     "debug-env-var-false-keeps-logging-off",
-    "unions-discriminated-enum-tag-in-dict",
-    "unions-nested-enum-tag-in-dict",
   ].includes(test);
 }
 

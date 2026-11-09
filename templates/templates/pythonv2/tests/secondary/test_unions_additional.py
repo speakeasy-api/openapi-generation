@@ -1,12 +1,10 @@
 from openapi import SDK
 from openapi.models import shared
 
-from .common_helpers import HTTPBIN_URL, record_test
+from .common_helpers import HTTPBIN_URL
 
 
 def test_discriminated_union_enum_tag_in_dict():
-    record_test("unions-discriminated-enum-tag-in-dict")
-
     s = SDK(server_url=HTTPBIN_URL)
 
     res = s.unions.nullable_one_of_schema_post(
@@ -19,8 +17,6 @@ def test_discriminated_union_enum_tag_in_dict():
 
 
 def test_nested_union_enum_tag_in_dict():
-    record_test("unions-nested-enum-tag-in-dict")
-
     s = SDK(server_url=HTTPBIN_URL)
 
     res = s.unions.one_of_enum_tag_nested_post(
