@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.960.4] - 2026-11-09
+### :bug: Bug Fixes
+- [`10e9b00`](https://github.com/speakeasy-api/openapi-generation/commit/10e9b004749becd24152a082b97b75001a556b50) - **cli**: compose continuation recipes across command modes ([#190](https://github.com/speakeasy-api/openapi-generation/pull/190)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.960.3] - 2026-11-09
 ### :bug: Bug Fixes
 - [`4dd28dd`](https://github.com/speakeasy-api/openapi-generation/commit/4dd28dd747db72c46e7c74064ae89aa835eabd1e) - **cli**: preserve error formats for raw artifact responses ([#197](https://github.com/speakeasy-api/openapi-generation/pull/197)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -20956,3 +20961,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.960.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.0...v2.960.1
 [v2.960.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.1...v2.960.2
 [v2.960.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.2...v2.960.3
+[v2.960.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.3...v2.960.4
