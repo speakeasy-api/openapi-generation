@@ -24,7 +24,7 @@ const supportedFeatures = {
   sliceUnions: "0.0.2",
   pagination: "1.0.4",
   urlBasedPagination: "0.1.1",
-  errors: "1.0.3",
+  errors: "1.0.4",
   downloadStreams: "0.1.1",
   constsAndDefaults: "0.1.3",
   retries: "0.1.4",
