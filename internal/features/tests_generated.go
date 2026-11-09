@@ -1448,6 +1448,8 @@ func (t Test) String() string {
         return "unions-datetime-bigint"
     case TestUnionsDatetimeNull:
         return "unions-datetime-null"
+    case TestUnionsDiscriminatedEnumTagInDict:
+        return "unions-discriminated-enum-tag-in-dict"
     case TestUnionsDiscriminatedMultipleMemberships:
         return "unions-discriminated-multiple-memberships"
     case TestUnionsDiscriminatedOpenEnum:
@@ -1468,6 +1470,8 @@ func (t Test) String() string {
         return "unions-nested-array-of-discriminated-unions"
     case TestUnionsNestedDiscriminatedUnion:
         return "unions-nested-discriminated-union"
+    case TestUnionsNestedEnumTagInDict:
+        return "unions-nested-enum-tag-in-dict"
     case TestUnionsNestedEnumsForm:
         return "unions-nested-enums-form"
     case TestUnionsNestedEnumsMultipart:
@@ -3002,6 +3006,8 @@ func TestFromString(s string) Test {
         return TestUnionsDatetimeBigint
     case "unions-datetime-null":
         return TestUnionsDatetimeNull
+    case "unions-discriminated-enum-tag-in-dict":
+        return TestUnionsDiscriminatedEnumTagInDict
     case "unions-discriminated-multiple-memberships":
         return TestUnionsDiscriminatedMultipleMemberships
     case "unions-discriminated-open-enum":
@@ -3022,6 +3028,8 @@ func TestFromString(s string) Test {
         return TestUnionsNestedArrayOfDiscriminatedUnions
     case "unions-nested-discriminated-union":
         return TestUnionsNestedDiscriminatedUnion
+    case "unions-nested-enum-tag-in-dict":
+        return TestUnionsNestedEnumTagInDict
     case "unions-nested-enums-form":
         return TestUnionsNestedEnumsForm
     case "unions-nested-enums-multipart":
@@ -3833,6 +3841,7 @@ var testList = []Test{
     TestUnionsDateNull,
     TestUnionsDatetimeBigint,
     TestUnionsDatetimeNull,
+    TestUnionsDiscriminatedEnumTagInDict,
     TestUnionsDiscriminatedMultipleMemberships,
     TestUnionsDiscriminatedOpenEnum,
     TestUnionsExtraJsonProperties,
@@ -3843,6 +3852,7 @@ var testList = []Test{
     TestUnionsMixedUnionTypes,
     TestUnionsNestedArrayOfDiscriminatedUnions,
     TestUnionsNestedDiscriminatedUnion,
+    TestUnionsNestedEnumTagInDict,
     TestUnionsNestedEnumsForm,
     TestUnionsNestedEnumsMultipart,
     TestUnionsNullableOneofRefInObjectPost,

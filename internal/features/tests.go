@@ -339,6 +339,8 @@ const (
 	TestUnionsNullableOneofSchemaPostObj1
 	TestUnionsNullableOneofSchemaPostObj2
 	TestUnionsNullableOneofSchemaPostNull
+	TestUnionsDiscriminatedEnumTagInDict
+	TestUnionsNestedEnumTagInDict
 	TestUnionsNullableOneofTypeInObjectPost
 	TestUnionsNullableOneofRefInObjectPost
 	TestUnionsPrimitiveTypeOneOfPostString

@@ -372,6 +372,8 @@ function isTestSkipped(test: string): boolean {
     "unions-body-variant-overloads-request-body",
     "unions-body-variant-overloads-nested-union",
     "unions-body-variant-overloads-open-enum",
+    "unions-discriminated-enum-tag-in-dict",
+    "unions-nested-enum-tag-in-dict",
   ].includes(test);
 }
 

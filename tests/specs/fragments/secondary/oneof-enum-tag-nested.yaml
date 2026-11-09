@@ -1,0 +1,54 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/oneOfEnumTagNested:
+    post:
+      operationId: oneOfEnumTagNestedPost
+      description: >-
+        Request body nesting a oneOf whose members are told apart by a
+        single-value enum type property, once as an object property and once
+        as array items. Selecting the member must work when the type property
+        holds an enum member rather than its raw value.
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                single:
+                  oneOf:
+                    - $ref: "components.yaml#/components/schemas/typedObject1"
+                    - $ref: "components.yaml#/components/schemas/typedObject2"
+                many:
+                  type: array
+                  items:
+                    oneOf:
+                      - $ref: "components.yaml#/components/schemas/typedObject1"
+                      - $ref: "components.yaml#/components/schemas/typedObject2"
+              required:
+                - single
+                - many
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  json:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - json
