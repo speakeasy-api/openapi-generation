@@ -1747,6 +1747,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/pythonv2/tests/secondary/test_pagination.py":                                                        0o644,
 	"templates/pythonv2/tests/secondary/test_redirects_additional.py":                                              0o644,
 	"templates/pythonv2/tests/secondary/test_servers.py":                                                           0o644,
+	"templates/pythonv2/tests/secondary/test_unions_additional.py":                                                 0o644,
 	"templates/pythonv2/tests/secondary/test_unknown_fields_additional.py":                                         0o644,
 	"templates/pythonv2/tests/security-options":                                                                    0o20000000755,
 	"templates/pythonv2/tests/security-options/test_auth_additional.py":                                            0o644,
