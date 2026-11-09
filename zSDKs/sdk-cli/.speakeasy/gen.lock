@@ -264,13 +264,13 @@ trackedFiles:
   internal/interactive/policy_test.go:
     last_write_checksum: sha1:770e41163c2746f200544c985e26c7be16aaedb9
   internal/output/agentmode.go:
-    last_write_checksum: sha1:cd38c0ae31c1dccf601a85d43b6651568c8d41a3
+    last_write_checksum: sha1:5c19eac15b8750087844d4a47c97ae5d997d473e
   internal/output/artifact.go:
-    last_write_checksum: sha1:4c62a21da9e4f25c1ca56b90f155f80adb3b334f
+    last_write_checksum: sha1:6f1f9f12fe4a10fb0fdc7cc47a9f8e8a92011bf4
   internal/output/artifact_test.go:
-    last_write_checksum: sha1:7a0faf6f30d19823cf832d5c7909fbb0f904489c
+    last_write_checksum: sha1:661edba4371c698c863d70f79f000f72df574d20
   internal/output/async.go:
-    last_write_checksum: sha1:7d8b2ac9cde78a7c9aa5e8a0ececd9ab808dcae6
+    last_write_checksum: sha1:0039f3fd843aa5bb01c09b17738344deed3868e5
   internal/output/binary.go:
     last_write_checksum: sha1:6fd77172cad1bd29dc9f157b931345f96a172223
   internal/output/classify.go:
@@ -280,13 +280,13 @@ trackedFiles:
   internal/output/errortable.go:
     last_write_checksum: sha1:ccc29887b4f88d007edf4c5606a7b97e5adafe2a
   internal/output/exitcodes.go:
-    last_write_checksum: sha1:313fa20ec561de744a818df99d4659ba715e0a86
+    last_write_checksum: sha1:2d7b297cdcaa356d3fd19e4ea639086cb312e715
   internal/output/jq.go:
     last_write_checksum: sha1:1ecac6747c1288a23dbd34efa42e39fb5d558487
   internal/output/outcome.go:
     last_write_checksum: sha1:5b7a3ad24255889f7a5cdc53478c237e7f358b85
   internal/output/output.go:
-    last_write_checksum: sha1:c3d9ae8711b9eebb2505bda166ce42e047461550
+    last_write_checksum: sha1:c58847e299f3cd3f2a3f9437d75500f96c5c089d
   internal/output/output_test.go:
     last_write_checksum: sha1:e7f48221aac9559fa8b9a1d571c9e83a767bb707
   internal/output/outputitems.go:
@@ -670,7 +670,7 @@ trackedFiles:
   scripts/install.sh:
     last_write_checksum: sha1:ba255d220bc830375d4f2bc34a7ca01e0a0a8fe2
   tests/artifact_test.go:
-    last_write_checksum: sha1:5663e1c10976d4121783d2d54adf049e4903ca5c
+    last_write_checksum: sha1:80691e63c96f85539e12254654f82edd0511dc59
   tests/async_test.go:
     last_write_checksum: sha1:73100bf36012b46aed2b7d400bc199f459102031
   tests/cli_harness_test.go:
