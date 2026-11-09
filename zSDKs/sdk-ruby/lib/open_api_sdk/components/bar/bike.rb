@@ -27,7 +27,7 @@ module OpenApiSDK
         def initialize(has_pedals:, wheels: 2)
           @has_pedals = has_pedals
           unless wheels == 2
-            raise ArgumentError, "Invalid value for wheels"
+            raise ::ArgumentError, "Invalid value for wheels"
           end
 
           @wheels = 2

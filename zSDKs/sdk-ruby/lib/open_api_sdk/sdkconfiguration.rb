@@ -22,7 +22,7 @@ module OpenApiSDK
       # 1 - A server with an enum variable.
       "http://{HostName}:{PORT}"
     ].freeze,
-    T::Array[String]
+    T::Array[::String]
   )
   # Contains the list of servers available to the SDK
 
@@ -38,37 +38,37 @@ module OpenApiSDK
     sig { returns(T.nilable(::OpenApiSDK::Utils::RetryConfig)) }
     attr_accessor :retry_config
 
-    sig { returns(T.nilable(Float)) }
+    sig { returns(T.nilable(::Float)) }
     attr_accessor :timeout
 
     sig { returns(T.nilable(T.proc.returns(T.nilable(Components::Security)))) }
     attr_accessor :security_source
 
-    sig { returns(T.nilable(String)) }
+    sig { returns(T.nilable(::String)) }
     attr_accessor :server_url
 
-    sig { returns(T.nilable(Integer)) }
+    sig { returns(T.nilable(::Integer)) }
     attr_accessor :server_idx
 
-    sig { returns(T::Array[T::Hash[Symbol, String]]) }
+    sig { returns(T::Array[T::Hash[::Symbol, ::String]]) }
     attr_accessor :server_params
 
-    sig { returns(T::Hash[Symbol, T::Hash[Symbol, T::Hash[Symbol, Object]]]) }
+    sig { returns(T::Hash[::Symbol, T::Hash[::Symbol, T::Hash[::Symbol, ::Object]]]) }
     attr_accessor :globals
 
-    sig { returns(String) }
+    sig { returns(::String) }
     attr_accessor :language
 
-    sig { returns(String) }
+    sig { returns(::String) }
     attr_accessor :openapi_doc_version
 
-    sig { returns(String) }
+    sig { returns(::String) }
     attr_accessor :sdk_version
 
-    sig { returns(String) }
+    sig { returns(::String) }
     attr_accessor :gen_version
 
-    sig { returns(String) }
+    sig { returns(::String) }
     attr_accessor :user_agent
 
     sig do
@@ -76,13 +76,13 @@ module OpenApiSDK
         client: T.nilable(Faraday::Connection),
         hooks: ::OpenApiSDK::SDKHooks::Hooks,
         retry_config: T.nilable(::OpenApiSDK::Utils::RetryConfig),
-        timeout_ms: T.nilable(Integer),
+        timeout_ms: T.nilable(::Integer),
         security: T.nilable(Components::Security),
         security_source: T.nilable(T.proc.returns(Components::Security)),
-        server_url: T.nilable(String),
-        server_idx: T.nilable(Integer),
-        server_params: T::Array[T::Hash[Symbol, String]],
-        globals: T.nilable(T::Hash[Symbol, T::Hash[Symbol, T::Hash[Symbol, Object]]])
+        server_url: T.nilable(::String),
+        server_idx: T.nilable(::Integer),
+        server_params: T::Array[T::Hash[::Symbol, ::String]],
+        globals: T.nilable(T::Hash[::Symbol, T::Hash[::Symbol, T::Hash[::Symbol, ::Object]]])
       )
         .void
     end
@@ -105,7 +105,7 @@ module OpenApiSDK
       @timeout = (timeout_ms.to_f / 1000) unless timeout_ms.nil?
       @server_idx = server_idx.nil? ? 0 : server_idx
       if @server_idx.negative? || @server_idx >= SERVERS.length
-        raise StandardError, "Invalid server index #{server_idx}"
+        raise ::StandardError, "Invalid server index #{server_idx}"
       end
 
       @server_params = server_params
@@ -123,7 +123,7 @@ module OpenApiSDK
       @user_agent = "speakeasy-sdk/ruby 0.0.1 internal 0.1.0 openapi"
     end
 
-    sig { returns([String, T::Hash[Symbol, String]]) }
+    sig { returns([::String, T::Hash[::Symbol, ::String]]) }
     def get_server_details
       return [@server_url.delete_suffix("/"), {}] if !@server_url.nil?
       @server_idx = T.must(@server_idx)

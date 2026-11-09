@@ -6,7 +6,7 @@
 module OpenApiSDK
   module Errors
     # A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts
-    class RequestTimeoutError < StandardError
+    class RequestTimeoutError < ::StandardError
       extend T::Sig
       include Crystalline::MetadataFields
 

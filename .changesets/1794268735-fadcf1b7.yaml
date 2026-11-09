@@ -1,0 +1,10 @@
+id: 1794268735-fadcf1b7
+features:
+    - docs
+targets:
+    - ruby
+type: fix
+bump: patch
+description: link date fields to Date and date-time fields to DateTime in docs
+author: 2ynn
+date: "2026-11-09"

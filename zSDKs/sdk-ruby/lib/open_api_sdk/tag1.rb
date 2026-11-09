@@ -37,7 +37,11 @@ module OpenApiSDK
       @sdk_configuration = sdk_config
     end
 
-    sig { params(base_url: String, url_variables: T.nilable(T::Hash[Symbol, T.any(String, T::Enum)])).returns(String) }
+    sig {
+      params(base_url: ::String, url_variables: T.nilable(T::Hash[::Symbol, T.any(::String, T::Enum)])).returns(
+        ::String
+      )
+    }
     def get_url(base_url:, url_variables: nil)
       sd_base_url, sd_options = @sdk_configuration.get_server_details
 
@@ -54,9 +58,9 @@ module OpenApiSDK
 
     sig {
       params(
-        server_url: T.nilable(String),
-        timeout_ms: T.nilable(Integer),
-        http_headers: T.nilable(T::Hash[T.any(String, Symbol), String])
+        server_url: T.nilable(::String),
+        timeout_ms: T.nilable(::Integer),
+        http_headers: T.nilable(T::Hash[T.any(::String, ::Symbol), ::String])
       )
         .returns(Operations::V2::Schemas::Deprecated1Response)
     }
@@ -71,7 +75,7 @@ module OpenApiSDK
       base_url = server_url if !server_url.nil?
       url = "#{base_url}/deprecated"
       headers = {}
-      headers = T.cast(headers, T::Hash[String, String])
+      headers = T.cast(headers, T::Hash[::String, ::String])
       headers["Accept"] = "*/*"
       headers["user-agent"] = @sdk_configuration.user_agent
 
@@ -90,7 +94,7 @@ module OpenApiSDK
         security_source: @sdk_configuration.security_source
       )
 
-      error = T.let(nil, T.nilable(StandardError))
+      error = T.let(nil, T.nilable(::StandardError))
       http_response = T.let(nil, T.nilable(Faraday::Response))
 
       begin
@@ -110,7 +114,7 @@ module OpenApiSDK
           )
         end
 
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)
@@ -183,8 +187,8 @@ module OpenApiSDK
     sig {
       params(
         security: Operations::V2::Schemas::AuthSecurity,
-        timeout_ms: T.nilable(Integer),
-        http_headers: T.nilable(T::Hash[T.any(String, Symbol), String])
+        timeout_ms: T.nilable(::Integer),
+        http_headers: T.nilable(T::Hash[T.any(::String, ::Symbol), ::String])
       )
         .returns(Operations::V2::Schemas::AuthResponse)
     }
@@ -197,7 +201,7 @@ module OpenApiSDK
       base_url = Utils.template_url(url, params)
       url = "#{base_url}/auth"
       headers = {}
-      headers = T.cast(headers, T::Hash[String, String])
+      headers = T.cast(headers, T::Hash[::String, ::String])
       headers["Accept"] = "*/*"
       headers["user-agent"] = @sdk_configuration.user_agent
 
@@ -214,7 +218,7 @@ module OpenApiSDK
         security_source: -> { security }
       )
 
-      error = T.let(nil, T.nilable(StandardError))
+      error = T.let(nil, T.nilable(::StandardError))
       http_response = T.let(nil, T.nilable(Faraday::Response))
 
       begin
@@ -234,7 +238,7 @@ module OpenApiSDK
           )
         end
 
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)
@@ -322,9 +326,9 @@ module OpenApiSDK
         query_param2: Operations::V2::Schemas::QueryParam2,
         header_param1: ::String,
         query_param1: T.nilable(::String),
-        server_url: T.nilable(String),
-        timeout_ms: T.nilable(Integer),
-        http_headers: T.nilable(T::Hash[T.any(String, Symbol), String])
+        server_url: T.nilable(::String),
+        timeout_ms: T.nilable(::Integer),
+        http_headers: T.nilable(T::Hash[T.any(::String, ::Symbol), ::String])
       )
         .returns(Operations::V2::Schemas::ListTest1Response)
     }
@@ -361,7 +365,7 @@ module OpenApiSDK
         @sdk_configuration.globals
       )
       headers = Utils.get_headers(request, @sdk_configuration.globals)
-      headers = T.cast(headers, T::Hash[String, String])
+      headers = T.cast(headers, T::Hash[::String, ::String])
       query_params = Utils.get_query_params(
         Operations::V2::Schemas::ListTest1Request,
         request,
@@ -386,7 +390,7 @@ module OpenApiSDK
         security_source: @sdk_configuration.security_source
       )
 
-      error = T.let(nil, T.nilable(StandardError))
+      error = T.let(nil, T.nilable(::StandardError))
       http_response = T.let(nil, T.nilable(Faraday::Response))
 
       begin
@@ -407,7 +411,7 @@ module OpenApiSDK
           )
         end
 
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)
@@ -443,7 +447,7 @@ module OpenApiSDK
             response: http_response
           )
           response_data = http_response.env.response_body
-          obj = Crystalline.unmarshal_json(JSON.parse(response_data), Operations::V2::Schemas::ListTest1ResponseBody)
+          obj = Crystalline.unmarshal_json(::JSON.parse(response_data), Operations::V2::Schemas::ListTest1ResponseBody)
           response = Operations::V2::Schemas::ListTest1Response.new(
             status_code: http_response.status,
             content_type: content_type,
@@ -459,8 +463,8 @@ module OpenApiSDK
               next nil
             end
 
-            results = Janeway.enum_for("$.resultArray", JSON.parse(response_data)).search
-            if results.is_a?(Array)
+            results = Janeway.enum_for("$.resultArray", ::JSON.parse(response_data)).search
+            if results.is_a?(::Array)
               results = results[0]
             end
 
@@ -498,7 +502,7 @@ module OpenApiSDK
             response: http_response
           )
           response_data = http_response.env.response_body
-          obj = Crystalline.unmarshal_json(JSON.parse(response_data), Errors::BadRequestResponseError)
+          obj = Crystalline.unmarshal_json(::JSON.parse(response_data), Errors::BadRequestResponseError)
           obj.raw_response = http_response
           raise obj
         else
@@ -520,7 +524,7 @@ module OpenApiSDK
             response: http_response
           )
           response_data = http_response.env.response_body
-          obj = Crystalline.unmarshal_json(JSON.parse(response_data), Errors::Error)
+          obj = Crystalline.unmarshal_json(::JSON.parse(response_data), Errors::Error)
           obj.raw_response = http_response
           raise obj
         else
@@ -567,8 +571,8 @@ module OpenApiSDK
     sig {
       params(
         request: Operations::V2::Schemas::PostFileWithEncodingRequest,
-        timeout_ms: T.nilable(Integer),
-        http_headers: T.nilable(T::Hash[T.any(String, Symbol), String])
+        timeout_ms: T.nilable(::Integer),
+        http_headers: T.nilable(T::Hash[T.any(::String, ::Symbol), ::String])
       )
         .returns(Operations::V2::Schemas::PostFileWithEncodingResponse)
     }
@@ -584,15 +588,15 @@ module OpenApiSDK
       base_url = Utils.template_url(url, params)
       url = "#{base_url}/fileWithEncoding"
       headers = {}
-      headers = T.cast(headers, T::Hash[String, String])
+      headers = T.cast(headers, T::Hash[::String, ::String])
       req_content_type, data, form = Utils.serialize_request_body(request, false, false, :request, :multipart)
       headers["content-type"] = req_content_type
-      raise StandardError, "request body is required" if data.nil? && form.nil?
+      raise ::StandardError, "request body is required" if data.nil? && form.nil?
 
       if form && !form.empty?
         body = Utils.encode_form(form)
       elsif Utils.match_content_type(req_content_type, "application/x-www-form-urlencoded")
-        body = URI.encode_www_form(T.cast(data, T::Hash[Symbol, Object]))
+        body = ::URI.encode_www_form(T.cast(data, T::Hash[::Symbol, ::Object]))
       else
         body = data
       end
@@ -615,7 +619,7 @@ module OpenApiSDK
         security_source: @sdk_configuration.security_source
       )
 
-      error = T.let(nil, T.nilable(StandardError))
+      error = T.let(nil, T.nilable(::StandardError))
       http_response = T.let(nil, T.nilable(Faraday::Response))
 
       begin
@@ -636,7 +640,7 @@ module OpenApiSDK
           )
         end
 
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)
@@ -673,7 +677,7 @@ module OpenApiSDK
           )
           response_data = http_response.env.response_body
           obj = Crystalline.unmarshal_json(
-            JSON.parse(response_data),
+            ::JSON.parse(response_data),
             Operations::V2::Schemas::PostFileWithEncodingResponseBody
           )
           response = Operations::V2::Schemas::PostFileWithEncodingResponse.new(
@@ -703,7 +707,7 @@ module OpenApiSDK
             response: http_response
           )
           response_data = http_response.env.response_body
-          obj = Crystalline.unmarshal_json(JSON.parse(response_data), Errors::Error)
+          obj = Crystalline.unmarshal_json(::JSON.parse(response_data), Errors::Error)
           obj.raw_response = http_response
           raise obj
         else

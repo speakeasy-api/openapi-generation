@@ -29,7 +29,11 @@ module OpenApiSDK
       @empty = ::OpenApiSDK::Empty.new(@sdk_configuration)
     end
 
-    sig { params(base_url: String, url_variables: T.nilable(T::Hash[Symbol, T.any(String, T::Enum)])).returns(String) }
+    sig {
+      params(base_url: ::String, url_variables: T.nilable(T::Hash[::Symbol, T.any(::String, T::Enum)])).returns(
+        ::String
+      )
+    }
     def get_url(base_url:, url_variables: nil)
       sd_base_url, sd_options = @sdk_configuration.get_server_details
 
@@ -45,9 +49,8 @@ module OpenApiSDK
     end
 
     sig {
-      params(timeout_ms: T.nilable(Integer), http_headers: T.nilable(T::Hash[T.any(String, Symbol), String])).returns(
-        Operations::V2::Schemas::SubGroupOpResponse
-      )
+      params(timeout_ms: T.nilable(::Integer), http_headers: T.nilable(T::Hash[T.any(::String, ::Symbol), ::String]))
+        .returns(Operations::V2::Schemas::SubGroupOpResponse)
     }
     def sub_group_op(timeout_ms: nil, http_headers: nil)
       # sub_group_op - An operation at the group's top level
@@ -55,7 +58,7 @@ module OpenApiSDK
       base_url = Utils.template_url(url, params)
       url = "#{base_url}/group/subgroup"
       headers = {}
-      headers = T.cast(headers, T::Hash[String, String])
+      headers = T.cast(headers, T::Hash[::String, ::String])
       headers["Accept"] = "*/*"
       headers["user-agent"] = @sdk_configuration.user_agent
 
@@ -74,7 +77,7 @@ module OpenApiSDK
         security_source: @sdk_configuration.security_source
       )
 
-      error = T.let(nil, T.nilable(StandardError))
+      error = T.let(nil, T.nilable(::StandardError))
       http_response = T.let(nil, T.nilable(Faraday::Response))
 
       begin
@@ -94,7 +97,7 @@ module OpenApiSDK
           )
         end
 
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)

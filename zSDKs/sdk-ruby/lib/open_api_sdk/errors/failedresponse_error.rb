@@ -6,7 +6,7 @@
 module OpenApiSDK
   module Errors
     # An error response with an empty object schema
-    class FailedResponseError < StandardError
+    class FailedResponseError < ::StandardError
       extend T::Sig
       include Crystalline::MetadataFields
 

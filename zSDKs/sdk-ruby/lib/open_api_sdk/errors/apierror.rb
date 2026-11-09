@@ -6,7 +6,7 @@
 module OpenApiSDK
   module Errors
 
-    class APIError < StandardError
+    class APIError < ::StandardError
       include Crystalline::MetadataFields
       extend T::Sig
 

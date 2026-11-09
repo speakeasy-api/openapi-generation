@@ -21,7 +21,7 @@ module OpenApiSDK
       sig { params(type: ::String, text: T.nilable(::String)).void }
       def initialize(type: "text", text: nil)
         unless type == "text"
-          raise ArgumentError, "Invalid value for type"
+          raise ::ArgumentError, "Invalid value for type"
         end
 
         @type = "text"

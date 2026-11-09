@@ -29,7 +29,7 @@ module OpenApiSDK
       }
       def initialize(type: "output", content: nil)
         unless type == "output"
-          raise ArgumentError, "Invalid value for type"
+          raise ::ArgumentError, "Invalid value for type"
         end
 
         @type = "output"

@@ -94,7 +94,7 @@ function templateJSONHandler(
     false,
     "",
   );
-  let handler = `response_data = http_response.env.response_body\nobj = Crystalline.unmarshal_json(JSON.parse(response_data), ${deserializedType})`;
+  let handler = `response_data = http_response.env.response_body\nobj = Crystalline.unmarshal_json(::JSON.parse(response_data), ${deserializedType})`;
 
   if (subResponse.Error) {
     const params = [];
@@ -225,7 +225,7 @@ function templateEventStreamHandler(
   const sseDataRequired = isSSEDataRequired(content.Content.Type.ItemType);
   const dataRequiredArg = sseDataRequired ? "" : ", data_required: false";
 
-  let handler = `decoder = lambda { |raw|\n  Crystalline.unmarshal_json(JSON.parse(raw), ${itemCrystallineType})${dataAccessor}\n}`;
+  let handler = `decoder = lambda { |raw|\n  Crystalline.unmarshal_json(::JSON.parse(raw), ${itemCrystallineType})${dataAccessor}\n}`;
   handler += `\nobj = ${moduleName}::Utils::EventStream.new(http_response, decoder${sentinelArg}, sdk_ref: self${dataRequiredArg})`;
 
   switch (true) {
@@ -277,7 +277,7 @@ function templateJsonLHandler(
     "",
   );
 
-  let handler = `decoder = lambda { |raw|\n  Crystalline.unmarshal_json(JSON.parse(raw), ${itemCrystallineType})\n}`;
+  let handler = `decoder = lambda { |raw|\n  Crystalline.unmarshal_json(::JSON.parse(raw), ${itemCrystallineType})\n}`;
   handler += `\nobj = ${moduleName}::Utils::JsonLStream.new(http_response, decoder, sdk_ref: self)`;
 
   switch (true) {
@@ -409,7 +409,7 @@ function templatePagination(op: Operation): string {
         } else {
           response += `${indent}num_pages = Janeway.enum_for('${sanitizeJsonPath(
             op.Extensions.Pagination.Outputs.NumPages,
-          )}', JSON.parse(response_data)).search\n`;
+          )}', ::JSON.parse(response_data)).search\n`;
         }
         response += `${indent}if num_pages.nil? || num_pages[0] <= request_page
     next nil
@@ -433,7 +433,7 @@ function templatePagination(op: Operation): string {
     } else {
       response += `${indent}next_url = Janeway.enum_for('${sanitizeJsonPath(
         op.Extensions.Pagination.Outputs.NextURL,
-      )}', JSON.parse(response_data)).search\n`;
+      )}', ::JSON.parse(response_data)).search\n`;
     }
     response += `${indent}if next_url.nil? || next_url.empty?
     next nil
@@ -445,7 +445,7 @@ function templatePagination(op: Operation): string {
     next_url = "#{url}#{next_url}"
 \n
   end\n`;
-    response += `${indent}if next_url !~ URI::RFC2396_PARSER.make_regexp
+    response += `${indent}if next_url !~ ::URI::RFC2396_PARSER.make_regexp
     next nil
   end\n`;
   } else {
@@ -454,7 +454,7 @@ function templatePagination(op: Operation): string {
     } else {
       response += `${indent}next_cursor = Janeway.enum_for('${sanitizeJsonPath(
         op.Extensions.Pagination.Outputs.NextCursor,
-      )}', JSON.parse(response_data)).search\n`;
+      )}', ::JSON.parse(response_data)).search\n`;
     }
     response += `${indent}if next_cursor.nil?
     next nil
@@ -467,15 +467,15 @@ function templatePagination(op: Operation): string {
   }
   if (op.Extensions.Pagination.Outputs.Results) {
     if (canSimplify && !op.Extensions.Pagination.Outputs.ResultsDot) {
-      response += `${indent}results = JSON.parse(response_data)
+      response += `${indent}results = ::JSON.parse(response_data)
   if results.nil?
     next nil
   end\n`;
     } else {
       response += `${indent}results = Janeway.enum_for('${sanitizeJsonPath(
         op.Extensions.Pagination.Outputs.Results,
-      )}', JSON.parse(response_data)).search\n`;
-      response += `${indent}if results.is_a? Array
+      )}', ::JSON.parse(response_data)).search\n`;
+      response += `${indent}if results.is_a? ::Array
     results = results[0]
   end\n`;
     }

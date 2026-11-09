@@ -6,7 +6,7 @@
 module OpenApiSDK
   module Errors
 
-    class Test2ResponseError < StandardError
+    class Test2ResponseError < ::StandardError
       extend T::Sig
       include Crystalline::MetadataFields
 
@@ -49,7 +49,7 @@ module OpenApiSDK
         @raw_response = raw_response
         @test2 = test2
         unless some_const == "someConstValue"
-          raise ArgumentError, "Invalid value for some_const"
+          raise ::ArgumentError, "Invalid value for some_const"
         end
 
         @some_const = "someConstValue"

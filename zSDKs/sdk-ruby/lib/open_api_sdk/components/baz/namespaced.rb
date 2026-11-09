@@ -20,7 +20,7 @@ module OpenApiSDK
         sig { params(namespace: T.nilable(::String)).void }
         def initialize(namespace: "baz")
           unless namespace == "baz"
-            raise ArgumentError, "Invalid value for namespace"
+            raise ::ArgumentError, "Invalid value for namespace"
           end
 
           @namespace = "baz"

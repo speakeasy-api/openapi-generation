@@ -94,7 +94,7 @@ module OpenApiSDK
 
       field(
         :map,
-        Crystalline::Hash.new(Symbol, Components::SimpleObject),
+        Crystalline::Hash.new(::Symbol, Components::SimpleObject),
         {'format_json': {'letter_case': ::OpenApiSDK::Utils.field_name("map"), required: true}}
       )
 
@@ -252,7 +252,7 @@ module OpenApiSDK
           bigint: ::Integer,
           decimal_str: ::String,
           obj: Components::SimpleObject,
-          map: T::Hash[Symbol, Components::SimpleObject],
+          map: T::Hash[::Symbol, Components::SimpleObject],
           arr: T::Array[Components::SimpleObject],
           any: T.any(Components::SimpleObject, ::String),
           icon: Components::Icon,
@@ -334,7 +334,7 @@ module OpenApiSDK
         @int_enum = int_enum
         @bigint_str = bigint_str
         if !decimal.nil? && (3.141_592_653_589 - decimal).abs >= 0.1
-          raise ArgumentError, "Invalid value for decimal"
+          raise ::ArgumentError, "Invalid value for decimal"
         end
 
         @decimal = 3.141_592_653_589

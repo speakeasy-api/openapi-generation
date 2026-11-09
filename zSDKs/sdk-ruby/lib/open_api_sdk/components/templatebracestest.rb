@@ -73,7 +73,7 @@ module OpenApiSDK
         @field_with_braces_in_example = field_with_braces_in_example
         @field_with_braces_in_default = field_with_braces_in_default
         unless field_with_braces_in_const == "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n"
-          raise ArgumentError, "Invalid value for field_with_braces_in_const"
+          raise ::ArgumentError, "Invalid value for field_with_braces_in_const"
         end
 
         @field_with_braces_in_const = "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n"

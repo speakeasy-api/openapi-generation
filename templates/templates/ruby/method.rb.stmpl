@@ -49,18 +49,18 @@
 
       {{- end}}
       headers = {{if and .Local.Request .Local.Request.Params .Local.Request.Params.HasHeaderParams}}Utils.get_headers(request{{if $globals}}, @sdk_configuration.globals{{end}}){{else}}{}{{end}}
-      {{sorbetCast "headers" "T::Hash[String, String]" true}}
+      {{sorbetCast "headers" "T::Hash[::String, ::String]" true}}
       {{- if and .Local.Request .Local.Request.RequestBody }}
       req_content_type, data, form = Utils.serialize_request_body(request, {{$op.Request.Field.Nullable}}, {{$op.Request.Field.Optional}}, :{{sanitizeFieldName .Local.Request.RequestBody.Name}}, :{{.Local.SerializationMethod}})
       headers['content-type'] = req_content_type
       {{- if and $op.Request (and $op.Request.IsRequestBodyRequired (not (isRequestBodyOptional $op.Request)))}}
-      raise StandardError, 'request body is required' if data.nil? && form.nil?
+      raise ::StandardError, 'request body is required' if data.nil? && form.nil?
       {{-   end}}
 
       if form && !form.empty?
         body = Utils.encode_form(form)
       elsif Utils.match_content_type(req_content_type, 'application/x-www-form-urlencoded')
-        body = URI.encode_www_form({{sorbetCast "data" "T::Hash[Symbol, Object]"}})
+        body = ::URI.encode_www_form({{sorbetCast "data" "T::Hash[::Symbol, ::Object]"}})
       else
         body = data
       end
@@ -96,7 +96,7 @@
         max_retries: {{ .Local.Extensions.Retries.MaxRetries }}{{ end }}
       )
       {{-   end }}
-      retry_options = retries.to_faraday_retry_options(initial_time: Time.now)
+      retry_options = retries.to_faraday_retry_options(initial_time: ::Time.now)
       {{-   if gt (len .Local.Extensions.Retries.StatusCodes) 0 }}
       retry_options[:retry_statuses] = [{{ templateFaradayRetryStatuses .Local.Extensions.Retries.StatusCodes }}]
       {{-   end }}
@@ -127,7 +127,7 @@
         security_source: {{ if .Local.GlobalSecurity }}@sdk_configuration.security_source{{ else if .Local.Security }}-> { security }{{ else }}nil{{ end }}
       )
 
-      error = {{sorbetLet "nil" "T.nilable(StandardError)"}}
+      error = {{sorbetLet "nil" "T.nilable(::StandardError)"}}
       http_response = {{sorbetLet "nil" "T.nilable(Faraday::Response)"}}
       {{if eq $responseFormat "envelope-http" }}http_request = {{sorbetLet "nil" "T.nilable(Faraday::Request)"}}{{end}}
 
@@ -183,7 +183,7 @@
             stream_ready.push(:ok)
             stream_signaled = true
           end
-        rescue StandardError => e
+        rescue ::StandardError => e
           if stream_env
             stream_env[:stream_error] = e
           else
@@ -240,7 +240,7 @@
           )
         end
 {{- end }}
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)
@@ -396,18 +396,18 @@
 
       {{- end}}
       headers = {{if and .Local.Request .Local.Request.Params .Local.Request.Params.HasHeaderParams}}Utils.get_headers(request{{if $globals}}, @sdk_configuration.globals{{end}}){{else}}{}{{end}}
-      {{sorbetCast "headers" "T::Hash[String, String]" true}}
+      {{sorbetCast "headers" "T::Hash[::String, ::String]" true}}
       {{- if and .Local.Request .Local.Request.RequestBody }}
       req_content_type, data, form = Utils.serialize_request_body(request, {{$op.Request.Field.Nullable}}, {{$op.Request.Field.Optional}}, :{{sanitizeFieldName .Local.Request.RequestBody.Name}}, :{{.Local.SerializationMethod}})
       headers['content-type'] = req_content_type
       {{- if and $op.Request (and $op.Request.IsRequestBodyRequired (not (isRequestBodyOptional $op.Request)))}}
-      raise StandardError, 'request body is required' if data.nil? && form.nil?
+      raise ::StandardError, 'request body is required' if data.nil? && form.nil?
       {{-   end}}
 
       if form && !form.empty?
         body = Utils.encode_form(form)
       elsif Utils.match_content_type(req_content_type, 'application/x-www-form-urlencoded')
-        body = URI.encode_www_form({{sorbetCast "data" "T::Hash[Symbol, Object]"}})
+        body = ::URI.encode_www_form({{sorbetCast "data" "T::Hash[::Symbol, ::Object]"}})
       else
         body = data
       end
@@ -442,7 +442,7 @@
         strategy: '{{ .Local.Extensions.Retries.Strategy }}'
       )
       {{-   end }}
-      retry_options = retries.to_faraday_retry_options(initial_time: Time.now)
+      retry_options = retries.to_faraday_retry_options(initial_time: ::Time.now)
       {{-   if gt (len .Local.Extensions.Retries.StatusCodes) 0 }}
       retry_options[:retry_statuses] = [{{ templateFaradayRetryStatuses .Local.Extensions.Retries.StatusCodes }}]
       {{-   end }}
@@ -473,7 +473,7 @@
         security_source: {{ if .Local.GlobalSecurity }}@sdk_configuration.security_source{{ else if .Local.Security }}-> { security }{{ else }}nil{{ end }}
       )
 
-      error = {{sorbetLet "nil" "T.nilable(StandardError)"}}
+      error = {{sorbetLet "nil" "T.nilable(::StandardError)"}}
       http_response = {{sorbetLet "nil" "T.nilable(Faraday::Response)"}}
       {{if eq $responseFormat "envelope-http" }}http_request = {{sorbetLet "nil" "T.nilable(Faraday::Request)"}}{{end}}
 
@@ -529,7 +529,7 @@
             stream_ready.push(:ok)
             stream_signaled = true
           end
-        rescue StandardError => e
+        rescue ::StandardError => e
           if stream_env
             stream_env[:stream_error] = e
           else
@@ -586,7 +586,7 @@
           )
         end
 {{- end }}
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)

@@ -11,19 +11,19 @@ module {{sanitizeModuleName .Global.Config.Module}}
     class ServerEvent
       {{sorbetTSig}}
 
-      {{if sorbetEnabled}}sig { returns(T.nilable(String)) }{{end}}
+      {{if sorbetEnabled}}sig { returns(T.nilable(::String)) }{{end}}
       attr_accessor :id
 
-      {{if sorbetEnabled}}sig { returns(T.nilable(String)) }{{end}}
+      {{if sorbetEnabled}}sig { returns(T.nilable(::String)) }{{end}}
       attr_accessor :event
 
       {{if sorbetEnabled}}sig { returns(T.untyped) }{{end}}
       attr_accessor :data
 
-      {{if sorbetEnabled}}sig { returns(T.nilable(Integer)) }{{end}}
+      {{if sorbetEnabled}}sig { returns(T.nilable(::Integer)) }{{end}}
       attr_accessor :retry
 
-      {{if sorbetEnabled}}sig { params(id: T.nilable(String), event: T.nilable(String), data: T.untyped, retry_ms: T.nilable(Integer)).void }{{end}}
+      {{if sorbetEnabled}}sig { params(id: T.nilable(::String), event: T.nilable(::String), data: T.untyped, retry_ms: T.nilable(::Integer)).void }{{end}}
       def initialize(id: nil, event: nil, data: nil, retry_ms: nil)
         @id = id
         @event = event
@@ -31,7 +31,7 @@ module {{sanitizeModuleName .Global.Config.Module}}
         @retry = retry_ms
       end
 
-      {{if sorbetEnabled}}sig { returns(T::Hash[Symbol, T.untyped]) }{{end}}
+      {{if sorbetEnabled}}sig { returns(T::Hash[::Symbol, T.untyped]) }{{end}}
       def to_h
         h = {}
         h[:id] = @id unless @id.nil?
@@ -43,7 +43,7 @@ module {{sanitizeModuleName .Global.Config.Module}}
     end
 
     class EventStream
-      include Enumerable
+      include ::Enumerable
       {{sorbetTSig}}
 
       MESSAGE_BOUNDARIES = [
@@ -60,7 +60,7 @@ module {{sanitizeModuleName .Global.Config.Module}}
 
       UTF8_BOM = "\xEF\xBB\xBF"
 
-      {{if sorbetEnabled}}sig { params(response: Faraday::Response, decoder: T.proc.params(raw: String).returns(T.untyped), sentinel: T.nilable(String), sdk_ref: T.untyped, data_required: T::Boolean).void }{{end}}
+      {{if sorbetEnabled}}sig { params(response: Faraday::Response, decoder: T.proc.params(raw: ::String).returns(T.untyped), sentinel: T.nilable(::String), sdk_ref: T.untyped, data_required: T::Boolean).void }{{end}}
       def initialize(response, decoder, sentinel: nil, sdk_ref: nil, data_required: true)
         @response = response
         @decoder = decoder
@@ -98,14 +98,14 @@ module {{sanitizeModuleName .Global.Config.Module}}
 
       {{if sorbetEnabled}}sig { params(block: T.proc.params(event: T.untyped).void).void }{{end}}
       def stream_events(&block)
-        buffer = {{sorbetLet "String.new(encoding: Encoding::BINARY)" "String"}}
+        buffer = {{sorbetLet "::String.new(encoding: ::Encoding::BINARY)" "::String"}}
         position = 0
-        event_id = {{sorbetLet "nil" "T.nilable(String)"}}
+        event_id = {{sorbetLet "nil" "T.nilable(::String)"}}
         body = @response.env.body
-        body = StringIO.new(body) if body.is_a?(String)
+        body = ::StringIO.new(body) if body.is_a?(::String)
 
         read_chunks(body) do |chunk|
-          chunk = chunk.b unless chunk.encoding == Encoding::BINARY
+          chunk = chunk.b unless chunk.encoding == ::Encoding::BINARY
           if buffer.empty? && chunk.start_with?(UTF8_BOM.b)
             chunk = chunk[UTF8_BOM.b.length..]
           end
@@ -145,7 +145,7 @@ module {{sanitizeModuleName .Global.Config.Module}}
         raise stream_error unless stream_error.nil?
       end
 
-      {{if sorbetEnabled}}sig { params(body: T.untyped, block: T.proc.params(chunk: String).void).void }{{end}}
+      {{if sorbetEnabled}}sig { params(body: T.untyped, block: T.proc.params(chunk: ::String).void).void }{{end}}
       def read_chunks(body, &block)
         if body.respond_to?(:each)
           body.each(&block)
@@ -158,7 +158,7 @@ module {{sanitizeModuleName .Global.Config.Module}}
         end
       end
 
-      {{if sorbetEnabled}}sig { params(buffer: String, pos: Integer).returns(T.nilable(String)) }{{end}}
+      {{if sorbetEnabled}}sig { params(buffer: ::String, pos: ::Integer).returns(T.nilable(::String)) }{{end}}
       def detect_boundary(buffer, pos)
         char = buffer[pos]
         return nil unless ["\r", "\n"].include?(char)
@@ -171,14 +171,14 @@ module {{sanitizeModuleName .Global.Config.Module}}
         nil
       end
 
-      {{if sorbetEnabled}}sig { params(raw: String, event_id: T.nilable(String)).returns([T.untyped, T::Boolean, T.nilable(String)]) }{{end}}
+      {{if sorbetEnabled}}sig { params(raw: ::String, event_id: T.nilable(::String)).returns([T.untyped, T::Boolean, T.nilable(::String)]) }{{end}}
       def parse_event(raw:, event_id:)
         block = raw.force_encoding('UTF-8')
         lines = block.split(/\r?\n|\r/)
         publish = {{sorbetLet "false" "T::Boolean"}}
-        current_event_id = {{sorbetLet "event_id" "T.nilable(String)"}}
+        current_event_id = {{sorbetLet "event_id" "T.nilable(::String)"}}
         event = ServerEvent.new
-        data = String.new
+        data = ::String.new
 
         lines.each do |line|
           next if line.empty?
@@ -229,15 +229,15 @@ module {{sanitizeModuleName .Global.Config.Module}}
         unless data.empty?
           data = data.chomp("\n")
           begin
-            event.data = JSON.parse(data)
-          rescue JSON::ParserError
+            event.data = ::JSON.parse(data)
+          rescue ::JSON::ParserError
             event.data = data
           end
         end
 
         out = nil
         if publish
-          out = @decoder.call(JSON.generate(event.to_h))
+          out = @decoder.call(::JSON.generate(event.to_h))
         end
 
         [out, false, current_event_id]
