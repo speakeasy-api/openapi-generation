@@ -288,16 +288,18 @@ jobs:
     uses: ./.github/workflows/test-csharpv2.yml
     with:
       test-group: "review"
-    secrets:
-      BOT_REPO_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
   test-csharpv2-basic-http:
     needs: [detect-targets]
     if: needs.detect-targets.outputs.run-csharp == 'true'
     uses: ./.github/workflows/test-csharpv2.yml
     with:
       test-group: "basic-http"
-    secrets:
-      BOT_REPO_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
+  test-csharpv2-security-options:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharpv2.yml
+    with:
+      test-group: "security-options"
   test-csharp:
     if: always() && needs.detect-targets.outputs.run-csharp == 'true'
     needs:
@@ -315,6 +317,7 @@ jobs:
       - test-csharp-review
       - test-csharpv2-review
       - test-csharpv2-basic-http
+      - test-csharpv2-security-options
     uses: ./.github/workflows/check-variants.yml
     with:
       needs-json: ${{ toJSON(needs) }}

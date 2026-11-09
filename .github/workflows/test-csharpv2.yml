@@ -5,11 +5,7 @@ on:
       test-group:
         required: true
         type: string
-    secrets:
-      BOT_REPO_TOKEN:
-        required: true
 env:
-  GOPRIVATE: "github.com/speakeasy-api"
   SPEAKEASY_DEBUG: "true"
 jobs:
   test-csharpv2:
@@ -18,16 +14,12 @@ jobs:
     runs-on: ubicloud-standard-4-ubuntu-2404
     permissions:
       contents: "read"
-      id-token: "write"
       actions: "read"
     steps:
-      - name: Configure git for private modules
-        env:
-          GIT_AUTH_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
-        run: git config --global url."https://speakeasybot:${GIT_AUTH_TOKEN}@github.com".insteadOf "https://github.com"
-
       - name: Check out code into the Go module directory
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # Add this step to install the compatible libssl1.1
       - name: Install libssl1.1
         run: |
@@ -51,22 +43,16 @@ jobs:
 
       - name: Verify dotnet versions installed
         run: dotnet --list-sdks
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache-dependency-path: |
             go.sum
             cmd/**/go.sum
-            zSDKs/**/go.sum
             services/**/go.sum
       - name: Test
+        env:
+          SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only
         run: TARGET=${{ inputs.test-group }} make test-csharpv2-aot
       - name: git diff
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "Unexpected changes after code generation:"
-            git status --porcelain
-            git diff
-            echo "Run 'make build-csharpv2' command and commit these changes."
-            exit 1
-          fi
+        run: ./scripts/check-generated-diff.sh
