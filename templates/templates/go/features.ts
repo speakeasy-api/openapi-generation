@@ -277,8 +277,6 @@ function isTestSkipped(test: string): boolean {
     "errors-response-body-validation-enabled",
     "errors-schema-validation-disabled",
     "errors-schema-validation-enabled",
-    "errors-optional-nullable-error-message",
-    "errors-optional-nullable-error-message-nested",
     "retries-status-codes-override",
     "retries-status-codes-override-global",
     "retries-status-codes-override-default",

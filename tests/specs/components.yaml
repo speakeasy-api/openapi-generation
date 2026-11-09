@@ -2287,7 +2287,7 @@ components:
       type: object
       properties:
         code:
-          type: integer
+          type: string
         message:
           type: string
           nullable: true
@@ -2298,7 +2298,7 @@ components:
       type: object
       properties:
         code:
-          type: integer
+          type: string
         cause:
           type: object
           nullable: true

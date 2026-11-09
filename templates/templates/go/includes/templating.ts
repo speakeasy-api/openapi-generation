@@ -781,34 +781,144 @@ function templateGlobalParamAccess(param: FieldDef): string {
 }
 registerTemplateFunc("templateGlobalParamAccess", templateGlobalParamAccess);
 
+type errorMessageHopKind = "pointer" | "wrapper" | "value";
+
+function errorMessageHopKind(
+  field: FieldDef,
+  owner: TypeDef,
+): errorMessageHopKind {
+  const isModelOwner = owner.Type.toString() !== "error";
+  if (
+    isModelOwner &&
+    field.Optional &&
+    field.Nullable &&
+    context.Global.Config.NullableOptionalWrapper
+  ) {
+    return "wrapper";
+  }
+  if ((field.Optional || field.Nullable) && !isPointerType(field.Type)) {
+    return "pointer";
+  }
+  return "value";
+}
+
+function errorMessageHopAccessor(field: FieldDef, owner: TypeDef): string {
+  // Only error structs are rendered with sanitizeErrorFieldName. Union error
+  // variants that remain classes (e.g. a component type that couldn't be moved
+  // to the errors scope) are rendered by model.go.stmpl with sanitizeFieldName.
+  if (owner.Type.toString() === "error") {
+    return sanitizeErrorFieldName(field.Name, owner);
+  }
+  const fieldName = sanitizeFieldName(field.Name);
+  // model.go.stmpl renders const fields as unexported, so read them through
+  // their getter.
+  return field.Const
+    ? `${sanitizeGetterName(fieldName, owner.Fields)}()`
+    : fieldName;
+}
+
+function stringifyErrorMessageLeaf(leaf: string, field: FieldDef): string {
+  if (field.Type.Type.toString() === "string") {
+    return leaf;
+  }
+  addImport("fmt");
+  return `fmt.Sprint(${leaf})`;
+}
+
+function templateErrorMessageJSONFallback(errorObject: string): string {
+  addImport("encoding/json");
+  return `data, _ := json.Marshal(${errorObject})
+return string(data)`;
+}
+
 // @ts-ignore
 function templateErrorMessage(errorType: TypeDef, errorObject: string): string {
-  const errorMessageField = getErrorMessageField(errorType);
+  const topLevelField = getErrorMessageField(errorType);
+  const path = topLevelField
+    ? [topLevelField]
+    : getOrInferErrorMessageFieldDeep(errorType);
 
-  if (errorMessageField) {
-    // Use sanitizeErrorFieldName only when the type is in the errors scope,
-    // where fields are rendered with that sanitizer. Types that remain in the
-    // components/shared scope use sanitizeFieldName instead (e.g. when a union
-    // error variant references a component type that couldn't be moved).
-    const fieldName = sanitizeScopedFieldName(
-      errorMessageField.Name,
+  if (!path?.length) {
+    return templateErrorMessageJSONFallback(errorObject);
+  }
+
+  const topLevelKind =
+    topLevelField && errorMessageHopKind(topLevelField, errorType);
+  if (
+    topLevelField &&
+    topLevelField.Type.Type.toString() === "string" &&
+    topLevelKind !== "wrapper"
+  ) {
+    const access = `${errorObject}.${errorMessageHopAccessor(
+      topLevelField,
       errorType,
-    );
-
-    if (errorMessageField.Optional) {
-      return `if ${errorObject}.${fieldName} == nil {
+    )}`;
+    if (topLevelKind === "pointer") {
+      return `if ${access} == nil {
     return "unknown error"
 }
 
-return *${errorObject}.${fieldName}`;
-    } else {
-      return `return ${errorObject}.${fieldName}`;
+return *${access}`;
     }
-  } else {
-    addImport("encoding/json");
-    return `data, _ := json.Marshal(${errorObject})
-return string(data)`;
+    return `return ${access}`;
   }
+
+  const lines: string[] = [`if ${errorObject} != nil {`];
+  let expr = errorObject;
+  let owner = errorType;
+  let leaf = "";
+  let openBlocks = 1;
+  const indent = () => "\t".repeat(openBlocks);
+
+  path.forEach((field, hop) => {
+    const access = `${expr}.${errorMessageHopAccessor(field, owner)}`;
+    const isLeaf = hop === path.length - 1;
+    const local = `v${hop}`;
+
+    switch (errorMessageHopKind(field, owner)) {
+      case "wrapper":
+        lines.push(
+          `${indent()}if ${local}, ok := ${access}.Get(); ok && ${local} != nil {`,
+        );
+        openBlocks++;
+        expr = local;
+        leaf = `*${local}`;
+        break;
+      case "pointer":
+        if (isLeaf) {
+          lines.push(`${indent()}if ${access} != nil {`);
+          leaf = `*${access}`;
+        } else {
+          lines.push(`${indent()}if ${local} := ${access}; ${local} != nil {`);
+          expr = local;
+        }
+        openBlocks++;
+        break;
+      case "value":
+        if (isLeaf && isPointerType(field.Type)) {
+          lines.push(`${indent()}if ${access} != nil {`);
+          openBlocks++;
+        }
+        expr = access;
+        leaf = access;
+        break;
+    }
+    owner = field.Type;
+  });
+
+  lines.push(
+    `${indent()}return ${stringifyErrorMessageLeaf(
+      leaf,
+      path[path.length - 1],
+    )}`,
+  );
+  while (openBlocks > 0) {
+    openBlocks--;
+    lines.push(`${indent()}}`);
+  }
+  return `${lines.join("\n")}
+
+${templateErrorMessageJSONFallback(errorObject)}`;
 }
 registerTemplateFunc("templateErrorMessage", templateErrorMessage);
 

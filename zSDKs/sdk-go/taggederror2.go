@@ -41,6 +41,10 @@ type TaggedError2 struct {
 var _ error = &TaggedError2{}
 
 func (e *TaggedError2) Error() string {
+	if e != nil {
+		return e.Error_.Message
+	}
+
 	data, _ := json.Marshal(e)
 	return string(data)
 }

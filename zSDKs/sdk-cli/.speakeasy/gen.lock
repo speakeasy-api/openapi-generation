@@ -542,29 +542,29 @@ trackedFiles:
   internal/sdk/models/operations/validate.go:
     last_write_checksum: sha1:f47ee88aa6d2e430efe640ad5113beea9aa25e68
   internal/sdk/models/sdkerrors/badrequestresponseerror.go:
-    last_write_checksum: sha1:a99fe757d5bd418b73cafd90e5a1e252b731b9b2
+    last_write_checksum: sha1:555b7a6b09f85a26162b8db770e3ae4de2b3aeae
   internal/sdk/models/sdkerrors/error.go:
     last_write_checksum: sha1:3973a2b79661a96c636a1e857f3b77292a5f170f
   internal/sdk/models/sdkerrors/errortype1.go:
     last_write_checksum: sha1:62ad7f2ed96d3a8ef23f80b2174f3711cd331d26
   internal/sdk/models/sdkerrors/errortype2.go:
-    last_write_checksum: sha1:a5dfcfa3751e740a05f1d76a99bbf716b2c4f925
+    last_write_checksum: sha1:8c338cead9c410ef3fdd0bdf9cb22aa61deacccc
   internal/sdk/models/sdkerrors/failedresponseerror.go:
     last_write_checksum: sha1:9f3a5f50740244b5976fde99cbb908ad289eda91
   internal/sdk/models/sdkerrors/geterrorinunion.go:
-    last_write_checksum: sha1:5ab1a7aa62fea58178fdae00fff5bc37c85b7539
+    last_write_checksum: sha1:8e4b3a3d943796e5007c299529a95e972de795d2
   internal/sdk/models/sdkerrors/getunionerrors.go:
-    last_write_checksum: sha1:3563a48bef7106ce0ac9e248fc902e49c3822670
+    last_write_checksum: sha1:681f589c44bfb8d555a87869cd1ff2320909c2af
   internal/sdk/models/sdkerrors/requesttimeouterror.go:
-    last_write_checksum: sha1:5342a762baaf8c6374580a8d7034cb7ef885840c
+    last_write_checksum: sha1:ea238181e76aa3559af239e7c27601484b5b6082
   internal/sdk/models/sdkerrors/responsevalidationerror.go:
     last_write_checksum: sha1:77189808f8c0d0fc49a2e8cc77a8a4006e61682c
   internal/sdk/models/sdkerrors/sdkdefaulterror.go:
     last_write_checksum: sha1:437b3a3eacb54d8648a68f80b3cd38fa5019f006
   internal/sdk/models/sdkerrors/taggederror1.go:
-    last_write_checksum: sha1:71d6a55caa98a396e569cf1e0980ad9533a7b8fb
+    last_write_checksum: sha1:bb30f824856c8d13b83aa8a5695ab3c3dd73caa9
   internal/sdk/models/sdkerrors/taggederror2.go:
-    last_write_checksum: sha1:6c77f4ef4ef2b21d58b04d839164d3720b2cb7c2
+    last_write_checksum: sha1:9acb472e88185d6b14a453ec4fa20f397715d5da
   internal/sdk/models/sdkerrors/test2responseerror.go:
     last_write_checksum: sha1:c4410b1558064bbd65a4dbf51390eb2327da156a
   internal/sdk/models/webhooks/paymentcreated.go:

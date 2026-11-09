@@ -122,7 +122,7 @@ func TestStatusGetErrorXSpeakeasyErrors(t *testing.T) {
 	res, err = s.Errors.StatusGetXSpeakeasyErrors(context.Background(), 501)
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	assert.Equal(t, `{"code":"501","message":"an error occurred","type":"internal"}`, err.Error())
+	assert.Equal(t, "an error occurred", err.Error())
 
 	var e501 *apierrors.StatusGetXSpeakeasyErrorsResponseBody
 	if assert.ErrorAs(t, err, &e501) {
@@ -243,7 +243,7 @@ func TestUnionOfErrors(t *testing.T) {
 	res2, err2 := s.Errors.ErrorUnionPost(context.Background(), req2)
 	assert.Nil(t, res2)
 	assert.Error(t, err2)
-	assert.Equal(t, "{\"error\":{\"message\":\"Error2\"}}", err2.Error())
+	assert.Equal(t, "Error2", err2.Error())
 }
 
 func TestUnionOfErrorsDiscriminated(t *testing.T) {
@@ -268,7 +268,68 @@ func TestUnionOfErrorsDiscriminated(t *testing.T) {
 	res2, err2 := s.Errors.ErrorUnionDiscriminatedPost(context.Background(), req2)
 	assert.Nil(t, res2)
 	assert.Error(t, err2)
-	assert.Equal(t, "{\"error\":{\"message\":\"Error2\"},\"tag\":\"tag2\"}", err2.Error())
+	assert.Equal(t, "Error2", err2.Error())
+}
+
+func TestErrorMessageNilReceiverAndUnionMember(t *testing.T) {
+	var nilErr *apierrors.NestedNullableOptionalErrorMessage
+	assert.Equal(t, "null", nilErr.Error())
+
+	u := apierrors.ErrorUnionDiscriminatedPostResponseBody{
+		Type: apierrors.ErrorUnionDiscriminatedPostResponseBodyTypeTag2,
+	}
+	assert.Equal(t, "null", u.Error())
+}
+
+func TestOptionalNullableErrorMessage(t *testing.T) {
+	recordTest("errors-optional-nullable-error-message")
+
+	s := sdk.New()
+
+	res, err := s.Errors.GetNullableOptionalErrorMessage(context.Background())
+	assert.Nil(t, res)
+	assert.Error(t, err)
+	assert.Equal(t, "an error occurred", err.Error())
+
+	var e *apierrors.NullableOptionalErrorMessage
+	if assert.ErrorAs(t, err, &e) {
+		assert.Equal(t, "an error occurred", *e.Message)
+	}
+}
+
+func TestOptionalNullableNestedErrorMessage(t *testing.T) {
+	recordTest("errors-optional-nullable-error-message-nested")
+
+	s := sdk.New()
+
+	res, err := s.Errors.GetNestedNullableOptionalErrorMessage(context.Background(), true)
+	assert.Nil(t, res)
+	assert.Error(t, err)
+	assert.Equal(t, "underlying cause", err.Error())
+
+	var e *apierrors.NestedNullableOptionalErrorMessage
+	if assert.ErrorAs(t, err, &e) {
+		assert.Equal(t, "underlying cause", *e.Cause.Message)
+	}
+
+	res, err = s.Errors.GetNestedNullableOptionalErrorMessage(context.Background(), false)
+	assert.Nil(t, res)
+	assert.Error(t, err)
+	assert.Equal(t, `{"code":"512"}`, err.Error())
+
+	if assert.ErrorAs(t, err, &e) {
+		assert.Nil(t, e.Cause)
+	}
+}
+
+func TestOptionalNullableNestedErrorMessageExplicitNull(t *testing.T) {
+	var nullCause apierrors.NestedNullableOptionalErrorMessage
+	require.NoError(t, json.Unmarshal([]byte(`{"code":"512","cause":null}`), &nullCause))
+	assert.Equal(t, `{"code":"512"}`, nullCause.Error())
+
+	var nullMessage apierrors.NestedNullableOptionalErrorMessage
+	require.NoError(t, json.Unmarshal([]byte(`{"code":"512","cause":{"message":null}}`), &nullMessage))
+	assert.Equal(t, `{"cause":{},"code":"512"}`, nullMessage.Error())
 }
 
 func TestErrorUnionRedecodePreservesHTTPMeta(t *testing.T) {
