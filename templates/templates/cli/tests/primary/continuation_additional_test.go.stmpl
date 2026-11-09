@@ -52,7 +52,7 @@ func newContinuationServer(t *testing.T, reply func(n int) continuationReply) *c
 			return
 		}
 		switch r.URL.Path {
-		case "/continuation/compose":
+		case "/continuation/compose", "/continuation/dispatch":
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, answer.body)
 		case "/continuation/compose/stream":
@@ -195,6 +195,31 @@ func TestContinuationDiscrete(t *testing.T) {
 		assert.Contains(t, h.GetStdout(), `"usage":{"inputUnits":9223372036854775808,"outputUnits":3}`)
 	})
 
+	t.Run("dispatch variants inherit continuation and outcome", func(t *testing.T) {
+		for _, selector := range []string{"alpha", "beta"} {
+			for _, finalState := range []string{"completed", "failed"} {
+				t.Run(selector+"/"+finalState, func(t *testing.T) {
+					srv := newContinuationServer(t, scriptedReplies(
+						discreteReply("w1", "more_required", "tok1", "a", 0, 0),
+						discreteReply("w2", finalState, "", "b", 0, 0),
+					))
+					h, err := runOutcome(t, srv.URL, "compose-choice", "hello", "--"+selector, "variant-value", "--output-format", "json")
+					if finalState == "failed" {
+						require.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+						assert.Equal(t, "CLI_OUTCOME_FAILED", outcomeErrorEnvelope(t, h.GetStderr())["error_reason"])
+					} else {
+						require.NoError(t, err, h.GetStderr())
+					}
+					sent := srv.sent()
+					require.Len(t, sent, 2)
+					assert.Equal(t, map[string]interface{}{"prompt": "hello", selector: "variant-value"}, sent[0])
+					assert.Equal(t, map[string]interface{}{"prompt": "hello", selector: "variant-value", "resumeToken": "tok1", "previousId": "w1"}, sent[1])
+					assert.Equal(t, []string{"a", "b"}, stepTexts(decodeJSONObject(t, h.GetStdout())))
+				})
+			}
+		}
+	})
+
 	t.Run("three responses report the hop count", func(t *testing.T) {
 		srv := newContinuationServer(t, threeHops)
 		h, err := runOutcome(t, srv.URL, composeArgs()...)
@@ -215,6 +240,43 @@ func TestContinuationDiscrete(t *testing.T) {
 		assert.Equal(t, map[string]interface{}{"prompt": "hello", "resumeToken": "tok1"}, sent[1])
 	})
 
+	t.Run("true and null request guards bind the response ID", func(t *testing.T) {
+		for name, args := range map[string][]string{
+			"true": {"compose", "hello", "--retain=true", "--output-format", "json"},
+			"null": {"compose", "--body", `{"prompt":"hello","retain":null,"previousId":"initial"}`, "--output-format", "json"},
+		} {
+			t.Run(name, func(t *testing.T) {
+				srv := newContinuationServer(t, scriptedReplies(
+					discreteReply("w1", "more_required", "tok1", "a", 0, 0),
+					discreteReply("w2", "completed", "", "b", 0, 0),
+				))
+				h, err := runOutcome(t, srv.URL, args...)
+				require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+				sent := srv.sent()
+				require.Len(t, sent, 2)
+				assert.Equal(t, "w1", sent[1]["previousId"])
+			})
+		}
+	})
+
+	t.Run("a false request guard preserves the initial previous ID", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(
+			discreteReply("w1", "more_required", "tok1", "a", 0, 0),
+			discreteReply("w2", "completed", "", "b", 0, 0),
+		))
+		h, err := runOutcome(t, srv.URL, composeArgs("--previous-id", "initial", "--retain=false", "--output-format", "json")...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		sent := srv.sent()
+		require.Len(t, sent, 2)
+		assert.Equal(t, "initial", sent[0]["previousId"])
+		assert.Equal(t, "initial", sent[1]["previousId"])
+
+		srv = newContinuationServer(t, scriptedReplies(discreteReply("w1", "more_required", "tok1", "a", 0, 0)))
+		h, err = runOutcome(t, srv.URL, composeArgs("--previous-id", "initial", "--retain=false", "--auto-continue=false")...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		assert.NotContains(t, h.GetStderr(), "--previous-id")
+	})
+
 	t.Run("resume values from flags reach the first request", func(t *testing.T) {
 		srv := newContinuationServer(t, scriptedReplies(discreteReply("w2", "completed", "", "b", 0, 0)))
 		h, err := runOutcome(t, srv.URL, composeArgs("--resume-token", "tok9", "--previous-id", "w9", "--output-format", "json")...)
@@ -224,12 +286,39 @@ func TestContinuationDiscrete(t *testing.T) {
 		assert.Equal(t, map[string]interface{}{"prompt": "hello", "resumeToken": "tok9", "previousId": "w9"}, sent[0])
 	})
 
-	t.Run("a resumable success prints how to continue", func(t *testing.T) {
+	t.Run("a resumable success does not print how to continue", func(t *testing.T) {
 		srv := newContinuationServer(t, scriptedReplies(discreteReply("w1", "budget_reached", "tok1", "a", 0, 0)))
 		h, err := runOutcome(t, srv.URL, composeArgs()...)
 		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
 		require.Len(t, srv.sent(), 1, "a success state never continues automatically")
-		assert.Contains(t, h.GetStderr(), `To continue, re-run the same command with --resume-token "tok1" --previous-id "w1".`)
+		assert.NotContains(t, h.GetStderr(), "To continue")
+	})
+
+	t.Run("the raw operation continues when also used by an async intent", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(
+			discreteReply("w1", "more_required", "tok1", "a", 0, 0),
+			discreteReply("w2", "completed", "", "b", 0, 0),
+		))
+		h, err := runOutcome(t, srv.URL, "continuation", "continuation-compose", "--body", `{"prompt":"hello"}`, "--output-format", "json")
+		require.NoError(t, err, h.GetStderr())
+		require.Len(t, srv.sent(), 2)
+		assert.Equal(t, "tok1", srv.sent()[1]["resumeToken"])
+	})
+
+	t.Run("the async intent bypasses continuation", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(discreteReply("w1", "more_required", "tok1", "a", 0, 0)))
+		h, err := runOutcome(t, srv.URL, "compose-job", "--prompt", "hello", "--async")
+		require.NoError(t, err, h.GetStderr())
+		require.Len(t, srv.sent(), 1)
+		assert.Contains(t, h.GetStdout(), "w1")
+	})
+
+	t.Run("a handoff state is terminal", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(discreteReply("w1", "needs_input", "tok1", "a", 0, 0)))
+		h, err := runOutcome(t, srv.URL, composeArgs()...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		require.Len(t, srv.sent(), 1)
+		assert.NotContains(t, h.GetStderr(), "To continue")
 	})
 
 	t.Run("auto-continue disabled stops after the first response", func(t *testing.T) {
@@ -240,7 +329,15 @@ func TestContinuationDiscrete(t *testing.T) {
 		assert.Contains(t, h.GetStderr(), `--resume-token "tok1"`)
 	})
 
-	t.Run("a failure after continuing carries the hop and resume values", func(t *testing.T) {
+	t.Run("a first-hop failure has no resume values", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(discreteReply("w1", "failed", "tok1", "a", 0, 0)))
+		h, err := runOutcome(t, srv.URL, composeArgs("--output-format", "json")...)
+		require.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+		envelope := outcomeErrorEnvelope(t, h.GetStderr())
+		assert.NotContains(t, envelope, "continuation")
+	})
+
+	t.Run("a failure after continuing carries the previous checkpoint", func(t *testing.T) {
 		srv := newContinuationServer(t, scriptedReplies(
 			discreteReply("w1", "more_required", "tok1", "a", 0, 0),
 			discreteReply("w2", "failed", "tok2", "b", 0, 0),
@@ -253,7 +350,7 @@ func TestContinuationDiscrete(t *testing.T) {
 		assert.Equal(t, "failed", envelope["state"])
 		assert.Contains(t, envelope["message"], "budget exhausted")
 		assert.Equal(t, float64(2), envelope["hops"])
-		assert.Equal(t, map[string]interface{}{"$.resumeToken": "tok2", "$.previousId": "w2"}, envelope["continuation"])
+		assert.Equal(t, map[string]interface{}{"$.resumeToken": "tok1", "$.previousId": "w1"}, envelope["continuation"])
 		assert.Equal(t, []string{"a", "b"}, stepTexts(decodeJSONObject(t, h.GetStdout())))
 	})
 
@@ -397,6 +494,67 @@ func TestContinuationStream(t *testing.T) {
 		assert.Contains(t, h.GetStdout(), "w2")
 	})
 
+	t.Run("a stream handoff after a checkpoint is terminal", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(continuationReply{events: []string{
+			deltaEvent("one", "tok1"),
+			widgetEvent("w1", "needs_input", ""),
+		}}))
+		h, err := runOutcome(t, srv.URL, "compose-stream", "hello")
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		require.Len(t, srv.sent(), 1)
+		assert.Equal(t, "one\n", h.GetStdout())
+		assert.NotContains(t, h.GetStderr(), "CLI_CONNECTION")
+		assert.NotContains(t, h.GetStderr(), "Continued across")
+	})
+
+	t.Run("a later stream without a token retains the previous checkpoint", func(t *testing.T) {
+		for _, events := range [][]string{
+			{},
+			{widgetEvent("w2", "in_progress", "")},
+		} {
+			srv := newContinuationServer(t, scriptedReplies(
+				continuationReply{events: []string{deltaEvent("one", "tok1"), widgetEvent("w1", "more_required", "")}},
+				continuationReply{events: events},
+			))
+			h, err := runOutcome(t, srv.URL, "compose-stream", "hello", "--output-format", "json")
+			require.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+			envelope := outcomeErrorEnvelope(t, h.GetStderr())
+			assert.Equal(t, "CLI_CONNECTION", envelope["error_reason"])
+			assert.Equal(t, map[string]interface{}{"$.resumeToken": "tok1", "$.previousId": "w1"}, envelope["continuation"])
+			require.Len(t, srv.sent(), 2)
+		}
+	})
+
+	t.Run("terminal stream states do not advertise checkpoints", func(t *testing.T) {
+		for _, state := range []string{"completed", "needs_input", "failed"} {
+			t.Run(state, func(t *testing.T) {
+				srv := newContinuationServer(t, scriptedReplies(continuationReply{events: []string{
+					deltaEvent("one", "tok1"), widgetEvent("w1", state, "terminal-token"),
+				}}))
+				h, err := runOutcome(t, srv.URL, "compose-stream", "hello", "--auto-continue=false", "--output-format", "json")
+				if state == "failed" {
+					require.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+					assert.NotContains(t, outcomeErrorEnvelope(t, h.GetStderr()), "continuation")
+				} else {
+					require.NoError(t, err, h.GetStderr())
+				}
+				assert.NotContains(t, h.GetStderr(), "To continue")
+				require.Len(t, srv.sent(), 1)
+			})
+		}
+	})
+
+	t.Run("the alternative stream state path drives continuation", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(
+			continuationReply{events: []string{`{"status":"more_required","resumeToken":"tok1"}`}},
+			continuationReply{events: []string{widgetEvent("w2", "completed", "")}},
+		))
+		h, err := runOutcome(t, srv.URL, "compose-stream", "hello", "--output-format", "json")
+		require.NoError(t, err, h.GetStderr())
+		require.Len(t, srv.sent(), 2)
+		assert.Equal(t, "tok1", srv.sent()[1]["resumeToken"])
+	})
+
 	t.Run("a stream that ends without a checkpoint is left as is", func(t *testing.T) {
 		srv := newContinuationServer(t, scriptedReplies(continuationReply{events: []string{deltaEvent("one", "")}}))
 		h, err := runOutcome(t, srv.URL, "compose-stream", "hello")
@@ -416,7 +574,7 @@ func TestContinuationStream(t *testing.T) {
 		envelope := outcomeErrorEnvelope(t, h.GetStderr())
 		assert.Equal(t, "CLI_OUTCOME_FAILED", envelope["error_reason"])
 		assert.Equal(t, float64(2), envelope["hops"])
-		assert.Equal(t, map[string]interface{}{"$.resumeToken": "tok2", "$.previousId": "w2"}, envelope["continuation"])
+		assert.Equal(t, map[string]interface{}{"$.resumeToken": "tok1", "$.previousId": "w1"}, envelope["continuation"])
 	})
 
 	t.Run("the declared hop limit stops an endless stream", func(t *testing.T) {

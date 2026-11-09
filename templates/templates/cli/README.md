@@ -872,6 +872,42 @@ Dry-run does not depend on agent environment detection. Successful previews use 
 
 The closed reason namespace is `CLI_VALIDATION`, `CLI_CONNECTION`, `CLI_PROTOCOL`, `CLI_RUNTIME`, `CLI_UNAVAILABLE`, `CLI_AUTHENTICATION`, `CLI_ASYNC_FAILED`, `CLI_ASYNC_TIMEOUT`, `CLI_ASYNC_UNKNOWN_STATE`, `CLI_OUTCOME_FAILED`, and `CLI_CONTINUATION_LIMIT`; it mirrors `CLIRuntimeHintReasons` in `internal/extensions/cli_commands.go`. Interactive prompt cancellation and TUI/explorer failures deliberately remain untyped and therefore exit as runtime failures.
 
+### Continuation recipes
+
+Declare `continuation` and `output.outcome` on an operation entry to share them with
+non-async intents, including same-operation dispatch commands. Async intents may
+use the same create operation but do not inherit its continuation recipe or outcome.
+A single command cannot combine `async` and `continuation`.
+
+A binding can be disabled for a request-body value:
+
+```yaml
+continuation:
+  bind:
+    - from: $.resumeToken
+      to: $.resumeToken
+    - from: $.id
+      to: $.previousId
+      optional: true
+      unlessRequest:
+        path: $.retain
+        equals: false
+```
+
+`unlessRequest` compares an existing request-body value with a JSON scalar. Missing
+values do not match, and `null` only matches an explicit `equals: null`. Numeric
+conditions must be finite and within the JavaScript safe-integer range. A disabled
+binding neither changes the request nor appears in resume guidance.
+
+`output.outcome.streamStatePointer` accepts a singular JSONPath or a list. For each
+event, the first path containing a non-empty string supplies the state. All paths
+are validated against the stream's event schemas.
+
+Automatic continuation follows only states classified as `continue`. Terminal
+responses do not produce manual continuation hints. Errors after a continuation
+hop retain the last complete checkpoint's resume values when the new hop has not
+provided a complete checkpoint. Values from different hops are never combined.
+
 ### Exit Codes and Error Boundaries
 
 **Files**: `auxiliary/internal/clierrors/clierrors.go.stmpl`, `auxiliary/internal/output/exitcodes.go.stmpl`, `auxiliary/internal/output/classify.go.stmpl`, `auxiliary/internal/output/output.go.stmpl`, `root.go.stmpl`

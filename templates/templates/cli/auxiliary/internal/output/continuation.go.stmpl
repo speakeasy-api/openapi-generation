@@ -22,12 +22,18 @@ import (
 const continuationAnnotation = "speakeasy_continuation"
 
 type continuationBinding struct {
-	Pointer        string   `json:"pointer"`
-	StreamPointers []string `json:"streamPointers"`
-	To             string   `json:"to"`
-	ToPath         []string `json:"toPath"`
-	Optional       bool     `json:"optional"`
-	Flag           string   `json:"flag"`
+	Pointer        string                        `json:"pointer"`
+	StreamPointers []string                      `json:"streamPointers"`
+	To             string                        `json:"to"`
+	ToPath         []string                      `json:"toPath"`
+	Optional       bool                          `json:"optional"`
+	Flag           string                        `json:"flag"`
+	UnlessRequest  *continuationRequestCondition `json:"unlessRequest"`
+}
+
+type continuationRequestCondition struct {
+	Pointer string      `json:"pointer"`
+	Equals  interface{} `json:"equals"`
 }
 
 type continuationConfig struct {
@@ -63,23 +69,26 @@ func ContinuationActive(cmd *cobra.Command) bool {
 }
 
 type continuationRun struct {
-	cmd     *cobra.Command
-	cfg     *continuationConfig
-	outcome *outcomeConfig
-	request interface{}
-	hop     ContinuationHop
-	auto    bool
-	limit   int
+	cmd           *cobra.Command
+	cfg           *continuationConfig
+	outcome       *outcomeConfig
+	request       interface{}
+	original      interface{}
+	hop           ContinuationHop
+	auto          bool
+	limit         int
 
-	hops    int
-	state   string
-	values  map[string]string
-	limited bool
-	missing []string
+	hops          int
+	state         string
+	values        map[string]string
+	fallback      map[string]string
+	fallbackValid bool
+	limited       bool
+	missing       []string
 }
 
 func newContinuationRun(cmd *cobra.Command, request interface{}, hop ContinuationHop) (*continuationRun, error) {
-	run := &continuationRun{cmd: cmd, cfg: activeContinuation(cmd), outcome: activeOutcome(cmd), request: request, hop: hop, values: map[string]string{}}
+	run := &continuationRun{cmd: cmd, cfg: activeContinuation(cmd), outcome: activeOutcome(cmd), request: request, original: continuationRequestPayload(request), hop: hop, values: map[string]string{}}
 	run.auto, _ = flagutil.GetBoolFlag(cmd, "auto-continue")
 	run.limit = run.cfg.MaxHops
 	if flagutil.FlagChanged(cmd, "max-continuations") {
@@ -100,8 +109,51 @@ func (r *continuationRun) beginHop() {
 	r.values = map[string]string{}
 }
 
+func (r *continuationRun) bindingEnabled(binding continuationBinding) bool {
+	condition := binding.UnlessRequest
+	if condition == nil {
+		return true
+	}
+	value, ok := outcomePointer(r.original, condition.Pointer)
+	return !ok || !continuationValuesEqual(value, condition.Equals)
+}
+
+func continuationValuesEqual(left, right interface{}) bool {
+	if reflect.DeepEqual(left, right) {
+		return true
+	}
+	leftNumber, leftOK := continuationNumber(left)
+	rightNumber, rightOK := continuationNumber(right)
+	return leftOK && rightOK && leftNumber.Cmp(rightNumber) == 0
+}
+
+func continuationNumber(value interface{}) (*big.Rat, bool) {
+	var text string
+	switch number := value.(type) {
+	case json.Number:
+		text = number.String()
+	case float64:
+		text = strconv.FormatFloat(number, 'g', -1, 64)
+	case float32:
+		text = strconv.FormatFloat(float64(number), 'g', -1, 32)
+	case int:
+		text = strconv.Itoa(number)
+	case int64:
+		text = strconv.FormatInt(number, 10)
+	case uint64:
+		text = strconv.FormatUint(number, 10)
+	default:
+		return nil, false
+	}
+	rational, ok := new(big.Rat).SetString(text)
+	return rational, ok
+}
+
 func (r *continuationRun) capture(payload interface{}, stream bool) {
 	for _, binding := range r.cfg.Bind {
+		if !r.bindingEnabled(binding) {
+			continue
+		}
 		pointers := []string{binding.Pointer}
 		if stream {
 			pointers = binding.StreamPointers
@@ -117,13 +169,19 @@ func (r *continuationRun) capture(payload interface{}, stream bool) {
 			}
 		}
 	}
-	pointer := r.outcome.StatePointer
+	pointers := []string{r.outcome.StatePointer}
 	if stream {
-		pointer = r.outcome.StreamStatePointer
+		pointers = r.outcome.streamStatePointers()
 	}
-	if value, ok := outcomePointer(payload, pointer); ok {
-		if text, isString := value.(string); isString && text != "" {
-			r.state = text
+	for _, pointer := range pointers {
+		if pointer == "" {
+			continue
+		}
+		if value, ok := outcomePointer(payload, pointer); ok {
+			if text, isString := value.(string); isString && text != "" {
+				r.state = text
+				break
+			}
 		}
 	}
 }
@@ -136,9 +194,16 @@ func (r *continuationRun) advance() (bool, error) {
 	}
 	r.missing = nil
 	for _, binding := range r.cfg.Bind {
+		if !r.bindingEnabled(binding) {
+			continue
+		}
 		if !binding.Optional && r.values[binding.To] == "" {
 			r.missing = append(r.missing, binding.To)
 		}
+	}
+	if len(r.missing) == 0 {
+		r.fallback = cloneContinuationValues(r.values)
+		r.fallbackValid = true
 	}
 	if len(r.missing) > 0 || !r.auto {
 		return false, nil
@@ -148,6 +213,9 @@ func (r *continuationRun) advance() (bool, error) {
 		return false, nil
 	}
 	for _, binding := range r.cfg.Bind {
+		if !r.bindingEnabled(binding) {
+			continue
+		}
 		value, ok := r.values[binding.To]
 		if !ok {
 			continue
@@ -172,23 +240,58 @@ func (r *continuationRun) send() (interface{}, error) {
 }
 
 func (r *continuationRun) resumeFields() map[string]interface{} {
-	if !r.resumable() {
+	values := r.resumeValues()
+	if len(values) == 0 || !r.hasCompleteRequiredBindings(values) {
 		return nil
 	}
 	fields := map[string]interface{}{}
-	for to, value := range r.values {
+	for to, value := range values {
 		fields[to] = value
 	}
 	return fields
 }
 
 func (r *continuationRun) resumable() bool {
+	values := r.resumeValues()
+	if len(values) == 0 || !r.hasCompleteRequiredBindings(values) {
+		return false
+	}
 	for _, binding := range r.cfg.Bind {
-		if !binding.Optional && r.values[binding.To] != "" {
+		if r.bindingEnabled(binding) && values[binding.To] != "" {
 			return true
 		}
 	}
 	return false
+}
+
+func (r *continuationRun) hasCompleteRequiredBindings(values map[string]string) bool {
+	for _, binding := range r.cfg.Bind {
+		if r.bindingEnabled(binding) && !binding.Optional && values[binding.To] == "" {
+			return false
+		}
+	}
+	return true
+}
+
+func (r *continuationRun) resumeValues() map[string]string {
+	if r.outcome.States[r.state] == "success" || r.outcome.States[r.state] == "handoff" {
+		return nil
+	}
+	if r.outcome.States[r.state] == "failure" || !r.hasCompleteRequiredBindings(r.values) {
+		if r.fallbackValid {
+			return r.fallback
+		}
+		return nil
+	}
+	return r.values
+}
+
+func cloneContinuationValues(values map[string]string) map[string]string {
+	cloned := make(map[string]string, len(values))
+	for key, value := range values {
+		cloned[key] = value
+	}
+	return cloned
 }
 
 // resumeHint names the command's own flags for each resume value; values
@@ -198,8 +301,12 @@ func (r *continuationRun) resumeHint() string {
 		return ""
 	}
 	var flags, paths []string
+	values := r.resumeValues()
 	for _, binding := range r.cfg.Bind {
-		value, ok := r.values[binding.To]
+		if !r.bindingEnabled(binding) {
+			continue
+		}
+		value, ok := values[binding.To]
 		if !ok {
 			continue
 		}
@@ -242,8 +349,10 @@ func (r *continuationRun) finish() error {
 	if r.hops > 1 {
 		fmt.Fprintf(stderr, "Continued across %d responses.\n", r.hops)
 	}
-	if hint := r.resumeHint(); hint != "" {
-		fmt.Fprintln(stderr, hint+".")
+	if r.outcome.States[r.state] == "continue" && !r.auto {
+		if hint := r.resumeHint(); hint != "" {
+			fmt.Fprintln(stderr, hint+".")
+		}
 	}
 	return nil
 }
@@ -486,6 +595,22 @@ func mergedContinuationResult(last interface{}, merged interface{}) interface{} 
 	}
 }
 
+func continuationRequestPayload(request interface{}) interface{} {
+	target, err := continuationBodyTarget(request)
+	if err != nil {
+		return nil
+	}
+	encoded, err := json.Marshal(target.Interface())
+	if err != nil {
+		return nil
+	}
+	payload, err := decodeWithNumbers(encoded)
+	if err != nil {
+		return nil
+	}
+	return payload
+}
+
 // setContinuationBodyValue writes value at path inside the request body: the
 // request field tagged as the media-type body, or the request itself when the
 // body is the whole request. The body round-trips through JSON so nested
@@ -553,7 +678,7 @@ func ContinuationStream(cmd *cobra.Command, request interface{}, hop Continuatio
 	if err != nil {
 		return err
 	}
-	if run.outcome.StreamStatePointer == "" {
+	if len(run.outcome.streamStatePointers()) == 0 {
 		res, err := run.send()
 		if err != nil {
 			return Error(cmd, err)
@@ -592,7 +717,7 @@ func (s *streamContinuation) wrap(err error) error { return s.run.wrap(err) }
 
 func (s *streamContinuation) next() (interface{}, bool, error) {
 	switch s.run.outcome.States[s.run.state] {
-	case "continue", "success", "failure":
+	case "continue", "success", "failure", "handoff":
 	default:
 		if s.run.resumable() {
 			message := "the stream ended before reporting a final state"
