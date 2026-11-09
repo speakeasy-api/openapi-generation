@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.960.7] - 2026-11-09
+### :bug: Bug Fixes
+- [`319da9c`](https://github.com/speakeasy-api/openapi-generation/commit/319da9c263cacda7b2d1db5370a2f1ac9ddbb4a7) - **python**: resolve enum discriminator tags in dict union input ([#204](https://github.com/speakeasy-api/openapi-generation/pull/204)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+### :wrench: Chores
+- [`8c08092`](https://github.com/speakeasy-api/openapi-generation/commit/8c08092ff68e5f6ff039740e2c74e615c3a6bd60) - pin changelog-action to the version that parses commit subjects only ([#205](https://github.com/speakeasy-api/openapi-generation/pull/205)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.960.6] - 2026-11-09
 ### :bug: Bug Fixes
 - [`da163f4`](https://github.com/speakeasy-api/openapi-generation/commit/da163f48a2665a62d92b56308e36e551c7eb80be) - **go**: read nested and inferred error messages in typed errors ([#202](https://github.com/speakeasy-api/openapi-generation/pull/202)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20974,3 +20982,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.960.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.3...v2.960.4
 [v2.960.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.4...v2.960.5
 [v2.960.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.5...v2.960.6
+[v2.960.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.6...v2.960.7
