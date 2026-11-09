@@ -52,7 +52,7 @@ features:
     responseFormat: 0.3.0
     retries: 2.83.2
     sdkHooks: 0.4.0
-    serverEvents: 0.2.4
+    serverEvents: 0.2.5
     serverEventsSentinels: 0.1.0
     serverIDs: 2.81.2
     stringNumberFormats: 0.2.0
@@ -1071,7 +1071,7 @@ trackedFiles:
   src/lib/env.ts:
     last_write_checksum: sha1:59b75f63084b005f8c452bcfa93f6eb697d210d6
   src/lib/event-streams.ts:
-    last_write_checksum: sha1:c1975fd9880517ff313f9370d96a5152db74bf18
+    last_write_checksum: sha1:2ff9752f6fe8c10f5a85728df80b531b4ffec434
   src/lib/files.ts:
     last_write_checksum: sha1:795c14026405d547bfc47012f7ad9666e530fa7f
   src/lib/http.ts:

@@ -35,7 +35,7 @@ const supportedFeatures = {
   downloadStreams: "0.1.1",
   additionalProperties: "0.1.4",
   constsAndDefaults: "0.1.14",
-  serverEvents: "0.2.4",
+  serverEvents: "0.2.5",
   serverEventsSentinels: "0.1.0",
   tests: "0.17.7",
   urlBasedPagination: "2.83.2",

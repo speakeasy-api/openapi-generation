@@ -302,8 +302,12 @@ func TestGenerateURL_RejectsDotSegments(t *testing.T) {
 		{"reserved path with current segment", allowReservedPathParams{ID: "a/./b"}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := utils.GenerateURL(context.Background(), "http://localhost", "/v1/resources/{id}/child", tt.pathParams, nil)
+			got, err := utils.GenerateURL(context.Background(), "http://localhost", "/v1/resources/{id}/child", tt.pathParams, nil)
+			require.Empty(t, got)
 			require.ErrorContains(t, err, `path parameter "id" contains a dot segment`)
+			var invalidPath *utils.InvalidPathParameterError
+			require.ErrorAs(t, err, &invalidPath)
+			require.Equal(t, "id", invalidPath.Name)
 		})
 	}
 }
