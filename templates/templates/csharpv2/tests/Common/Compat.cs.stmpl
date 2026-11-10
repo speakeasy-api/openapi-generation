@@ -68,7 +68,7 @@ public static class Compat
 
         return method switch
         {
-            "json" => RequestBodySerializer.SerializeJsonBodyUntyped(body, format),
+            "json" => SerializeJsonReflective(body, format),
             "raw" => RequestBodySerializer.SerializeRaw(body),
             "string" => RequestBodySerializer.SerializeString(body),
             "form" => SerializeFormReflective(body),
@@ -263,6 +263,23 @@ public static class Compat
         var isJson = (bool?)t.GetProperty("IsJson")?.GetValue(attr) ?? false;
         var explode = (bool?)t.GetProperty("Explode")?.GetValue(attr) ?? true;
         return (name, isJson, explode);
+    }
+
+    [RequiresUnreferencedCode("Reflects over the body's runtime type to build JSON bodies for tests.")]
+    [RequiresDynamicCode("Reflects over the body's runtime type to build JSON bodies for tests.")]
+    private static HttpContent SerializeJsonReflective(object body, string format)
+    {
+        var options = format == "string" ? BuildStringFormatJsonOptions() : global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions;
+        var json = JsonSerializer.Serialize(body, body.GetType(), options);
+        return new StringContent(json, System.Text.Encoding.UTF8, RequestBodySerializer.JsonMediaType);
+    }
+
+    private static JsonSerializerOptions BuildStringFormatJsonOptions()
+    {
+        var options = new JsonSerializerOptions(global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions);
+        options.Converters.Insert(0, new {{getScopeNamespace "utils" true}}.DecimalStringJsonConverterFactory());
+        options.Converters.Insert(0, new {{getScopeNamespace "utils" true}}.BigIntegerStringJsonConverterFactory());
+        return options;
     }
 
     [RequiresUnreferencedCode("Reflects over user types to build form bodies for tests.")]

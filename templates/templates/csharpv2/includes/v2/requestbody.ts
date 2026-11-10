@@ -25,19 +25,21 @@ function emitBodyDispatch(
   optional: boolean,
   jsonNullLiteral: boolean,
   valueTypeBody: boolean,
+  unwrapValueType: boolean,
 ): string {
   const hoist = `var __body = ${bodyExpr};`;
+  const guardedBody = unwrapValueType ? "__body.Value" : "__body";
   if (nullable && jsonNullLiteral) {
     return `${hoist}
             var serializedBody = __body == null
                 ? RequestBodySerializer.NullJsonBody()
-                : ${mkSerializeCall("__body")};`;
+                : ${mkSerializeCall(guardedBody)};`;
   }
   if (optional || nullable) {
     return `${hoist}
             HttpContent? serializedBody = __body == null
                 ? null
-                : ${mkSerializeCall("__body")};`;
+                : ${mkSerializeCall(guardedBody)};`;
   }
   if (valueTypeBody) {
     // Non-nullable value type: caller can't pass null, runtime check is dead.
@@ -115,6 +117,7 @@ function templateSerializeRequestBody(op: Operation): string {
       optional,
       false,
       valueTypeBody,
+      false,
     );
   }
   if (method === "string") {
@@ -125,40 +128,13 @@ function templateSerializeRequestBody(op: Operation): string {
       optional,
       false,
       valueTypeBody,
+      false,
     );
   }
 
   if (method !== "json") {
     throw new Error(
       `Unsupported request serialization method for csharpv2: ${method}`,
-    );
-  }
-
-  // JSON: typed path when body shape is registered in a source-gen
-  // JsonSerializerContext. Top-level nullable primitives (DateOnly?,
-  // DateTime?, long?, …) need Nullable<T> registrations that don't yet
-  // exist (P1a-followup); fall back to SerializeJsonBodyUntyped for those.
-  const bodyKind = bodyTypeDef?.Type?.toString() ?? "";
-  const isPrimitiveValueType =
-    !!bodyTypeDef &&
-    bodyKind !== "class" &&
-    bodyKind !== "enum" &&
-    bodyKind !== "union" &&
-    bodyKind !== "error" &&
-    bodyKind !== "array" &&
-    bodyKind !== "map";
-  const nullablePrimitive = isPrimitiveValueType && nullable;
-
-  if (!bodyTypeDef || nullablePrimitive) {
-    const formatArg = format ? `, "${format}"` : "";
-    return emitBodyDispatch(
-      bodyExpr === "request" ? "(object?)request" : `(object?)${bodyExpr}`,
-      (b) =>
-        `RequestBodySerializer.SerializeJsonBodyUntyped(${b}!${formatArg})`,
-      nullable,
-      optional,
-      true,
-      false,
     );
   }
 
@@ -178,6 +154,7 @@ function templateSerializeRequestBody(op: Operation): string {
     optional,
     true,
     valueTypeBody,
+    isValueType(bodyTypeDef),
   );
 }
 

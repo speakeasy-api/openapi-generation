@@ -2040,6 +2040,28 @@ public class RequestBodiesShould
     }
 
     [Fact]
+    public async Task RequestBodyPostNullableRequiredStringBodyWithValueAsync()
+    {
+        var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
+
+        var res = await sdk.RequestBodies.RequestBodyPostNullableRequiredStringBodyAsync("hello");
+
+        Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
+        Assert.Equal("\"hello\"", res.Object!.Data);
+    }
+
+    [Fact]
+    public async Task RequestBodyPostNullableNotRequiredStringBodyWithValueAsync()
+    {
+        var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
+
+        var res = await sdk.RequestBodies.RequestBodyPostNullableNotRequiredStringBodyAsync("hello");
+
+        Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
+        Assert.Equal("\"hello\"", res.Object!.Data);
+    }
+
+    [Fact]
     public async Task RequestBodyPostNotNullableNotRequiredStringBodyAsync()
     {
         CommonHelpers.RecordTest("request-bodies-post-not-nullable-not-required-string-body");
