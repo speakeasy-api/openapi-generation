@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.960.8] - 2026-11-10
+### :bug: Bug Fixes
+- [`04d09be`](https://github.com/speakeasy-api/openapi-generation/commit/04d09be969e6fee5a4bbcef5452a62f4e922da81) - **ruby**: stop sub-SDKs named after Ruby or SDK constants from shadowing them ([#206](https://github.com/speakeasy-api/openapi-generation/pull/206)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.960.7] - 2026-11-09
 ### :bug: Bug Fixes
 - [`319da9c`](https://github.com/speakeasy-api/openapi-generation/commit/319da9c263cacda7b2d1db5370a2f1ac9ddbb4a7) - **python**: resolve enum discriminator tags in dict union input ([#204](https://github.com/speakeasy-api/openapi-generation/pull/204)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20983,3 +20988,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.960.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.4...v2.960.5
 [v2.960.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.5...v2.960.6
 [v2.960.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.6...v2.960.7
+[v2.960.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.7...v2.960.8
