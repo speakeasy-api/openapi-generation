@@ -1,0 +1,97 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/formUnionFields:
+    post:
+      operationId: requestBodyPostFormUnionFields
+      tags:
+        - requestBodies
+      description: >-
+        Exercises form-urlencoded request body fields whose schema is a union.
+        Each field is encoded as if it had been declared with the type of its
+        active variant: scalar, enum and array variants, a nullable union
+        holding null, an optional union left unset, and a union with an object
+        variant encoded as JSON.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/FormUnionFields"
+            encoding:
+              jsonUnion:
+                contentType: application/json
+      responses:
+        "200":
+          description: The echoed form fields.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  form:
+                    type: object
+                    additionalProperties: true
+components:
+  schemas:
+    FormUnionFields:
+      type: object
+      required:
+        - scalarUnion
+      properties:
+        scalarUnion:
+          $ref: "#/components/schemas/FormUnionStringOrInteger"
+        stringOrArrayUnion:
+          $ref: "#/components/schemas/FormUnionStringOrArray"
+        enumOrBooleanUnion:
+          $ref: "#/components/schemas/FormUnionEnumOrBoolean"
+        nullableUnion:
+          $ref: "#/components/schemas/FormUnionNullable"
+        optionalUnion:
+          $ref: "#/components/schemas/FormUnionStringOrInteger"
+        jsonUnion:
+          $ref: "#/components/schemas/FormUnionObjectOrString"
+    FormUnionStringOrInteger:
+      oneOf:
+        - type: string
+        - type: integer
+    FormUnionStringOrArray:
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            type: string
+    FormUnionEnumOrBoolean:
+      oneOf:
+        - $ref: "#/components/schemas/FormUnionEnum"
+        - type: boolean
+    FormUnionNullable:
+      oneOf:
+        - type: string
+        - type: integer
+        - type: "null"
+    FormUnionObjectOrString:
+      oneOf:
+        - $ref: "#/components/schemas/FormUnionObject"
+        - type: string
+    FormUnionEnum:
+      type: string
+      enum:
+        - first
+        - second
+    FormUnionObject:
+      type: object
+      required:
+        - label
+      properties:
+        label:
+          type: string
+        count:
+          type: integer

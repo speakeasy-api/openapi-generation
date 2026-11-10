@@ -1484,7 +1484,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Utils/OptionalNullableJsonConverter.cs:
     last_write_checksum: sha1:bf8eec6e762302070ff3a32d58ebc04347c8ed79
   src/Speakeasy/OpenAPI/Utils/RequestBodySerializer.cs:
-    last_write_checksum: sha1:4f68b905a9c9caee72cafe309fb8f991b9e18a7b
+    last_write_checksum: sha1:40220d8621930cbe50661c32971d103a8aaa2253
   src/Speakeasy/OpenAPI/Utils/ResponseBodyDeserializer.cs:
     last_write_checksum: sha1:d466d0e2124070f8010d396be9fa10dd9a7fb9d0
   src/Speakeasy/OpenAPI/Utils/Retries/BackoffStrategy.cs:
@@ -1512,9 +1512,9 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Utils/URLBuilder.cs:
     last_write_checksum: sha1:27aa6dd3713a24f20a7737dfb966c3c673529cb5
   src/Speakeasy/OpenAPI/Utils/UnionDeserializer.cs:
-    last_write_checksum: sha1:9ddf50cc9aee44e22210ad6a12b6001f997487b7
+    last_write_checksum: sha1:f50ceb5bd0e472ad8cbd5192adde954d4f4dbf26
   src/Speakeasy/OpenAPI/Utils/Utilities.cs:
-    last_write_checksum: sha1:868a41b840b16955fb0530f8220cf2be15f72967
+    last_write_checksum: sha1:c3fd047198f06c29d58dc4f569f5b3f65839550b
 examples:
   _operation_with_leading_and_trailing_underscores_:
     "":

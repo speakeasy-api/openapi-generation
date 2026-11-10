@@ -492,6 +492,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/csharp/tests/primary/ErrorsShould.cs":                                                                    0o644,
 	"templates/csharp/tests/primary/EventStreamAdditionalShould.cs":                                                     0o644,
 	"templates/csharp/tests/primary/FlatteningShould.cs":                                                                0o644,
+	"templates/csharp/tests/primary/FormUnionFieldsAdditionalShould.cs":                                                 0o644,
 	"templates/csharp/tests/primary/GlobalsAdditionalShould.cs":                                                         0o644,
 	"templates/csharp/tests/primary/HeadersShould.cs":                                                                   0o644,
 	"templates/csharp/tests/primary/Helpers.cs":                                                                         0o644,

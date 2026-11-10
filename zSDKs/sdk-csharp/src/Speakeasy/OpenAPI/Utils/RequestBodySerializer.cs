@@ -353,7 +353,15 @@ namespace Speakeasy.OpenAPI.Utils
             ref Dictionary<string, List<string>> form
         )
         {
-            if (Utilities.IsClass(value))
+            if (Utilities.IsUnionWrapper(value.GetType()))
+            {
+                var variant = GetUnionVariantValue(value);
+                if (variant != null)
+                {
+                    SerializeFormValue(fieldName, explode, variant, ref form);
+                }
+            }
+            else if (Utilities.IsClass(value))
             {
                 if (Utilities.IsDate(value))
                 {
@@ -511,6 +519,26 @@ namespace Speakeasy.OpenAPI.Utils
 
                 form[fieldName].Add(Utilities.ValueToString(value));
             }
+        }
+
+        private static object? GetUnionVariantValue(object union)
+        {
+            foreach (var prop in union.GetType().GetProperties())
+            {
+                var metadata = prop.GetCustomAttribute<SpeakeasyMetadata>()?.GetFormMetadata();
+                if (metadata == null || metadata.Name != "")
+                {
+                    continue;
+                }
+
+                var val = Utilities.UnwrapValue(prop.GetValue(union));
+                if (val != null)
+                {
+                    return val;
+                }
+            }
+
+            return null;
         }
 
         private static (string fileName, byte[] content) ExtractFileProperties(PropertyInfo[] fileProps, object fileObject)
