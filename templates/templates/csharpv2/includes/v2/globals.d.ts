@@ -143,7 +143,10 @@ declare global {
   // form.ts (csharpv2 v2)
   function templateApplyFormBody(op: Operation): string;
   function jsonTypeInfoRef(typeDef: TypeDef): string;
-  function csharpTypeForJsonContext(typeDef: TypeDef): string;
+  function csharpTypeForJsonContext(
+    typeDef: TypeDef,
+    annotateNullableReferenceItems?: boolean,
+  ): string;
 
   // multipart.ts (csharpv2 v2)
   function templateApplyMultipartBody(op: Operation): string;

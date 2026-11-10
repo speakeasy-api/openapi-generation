@@ -82,7 +82,7 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
 
                 return new UnionPropertyModel(
                     Name: p.Name,
-                    FullyQualifiedType: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                    FullyQualifiedType: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier)),
                     DiscriminatorValues: discValues,
                     DiscriminatorFactories: discFactories,
                     DistinctiveJsonPropertyName: distinctiveJsonProp,

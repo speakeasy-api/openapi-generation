@@ -559,8 +559,7 @@ interface UnionVariant {
 // A union variant has no property to carry a string-wire converter attribute, so
 // `format: string` bigint/decimal variants get a JsonTypeInfo built over the
 // string-wire converter instead of the options' default number-wire one.
-function unionVariantTypeInfo(variantType: TypeDef): string {
-  const csType = csharpTypeForJsonContext(variantType);
+function unionVariantTypeInfo(variantType: TypeDef, csType: string): string {
   const factory = getStjConverterFactory(variantType);
   if (!factory.endsWith("StringJsonConverterFactory")) {
     return `(System.Text.Json.Serialization.Metadata.JsonTypeInfo<${csType}>)options.GetTypeInfo(typeof(${csType}))!`;
@@ -572,10 +571,11 @@ function unionVariantTypeInfo(variantType: TypeDef): string {
 // union-discr.cs.stmpl / union-undiscr.cs.stmpl for property + factory-param
 // emission.
 //
-// csharpTypeForJsonContext returns class/union/error FQNs already
-// qualified with `global::` but emits non-aliased primitives bare
-// (e.g. `BigInteger`, `DateTime`). The JsonOptions template adds
-// matching `using` directives so bare names resolve.
+// csharpTypeForJsonContext returns class/union/error names qualified with
+// their model namespace (no `global::`) but emits non-aliased primitives
+// bare (e.g. `BigInteger`, `DateTime`). The JsonOptions template adds
+// matching `using` directives so bare names resolve. Variant types keep
+// nullable reference items (`List<Pet?>`) to match the model property type.
 // @ts-ignore
 function getUnionVariants(typeDef: TypeDef): UnionVariant[] {
   const isErr = isUnionOfErrors(typeDef);
@@ -595,11 +595,12 @@ function getUnionVariants(typeDef: TypeDef): UnionVariant[] {
     }
     let entry = byField.get(fieldName);
     if (!entry) {
+      const csType = csharpTypeForJsonContext(variantType, true);
       entry = {
         FieldName: fieldName,
         FieldType: fieldType,
-        CsType: csharpTypeForJsonContext(variantType),
-        TypeInfo: unionVariantTypeInfo(variantType),
+        CsType: csType,
+        TypeInfo: unionVariantTypeInfo(variantType, csType),
         DiscriminatorValues: [],
       };
       byField.set(fieldName, entry);

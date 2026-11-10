@@ -101,21 +101,31 @@ function isDistinctNullableValueKind(typeDef: TypeDef): boolean {
 }
 
 // Renders a collection element for the JsonContext
-function jsonContextItemType(typeDef: TypeDef): string {
+function jsonContextItemType(
+  typeDef: TypeDef,
+  annotateNullableReferenceItems: boolean,
+): string {
   if (!typeDef.ItemType) {
     throw new Error(
       `jsonContextItemType: collection "${typeDef.Name}" (kind ${typeDef.Type}) has no ItemType`,
     );
   }
-  const contextType = csharpTypeForJsonContext(typeDef.ItemType);
+  const contextType = csharpTypeForJsonContext(
+    typeDef.ItemType,
+    annotateNullableReferenceItems,
+  );
 
   // A nullable value-type element inside a List<>/Dictionary<> must be rendered as
   // `T?` in the JsonContext so the registered JsonTypeInfo<T> matches the model's
   // declared collection element type; otherwise typed AddJson<T> cannot infer T
+  if (typeDef.ContainsNull && isDistinctNullableValueKind(typeDef.ItemType)) {
+    return `${contextType}?`;
+  }
+
   if (
+    annotateNullableReferenceItems &&
     typeDef.ContainsNull &&
-    isValueType(typeDef.ItemType) &&
-    typeDef.ItemType.Type?.toString() !== "enum"
+    !isValueType(typeDef.ItemType)
   ) {
     return `${contextType}?`;
   }
@@ -123,7 +133,10 @@ function jsonContextItemType(typeDef: TypeDef): string {
   return contextType;
 }
 
-function csharpTypeForJsonContext(typeDef: TypeDef): string {
+function csharpTypeForJsonContext(
+  typeDef: TypeDef,
+  annotateNullableReferenceItems = false,
+): string {
   switch (typeDef.Type.toString()) {
     case "class":
     case "enum":
@@ -142,10 +155,14 @@ function csharpTypeForJsonContext(typeDef: TypeDef): string {
         true,
       )}.${sanitizeClassName(typeDef.Name)}Payload`;
     case "array":
-      return `System.Collections.Generic.List<${jsonContextItemType(typeDef)}>`;
+      return `System.Collections.Generic.List<${jsonContextItemType(
+        typeDef,
+        annotateNullableReferenceItems,
+      )}>`;
     case "map":
       return `System.Collections.Generic.Dictionary<string, ${jsonContextItemType(
         typeDef,
+        annotateNullableReferenceItems,
       )}>`;
     default: {
       const raw = sanitizeType(typeDef, false, "");
