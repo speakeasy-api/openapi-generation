@@ -1,3 +1,5 @@
+import array
+import ctypes
 import io
 import os
 import pytest
@@ -452,6 +454,50 @@ def test_request_bodies_base64_file_input_raw_bytes():
     assert encode_base64_file_input(MemoryviewStream()) == _b64(
         _BASE64_NON_UTF8_BYTES[::2]
     )
+
+    assert encode_base64_file_input(memoryview((ctypes.c_ubyte * 3)(97, 98, 99))) == "YWJj"
+
+    with pytest.raises(ValueError):
+        encode_base64_file_input(memoryview(array.array("i", [1, 2])))
+
+
+def test_request_bodies_base64_file_input_union_members(tmp_path):
+    """Exact bytes input resolves to a bytes member in either order; PathLike, IO and
+    non-byte memoryview input resolve as they do without raw bytes support."""
+    from typing import Any, List, Union
+    from openapi.types.base64fileinput import Base64EncodedString
+
+    class Base64First(BaseModel):
+        value: Union[Base64EncodedString, bytes, int]
+
+    class BytesFirst(BaseModel):
+        value: Union[bytes, Base64EncodedString, int]
+
+    for model in (Base64First, BytesFirst):
+        from_bytes = model(value=b"abc")
+        assert from_bytes.value == b"abc"
+        assert from_bytes.model_dump_json() == '{"value":"abc"}'
+        assert model(value="YWJj").value == "YWJj"
+        assert model(value=1).value == 1
+
+    class AnyFirst(BaseModel):
+        value: Union[Any, Base64EncodedString]
+
+    path = tmp_path / "payload.bin"
+    path.write_bytes(b"abc")
+    assert AnyFirst(value=path).value == "YWJj"
+    assert AnyFirst(value=io.BytesIO(b"abc")).value == "YWJj"
+
+    class ListFirst(BaseModel):
+        value: Union[List[int], Base64EncodedString]
+
+    class Plain(BaseModel):
+        value: Base64EncodedString
+
+    int_view = memoryview(array.array("i", [1, 2]))
+    assert ListFirst(value=int_view).value == [1, 2]  # type: ignore[arg-type]
+    with pytest.raises(ValidationError):
+        Plain(value=int_view)  # type: ignore[arg-type]
 
 
 # Coverage for the uuidFormat config flag. With uuidFormat enabled,

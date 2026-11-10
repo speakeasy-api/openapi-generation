@@ -11,15 +11,36 @@ from typing_extensions import Annotated
 
 Base64FileInput = Union[bytes, bytearray, memoryview, IO[bytes], PathLike[str]]
 
+_BYTE_FORMATS = ("B", "b", "c")
+
+
+# Must stay a str subclass, returned only for bytes-like input: pydantic scores it as a strict
+# but non-exact str match, so an exact `bytes` member of the same union wins for `bytes` input.
+class _EncodedBase64(str):
+    pass
+
+
+def _encode_binary(binary: Union[bytes, bytearray, memoryview]) -> str:
+    if isinstance(binary, memoryview):
+        if binary.format.lstrip("@=<>!") not in _BYTE_FORMATS:
+            raise ValueError(
+                f"Base64FileInput expected a memoryview of bytes; got item format {binary.format!r}"
+            )
+        if not binary.c_contiguous:
+            binary = bytes(binary)
+    return base64.b64encode(binary).decode("ascii")
+
 
 def encode_base64_file_input(value: Any) -> Any:
     """Convert raw bytes-like, PathLike or IO[bytes] inputs to a base64 string. All standard
-       binary streams that inherit from io.IOBase are handled. Other values pass through.
+       binary streams that inherit from io.IOBase are handled. Bytes-like values are always
+       treated as raw content and encoded; str values pass through as already-encoded base64.
+       Other values pass through.
     """
     if isinstance(value, PathLike):
         with open(value, "rb") as fh:
-            value = fh.read()
-    elif isinstance(value, io.IOBase):
+            return _encode_binary(fh.read())
+    if isinstance(value, io.IOBase):
         # Restore position after reading: pydantic may validate the same stream more than once.
         position = value.tell() if value.seekable() else None
         binary = value.read()
@@ -31,9 +52,9 @@ def encode_base64_file_input(value: Any) -> Any:
             raise TypeError(
                 f"Base64FileInput expected binary IO returning bytes; got {type(binary).__name__}"
             )
-        value = binary
+        return _encode_binary(binary)
     if isinstance(value, (bytes, bytearray, memoryview)):
-        return base64.b64encode(bytes(value)).decode("ascii")
+        return _EncodedBase64(_encode_binary(value))
     return value
 
 
