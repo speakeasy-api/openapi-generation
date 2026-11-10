@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.11.37",
+  core: "3.11.38",
   getRequestBodies: "2.81.1",
   flattening: "2.81.1",
   globalSecurity: "2.81.11",
@@ -18,7 +18,7 @@ const supportedFeatures = {
   inputOutputModels: "2.83.0",
   ignores: "2.81.1",
   typeOverrides: "2.81.1",
-  docs: "0.5.5",
+  docs: "0.5.6",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
   globalSecurityFlattening: "0.1.0",
