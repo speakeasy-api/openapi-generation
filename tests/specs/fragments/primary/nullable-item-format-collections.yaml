@@ -1,0 +1,91 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/nullableItemFormatCollections:
+    post:
+      operationId: nullableItemFormatCollectionsPost
+      description: >-
+        Sends an object whose required arrays and maps hold nullable bigint,
+        decimal and date-time items, and reads the echoed object and the raw
+        request body back from the response. Null items must be sent and read
+        as JSON null at their position, and non-null items must keep the wire
+        type and full precision of their format.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NullableItemFormatCollections"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json:
+                    $ref: "#/components/schemas/NullableItemFormatCollections"
+                  data:
+                    type: string
+                required:
+                  - json
+                  - data
+components:
+  schemas:
+    NullableItemFormatCollections:
+      type: object
+      description: >-
+        Object with required, non-nullable arrays and maps whose items are
+        nullable: string-encoded bigint items, number-encoded bigint items,
+        string-encoded decimal map values and date-time items. A oneOf property
+        without discriminator lists the string-encoded bigint array, the
+        string-encoded decimal map and a string, so that each collection is
+        also exercised as a union member.
+      properties:
+        bigintStrItems:
+          type: array
+          items:
+            type: [string, "null"]
+            format: bigint
+        bigintItems:
+          type: array
+          items:
+            type: [integer, "null"]
+            format: bigint
+        decimalStrValues:
+          type: object
+          additionalProperties:
+            type: [string, "null"]
+            format: decimal
+        dateTimeItems:
+          type: array
+          items:
+            type: [string, "null"]
+            format: date-time
+        collectionOrString:
+          oneOf:
+            - type: array
+              items:
+                type: [string, "null"]
+                format: bigint
+            - type: object
+              additionalProperties:
+                type: [string, "null"]
+                format: decimal
+            - type: string
+      required:
+        - bigintStrItems
+        - bigintItems
+        - decimalStrValues
+        - dateTimeItems
+        - collectionOrString

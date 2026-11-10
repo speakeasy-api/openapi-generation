@@ -124,12 +124,14 @@ public class DateTimeGenerator : IIncrementalGenerator
                     if (!t.IsGenericType)
                         return false;
                     var def = t.GetGenericTypeDefinition();
-                    if (def == typeof(List<>) && t.GetGenericArguments()[0] == typeof(DateTime))
+                    if (def == typeof(List<>) && IsSupportedItem(t.GetGenericArguments()[0]))
                         return true;
-                    if (def == typeof(Dictionary<,>) && t.GetGenericArguments()[1] == typeof(DateTime))
+                    if (def == typeof(Dictionary<,>) && IsSupportedItem(t.GetGenericArguments()[1]))
                         return IsSupportedDictKey(t.GetGenericArguments()[0]);
                     return false;
                 }
+
+                private static bool IsSupportedItem(Type t) => t == typeof(DateTime) || t == typeof(DateTime?);
 
                 private static bool IsSupportedDictKey(Type k) =>
                     k == typeof(string) || k == typeof(int) || k == typeof(long) ||
@@ -138,16 +140,33 @@ public class DateTimeGenerator : IIncrementalGenerator
 
                 public static JsonConverter Create(Type t)
                 {
+                    if (!CanConvert(t))
+                        throw new NotSupportedException($"Type not supported by DateTime converter: {t}");
                     if (t == typeof(DateTime))
                         return new DateTimeJsonConverter();
                     if (t == typeof(DateTime?))
                         return new NullableDateTimeJsonConverter(new DateTimeJsonConverter());
                     var def = t.GetGenericTypeDefinition();
+                    if (t == typeof(List<DateTime?>))
+                        return new ListNullableDateTimeJsonConverter(new NullableDateTimeJsonConverter(new DateTimeJsonConverter()));
                     if (def == typeof(List<>))
                         return new ListDateTimeJsonConverter(new DateTimeJsonConverter());
                     // Dictionary<TKey, DateTime> — closed switch keeps AOT-safe (no MakeGenericType).
                     var keyType = t.GetGenericArguments()[0];
                     var inner = new DateTimeJsonConverter();
+                    if (t.GetGenericArguments()[1] == typeof(DateTime?))
+                    {
+                        var innerNullable = new NullableDateTimeJsonConverter(inner);
+                        if (keyType == typeof(string)) return new DictionaryNullableDateTimeJsonConverter<string>(innerNullable);
+                        if (keyType == typeof(int))    return new DictionaryNullableDateTimeJsonConverter<int>(innerNullable);
+                        if (keyType == typeof(long))   return new DictionaryNullableDateTimeJsonConverter<long>(innerNullable);
+                        if (keyType == typeof(Guid))   return new DictionaryNullableDateTimeJsonConverter<Guid>(innerNullable);
+                        if (keyType == typeof(short))  return new DictionaryNullableDateTimeJsonConverter<short>(innerNullable);
+                        if (keyType == typeof(byte))   return new DictionaryNullableDateTimeJsonConverter<byte>(innerNullable);
+                        if (keyType == typeof(uint))   return new DictionaryNullableDateTimeJsonConverter<uint>(innerNullable);
+                        if (keyType == typeof(ulong))  return new DictionaryNullableDateTimeJsonConverter<ulong>(innerNullable);
+                        if (keyType == typeof(ushort)) return new DictionaryNullableDateTimeJsonConverter<ushort>(innerNullable);
+                    }
                     if (keyType == typeof(string)) return new DictionaryDateTimeJsonConverter<string>(inner);
                     if (keyType == typeof(int))    return new DictionaryDateTimeJsonConverter<int>(inner);
                     if (keyType == typeof(long))   return new DictionaryDateTimeJsonConverter<long>(inner);
@@ -229,6 +248,67 @@ public class DateTimeGenerator : IIncrementalGenerator
                 }
 
                 public override void Write(Utf8JsonWriter writer, Dictionary<TKey, DateTime> value, JsonSerializerOptions options)
+                {
+                    writer.WriteStartObject();
+                    foreach (var kvp in value)
+                    {
+                        writer.WritePropertyName(Convert.ToString(kvp.Key, CultureInfo.InvariantCulture)!);
+                        _inner.Write(writer, kvp.Value, options);
+                    }
+                    writer.WriteEndObject();
+                }
+            }
+
+            internal sealed class ListNullableDateTimeJsonConverter : JsonConverter<List<DateTime?>>
+            {
+                private readonly JsonConverter<DateTime?> _inner;
+                public ListNullableDateTimeJsonConverter(JsonConverter<DateTime?> inner) { _inner = inner; }
+
+                public override List<DateTime?> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType != JsonTokenType.StartArray)
+                        throw new JsonException($"Expected StartArray for List<DateTime?>, got {reader.TokenType}");
+                    var list = new List<DateTime?>();
+                    while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                    {
+                        list.Add(_inner.Read(ref reader, typeof(DateTime?), options));
+                    }
+                    return list;
+                }
+
+                public override void Write(Utf8JsonWriter writer, List<DateTime?> value, JsonSerializerOptions options)
+                {
+                    writer.WriteStartArray();
+                    foreach (var v in value)
+                    {
+                        _inner.Write(writer, v, options);
+                    }
+                    writer.WriteEndArray();
+                }
+            }
+
+            internal sealed class DictionaryNullableDateTimeJsonConverter<TKey> : JsonConverter<Dictionary<TKey, DateTime?>>
+                where TKey : notnull
+            {
+                private readonly JsonConverter<DateTime?> _inner;
+                public DictionaryNullableDateTimeJsonConverter(JsonConverter<DateTime?> inner) { _inner = inner; }
+
+                public override Dictionary<TKey, DateTime?> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType != JsonTokenType.StartObject)
+                        throw new JsonException($"Expected StartObject for Dictionary<,DateTime?>, got {reader.TokenType}");
+                    var dict = new Dictionary<TKey, DateTime?>();
+                    while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+                    {
+                        var keyStr = reader.GetString()!;
+                        var key = (TKey)Convert.ChangeType(keyStr, typeof(TKey), CultureInfo.InvariantCulture);
+                        reader.Read();
+                        dict[key] = _inner.Read(ref reader, typeof(DateTime?), options);
+                    }
+                    return dict;
+                }
+
+                public override void Write(Utf8JsonWriter writer, Dictionary<TKey, DateTime?> value, JsonSerializerOptions options)
                 {
                     writer.WriteStartObject();
                     foreach (var kvp in value)
