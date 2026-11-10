@@ -25,7 +25,7 @@ module OpenApiSDK
       refute_nil(s)
 
       res = s.test_group.tag2.post_test(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         test2_request: Components::Test2Request.new(
           obj: Components::ExhaustiveObject.new(
             str_: "example",
@@ -34,8 +34,8 @@ module OpenApiSDK
             int32: 1,
             num: 1.1,
             float32: 8499.3,
-            date: Date.parse("2020-01-01"),
-            date_time: DateTime.iso8601("2020-01-01T00:00:00Z"),
+            date: ::Date.parse("2020-01-01"),
+            date_time: ::DateTime.iso8601("2020-01-01T00:00:00Z"),
             anything: "<value>",
             bool_opt: true,
             int_opt_null: 999_999,

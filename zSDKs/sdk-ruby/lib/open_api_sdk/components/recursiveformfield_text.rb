@@ -24,7 +24,7 @@ module OpenApiSDK
       def initialize(label:, type: "text", required: nil)
         @label = label
         unless type == "text"
-          raise ArgumentError, "Invalid value for type"
+          raise ::ArgumentError, "Invalid value for type"
         end
 
         @type = "text"

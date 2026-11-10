@@ -55,6 +55,10 @@ const rubySorbetReservedClassNames: Record<string, string> = {
   Models: "ModelsModel",
 };
 
+const rubyReservedSubSDKClassNames = ["Utils", "SDKHooks", "SDKConfiguration"];
+const rubyReservedSubSDKFileNames = ["sdkconfiguration"];
+const rubyReservedSubSDKFieldNames = ["sdk_configuration"];
+
 const rubyMethodArgumentReservedKeywords = [
   "retries",
   "server_url",
@@ -166,6 +170,48 @@ function sanitizeClassName(name: string): string {
 }
 
 registerTemplateFunc("sanitizeClassName", sanitizeClassName);
+
+// @ts-ignore
+function subSDKTypeName(name: string): string {
+  const isReserved =
+    rubyReservedSubSDKClassNames.includes(sanitizeClassName(name)) ||
+    rubyReservedSubSDKFileNames.includes(sanitizeFileName(name));
+  if (!isReserved) {
+    return name;
+  }
+
+  const takenClassNames = new Set<string>();
+  const takenFileNames = new Set<string>([
+    sanitizeFileName(context.Global.Config.SDKName),
+  ]);
+  const collectSDKNames = (sdk: SDK) => {
+    takenClassNames.add(sanitizeClassName(sdk.Type.Name));
+    takenFileNames.add(sanitizeFileName(sdk.Type.Name));
+    sdk.SubSDKs.forEach(collectSDKNames);
+  };
+  collectSDKNames(context.Global.AST.MainSDK);
+
+  let candidate = `${name}SDK`;
+  while (
+    takenClassNames.has(sanitizeClassName(candidate)) ||
+    takenFileNames.has(sanitizeFileName(candidate))
+  ) {
+    candidate += "SDK";
+  }
+  return candidate;
+}
+
+registerTemplateFunc("subSDKTypeName", subSDKTypeName);
+
+// @ts-ignore
+function sanitizeSubSDKFieldName(name: string): string {
+  const fieldName = sanitizeFieldName(name);
+  return rubyReservedSubSDKFieldNames.includes(fieldName)
+    ? `${fieldName}_`
+    : fieldName;
+}
+
+registerTemplateFunc("sanitizeSubSDKFieldName", sanitizeSubSDKFieldName);
 
 // @ts-ignore
 function sanitizeModuleName(name: string): string {
@@ -379,7 +425,7 @@ function sanitizeUnionType(
   typesToShallowEmbed: Set<string>,
 ): string {
   if (typesToShallowEmbed.has(typeDef.Name)) {
-    return "T::Hash[Symbol, Object]";
+    return "T::Hash[::Symbol, ::Object]";
   }
   const isCircular = detectCircularUnion(typeDef);
 
@@ -443,7 +489,7 @@ function sanitizeMap(
   scope: string,
   typesToShallowEmbed: Set<string>,
 ): string {
-  return `T::Hash[Symbol, ${sanitizeType(
+  return `T::Hash[::Symbol, ${sanitizeType(
     typeDef.ItemType,
     false,
     false,
@@ -670,12 +716,23 @@ function templateByteValue(
 }
 
 // @ts-ignore
+function rubyConstantRef(
+  name: string,
+  additionalContext?: TemplateValueContext,
+): string {
+  const inUsageSnippet =
+    !additionalContext?.isTest &&
+    (additionalContext?.isUsage || additionalContext?.usageContext != null);
+  return inUsageSnippet ? name : `::${name}`;
+}
+
+// @ts-ignore
 function templateDateValue(
   val: string,
   fieldDef: FieldDef,
   additionalContext?: TemplateValueContext,
 ): string {
-  return `Date.parse('${val}')`;
+  return `${rubyConstantRef("Date", additionalContext)}.parse('${val}')`;
 }
 
 // @ts-ignore
@@ -684,7 +741,7 @@ function templateDateTimeValue(
   fieldDef: FieldDef,
   additionalContext?: TemplateValueContext,
 ): string {
-  return `DateTime.iso8601('${val}')`;
+  return `${rubyConstantRef("DateTime", additionalContext)}.iso8601('${val}')`;
 }
 // @ts-ignore
 function templateIntValue(
@@ -846,7 +903,7 @@ function sanitizeSDKConstructorSorbet(sdk: SDK): string {
     `retry_config: T.nilable(::${sanitizeModuleName(
       context.Global.Config.Module,
     )}::Utils::RetryConfig)`,
-    `timeout_ms: T.nilable(Integer)`,
+    `timeout_ms: T.nilable(::Integer)`,
   ];
   const serverMap = sdk.Servers && sdk.Servers.ServerMap;
   const serverVariables = sdk.Servers && sdk.Servers.GetVariables().length > 0;
@@ -902,12 +959,12 @@ function sanitizeSDKConstructorSorbet(sdk: SDK): string {
     }
   }
   if (serverMap) {
-    params.push("server: T.nilable(Symbol)");
+    params.push("server: T.nilable(::Symbol)");
   } else {
-    params.push("server_idx: T.nilable(Integer)");
+    params.push("server_idx: T.nilable(::Integer)");
   }
-  params.push("server_url: T.nilable(String)");
-  params.push("url_params: T.nilable(T::Hash[Symbol, String])");
+  params.push("server_url: T.nilable(::String)");
+  params.push("url_params: T.nilable(T::Hash[::Symbol, ::String])");
   return indentString(
     `sig do
   params(
@@ -1038,7 +1095,7 @@ function sanitizeSDKConfigConstructorSignatureSorbet(sdk: SDK): string {
     `retry_config: T.nilable(::${sanitizeModuleName(
       context.Global.Config.Module,
     )}::Utils::RetryConfig)`,
-    `timeout_ms: T.nilable(Integer)`,
+    `timeout_ms: T.nilable(::Integer)`,
   ];
   if (sdk.Security) {
     params.push(`${securityName}: ${securityType}`);
@@ -1051,22 +1108,24 @@ function sanitizeSDKConfigConstructorSignatureSorbet(sdk: SDK): string {
       )}))`,
     );
   }
-  params.push("server_url: T.nilable(String)");
+  params.push("server_url: T.nilable(::String)");
   if (serverMap) {
-    params.push("server: T.nilable(Symbol)");
+    params.push("server: T.nilable(::Symbol)");
   } else {
-    params.push("server_idx: T.nilable(Integer)");
+    params.push("server_idx: T.nilable(::Integer)");
   }
   if (serverVariables) {
     if (serverMap) {
-      params.push("server_params: T::Hash[Symbol, T::Hash[Symbol, String]]");
+      params.push(
+        "server_params: T::Hash[::Symbol, T::Hash[::Symbol, ::String]]",
+      );
     } else {
-      params.push("server_params: T::Array[T::Hash[Symbol, String]]");
+      params.push("server_params: T::Array[T::Hash[::Symbol, ::String]]");
     }
   }
   if (sdk.Globals) {
     params.push(
-      "globals: T.nilable(T::Hash[Symbol, T::Hash[Symbol, T::Hash[Symbol, Object]]])",
+      "globals: T.nilable(T::Hash[::Symbol, T::Hash[::Symbol, T::Hash[::Symbol, ::Object]]])",
     );
   }
   return [
@@ -1149,17 +1208,17 @@ function sanitizeSorbetOperationMethodSignature(
     params.push(`retries: T.nilable(Utils::RetryConfig)`);
   }
   if (op.Servers) {
-    params.push(`server_url: T.nilable(String)`);
+    params.push(`server_url: T.nilable(::String)`);
   }
-  params.push(`timeout_ms: T.nilable(Integer)`);
+  params.push(`timeout_ms: T.nilable(::Integer)`);
   if (op.Extensions?.Pagination && hasPaginationURL(op)) {
-    params.push("url_override: T.nilable(String)");
+    params.push("url_override: T.nilable(::String)");
   }
   if (op.GetAcceptTypes().length > 1) {
-    params.push(`accept_header_override: T.nilable(String)`);
+    params.push(`accept_header_override: T.nilable(::String)`);
   }
   params.push(
-    `http_headers: T.nilable(T::Hash[T.any(String, Symbol), String])`,
+    `http_headers: T.nilable(T::Hash[T.any(::String, ::Symbol), ::String])`,
   );
 
   let res = "void";
@@ -1199,12 +1258,12 @@ function sanitizeSDKAccess(sdk: SDK): string {
   let formattedName = "";
   if (group.includes(".") && ".".repeat(group.length) !== group) {
     const pieces = group.split(".");
-    formattedName = sanitizeFieldName(pieces[0]);
+    formattedName = sanitizeSubSDKFieldName(pieces[0]);
     for (const i of pieces.slice(1)) {
-      formattedName += "." + sanitizeFieldName(i);
+      formattedName += "." + sanitizeSubSDKFieldName(i);
     }
   } else {
-    formattedName = sanitizeFieldName(group);
+    formattedName = sanitizeSubSDKFieldName(group);
   }
 
   if (formattedName != "") {
@@ -1377,7 +1436,7 @@ function sanitizeCrystallineUnionType(
   }
 
   if (typesToShallowEmbed.has(typeDef.Name)) {
-    return "Crystalline::Hash.new(Symbol, Object)";
+    return "Crystalline::Hash.new(::Symbol, ::Object)";
   }
   const isCircular = detectCircularUnion(typeDef);
 
@@ -1408,7 +1467,7 @@ function sanitizeCrystallineMap(
   scope: string,
   typesToShallowEmbed: Set<string>,
 ): string {
-  return `Crystalline::Hash.new(Symbol, ${sanitizeCrystallineType(
+  return `Crystalline::Hash.new(::Symbol, ${sanitizeCrystallineType(
     typeDef.ItemType,
     false,
     false,
@@ -1573,5 +1632,7 @@ function languageSpecificEnvVarWrapping(
   additionalContext?: TemplateValueContext,
   fieldDef?: FieldDef,
 ): string {
-  return `ENV.fetch('${envVar.name}', '${envVar.defaultValue}')`;
+  return `${rubyConstantRef("ENV", additionalContext)}.fetch('${
+    envVar.name
+  }', '${envVar.defaultValue}')`;
 }

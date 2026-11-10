@@ -22,7 +22,11 @@ module OpenApiSDK
       @sdk_configuration = sdk_config
     end
 
-    sig { params(base_url: String, url_variables: T.nilable(T::Hash[Symbol, T.any(String, T::Enum)])).returns(String) }
+    sig {
+      params(base_url: ::String, url_variables: T.nilable(T::Hash[::Symbol, T.any(::String, T::Enum)])).returns(
+        ::String
+      )
+    }
     def get_url(base_url:, url_variables: nil)
       sd_base_url, sd_options = @sdk_configuration.get_server_details
 
@@ -38,9 +42,8 @@ module OpenApiSDK
     end
 
     sig {
-      params(timeout_ms: T.nilable(Integer), http_headers: T.nilable(T::Hash[T.any(String, Symbol), String])).returns(
-        Operations::V2::Schemas::GetNamespaceConflictResponse
-      )
+      params(timeout_ms: T.nilable(::Integer), http_headers: T.nilable(T::Hash[T.any(::String, ::Symbol), ::String]))
+        .returns(Operations::V2::Schemas::GetNamespaceConflictResponse)
     }
     def get_namespace_conflict(timeout_ms: nil, http_headers: nil)
       # get_namespace_conflict - Get Namespace Conflict Test
@@ -51,7 +54,7 @@ module OpenApiSDK
       base_url = Utils.template_url(url, params)
       url = "#{base_url}/namespaceConflict"
       headers = {}
-      headers = T.cast(headers, T::Hash[String, String])
+      headers = T.cast(headers, T::Hash[::String, ::String])
       headers["Accept"] = "application/json"
       headers["user-agent"] = @sdk_configuration.user_agent
 
@@ -70,7 +73,7 @@ module OpenApiSDK
         security_source: @sdk_configuration.security_source
       )
 
-      error = T.let(nil, T.nilable(StandardError))
+      error = T.let(nil, T.nilable(::StandardError))
       http_response = T.let(nil, T.nilable(Faraday::Response))
 
       begin
@@ -90,7 +93,7 @@ module OpenApiSDK
           )
         end
 
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)
@@ -126,7 +129,7 @@ module OpenApiSDK
             response: http_response
           )
           response_data = http_response.env.response_body
-          obj = Crystalline.unmarshal_json(JSON.parse(response_data), Components::NamespaceConflictTest)
+          obj = Crystalline.unmarshal_json(::JSON.parse(response_data), Components::NamespaceConflictTest)
           response = Operations::V2::Schemas::GetNamespaceConflictResponse.new(
             status_code: http_response.status,
             content_type: content_type,
@@ -179,8 +182,8 @@ module OpenApiSDK
     sig {
       params(
         request: T.nilable(Components::ObjWithRenamedProperties),
-        timeout_ms: T.nilable(Integer),
-        http_headers: T.nilable(T::Hash[T.any(String, Symbol), String])
+        timeout_ms: T.nilable(::Integer),
+        http_headers: T.nilable(T::Hash[T.any(::String, ::Symbol), ::String])
       )
         .returns(Operations::V2::Schemas::PutNamespaceConflictResponse)
     }
@@ -192,14 +195,14 @@ module OpenApiSDK
       base_url = Utils.template_url(url, params)
       url = "#{base_url}/namespaceConflict"
       headers = {}
-      headers = T.cast(headers, T::Hash[String, String])
+      headers = T.cast(headers, T::Hash[::String, ::String])
       req_content_type, data, form = Utils.serialize_request_body(request, false, true, :request, :json)
       headers["content-type"] = req_content_type
 
       if form && !form.empty?
         body = Utils.encode_form(form)
       elsif Utils.match_content_type(req_content_type, "application/x-www-form-urlencoded")
-        body = URI.encode_www_form(T.cast(data, T::Hash[Symbol, Object]))
+        body = ::URI.encode_www_form(T.cast(data, T::Hash[::Symbol, ::Object]))
       else
         body = data
       end
@@ -222,7 +225,7 @@ module OpenApiSDK
         security_source: @sdk_configuration.security_source
       )
 
-      error = T.let(nil, T.nilable(StandardError))
+      error = T.let(nil, T.nilable(::StandardError))
       http_response = T.let(nil, T.nilable(Faraday::Response))
 
       begin
@@ -243,7 +246,7 @@ module OpenApiSDK
           )
         end
 
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)
@@ -316,8 +319,8 @@ module OpenApiSDK
     sig {
       params(
         request: Components::Foo::Pet,
-        timeout_ms: T.nilable(Integer),
-        http_headers: T.nilable(T::Hash[T.any(String, Symbol), String])
+        timeout_ms: T.nilable(::Integer),
+        http_headers: T.nilable(T::Hash[T.any(::String, ::Symbol), ::String])
       )
         .returns(Operations::V2::Schemas::CreateNamespaceConflictResponse)
     }
@@ -329,15 +332,15 @@ module OpenApiSDK
       base_url = Utils.template_url(url, params)
       url = "#{base_url}/namespaceConflict"
       headers = {}
-      headers = T.cast(headers, T::Hash[String, String])
+      headers = T.cast(headers, T::Hash[::String, ::String])
       req_content_type, data, form = Utils.serialize_request_body(request, false, false, :request, :json)
       headers["content-type"] = req_content_type
-      raise StandardError, "request body is required" if data.nil? && form.nil?
+      raise ::StandardError, "request body is required" if data.nil? && form.nil?
 
       if form && !form.empty?
         body = Utils.encode_form(form)
       elsif Utils.match_content_type(req_content_type, "application/x-www-form-urlencoded")
-        body = URI.encode_www_form(T.cast(data, T::Hash[Symbol, Object]))
+        body = ::URI.encode_www_form(T.cast(data, T::Hash[::Symbol, ::Object]))
       else
         body = data
       end
@@ -360,7 +363,7 @@ module OpenApiSDK
         security_source: @sdk_configuration.security_source
       )
 
-      error = T.let(nil, T.nilable(StandardError))
+      error = T.let(nil, T.nilable(::StandardError))
       http_response = T.let(nil, T.nilable(Faraday::Response))
 
       begin
@@ -381,7 +384,7 @@ module OpenApiSDK
           )
         end
 
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)
@@ -417,7 +420,7 @@ module OpenApiSDK
             response: http_response
           )
           response_data = http_response.env.response_body
-          obj = Crystalline.unmarshal_json(JSON.parse(response_data), Components::Bar::Pet)
+          obj = Crystalline.unmarshal_json(::JSON.parse(response_data), Components::Bar::Pet)
           response = Operations::V2::Schemas::CreateNamespaceConflictResponse.new(
             status_code: http_response.status,
             content_type: content_type,
@@ -468,9 +471,8 @@ module OpenApiSDK
     end
 
     sig {
-      params(timeout_ms: T.nilable(Integer), http_headers: T.nilable(T::Hash[T.any(String, Symbol), String])).returns(
-        Operations::V2::Schemas::GetTripleNamespaceConflictResponse
-      )
+      params(timeout_ms: T.nilable(::Integer), http_headers: T.nilable(T::Hash[T.any(::String, ::Symbol), ::String]))
+        .returns(Operations::V2::Schemas::GetTripleNamespaceConflictResponse)
     }
     def get_triple_namespace_conflict(timeout_ms: nil, http_headers: nil)
       # get_triple_namespace_conflict - Get Triple Namespace Conflict Test
@@ -481,7 +483,7 @@ module OpenApiSDK
       base_url = Utils.template_url(url, params)
       url = "#{base_url}/tripleNamespaceConflict"
       headers = {}
-      headers = T.cast(headers, T::Hash[String, String])
+      headers = T.cast(headers, T::Hash[::String, ::String])
       headers["Accept"] = "application/json"
       headers["user-agent"] = @sdk_configuration.user_agent
 
@@ -500,7 +502,7 @@ module OpenApiSDK
         security_source: @sdk_configuration.security_source
       )
 
-      error = T.let(nil, T.nilable(StandardError))
+      error = T.let(nil, T.nilable(::StandardError))
       http_response = T.let(nil, T.nilable(Faraday::Response))
 
       begin
@@ -520,7 +522,7 @@ module OpenApiSDK
           )
         end
 
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)
@@ -556,7 +558,7 @@ module OpenApiSDK
             response: http_response
           )
           response_data = http_response.env.response_body
-          obj = Crystalline.unmarshal_json(JSON.parse(response_data), Components::TripleNamespaceConflictTest)
+          obj = Crystalline.unmarshal_json(::JSON.parse(response_data), Components::TripleNamespaceConflictTest)
           response = Operations::V2::Schemas::GetTripleNamespaceConflictResponse.new(
             status_code: http_response.status,
             content_type: content_type,
@@ -607,9 +609,8 @@ module OpenApiSDK
     end
 
     sig {
-      params(timeout_ms: T.nilable(Integer), http_headers: T.nilable(T::Hash[T.any(String, Symbol), String])).returns(
-        Operations::V2::Schemas::GetPetOwnersResponse
-      )
+      params(timeout_ms: T.nilable(::Integer), http_headers: T.nilable(T::Hash[T.any(::String, ::Symbol), ::String]))
+        .returns(Operations::V2::Schemas::GetPetOwnersResponse)
     }
     def get_pet_owners(timeout_ms: nil, http_headers: nil)
       # get_pet_owners - Get Pet Owners
@@ -619,7 +620,7 @@ module OpenApiSDK
       base_url = Utils.template_url(url, params)
       url = "#{base_url}/petOwners"
       headers = {}
-      headers = T.cast(headers, T::Hash[String, String])
+      headers = T.cast(headers, T::Hash[::String, ::String])
       headers["Accept"] = "application/json"
       headers["user-agent"] = @sdk_configuration.user_agent
 
@@ -638,7 +639,7 @@ module OpenApiSDK
         security_source: @sdk_configuration.security_source
       )
 
-      error = T.let(nil, T.nilable(StandardError))
+      error = T.let(nil, T.nilable(::StandardError))
       http_response = T.let(nil, T.nilable(Faraday::Response))
 
       begin
@@ -658,7 +659,7 @@ module OpenApiSDK
           )
         end
 
-      rescue StandardError => e
+      rescue ::StandardError => e
         error = e
       ensure
         if http_response.nil? || Utils.error_status?(http_response.status)
@@ -694,7 +695,10 @@ module OpenApiSDK
             response: http_response
           )
           response_data = http_response.env.response_body
-          obj = Crystalline.unmarshal_json(JSON.parse(response_data), Operations::V2::Schemas::GetPetOwnersResponseBody)
+          obj = Crystalline.unmarshal_json(
+            ::JSON.parse(response_data),
+            Operations::V2::Schemas::GetPetOwnersResponseBody
+          )
           response = Operations::V2::Schemas::GetPetOwnersResponse.new(
             status_code: http_response.status,
             content_type: content_type,

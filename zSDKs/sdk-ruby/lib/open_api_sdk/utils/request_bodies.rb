@@ -22,13 +22,13 @@ module OpenApiSDK
 
     sig do
       params(
-        request: Object,
+        request: ::Object,
         nullable: T::Boolean,
         optional: T::Boolean,
-        request_field_name: Symbol,
-        serialization_method: Symbol
+        request_field_name: ::Symbol,
+        serialization_method: ::Symbol
       )
-        .returns([String, Object, T.nilable(T::Array[T::Array[T.any(T::Array[T.nilable(String)], String)]])])
+        .returns([::String, ::Object, T.nilable(T::Array[T::Array[T.any(T::Array[T.nilable(::String)], ::String)]])])
     end
     def self.serialize_request_body(request, nullable, optional, request_field_name, serialization_method)
       return ["", nil, nil] if request.nil? && !nullable && optional
@@ -37,7 +37,7 @@ module OpenApiSDK
         return serialize_content_type(SERIALIZATION_METHOD_TO_CONTENT_TYPE[serialization_method], request)
       end
 
-      request_metadata = T.let(nil, T.nilable(T::Array[T::Array[T.any(T::Array[T.nilable(String)], String)]]))
+      request_metadata = T.let(nil, T.nilable(T::Array[T::Array[T.any(T::Array[T.nilable(::String)], ::String)]]))
       T.unsafe(request).fields.each do |f|
         if f.name == request_field_name
           request_metadata = f.metadata[:request]
@@ -61,8 +61,8 @@ module OpenApiSDK
     end
 
     sig do
-      params(media_type: String, request: Object)
-        .returns([String, Object, T.nilable(T::Array[T::Array[T.any(T::Array[T.nilable(String)], String)]])])
+      params(media_type: ::String, request: ::Object)
+        .returns([::String, ::Object, T.nilable(T::Array[T::Array[T.any(T::Array[T.nilable(::String)], ::String)]])])
     end
     def self.serialize_content_type(media_type, request)
       if media_type.match("^(application|text)\\/([^+]+\\+)*json.*")
@@ -71,9 +71,9 @@ module OpenApiSDK
 
       return serialize_multipart_form(media_type, request) if media_type.match("^multipart\\/.*")
       return media_type, serialize_form_data(request), nil if media_type.match("^application\\/x-www-form-urlencoded.*")
-      return media_type, request, nil if request.is_a?(String) || request.is_a?(Array)
+      return media_type, request, nil if request.is_a?(::String) || request.is_a?(::Array)
 
-      raise StandardError, "invalid request body type #{request.class} for mediaType #{media_type}"
+      raise ::StandardError, "invalid request body type #{request.class} for mediaType #{media_type}"
     end
   end
 end

@@ -6,7 +6,7 @@
 {{- $pagination := .Local.Type.Extensions.Pagination -}}
 {{- range $type.Fields}}{{ if hasAnnotation . "json" }}{{ $isJSON = true }}{{end}}{{end -}}
 {{ templateComments $type.Comments nil 0 "class"}}
-class {{sanitizeClass $type "" true}}{{if eq .Local.Type.Type "error"}} < StandardError{{end}}
+class {{sanitizeClass $type "" true}}{{if eq .Local.Type.Type "error"}} < ::StandardError{{end}}
   {{sorbetTSig}}
   include Crystalline::MetadataFields
   {{- if $pagination }}
@@ -26,7 +26,7 @@ class {{sanitizeClass $type "" true}}{{if eq .Local.Type.Type "error"}} < Standa
   {{- range $fields}}
     {{- if .Const}}
     {{ templateCompareConst . $fields}}
-      raise ArgumentError, 'Invalid value for {{deduplicatedFieldName .Name $fields}}'
+      raise ::ArgumentError, 'Invalid value for {{deduplicatedFieldName .Name $fields}}'
     end
     @{{deduplicatedFieldName .Name $fields}} = {{templateConstValue .}}
     {{- else }}

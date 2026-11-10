@@ -18,7 +18,7 @@ module OpenApiSDK
 
       field(
         :additional_properties,
-        Crystalline::Nilable.new(Crystalline::Hash.new(Symbol, ::Object)),
+        Crystalline::Nilable.new(Crystalline::Hash.new(::Symbol, ::Object)),
         {
           'format_json': {
             'letter_case': ::OpenApiSDK::Utils.field_name("additional_properties"),
@@ -27,7 +27,7 @@ module OpenApiSDK
         }
       )
 
-      sig { params(notes: T.nilable(::String), additional_properties: T.nilable(T::Hash[Symbol, ::Object])).void }
+      sig { params(notes: T.nilable(::String), additional_properties: T.nilable(T::Hash[::Symbol, ::Object])).void }
       def initialize(notes: nil, additional_properties: nil)
         @notes = notes
         @additional_properties = additional_properties

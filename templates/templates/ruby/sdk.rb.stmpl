@@ -19,7 +19,7 @@ module {{ $moduleName }}
   class {{$sdkClassName}}
     {{sorbetTSig}}
 
-    {{$n := len $subsdks}}{{if gt $n 0}}attr_accessor {{ range $index, $subsdk := $subsdks}}:{{sanitizeFieldName $subsdk.Type.Name}}{{if not (eq (add1 $index) $n)}}, {{end}}{{end}}{{end}}
+    {{$n := len $subsdks}}{{if gt $n 0}}attr_accessor {{ range $index, $subsdk := $subsdks}}:{{sanitizeSubSDKFieldName $subsdk.Type.Name}}{{if not (eq (add1 $index) $n)}}, {{end}}{{end}}{{end}}
     {{- range .Local.Operations}}
     {{- if .Servers}}
     {{templateString "servers.rb.stmpl" .}}{{end}}
@@ -88,7 +88,7 @@ module {{ $moduleName }}
 
     {{- if $serverMap }}
 
-      raise StandardError, "Invalid server \"#{server}\"" if !server.nil? && !SERVERS.key?(server)
+      raise ::StandardError, "Invalid server \"#{server}\"" if !server.nil? && !SERVERS.key?(server)
     {{- else if .Local.Servers }}
 
       server_idx = 0 if server_idx.nil?
@@ -161,11 +161,11 @@ module {{ $moduleName }}
     def init_sdks
       {{- range .Local.SubSDKs}}
       {{- if ne .Type.Name ""}}
-      @{{sanitizeFieldName .FieldName}} = {{sanitizeClassName .Type.Name}}.new(@sdk_configuration){{end}}{{end}}
+      @{{sanitizeSubSDKFieldName .FieldName}} = {{sanitizeClassName (subSDKTypeName .Type.Name)}}.new(@sdk_configuration){{end}}{{end}}
     end
     {{- end}}
 
-    {{if sorbetEnabled}}sig { params(base_url: String, url_variables: T.nilable(T::Hash[Symbol, T.any(String, T::Enum)])).returns(String) }{{end}}
+    {{if sorbetEnabled}}sig { params(base_url: ::String, url_variables: T.nilable(T::Hash[::Symbol, T.any(::String, T::Enum)])).returns(::String) }{{end}}
     def get_url(base_url:, url_variables: nil)
       sd_base_url, sd_options = @sdk_configuration.get_server_details
 

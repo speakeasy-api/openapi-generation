@@ -15,7 +15,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getNamespaceConflict")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -45,7 +45,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("createNamespaceConflict")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -73,7 +73,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getTripleNamespaceConflict")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -97,7 +97,7 @@ module OpenApiSDK
           baz_pet: Components::Baz::Pet.new(
             pet_id: 789,
             pet_name: "Rex",
-            adopted_at: DateTime.iso8601("2024-01-15T10:30:00Z")
+            adopted_at: ::DateTime.iso8601("2024-01-15T10:30:00Z")
           )
         ),
         res.triple_namespace_conflict_test
@@ -108,7 +108,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getPetOwners")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)

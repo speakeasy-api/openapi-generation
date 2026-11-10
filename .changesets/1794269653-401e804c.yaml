@@ -1,0 +1,10 @@
+id: 1794269653-401e804c
+features:
+    - core
+targets:
+    - ruby
+type: fix
+bump: patch
+description: qualify Ruby core constants so tags such as File, Time or Class no longer break type checking, and add an SDK suffix to sub-SDKs named Utils, SDKHooks or SDKConfiguration (accessor sdk_configuration becomes sdk_configuration_) so SDKs with those tags load
+author: 2ynn
+date: "2026-11-09"
