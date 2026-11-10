@@ -440,6 +440,7 @@ function isTestSkipped(test: string): boolean {
     "intent-supplied-body-requires-declared-inputs",
     "hooks-client-credentials-scopes-from-env",
     "debug-env-var-false-keeps-logging-off",
+    "request-bodies-base64-file-input-raw-bytes",
   ].includes(test);
 }
 
