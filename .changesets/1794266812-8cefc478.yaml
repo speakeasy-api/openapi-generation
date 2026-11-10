@@ -5,6 +5,6 @@ targets:
     - csharp
 type: fix
 bump: patch
-description: send union-typed fields in form-urlencoded request bodies
+description: send union-typed fields in form-urlencoded and multipart request bodies
 author: 2ynn
 date: "2026-11-09"

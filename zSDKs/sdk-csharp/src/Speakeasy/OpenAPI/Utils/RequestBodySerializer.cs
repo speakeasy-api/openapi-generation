@@ -212,7 +212,7 @@ namespace Speakeasy.OpenAPI.Utils
                         form.Add(requestFieldName, new List<string>());
                     }
 
-                    form[requestFieldName].Add(Utilities.ValueToString(item));
+                    form[requestFieldName].Add(Utilities.ValueToString(UnwrapUnion(item)));
                 }
             }
             else
@@ -308,26 +308,35 @@ namespace Speakeasy.OpenAPI.Utils
                         metadata.Name ?? prop.Name
                     );
                 }
-                else if (Utilities.IsList(value))
-                {
-                    var values = new List<string>();
-
-                    foreach (var item in (IList)value)
-                    {
-                        values.Add(Utilities.ValueToString(item));
-                    }
-
-                    foreach (var val in values)
-                    {
-                        formData.Add(new StringContent(val), metadata.Name ?? prop.Name);
-                    }
-                }
                 else
                 {
-                    formData.Add(
-                        new StringContent(Utilities.ValueToString(value)),
-                        metadata.Name ?? prop.Name
-                    );
+                    var formValue = UnwrapUnion(value);
+                    if (formValue == null)
+                    {
+                        continue;
+                    }
+
+                    if (Utilities.IsList(formValue))
+                    {
+                        var values = new List<string>();
+
+                        foreach (var item in (IList)formValue)
+                        {
+                            values.Add(Utilities.ValueToString(UnwrapUnion(item)));
+                        }
+
+                        foreach (var val in values)
+                        {
+                            formData.Add(new StringContent(val), metadata.Name ?? prop.Name);
+                        }
+                    }
+                    else
+                    {
+                        formData.Add(
+                            new StringContent(Utilities.ValueToString(formValue)),
+                            metadata.Name ?? prop.Name
+                        );
+                    }
                 }
             }
 
@@ -355,7 +364,7 @@ namespace Speakeasy.OpenAPI.Utils
         {
             if (Utilities.IsUnionWrapper(value.GetType()))
             {
-                var variant = GetUnionVariantValue(value);
+                var variant = UnwrapUnion(value);
                 if (variant != null)
                 {
                     SerializeFormValue(fieldName, explode, variant, ref form);
@@ -380,14 +389,40 @@ namespace Speakeasy.OpenAPI.Utils
 
                     foreach (var prop in props)
                     {
-                        var val = Utilities.UnwrapValue(prop.GetValue(value));
-                        if (val == null)
+                        var propValue = Utilities.UnwrapValue(prop.GetValue(value));
+                        if (propValue == null)
                         {
                             continue;
                         }
 
                         var metadata = prop.GetCustomAttribute<SpeakeasyMetadata>()?.GetFormMetadata();
                         if (metadata == null || metadata.Name == null)
+                        {
+                            continue;
+                        }
+
+                        if (metadata.Json)
+                        {
+                            var json = Utilities.SerializeJSON(propValue);
+                            if (explode)
+                            {
+                                if (!form.ContainsKey(metadata.Name))
+                                {
+                                    form[metadata.Name] = new List<string>();
+                                }
+
+                                form[metadata.Name].Add(json);
+                            }
+                            else
+                            {
+                                items.Add($"{metadata.Name},{json}");
+                            }
+
+                            continue;
+                        }
+
+                        var val = UnwrapUnion(propValue);
+                        if (val == null)
                         {
                             continue;
                         }
@@ -403,7 +438,7 @@ namespace Speakeasy.OpenAPI.Utils
                             {
                                 foreach (var item in (IEnumerable)val)
                                 {
-                                    form[metadata.Name].Add(Utilities.ValueToString(item));
+                                    form[metadata.Name].Add(Utilities.ValueToString(UnwrapUnion(item)));
                                 }
                             }
                             else
@@ -417,7 +452,7 @@ namespace Speakeasy.OpenAPI.Utils
                             {
                                 foreach (var item in (IEnumerable)val)
                                 {
-                                    items.Add($"{metadata.Name},{Utilities.ValueToString(item)}");
+                                    items.Add($"{metadata.Name},{Utilities.ValueToString(UnwrapUnion(item))}");
                                 }
                             }
                             else
@@ -459,12 +494,12 @@ namespace Speakeasy.OpenAPI.Utils
                         }
 
                         form[key].Add(
-                            Utilities.ValueToString(((IDictionary)value)[key])
+                            Utilities.ValueToString(UnwrapUnion(((IDictionary)value)[key]))
                         );
                     }
                     else
                     {
-                        items.Add($"{key},{Utilities.ValueToString(((IDictionary)value)[key])}");
+                        items.Add($"{key},{Utilities.ValueToString(UnwrapUnion(((IDictionary)value)[key]))}");
                     }
                 }
 
@@ -487,11 +522,11 @@ namespace Speakeasy.OpenAPI.Utils
                 {
                     if (explode)
                     {
-                        values.Add(Utilities.ValueToString(item));
+                        values.Add(Utilities.ValueToString(UnwrapUnion(item)));
                     }
                     else
                     {
-                        items.Add(Utilities.ValueToString(item));
+                        items.Add(Utilities.ValueToString(UnwrapUnion(item)));
                     }
                 }
 
@@ -519,6 +554,16 @@ namespace Speakeasy.OpenAPI.Utils
 
                 form[fieldName].Add(Utilities.ValueToString(value));
             }
+        }
+
+        private static object? UnwrapUnion(object? value)
+        {
+            while (value != null && Utilities.IsUnionWrapper(value.GetType()))
+            {
+                value = GetUnionVariantValue(value);
+            }
+
+            return value;
         }
 
         private static object? GetUnionVariantValue(object union)
