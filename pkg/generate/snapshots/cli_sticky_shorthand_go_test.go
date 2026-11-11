@@ -230,3 +230,105 @@ func TestSnapCLIStickyShorthandsSplitOperation(t *testing.T) {
 		},
 	})
 }
+
+const cliStickyListSpec = `openapi: 3.0.3
+info:
+  title: Pet API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      operationId: ListPets
+      description: Query parameters that can all be removed, leaving the operation without inputs.
+      tags: [pets]
+      security: []
+%s      responses:
+        '200':
+          description: OK
+`
+
+func cliStickyListSpecWith(param string) string {
+	if param == "" {
+		return fmt.Sprintf(cliStickyListSpec, "")
+	}
+	return fmt.Sprintf(cliStickyListSpec, "      parameters:\n        - name: "+param+"\n          in: query\n          schema:\n            type: string\n")
+}
+
+const cliStickyWholeBodySpec = `openapi: 3.0.3
+info:
+  title: Pet API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    post:
+      operationId: CreatePet
+      description: An array request body is sent as one whole-body JSON flag without per-field flags.
+      tags: [pets]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        '200':
+          description: OK
+`
+
+func TestSnapCLIStickyShorthandsLostInputs(t *testing.T) {
+	t.Parallel()
+
+	t.Run("operation loses its last parameter", func(t *testing.T) {
+		t.Parallel()
+		shouldCompile := false
+		snaptest.DoTestSnapshot(t, snaptest.Options{
+			Spec:          cliStickyListSpecWith("names"),
+			GenYaml:       cliStickyGenYaml,
+			ShouldCompile: &shouldCompile,
+			AfterGenerate: func(t *testing.T, outputDir string) {
+				t.Helper()
+				require.Equal(t, map[string]string{"names": "n"}, cliStickyReadLock(t, outputDir).CLIShorthands["ListPets"].Flags)
+
+				cliStickyRegenerate(t, outputDir, cliStickyListSpecWith(""))
+				entry := cliStickyReadLock(t, outputDir).CLIShorthands["ListPets"]
+				require.Empty(t, entry.Flags)
+				require.Equal(t, "names", entry.Retired["n"].Flag)
+
+				cliStickyRegenerate(t, outputDir, cliStickyListSpecWith("nick_name"))
+				command := cliStickyReadFile(t, outputDir, "internal", "cli", "pets", "listpets.go")
+				require.Contains(t, command, `FlagName: "nick-name"`)
+				require.NotContains(t, command, `FlagName: "nick-name", Shorthand:`)
+				entry = cliStickyReadLock(t, outputDir).CLIShorthands["ListPets"]
+				require.Empty(t, entry.Flags)
+				require.Equal(t, "names", entry.Retired["n"].Flag)
+			},
+		})
+	})
+
+	t.Run("body becomes a whole-body JSON flag", func(t *testing.T) {
+		t.Parallel()
+		shouldCompile := false
+		snaptest.DoTestSnapshot(t, snaptest.Options{
+			Spec:          cliStickyShorthandSpecWith(cliStickyNamesField, cliStickyTagField),
+			GenYaml:       cliStickyGenYaml,
+			ShouldCompile: &shouldCompile,
+			AfterGenerate: func(t *testing.T, outputDir string) {
+				t.Helper()
+				require.Equal(t, map[string]string{"names": "n", "tag": "t"}, cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"].Flags)
+
+				cliStickyRegenerate(t, outputDir, cliStickyWholeBodySpec)
+				entry := cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"]
+				require.Empty(t, entry.Flags)
+				require.Equal(t, "names", entry.Retired["n"].Flag)
+				require.Equal(t, "tag", entry.Retired["t"].Flag)
+			},
+		})
+	})
+}

@@ -6,6 +6,7 @@
 {{- $initFuncName := sanitizeInitFuncName $cmdName -}}
 {{- $runFuncName := sanitizeRunFuncName $cmdName -}}
 {{- $cliOp := getCLIOperationCtx $op -}}
+{{- recordOperationShorthands $op -}}
 {{- $executeFuncName := print "execute" $cmdName -}}
 {{- $asyncCreate := isAsyncCreateOperation $op -}}
 {{- $hasFlags := operationHasFlags $op -}}

@@ -301,6 +301,15 @@ function operationShorthands(
   return shorthands;
 }
 
+// recordOperationShorthands resolves every rendered operation, including one
+// without metadata flags, so a flag it lost moves to retired instead of the
+// operation's lock entry being dropped.
+function recordOperationShorthands(op: Operation): string {
+  operationShorthands(op, buildOperationMetadataEntries(op)?.entries || []);
+  return "";
+}
+registerTemplateFunc("recordOperationShorthands", recordOperationShorthands);
+
 // operationAutoShorthandOwners maps each auto-assigned single-letter
 // shorthand to its owning generated flag, mirroring templateFlagMetadataVar's
 // post-pass exactly (same entry traversal, same reservations). With
