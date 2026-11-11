@@ -267,14 +267,16 @@ function resolveOperationShorthands(
 const operationShorthandsCache = new Map<string, Map<string, string>>();
 
 // operationShorthands resolves an operation's auto shorthands against its
-// gen.lock cliShorthands entry once per template run and records the result
-// for the next lock, so the metadata var, --usage and collision checks all
-// see one assignment.
+// gen.lock cliShorthands entry and records the result for the next lock.
+// The cache is per template job runtime; every job resolves the same
+// operation identically, so the metadata var, --usage and collision checks
+// all see one assignment. Entries are keyed by op.ID, which is unique per
+// request content-type variant and unaffected by name overrides.
 function operationShorthands(
   op: Operation,
   entries: string[],
 ): Map<string, string> {
-  const key = op.OriginalID || op.GetID();
+  const key = op.ID;
   const cached = operationShorthandsCache.get(key);
   if (cached) return cached;
 
