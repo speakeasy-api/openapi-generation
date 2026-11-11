@@ -240,20 +240,23 @@ func TestResolveOperationShorthandsIgnoresMalformedLockEntries(t *testing.T) {
 
 	vm := loadCLIIncludes(t, "includes/flags.ts", "includes/metadata.ts")
 	got := callJSON[shorthandResolution](t, vm, "resolveOperationShorthands", map[string]any{
-		"flagNames": []string{"nick-name", "tag", "price", "count", "size"},
+		"flagNames": []string{"nick-name", "tag", "price", "count", "size", "every", "uri"},
 		"lock": map[string]any{
 			"flags": map[string]any{
 				"count": 5,
 				"size":  "ss",
+				"every": "é",
 			},
 			"retired": map[string]any{
-				"n": nil,
-				"t": map[string]any{},
-				"p": "price",
+				"n":  nil,
+				"t":  map[string]any{},
+				"p":  "price",
+				"cc": map[string]any{"flag": "count"},
+				"ü":  map[string]any{"flag": "uri"},
 			},
 		},
 	})
-	assert.Equal(t, map[string]string{"count": "c", "nick-name": "n", "price": "p", "size": "s", "tag": "t"}, got.Flags)
+	assert.Equal(t, map[string]string{"count": "c", "every": "e", "nick-name": "n", "price": "p", "size": "s", "tag": "t", "uri": "u"}, got.Flags)
 	assert.Equal(t, map[string]retiredShorthand{}, got.Retired)
 
 	got = callJSON[shorthandResolution](t, vm, "resolveOperationShorthands", map[string]any{

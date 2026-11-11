@@ -170,6 +170,8 @@ function lockSection<T>(value: unknown): Record<string, T> {
     : {};
 }
 
+const shorthandLetterRegex = /^[A-Za-z0-9]$/;
+
 function sortedRecord<T>(entries: Map<string, T>): Record<string, T> {
   const record: Record<string, T> = {};
   for (const key of Array.from(entries.keys()).sort()) {
@@ -209,7 +211,8 @@ function resolveOperationShorthands(
   for (const [letter, entry] of Object.entries(
     lockSection<RetiredShorthand>(input.lock?.retired),
   )) {
-    if (isReserved(letter) || typeof entry?.flag !== "string") continue;
+    if (!shorthandLetterRegex.test(letter) || isReserved(letter)) continue;
+    if (typeof entry?.flag !== "string") continue;
     retired.set(letter, { flag: entry.flag });
   }
 
@@ -229,7 +232,9 @@ function resolveOperationShorthands(
   for (const [name, letter] of Object.entries(
     lockSection<string>(input.lock?.flags),
   )) {
-    if (typeof letter !== "string" || letter.length !== 1) continue;
+    if (typeof letter !== "string" || !shorthandLetterRegex.test(letter)) {
+      continue;
+    }
     if (isReserved(letter) || assigned.has(name)) continue;
     if (!present.has(name)) {
       if (!owners.has(letter)) {
