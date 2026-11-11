@@ -17570,10 +17570,10 @@ cliShorthands:
   parenthesesInPathAllowed:
     flags:
       id: i
-  postFile:
+  postFile_multipart:
     flags:
       upload: u
-  postFileWithEncoding:
+  postFileWithEncoding_multipart:
     flags:
       attachment: a
       metadata: m
