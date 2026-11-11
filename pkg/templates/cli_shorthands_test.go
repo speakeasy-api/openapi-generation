@@ -318,11 +318,13 @@ func TestResolveOperationShorthandsReportsFlagsDisplacedByPins(t *testing.T) {
 	assert.Empty(t, got.Displaced)
 }
 
-// shorthandRuntimeHarness replaces the generator bindings and the
-// metadata-entry builders, which need a full operation AST, with fakes driven
-// by each test operation's flag names and required path parameters. Operation
-// enumeration, lock lookup, path parameter preference, declaration matching
-// and validation run unchanged.
+// shorthandRuntimeHarness replaces the generator bindings and the flag
+// builders, which need a full operation AST, with fakes driven by each test
+// operation's flag names and required path parameters. Operation enumeration,
+// lock lookup, path parameter preference, declaration matching and the
+// preferShorthand and declared-shorthand checks run unchanged; the generated
+// flag set excludes global, body, schema and binary-output flags, so declared
+// flag name collisions are not covered here.
 const shorthandRuntimeHarness = `
 var shorthandRecords = [];
 var shorthandWarnings = [];
