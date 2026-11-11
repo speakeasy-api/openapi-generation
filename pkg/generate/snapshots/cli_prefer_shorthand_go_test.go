@@ -149,6 +149,91 @@ paths:
           description: OK
 `
 
+const cliPreferShorthandPathParamSpec = `openapi: 3.0.3
+info:
+  title: Pet API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+x-speakeasy-cli-commands:
+  version: 1
+  operations:
+    UpdatePet:
+      preferShorthand: [price]
+paths:
+  /pets/{pet_id}:
+    put:
+      operationId: UpdatePet
+      description: A pinned body field shares its initial with a required path parameter, which otherwise wins the letter.
+      tags: [pets]
+      security: []
+      parameters:
+        - name: pet_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                price:
+                  type: number
+      responses:
+        '200':
+          description: OK
+`
+
+const cliPreferShorthandPaginatedSpec = `openapi: 3.0.3
+info:
+  title: Pet API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+x-speakeasy-cli-commands:
+  version: 1
+  operations:
+    ListPets:
+      preferShorthand: [after]
+paths:
+  /pets:
+    get:
+      operationId: ListPets
+      description: A paginated operation reserves -a for --all, so a pin starting with a cannot take it.
+      tags: [pets]
+      security: []
+      parameters:
+        - name: after
+          in: query
+          schema:
+            type: string
+      x-speakeasy-pagination:
+        type: cursor
+        inputs:
+          - name: after
+            in: parameters
+            type: cursor
+        outputs:
+          nextCursor: $.next
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next:
+                    type: string
+                  pets:
+                    type: array
+                    items:
+                      type: string
+`
+
 func TestSnapCLIPreferShorthand(t *testing.T) {
 	t.Parallel()
 
@@ -232,6 +317,42 @@ func TestSnapCLIPreferShorthand(t *testing.T) {
 			ShouldCompile: &shouldCompile,
 			ExpectErrors: []string{
 				`operation "CreatePet" preferShorthand "missing" does not match any generated flag on that operation`,
+			},
+		})
+	})
+
+	t.Run("pin beats a required path parameter on the same initial", func(t *testing.T) {
+		t.Parallel()
+		shouldCompile := false
+		snaptest.DoTestSnapshot(t, snaptest.Options{
+			Spec:          cliPreferShorthandPathParamSpec,
+			GenYaml:       cliPreferShorthandGenYaml,
+			ShouldCompile: &shouldCompile,
+			AfterGenerate: func(t *testing.T, outputDir string) {
+				t.Helper()
+				command, err := os.ReadFile(filepath.Join(outputDir, "internal", "cli", "pets", "updatepet.go"))
+				require.NoError(t, err)
+				require.Contains(t, string(command), `FlagName: "price", Shorthand: "p"`)
+				require.Contains(t, string(command), `FlagName: "pet-id"`)
+				require.NotContains(t, string(command), `FlagName: "pet-id", Shorthand:`)
+
+				usage, err := os.ReadFile(filepath.Join(outputDir, "internal", "usage", "schema.go"))
+				require.NoError(t, err)
+				require.Contains(t, string(usage), `-p --price <price>`)
+				require.NotContains(t, string(usage), `-p --pet-id`)
+			},
+		})
+	})
+
+	t.Run("pin starting with a on a paginated operation fails generation", func(t *testing.T) {
+		t.Parallel()
+		shouldCompile := false
+		snaptest.DoTestSnapshot(t, snaptest.Options{
+			Spec:          cliPreferShorthandPaginatedSpec,
+			GenYaml:       cliPreferShorthandGenYaml,
+			ShouldCompile: &shouldCompile,
+			ExpectErrors: []string{
+				`operation "ListPets" preferShorthand "after" cannot take -a`,
 			},
 		})
 	})

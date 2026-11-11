@@ -118,6 +118,16 @@ func TestResolveOperationShorthands(t *testing.T) {
 			wantRetired: noRetired,
 		},
 		{
+			name: "pin beats a required path parameter on the same initial",
+			input: shorthandInput{
+				FlagNames: []string{"pet-id", "price"},
+				Preferred: []string{"pet-id"},
+				Pinned:    []string{"price"},
+			},
+			wantFlags:   map[string]string{"price": "p"},
+			wantRetired: noRetired,
+		},
+		{
 			name: "lock keeps a letter when a new flag shares it",
 			input: shorthandInput{
 				FlagNames: []string{"names", "nick-name", "tag"},
