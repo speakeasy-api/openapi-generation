@@ -208,7 +208,7 @@ func (g *Generator) templateSDKInner(ctx context.Context, a *ast.AST) error {
 		}
 	}
 
-	if g.target.Target == "cli" && g.generateUsageSnippetArgs == nil {
+	if g.target.Target == "cli" {
 		g.subsystem.CLIShorthands.Start()
 	}
 
