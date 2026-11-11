@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.961.0] - 2026-11-11
+### :bee: New Features
+- [`8076008`](https://github.com/speakeasy-api/openapi-generation/commit/807600886d68d647d11c59b7df7f31859ded920f) - **cli**: keep auto-assigned flag shorthands stable across regenerations ([#208](https://github.com/speakeasy-api/openapi-generation/pull/208)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.960.9] - 2026-11-10
 ### :bug: Bug Fixes
 - [`1a9861e`](https://github.com/speakeasy-api/openapi-generation/commit/1a9861e90d23b311cc55ec070504e9fff3d6da7d) - **python**: base64-encode raw bytes passed to base64 file input fields ([#200](https://github.com/speakeasy-api/openapi-generation/pull/200)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20995,3 +21000,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.960.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.6...v2.960.7
 [v2.960.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.7...v2.960.8
 [v2.960.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.8...v2.960.9
+[v2.961.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.9...v2.961.0
