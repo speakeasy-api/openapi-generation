@@ -1564,17 +1564,39 @@ function collectOperationFlagMeta(op: Operation): { flagName: string }[] {
   return flags;
 }
 
+function cliOperationMatchesDeclaration(
+  op: Operation,
+  operationID: string,
+): boolean {
+  return operationID === op.OriginalID || operationID === op.GetID();
+}
+
 function cliOperationDeclaration(op: Operation): any | null {
   const operations = (context.Global.AST.CLICommands as any)?.Operations || [];
   for (const declared of operations) {
-    if (
-      declared.OperationID === op.OriginalID ||
-      declared.OperationID === op.GetID()
-    ) {
+    if (cliOperationMatchesDeclaration(op, declared.OperationID)) {
       return declared;
     }
   }
   return null;
+}
+
+// declaredOperationMetadataFlagNames collects the metadata flags of every
+// operation a declaration matches: request content-type variants share an
+// OriginalID but render as separate commands with their own flags.
+function declaredOperationMetadataFlagNames(operationID: string): Set<string> {
+  const names = new Set<string>();
+  const walk = (sdk: SDK) => {
+    for (const op of sdk.Operations || []) {
+      if (!cliOperationMatchesDeclaration(op, operationID)) continue;
+      for (const name of Array.from(operationMetadataFlagNames(op))) {
+        names.add(name);
+      }
+    }
+    for (const sub of sdk.SubSDKs || []) walk(sub);
+  };
+  walk(context.Global.AST.MainSDK);
+  return names;
 }
 
 function operationBodyFlagSurfaces(op: Operation): string[] {
@@ -1638,7 +1660,9 @@ function operationGeneratedFlagNames(op: Operation): Set<string> {
 }
 
 function validateCLIOperationFlagNames(op: Operation, declared: any): void {
-  const metadataFlags = operationMetadataFlagNames(op);
+  const metadataFlags = declaredOperationMetadataFlagNames(
+    declared.OperationID,
+  );
   for (const flagName of declared.PreferShorthand || []) {
     if (!metadataFlags.has(flagName)) {
       throw new Error(
