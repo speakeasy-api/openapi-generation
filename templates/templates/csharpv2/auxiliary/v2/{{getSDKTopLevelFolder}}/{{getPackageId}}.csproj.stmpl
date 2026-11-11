@@ -134,8 +134,7 @@
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
                       SkipGetTargetFrameworkProperties="true"
-                      UndefineProperties="TargetFramework;RuntimeIdentifier;SelfContained;PublishAot"
-                      AdditionalProperties="WarningsNotAsErrors=RS1041" />
+                      UndefineProperties="TargetFramework;RuntimeIdentifier;SelfContained;PublishAot;NoWarn" />
   </ItemGroup>
 
 </Project>
