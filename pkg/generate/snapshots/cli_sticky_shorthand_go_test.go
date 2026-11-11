@@ -867,3 +867,62 @@ func TestSnapCLIStickyShorthandsSplitOperationWithCollidingID(t *testing.T) {
 		}
 	}
 }
+
+const cliStickyCollidingIDPin = "x-speakeasy-cli-commands:\n  version: 1\n  operations:\n    CreatePet_multipart:\n      preferShorthand: [%s]\n"
+
+func TestSnapCLIStickyShorthandsPinOnCollidingID(t *testing.T) {
+	t.Parallel()
+
+	contentTypes := func(multipart ...string) map[string][]string {
+		return map[string][]string{
+			"application/json":    {"bool"},
+			"multipart/form-data": multipart,
+		}
+	}
+
+	for orderName, order := range cliStickyCollidingIDOrders {
+		t.Run(orderName+" pin applies only to the declared operation", func(t *testing.T) {
+			t.Parallel()
+			shouldCompile := false
+			snaptest.DoTestSnapshot(t, snaptest.Options{
+				Spec:          cliStickyCollidingIDSpec(order.suffixedFirst, order.group, "", contentTypes("nick_name")),
+				GenYaml:       cliStickyGenYaml,
+				ShouldCompile: &shouldCompile,
+				AfterGenerate: func(t *testing.T, outputDir string) {
+					t.Helper()
+					require.Equal(t, map[string]string{"nick-name": "n"}, cliStickyLockFlags(t, outputDir)["CreatePet"]["multipart"])
+
+					pinned := cliStickyCollidingIDSpec(order.suffixedFirst, order.group, fmt.Sprintf(cliStickyCollidingIDPin, "names"), contentTypes("names", "nick_name"))
+					warnings := cliStickyRegenerate(t, outputDir, pinned)
+					for _, warning := range warnings {
+						require.NotContains(t, warning.Error(), `operation "CreatePet" (multipart request)`)
+					}
+
+					split := cliStickyReadFile(t, outputDir, "internal", "cli", "pets", "createpetmultipart.go")
+					require.Contains(t, split, `FlagName: "nick-name", Shorthand: "n"`)
+					require.NotContains(t, split, `FlagName: "names", Shorthand:`)
+					suffixed := cliStickyReadFile(t, outputDir, "internal", "cli", order.group, "createpetmultipart.go")
+					require.Contains(t, suffixed, `FlagName: "names", Shorthand: "n"`)
+					require.NotContains(t, suffixed, `FlagName: "nick-name", Shorthand:`)
+
+					lock := cliStickyLockFlags(t, outputDir)
+					require.Equal(t, map[string]string{"nick-name": "n"}, lock["CreatePet"]["multipart"])
+					require.Equal(t, map[string]string{"names": "n"}, lock["CreatePet_multipart"]["json"])
+				},
+			})
+		})
+
+		t.Run(orderName+" pin on a flag of the other operation fails generation", func(t *testing.T) {
+			t.Parallel()
+			shouldCompile := false
+			snaptest.DoTestSnapshot(t, snaptest.Options{
+				Spec:          cliStickyCollidingIDSpec(order.suffixedFirst, order.group, fmt.Sprintf(cliStickyCollidingIDPin, "tag"), contentTypes("tag")),
+				GenYaml:       cliStickyGenYaml,
+				ShouldCompile: &shouldCompile,
+				ExpectErrors: []string{
+					`operation "CreatePet_multipart" preferShorthand "tag" does not match any generated flag on that operation`,
+				},
+			})
+		})
+	}
+}

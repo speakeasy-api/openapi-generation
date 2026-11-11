@@ -1564,11 +1564,14 @@ function collectOperationFlagMeta(op: Operation): { flagName: string }[] {
   return flags;
 }
 
+// Declarations are linked to document operationIds only, so a generated
+// content-type variant ID such as CreatePet_multipart must not match: it can
+// equal another operation's operationId.
 function cliOperationMatchesDeclaration(
   op: Operation,
   operationID: string,
 ): boolean {
-  return operationID === op.OriginalID || operationID === op.GetID();
+  return operationID === op.OriginalID;
 }
 
 function cliOperationDeclaration(op: Operation): any | null {
