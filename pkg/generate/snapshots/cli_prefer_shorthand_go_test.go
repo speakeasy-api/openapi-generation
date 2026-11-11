@@ -234,6 +234,56 @@ paths:
                       type: string
 `
 
+const cliPreferShorthandNameOverrideSpec = `openapi: 3.1.0
+info:
+  title: Pet API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+x-speakeasy-cli-commands:
+  version: 1
+  operations:
+    foo:
+      preferShorthand: [after]
+paths:
+  /pets:
+    get:
+      operationId: ListPets
+      x-speakeasy-name-override: foo
+      description: A paginated operation whose method name equals another operation's operationId.
+      tags: [pets]
+      security: []
+      x-speakeasy-pagination:
+        type: offsetLimit
+        inputs:
+          - {name: offset, in: parameters, type: offset}
+        outputs:
+          results: $.items
+      parameters:
+        - {name: offset, in: query, schema: {type: integer}}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: {type: array, items: {type: string}}
+  /notes:
+    get:
+      operationId: foo
+      description: An operation without pagination that pins a flag starting with a.
+      tags: [notes]
+      security: []
+      parameters:
+        - {name: after, in: query, schema: {type: string}}
+        - {name: around, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: OK
+`
+
 func TestSnapCLIPreferShorthand(t *testing.T) {
 	t.Parallel()
 
@@ -340,6 +390,23 @@ func TestSnapCLIPreferShorthand(t *testing.T) {
 				require.NoError(t, err)
 				require.Contains(t, string(usage), `-p --price <price>`)
 				require.NotContains(t, string(usage), `-p --pet-id`)
+			},
+		})
+	})
+
+	t.Run("pin applies to the operationId, not a name override matching it", func(t *testing.T) {
+		t.Parallel()
+		shouldCompile := false
+		snaptest.DoTestSnapshot(t, snaptest.Options{
+			Spec:          cliPreferShorthandNameOverrideSpec,
+			GenYaml:       cliPreferShorthandGenYaml,
+			ShouldCompile: &shouldCompile,
+			AfterGenerate: func(t *testing.T, outputDir string) {
+				t.Helper()
+				command, err := os.ReadFile(filepath.Join(outputDir, "internal", "cli", "notes", "foo.go"))
+				require.NoError(t, err)
+				require.Contains(t, string(command), `FlagName: "after", Shorthand: "a"`)
+				require.NotContains(t, string(command), `FlagName: "around", Shorthand:`)
 			},
 		})
 	})

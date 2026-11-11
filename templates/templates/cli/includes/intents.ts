@@ -1584,21 +1584,28 @@ function cliOperationDeclaration(op: Operation): any | null {
   return null;
 }
 
-// declaredOperationMetadataFlagNames collects the metadata flags of every
-// operation a declaration matches: request content-type variants share an
-// OriginalID but render as separate commands with their own flags.
-function declaredOperationMetadataFlagNames(operationID: string): Set<string> {
-  const names = new Set<string>();
+// cliDeclaredOperations returns every operation a declaration matches:
+// request content-type variants share an OriginalID but render as separate
+// commands with their own flags.
+function cliDeclaredOperations(operationID: string): Operation[] {
+  const operations: Operation[] = [];
   const walk = (sdk: SDK) => {
     for (const op of sdk.Operations || []) {
-      if (!cliOperationMatchesDeclaration(op, operationID)) continue;
-      for (const name of Array.from(operationMetadataFlagNames(op))) {
-        names.add(name);
-      }
+      if (cliOperationMatchesDeclaration(op, operationID)) operations.push(op);
     }
     for (const sub of sdk.SubSDKs || []) walk(sub);
   };
   walk(context.Global.AST.MainSDK);
+  return operations;
+}
+
+function declaredOperationMetadataFlagNames(operationID: string): Set<string> {
+  const names = new Set<string>();
+  for (const op of cliDeclaredOperations(operationID)) {
+    for (const name of Array.from(operationMetadataFlagNames(op))) {
+      names.add(name);
+    }
+  }
   return names;
 }
 
@@ -1707,13 +1714,13 @@ function validateCLIOperationFlagNames(op: Operation, declared: any): void {
 
 function validateCLIOperationDeclarations(manifest: any): void {
   for (const declared of manifest.Operations || []) {
-    const found = findIntentOperation(declared.OperationID);
-    if (!found) {
+    const operations = cliDeclaredOperations(declared.OperationID);
+    if (operations.length === 0) {
       throw new Error(
         `x-speakeasy-cli-commands: operation "${declared.OperationID}" is not part of the generated CLI surface`,
       );
     }
-    validateCLIOperationFlagNames(found.op, declared);
+    for (const op of operations) validateCLIOperationFlagNames(op, declared);
   }
 }
 
