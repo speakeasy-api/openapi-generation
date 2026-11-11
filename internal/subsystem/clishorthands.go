@@ -8,7 +8,7 @@ import "sync"
 // replace the lock section (snippet-only generation) leave it untouched.
 type CLIShorthands struct {
 	mu         sync.Mutex
-	operations map[string]any
+	operations map[string]map[string]any
 }
 
 func (c *CLIShorthands) Start() {
@@ -17,12 +17,14 @@ func (c *CLIShorthands) Start() {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.operations = map[string]any{}
+	c.operations = map[string]map[string]any{}
 }
 
-// Record stores one operation's resolution, omitting empty flags and retired
-// maps so operations without shorthands do not add lock entries.
-func (c *CLIShorthands) Record(operationID string, resolution map[string]any) {
+// Record stores the resolution of one operation's request serialization
+// method, omitting empty flags and retired maps so operations without
+// shorthands do not add lock entries. A split operation keeps an empty method
+// entry, which stops a later single command from inheriting a sibling's entry.
+func (c *CLIShorthands) Record(operationID, serializationMethod string, resolution map[string]any, split bool) {
 	if c == nil {
 		return
 	}
@@ -37,11 +39,19 @@ func (c *CLIShorthands) Record(operationID string, resolution map[string]any) {
 			entry[key] = value
 		}
 	}
-	if len(entry) == 0 {
-		delete(c.operations, operationID)
+	methods := c.operations[operationID]
+	if len(entry) == 0 && !split {
+		delete(methods, serializationMethod)
+		if len(methods) == 0 {
+			delete(c.operations, operationID)
+		}
 		return
 	}
-	c.operations[operationID] = entry
+	if methods == nil {
+		methods = map[string]any{}
+		c.operations[operationID] = methods
+	}
+	methods[serializationMethod] = entry
 }
 
 // Result returns the recorded section and whether recording was started.
@@ -51,5 +61,17 @@ func (c *CLIShorthands) Result() (map[string]any, bool) {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.operations, c.operations != nil
+	if c.operations == nil {
+		return nil, false
+	}
+	result := make(map[string]any, len(c.operations))
+	for operationID, methods := range c.operations {
+		for _, entry := range methods {
+			if len(entry.(map[string]any)) > 0 {
+				result[operationID] = methods
+				break
+			}
+		}
+	}
+	return result, true
 }

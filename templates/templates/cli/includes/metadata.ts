@@ -275,14 +275,54 @@ function resolveOperationShorthands(
 
 const operationShorthandsCache = new Map<string, Map<string, string>>();
 
-// operationShorthandsLockKey must not depend on how many request content
-// types the operation has: op.ID only gains a serialization suffix once an
-// operation is split, which would orphan the entry of its existing variant.
-function operationShorthandsLockKey(op: Operation): string {
-  const method = op.SerializationMethod?.toString() || "";
-  return method && method !== "json"
-    ? `${op.OriginalID}_${method}`
-    : op.OriginalID;
+// operationShorthandsMethod keys an operation's gen.lock entry under its
+// operationId. It must not depend on how many request content types the
+// operation has: op.ID only gains a serialization suffix once an operation is
+// split, which would orphan the entry of its existing variant.
+function operationShorthandsMethod(op: Operation): string {
+  return op.SerializationMethod?.toString() || "json";
+}
+
+let operationRequestMethodsCache: Map<string, Set<string>> | null = null;
+
+function operationRequestMethods(originalID: string): Set<string> {
+  if (!operationRequestMethodsCache) {
+    operationRequestMethodsCache = new Map();
+    for (const op of allOperations()) {
+      const methods =
+        operationRequestMethodsCache.get(op.OriginalID) || new Set<string>();
+      methods.add(operationShorthandsMethod(op));
+      operationRequestMethodsCache.set(op.OriginalID, methods);
+    }
+  }
+  return operationRequestMethodsCache.get(originalID) || new Set();
+}
+
+function hasOwnEntry(record: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(record, key);
+}
+
+// recordedOperationShorthands returns the gen.lock entry for an operation's
+// request serialization method. An operation rendered as a single command
+// whose method has no entry inherits its operation's only recorded entry, so
+// the command keeps its letters when its request body changes serialization
+// (for example a bodyless command gaining a multipart body).
+function recordedOperationShorthands(
+  op: Operation,
+  method: string,
+): OperationShorthandLock | null {
+  const lock = lockSection<unknown>(context.Global.Config.CLIShorthands);
+  if (!hasOwnEntry(lock, op.OriginalID)) return null;
+  const methods = lockSection<OperationShorthandLock>(lock[op.OriginalID]);
+  if (hasOwnEntry(methods, method)) return methods[method];
+  const recordedMethods = Object.keys(methods);
+  if (
+    recordedMethods.length === 1 &&
+    operationRequestMethods(op.OriginalID).size === 1
+  ) {
+    return methods[recordedMethods[0]];
+  }
+  return null;
 }
 
 // operationShorthands resolves an operation's auto shorthands against its
@@ -294,7 +334,8 @@ function operationShorthands(
   op: Operation,
   entries: string[],
 ): Map<string, string> {
-  const key = operationShorthandsLockKey(op);
+  const method = operationShorthandsMethod(op);
+  const key = JSON.stringify([op.OriginalID, method]);
   const cached = operationShorthandsCache.get(key);
   if (cached) return cached;
 
@@ -303,9 +344,7 @@ function operationShorthands(
     const name = entry.match(/FlagName: "([^"]+)"/)?.[1];
     if (name) flagNames.push(name);
   }
-  const lock = context.Global.Config.CLIShorthands;
-  const recorded =
-    lock && Object.prototype.hasOwnProperty.call(lock, key) ? lock[key] : null;
+  const recorded = recordedOperationShorthands(op, method);
   const resolution = resolveOperationShorthands({
     flagNames,
     lock: recorded ? JSON.parse(JSON.stringify(recorded)) : null,
@@ -313,10 +352,15 @@ function operationShorthands(
     preferred: Array.from(requiredPathParamFlagNames(op, entries)),
     reserved: hasPagination(op) ? ["a"] : [],
   });
-  recordCLIShorthands(key, resolution);
+  recordCLIShorthands(
+    op.OriginalID,
+    method,
+    resolution,
+    operationRequestMethods(op.OriginalID).size > 1,
+  );
   for (const [flag, { letter, pin }] of Object.entries(resolution.displaced)) {
     logWarning(
-      `operation "${key}": preferShorthand "${pin}" takes -${letter} from "${flag}", which gen.lock records as its owner; existing -${letter} invocations now set --${pin}`,
+      `operation "${op.OriginalID}" (${method} request): preferShorthand "${pin}" takes -${letter} from "${flag}", which gen.lock records as its owner; existing -${letter} invocations now set --${pin}`,
       op.Location?.Line ?? 0,
     );
   }

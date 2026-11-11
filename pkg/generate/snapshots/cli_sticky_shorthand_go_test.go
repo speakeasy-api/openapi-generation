@@ -55,13 +55,15 @@ const (
 	cliStickyNickNameField = "                nick_name:\n                  type: string\n"
 )
 
+type cliStickyShorthandEntry struct {
+	Flags   map[string]string `yaml:"flags"`
+	Retired map[string]struct {
+		Flag string `yaml:"flag"`
+	} `yaml:"retired"`
+}
+
 type cliStickyShorthandLock struct {
-	CLIShorthands map[string]struct {
-		Flags   map[string]string `yaml:"flags"`
-		Retired map[string]struct {
-			Flag string `yaml:"flag"`
-		} `yaml:"retired"`
-	} `yaml:"cliShorthands"`
+	CLIShorthands map[string]map[string]cliStickyShorthandEntry `yaml:"cliShorthands"`
 }
 
 func cliStickyShorthandSpecWith(fields ...string) string {
@@ -82,22 +84,25 @@ func cliStickyReadLock(t *testing.T, outputDir string) cliStickyShorthandLock {
 	return lock
 }
 
-func cliStickyLockFlags(t *testing.T, outputDir string) map[string]map[string]string {
+func cliStickyLockFlags(t *testing.T, outputDir string) map[string]map[string]map[string]string {
 	t.Helper()
-	flags := map[string]map[string]string{}
-	for key, entry := range cliStickyReadLock(t, outputDir).CLIShorthands {
-		require.Empty(t, entry.Retired, key)
-		flags[key] = entry.Flags
+	flags := map[string]map[string]map[string]string{}
+	for operationID, methods := range cliStickyReadLock(t, outputDir).CLIShorthands {
+		flags[operationID] = map[string]map[string]string{}
+		for method, entry := range methods {
+			require.Empty(t, entry.Retired, "%s %s", operationID, method)
+			flags[operationID][method] = entry.Flags
+		}
 	}
 	return flags
 }
 
-func cliStickyDeleteRetired(t *testing.T, outputDir, operationID, letter string) {
+func cliStickyDeleteRetired(t *testing.T, outputDir, operationID, method, letter string) {
 	t.Helper()
 	lockPath := filepath.Join(outputDir, ".speakeasy", "gen.lock")
 	var lock map[string]any
 	require.NoError(t, yaml.Unmarshal([]byte(cliStickyReadFile(t, outputDir, ".speakeasy", "gen.lock")), &lock))
-	entry := lock["cliShorthands"].(map[string]any)[operationID].(map[string]any)
+	entry := lock["cliShorthands"].(map[string]any)[operationID].(map[string]any)[method].(map[string]any)
 	retired := entry["retired"].(map[string]any)
 	require.Contains(t, retired, letter)
 	delete(retired, letter)
@@ -144,7 +149,7 @@ func TestSnapCLIStickyShorthands(t *testing.T) {
 			}
 
 			require.Contains(t, readCommand(), `FlagName: "names", Shorthand: "n"`)
-			require.Equal(t, map[string]string{"names": "n", "tag": "t"}, readLock().CLIShorthands["CreatePet"].Flags)
+			require.Equal(t, map[string]string{"names": "n", "tag": "t"}, readLock().CLIShorthands["CreatePet"]["json"].Flags)
 
 			regenerate(cliStickyShorthandSpecWith(cliStickyNamesField, cliStickyNickNameField, cliStickyTagField))
 			command := readCommand()
@@ -154,21 +159,21 @@ func TestSnapCLIStickyShorthands(t *testing.T) {
 			usage := readUsage()
 			require.Contains(t, usage, `-n --names <names...>`)
 			require.NotContains(t, usage, `-n --nick-name`)
-			require.Equal(t, map[string]string{"names": "n", "tag": "t"}, readLock().CLIShorthands["CreatePet"].Flags)
+			require.Equal(t, map[string]string{"names": "n", "tag": "t"}, readLock().CLIShorthands["CreatePet"]["json"].Flags)
 
 			regenerate(cliStickyShorthandSpecWith(cliStickyNickNameField, cliStickyTagField))
 			command = readCommand()
 			require.Contains(t, command, `FlagName: "nick-name"`)
 			require.NotContains(t, command, `FlagName: "nick-name", Shorthand:`)
-			entry := readLock().CLIShorthands["CreatePet"]
+			entry := readLock().CLIShorthands["CreatePet"]["json"]
 			require.Equal(t, map[string]string{"tag": "t"}, entry.Flags)
 			require.Equal(t, "names", entry.Retired["n"].Flag)
 
-			cliStickyDeleteRetired(t, outputDir, "CreatePet", "n")
+			cliStickyDeleteRetired(t, outputDir, "CreatePet", "json", "n")
 			regenerate(cliStickyShorthandSpecWith(cliStickyNickNameField, cliStickyTagField))
 			require.Contains(t, readCommand(), `FlagName: "nick-name", Shorthand: "n"`)
 			require.Contains(t, readUsage(), `-n --nick-name <nick_name>`)
-			entry = readLock().CLIShorthands["CreatePet"]
+			entry = readLock().CLIShorthands["CreatePet"]["json"]
 			require.Equal(t, map[string]string{"nick-name": "n", "tag": "t"}, entry.Flags)
 			require.Empty(t, entry.Retired)
 		},
@@ -227,9 +232,11 @@ func TestSnapCLIStickyShorthandsSplitOperation(t *testing.T) {
 					cliStickyReadFile(t, outputDir, "internal", "usage", "schema.go"),
 				}
 			}
-			wantLock := map[string]map[string]string{
-				"CreatePet":           {"bool": "b", "num": "n"},
-				"CreatePet_multipart": {"bool2": "b", "num2": "n"},
+			wantLock := map[string]map[string]map[string]string{
+				"CreatePet": {
+					"json":      {"bool": "b", "num": "n"},
+					"multipart": {"bool2": "b", "num2": "n"},
+				},
 			}
 
 			first := readOutputs()
@@ -311,10 +318,10 @@ func TestSnapCLIStickyShorthandsLostInputs(t *testing.T) {
 			ShouldCompile: &shouldCompile,
 			AfterGenerate: func(t *testing.T, outputDir string) {
 				t.Helper()
-				require.Equal(t, map[string]string{"names": "n"}, cliStickyReadLock(t, outputDir).CLIShorthands["ListPets"].Flags)
+				require.Equal(t, map[string]string{"names": "n"}, cliStickyReadLock(t, outputDir).CLIShorthands["ListPets"]["json"].Flags)
 
 				cliStickyRegenerate(t, outputDir, cliStickyListSpecWith(""))
-				entry := cliStickyReadLock(t, outputDir).CLIShorthands["ListPets"]
+				entry := cliStickyReadLock(t, outputDir).CLIShorthands["ListPets"]["json"]
 				require.Empty(t, entry.Flags)
 				require.Equal(t, "names", entry.Retired["n"].Flag)
 
@@ -322,7 +329,7 @@ func TestSnapCLIStickyShorthandsLostInputs(t *testing.T) {
 				command := cliStickyReadFile(t, outputDir, "internal", "cli", "pets", "listpets.go")
 				require.Contains(t, command, `FlagName: "nick-name"`)
 				require.NotContains(t, command, `FlagName: "nick-name", Shorthand:`)
-				entry = cliStickyReadLock(t, outputDir).CLIShorthands["ListPets"]
+				entry = cliStickyReadLock(t, outputDir).CLIShorthands["ListPets"]["json"]
 				require.Empty(t, entry.Flags)
 				require.Equal(t, "names", entry.Retired["n"].Flag)
 			},
@@ -338,10 +345,10 @@ func TestSnapCLIStickyShorthandsLostInputs(t *testing.T) {
 			ShouldCompile: &shouldCompile,
 			AfterGenerate: func(t *testing.T, outputDir string) {
 				t.Helper()
-				require.Equal(t, map[string]string{"names": "n", "tag": "t"}, cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"].Flags)
+				require.Equal(t, map[string]string{"names": "n", "tag": "t"}, cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"]["json"].Flags)
 
 				cliStickyRegenerate(t, outputDir, cliStickyWholeBodySpec)
-				entry := cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"]
+				entry := cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"]["json"]
 				require.Empty(t, entry.Flags)
 				require.Equal(t, "names", entry.Retired["n"].Flag)
 				require.Equal(t, "tag", entry.Retired["t"].Flag)
@@ -370,11 +377,11 @@ func TestSnapCLIStickyShorthandsPrototypeOperationID(t *testing.T) {
 		ShouldCompile: &shouldCompile,
 		AfterGenerate: func(t *testing.T, outputDir string) {
 			t.Helper()
-			require.Equal(t, map[string]string{"names": "n"}, cliStickyReadLock(t, outputDir).CLIShorthands["constructor"].Flags)
+			require.Equal(t, map[string]string{"names": "n"}, cliStickyReadLock(t, outputDir).CLIShorthands["constructor"]["json"].Flags)
 
 			cliStickyRegenerate(t, outputDir, spec)
 			lock := cliStickyReadLock(t, outputDir).CLIShorthands
-			require.Equal(t, map[string]string{"names": "n"}, lock["constructor"].Flags)
+			require.Equal(t, map[string]string{"names": "n"}, lock["constructor"]["json"].Flags)
 			require.NotContains(t, lock, "toString")
 		},
 	})
@@ -422,14 +429,14 @@ func TestSnapCLIStickyShorthandsContentTypeChanges(t *testing.T) {
 	type generation struct {
 		contentTypes map[string][]string
 		usage        []string
-		lock         map[string]map[string]string
+		lock         map[string]map[string]map[string]string
 	}
 	sequences := map[string][]generation{
 		"multipart operation gains and loses a JSON body": {
 			{
 				contentTypes: map[string][]string{"multipart/form-data": {"names", "tag"}},
 				usage:        []string{`-n --names <names>`, `-t --tag <tag>`},
-				lock:         map[string]map[string]string{"CreatePet_multipart": {"names": "n", "tag": "t"}},
+				lock:         map[string]map[string]map[string]string{"CreatePet": {"multipart": {"names": "n", "tag": "t"}}},
 			},
 			{
 				contentTypes: map[string][]string{
@@ -437,22 +444,22 @@ func TestSnapCLIStickyShorthandsContentTypeChanges(t *testing.T) {
 					"multipart/form-data": {"names", "nick_name", "tag"},
 				},
 				usage: []string{`-n --names <names>`, `-t --tag <tag>`, `-n --nova <nova>`, `-t --title <title>`},
-				lock: map[string]map[string]string{
-					"CreatePet":           {"nova": "n", "title": "t"},
-					"CreatePet_multipart": {"names": "n", "tag": "t"},
-				},
+				lock: map[string]map[string]map[string]string{"CreatePet": {
+					"json":      {"nova": "n", "title": "t"},
+					"multipart": {"names": "n", "tag": "t"},
+				}},
 			},
 			{
 				contentTypes: map[string][]string{"multipart/form-data": {"names", "nick_name", "tag"}},
 				usage:        []string{`-n --names <names>`, `-t --tag <tag>`},
-				lock:         map[string]map[string]string{"CreatePet_multipart": {"names": "n", "tag": "t"}},
+				lock:         map[string]map[string]map[string]string{"CreatePet": {"multipart": {"names": "n", "tag": "t"}}},
 			},
 		},
 		"JSON operation gains and loses a multipart body": {
 			{
 				contentTypes: map[string][]string{"application/json": {"names", "tag"}},
 				usage:        []string{`-n --names <names>`, `-t --tag <tag>`},
-				lock:         map[string]map[string]string{"CreatePet": {"names": "n", "tag": "t"}},
+				lock:         map[string]map[string]map[string]string{"CreatePet": {"json": {"names": "n", "tag": "t"}}},
 			},
 			{
 				contentTypes: map[string][]string{
@@ -460,15 +467,15 @@ func TestSnapCLIStickyShorthandsContentTypeChanges(t *testing.T) {
 					"multipart/form-data": {"nova", "title"},
 				},
 				usage: []string{`-n --names <names>`, `-t --tag <tag>`, `-n --nova <nova>`, `-t --title <title>`},
-				lock: map[string]map[string]string{
-					"CreatePet":           {"names": "n", "tag": "t"},
-					"CreatePet_multipart": {"nova": "n", "title": "t"},
-				},
+				lock: map[string]map[string]map[string]string{"CreatePet": {
+					"json":      {"names": "n", "tag": "t"},
+					"multipart": {"nova": "n", "title": "t"},
+				}},
 			},
 			{
 				contentTypes: map[string][]string{"application/json": {"names", "nick_name", "tag"}},
 				usage:        []string{`-n --names <names>`, `-t --tag <tag>`},
-				lock:         map[string]map[string]string{"CreatePet": {"names": "n", "tag": "t"}},
+				lock:         map[string]map[string]map[string]string{"CreatePet": {"json": {"names": "n", "tag": "t"}}},
 			},
 		},
 	}
@@ -528,12 +535,198 @@ func TestSnapCLIStickyShorthandsPinDisplacesRecordedFlag(t *testing.T) {
 		ShouldCompile: &shouldCompile,
 		AfterGenerate: func(t *testing.T, outputDir string) {
 			t.Helper()
-			require.Equal(t, map[string]string{"nick-name": "n", "tag": "t"}, cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"].Flags)
+			require.Equal(t, map[string]string{"nick-name": "n", "tag": "t"}, cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"]["json"].Flags)
 
 			require.Equal(t, 1, countWarnings(cliStickyRegenerate(t, outputDir, pinnedSpec)))
-			require.Equal(t, map[string]string{"names": "n", "tag": "t"}, cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"].Flags)
+			require.Equal(t, map[string]string{"names": "n", "tag": "t"}, cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"]["json"].Flags)
 
 			require.Zero(t, countWarnings(cliStickyRegenerate(t, outputDir, pinnedSpec)))
+		},
+	})
+}
+
+const cliStickySuffixedOperationIDSpec = `openapi: 3.0.3
+info:
+  title: Pet API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    post:
+      operationId: CreatePet
+      description: A form request body on an operation whose ID another operation repeats with a serialization suffix.
+      tags: [pets]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                names:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+  /notes:
+    post:
+      operationId: CreatePet_form
+      description: A JSON request body on an operation whose ID ends with another operation's serialization suffix.
+      tags: [notes]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nick_name:
+                  type: string
+      responses:
+        '200':
+          description: OK
+`
+
+func TestSnapCLIStickyShorthandsSuffixedOperationID(t *testing.T) {
+	t.Parallel()
+
+	shouldCompile := false
+	snaptest.DoTestSnapshot(t, snaptest.Options{
+		Spec:          cliStickySuffixedOperationIDSpec,
+		GenYaml:       cliStickyGenYaml,
+		ShouldCompile: &shouldCompile,
+		AfterGenerate: func(t *testing.T, outputDir string) {
+			t.Helper()
+
+			readOutputs := func() []string {
+				t.Helper()
+				return []string{
+					cliStickyReadFile(t, outputDir, "internal", "cli", "pets", "createpet.go"),
+					cliStickyReadFile(t, outputDir, "internal", "cli", "notes", "createpetform.go"),
+					cliStickyReadFile(t, outputDir, "internal", "usage", "schema.go"),
+				}
+			}
+			wantLock := map[string]map[string]map[string]string{
+				"CreatePet":      {"form": {"names": "n"}},
+				"CreatePet_form": {"json": {"nick-name": "n"}},
+			}
+
+			first := readOutputs()
+			require.Contains(t, first[0], `FlagName: "names", Shorthand: "n"`)
+			require.Contains(t, first[1], `FlagName: "nick-name", Shorthand: "n"`)
+			require.Contains(t, first[2], `-n --names <names...>`)
+			require.Contains(t, first[2], `-n --nick-name <nick_name>`)
+			require.Equal(t, wantLock, cliStickyLockFlags(t, outputDir))
+
+			cliStickyRegenerate(t, outputDir, cliStickySuffixedOperationIDSpec)
+			require.Equal(t, first, readOutputs())
+			require.Equal(t, wantLock, cliStickyLockFlags(t, outputDir))
+		},
+	})
+}
+
+const cliStickyOptionalBodySpec = `openapi: 3.0.3
+info:
+  title: Pet API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    post:
+      operationId: CreatePet
+      description: A command with a query parameter that gains and loses an optional request body with a colliding field.
+      tags: [pets]
+      security: []
+      parameters:
+        - name: names
+          in: query
+          schema:
+            type: string
+%s      responses:
+        '200':
+          description: OK
+`
+
+func cliStickyOptionalBodySpecWith(contentType string) string {
+	if contentType == "" {
+		return fmt.Sprintf(cliStickyOptionalBodySpec, "")
+	}
+	return fmt.Sprintf(cliStickyOptionalBodySpec, "      requestBody:\n        content:\n          "+contentType+":\n            schema:\n              type: object\n              properties:\n                nick_name:\n                  type: string\n")
+}
+
+func TestSnapCLIStickyShorthandsRequestBodySerializationChanges(t *testing.T) {
+	t.Parallel()
+
+	type generation struct {
+		contentType string
+		method      string
+	}
+	generations := []generation{
+		{contentType: "", method: "json"},
+		{contentType: "multipart/form-data", method: "multipart"},
+		{contentType: "multipart/form-data", method: "multipart"},
+		{contentType: "application/x-www-form-urlencoded", method: "form"},
+		{contentType: "", method: "json"},
+	}
+
+	shouldCompile := false
+	snaptest.DoTestSnapshot(t, snaptest.Options{
+		Spec:          cliStickyOptionalBodySpecWith(generations[0].contentType),
+		GenYaml:       cliStickyGenYaml,
+		ShouldCompile: &shouldCompile,
+		AfterGenerate: func(t *testing.T, outputDir string) {
+			t.Helper()
+			for i, gen := range generations {
+				if i > 0 {
+					cliStickyRegenerate(t, outputDir, cliStickyOptionalBodySpecWith(gen.contentType))
+				}
+				command := cliStickyReadFile(t, outputDir, "internal", "cli", "pets", "createpet.go")
+				require.Contains(t, command, `FlagName: "names", Shorthand: "n"`, "generation %d", i+1)
+				require.NotContains(t, command, `FlagName: "nick-name", Shorthand:`, "generation %d", i+1)
+				usage := cliStickyReadFile(t, outputDir, "internal", "usage", "schema.go")
+				require.Contains(t, usage, `-n --names <names>`, "generation %d", i+1)
+				require.NotContains(t, usage, `-n --nick-name`, "generation %d", i+1)
+				require.Equal(t, map[string]map[string]map[string]string{
+					"CreatePet": {gen.method: {"names": "n"}},
+				}, cliStickyLockFlags(t, outputDir), "generation %d", i+1)
+			}
+		},
+	})
+}
+
+func TestSnapCLIStickyShorthandsSplitEndsWithoutShorthands(t *testing.T) {
+	t.Parallel()
+
+	shouldCompile := false
+	snaptest.DoTestSnapshot(t, snaptest.Options{
+		Spec: cliStickyContentTypeSpecWith(map[string][]string{
+			"application/json":    {"names", "nick_name"},
+			"multipart/form-data": {"names", "file"},
+		}),
+		GenYaml:       cliStickyGenYaml,
+		ShouldCompile: &shouldCompile,
+		AfterGenerate: func(t *testing.T, outputDir string) {
+			t.Helper()
+			require.Equal(t, map[string]map[string]map[string]string{"CreatePet": {
+				"json":      nil,
+				"multipart": {"file": "f", "names": "n"},
+			}}, cliStickyLockFlags(t, outputDir))
+
+			cliStickyRegenerate(t, outputDir, cliStickyContentTypeSpecWith(map[string][]string{
+				"application/json": {"names", "nick_name", "filter"},
+			}))
+			command := cliStickyReadFile(t, outputDir, "internal", "cli", "pets", "createpet.go")
+			require.Contains(t, command, `FlagName: "filter", Shorthand: "f"`)
+			require.NotContains(t, command, `FlagName: "names", Shorthand:`)
+			require.Equal(t, map[string]map[string]map[string]string{
+				"CreatePet": {"json": {"filter": "f"}},
+			}, cliStickyLockFlags(t, outputDir))
 		},
 	})
 }

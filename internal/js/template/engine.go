@@ -774,8 +774,8 @@ func getJSFuncs(ctx context.Context, target types.Target, cfg Config) map[string
 			if cfg.Subsystem == nil {
 				return goja.Undefined()
 			}
-			resolution, _ := call.Argument(1).Export().(map[string]any)
-			cfg.Subsystem.CLIShorthands.Record(call.Argument(0).String(), resolution)
+			resolution, _ := call.Argument(2).Export().(map[string]any)
+			cfg.Subsystem.CLIShorthands.Record(call.Argument(0).String(), call.Argument(1).String(), resolution, call.Argument(3).ToBoolean())
 			return goja.Undefined()
 		},
 		"accountHasFeatureAccess": func(call easytemplate.CallContext) goja.Value {
