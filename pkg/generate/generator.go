@@ -1085,6 +1085,25 @@ func (g *Generator) applyManagementInfo(configChecksum, docChecksum, sdkVersion 
 	g.lockFile.Management.SpeakeasyVersion = g.cliVersion
 }
 
+// cliShorthandsLockKey is the gen.lock section recording the CLI flag
+// shorthands already shipped for each operation.
+const cliShorthandsLockKey = "cliShorthands"
+
+func (g *Generator) applyCLIShorthands() {
+	shorthands, recorded := g.subsystem.CLIShorthands.Result()
+	if !recorded {
+		return
+	}
+	if len(shorthands) == 0 {
+		delete(g.lockFile.AdditionalProperties, cliShorthandsLockKey)
+		return
+	}
+	if g.lockFile.AdditionalProperties == nil {
+		g.lockFile.AdditionalProperties = map[string]any{}
+	}
+	g.lockFile.AdditionalProperties[cliShorthandsLockKey] = shorthands
+}
+
 func (g *Generator) updateLockFile(ctx context.Context, configChecksum, docChecksum, sdkVersion string, conflictsErr *merge.ConflictsError) []error {
 	var errs []error
 	err := g.withStep(ctx, ProgressStepLockFile, func(ctx context.Context) error {
@@ -1110,6 +1129,7 @@ func (g *Generator) updateLockFile(ctx context.Context, configChecksum, docCheck
 		}
 
 		g.lockFile.ReleaseNotes = g.releaseNotes
+		g.applyCLIShorthands()
 
 		// Same as the comment above about sdk-gen-config.
 		if !mode.IsSpeakeasyExecutionContextEmbedded(ctx) {

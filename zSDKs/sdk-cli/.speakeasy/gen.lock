@@ -17504,3 +17504,92 @@ ast: |
       unions: true
       webhooks: true
 astversion: 0.3.0
+cliShorthands:
+  binaryAndStringUpload:
+    flags:
+      binary: b
+      string: s
+  createNamespaceConflict:
+    flags:
+      errors: e
+      id: i
+      models: m
+      name: "n"
+      request: r
+      species: s
+      utils: u
+  createSingleNamespaceFooPet:
+    flags:
+      errors: e
+      id: i
+      models: m
+      name: "n"
+      request: r
+      species: s
+      utils: u
+  createUser:
+    flags:
+      email: e
+      first-name: f
+      gender: g
+      id: i
+      last-name: l
+      postal-code: p
+  createWithUnion:
+    flags:
+      name: "n"
+      shape: s
+  deleteUser:
+    flags:
+      id: i
+  getAsset:
+    flags:
+      id: i
+      stream: s
+  getFullyFlattenedRequest:
+    flags:
+      emoji: e
+      gif: g
+      lang: l
+      max-length: m
+      name: "n"
+      private: p
+      reply: r
+  getPositionalDefault:
+    flags:
+      id: i
+  getUnionErrors:
+    flags:
+      page: p
+  getUser:
+    flags:
+      id: i
+  listTest1:
+    flags:
+      page: p
+  parenthesesInPathAllowed:
+    flags:
+      id: i
+  postFile:
+    flags:
+      upload: u
+  postFileWithEncoding:
+    flags:
+      attachment: a
+      metadata: m
+  postTest2:
+    flags:
+      type: t
+  putNamespaceConflict:
+    flags:
+      allof: a
+      namespaced: "n"
+  renderAsset:
+    flags:
+      prompt: p
+  testEndpoint:
+    flags:
+      test-name: t
+  updateUser:
+    flags:
+      id: i

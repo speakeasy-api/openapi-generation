@@ -408,7 +408,7 @@ const reservedShorthandLetters = new Set(["o", "H", "q", "d", "h"]);
  *
  * @param flagNames - kebab-case flag names to assign shorthands for
  * @param extraReserved - additional letters to exclude (e.g., "a" on paginated commands)
- * @param preferred - flag names that win a collision (required path parameters and preferShorthand pins)
+ * @param preferred - flag names that win a collision (e.g., required path parameters)
  * @returns Map from flag name to its single-letter shorthand
  */
 function computeFlagShorthands(

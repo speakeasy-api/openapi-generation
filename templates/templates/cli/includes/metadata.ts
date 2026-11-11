@@ -135,21 +135,168 @@ function operationMetadataFlagNames(op: Operation): Set<string> {
   return names;
 }
 
-// preferredShorthandFlagNames is the preferred set passed to
-// computeFlagShorthands. An x-speakeasy-cli-commands preferShorthand pin
-// replaces a required path parameter that shares its initial.
-function preferredShorthandFlagNames(
+interface RetiredShorthand {
+  flag: string;
+  freedIn: string;
+}
+
+// OperationShorthandLock is one operation's gen.lock cliShorthands entry.
+interface OperationShorthandLock {
+  flags?: Record<string, string> | null;
+  retired?: Record<string, RetiredShorthand> | null;
+}
+
+interface OperationShorthandInput {
+  flagNames: string[];
+  lock?: OperationShorthandLock | null;
+  pinned?: string[] | null;
+  preferred?: string[] | null;
+  reserved?: string[] | null;
+  sdkVersion?: string | null;
+}
+
+interface OperationShorthandResolution {
+  flags: Record<string, string>;
+  retired: Record<string, RetiredShorthand>;
+}
+
+const shorthandVersionRegex = /^v?(\d+)\.(\d+)/;
+
+// retiredShorthandFreed reports whether sdkVersion is a breaking release
+// after freedIn: a higher major, or a higher minor while both are pre-1.0.
+// An unparseable version on either side keeps the letter reserved.
+function retiredShorthandFreed(freedIn: string, sdkVersion: string): boolean {
+  const freed = freedIn.match(shorthandVersionRegex);
+  const current = sdkVersion.match(shorthandVersionRegex);
+  if (!freed || !current) return false;
+  const freedMajor = Number(freed[1]);
+  const major = Number(current[1]);
+  if (major !== freedMajor) return major > freedMajor;
+  return major === 0 && Number(current[2]) > Number(freed[2]);
+}
+
+function sortedRecord<T>(entries: Map<string, T>): Record<string, T> {
+  const record: Record<string, T> = {};
+  for (const key of Array.from(entries.keys()).sort()) {
+    record[key] = entries.get(key)!;
+  }
+  return record;
+}
+
+// resolveOperationShorthands assigns an operation's auto shorthands from its
+// recorded gen.lock state. Precedence: preferShorthand pins, then letters the
+// lock records (including a retired letter whose flag has returned), then
+// computeFlagShorthands for the remaining flags over the letters still free.
+// A recorded flag that no longer exists retires its letter, which stays
+// unavailable until a breaking release or a pin reclaims it. With no lock the
+// result equals computeFlagShorthands with the pins preferred.
+function resolveOperationShorthands(
+  input: OperationShorthandInput,
+): OperationShorthandResolution {
+  const sdkVersion = input.sdkVersion || "";
+  const present = new Set(
+    input.flagNames.filter((name) => !name.includes(".")),
+  );
+  const extraReserved = new Set(input.reserved || []);
+  const isReserved = (letter: string) =>
+    !letter ||
+    extraReserved.has(letter) ||
+    reservedShorthandLetters.has(letter) ||
+    reservedShorthandLetters.has(letter.toUpperCase());
+
+  const assigned = new Map<string, string>();
+  const owners = new Map<string, string>();
+  const assign = (name: string, letter: string) => {
+    assigned.set(name, letter);
+    owners.set(letter, name);
+  };
+
+  const retired = new Map<string, RetiredShorthand>();
+  for (const [letter, entry] of Object.entries(input.lock?.retired || {})) {
+    const freedIn = entry.freedIn || "";
+    if (isReserved(letter) || retiredShorthandFreed(freedIn, sdkVersion)) {
+      continue;
+    }
+    retired.set(letter, { flag: entry.flag, freedIn: freedIn || sdkVersion });
+  }
+
+  for (const name of input.pinned || []) {
+    const letter = name[0];
+    if (!present.has(name) || isReserved(letter) || owners.has(letter)) {
+      continue;
+    }
+    assign(name, letter);
+    retired.delete(letter);
+  }
+
+  for (const [name, letter] of Object.entries(input.lock?.flags || {})) {
+    if (isReserved(letter) || assigned.has(name)) continue;
+    if (!present.has(name)) {
+      if (!owners.has(letter)) {
+        retired.set(letter, { flag: name, freedIn: sdkVersion });
+      }
+      continue;
+    }
+    if (!owners.has(letter)) assign(name, letter);
+  }
+
+  for (const [letter, entry] of Array.from(retired.entries())) {
+    if (owners.has(letter)) {
+      retired.delete(letter);
+    } else if (present.has(entry.flag) && !assigned.has(entry.flag)) {
+      assign(entry.flag, letter);
+      retired.delete(letter);
+    }
+  }
+
+  const blocked = new Set([
+    ...Array.from(extraReserved),
+    ...Array.from(owners.keys()),
+    ...Array.from(retired.keys()),
+  ]);
+  const remaining = input.flagNames.filter((name) => !assigned.has(name));
+  for (const [name, letter] of Array.from(
+    computeFlagShorthands(remaining, blocked, new Set(input.preferred || [])),
+  )) {
+    assign(name, letter);
+  }
+
+  return { flags: sortedRecord(assigned), retired: sortedRecord(retired) };
+}
+
+const operationShorthandsCache = new Map<string, Map<string, string>>();
+
+// operationShorthands resolves an operation's auto shorthands against its
+// gen.lock cliShorthands entry once per template run and records the result
+// for the next lock, so the metadata var, --usage and collision checks all
+// see one assignment.
+function operationShorthands(
   op: Operation,
   entries: string[],
-): Set<string> {
-  const preferred = requiredPathParamFlagNames(op, entries);
-  for (const pinned of cliOperationDeclaration(op)?.PreferShorthand || []) {
-    for (const name of Array.from(preferred)) {
-      if (name[0] === pinned[0]) preferred.delete(name);
-    }
-    preferred.add(pinned);
+): Map<string, string> {
+  const key = op.OriginalID || op.GetID();
+  const cached = operationShorthandsCache.get(key);
+  if (cached) return cached;
+
+  const flagNames: string[] = [];
+  for (const entry of entries) {
+    const name = entry.match(/FlagName: "([^"]+)"/)?.[1];
+    if (name) flagNames.push(name);
   }
-  return preferred;
+  const recorded = (context.Global.Config.CLIShorthands || {})[key];
+  const resolution = resolveOperationShorthands({
+    flagNames,
+    lock: recorded ? JSON.parse(JSON.stringify(recorded)) : null,
+    pinned: cliOperationDeclaration(op)?.PreferShorthand || [],
+    preferred: Array.from(requiredPathParamFlagNames(op, entries)),
+    reserved: hasPagination(op) ? ["a"] : [],
+    sdkVersion: context.Global.Config.SDKVersion,
+  });
+  recordCLIShorthands(key, resolution);
+
+  const shorthands = new Map(Object.entries(resolution.flags));
+  operationShorthandsCache.set(key, shorthands);
+  return shorthands;
 }
 
 // operationAutoShorthandOwners maps each auto-assigned single-letter
@@ -164,22 +311,16 @@ function operationAutoShorthandOwners(
   const built = buildOperationMetadataEntries(op);
   if (!built) return new Map();
   const flagNameRegex = /FlagName: "([^"]+)"/;
-  const names: string[] = [];
   const fieldPaths = new Map<string, string>();
   for (const entry of built.entries) {
     const name = entry.match(flagNameRegex)?.[1];
     if (!name) continue;
-    names.push(name);
     fieldPaths.set(name, entry.match(flagMetaEntryFieldPathRegex)?.[1] || "");
   }
-  const extraReserved = hasPagination(op) ? new Set(["a"]) : undefined;
-  const preferred = preferredShorthandFlagNames(op, built.entries);
   const bodyFieldPath = templateBodyFieldPath(op);
   const owners = new Map<string, string>();
-  for (const [name, letter] of computeFlagShorthands(
-    names,
-    extraReserved,
-    preferred,
+  for (const [name, letter] of Array.from(
+    operationShorthands(op, built.entries),
   )) {
     if (nonBodyOnly) {
       const fieldPath = fieldPaths.get(name) || "";
@@ -213,22 +354,9 @@ function templateFlagMetadataVar(op: Operation): string {
     return `var ${metaVarName} = []flagutil.FlagMeta{}`;
   }
 
-  // Post-pass: assign single-letter shorthands to non-conflicting flags.
-  // Extract flag names from entries, compute shorthands, then inject Shorthand field.
+  // Post-pass: inject the resolved single-letter shorthands.
   const flagNameRegex = /FlagName: "([^"]+)"/;
-  const flagNames: string[] = [];
-  for (const entry of entries) {
-    const match = entry.match(flagNameRegex);
-    if (match) flagNames.push(match[1]);
-  }
-
-  // "-a" is reserved on paginated commands (used by --all)
-  const extraReserved = hasPagination(op) ? new Set(["a"]) : undefined;
-  const shorthands = computeFlagShorthands(
-    flagNames,
-    extraReserved,
-    preferredShorthandFlagNames(op, entries),
-  );
+  const shorthands = operationShorthands(op, entries);
 
   // Inject Shorthand field into entries that got a shorthand
   const enrichedEntries = entries.map((entry) => {

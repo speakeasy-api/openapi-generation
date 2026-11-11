@@ -1118,7 +1118,20 @@ x-speakeasy-cli-commands:
 
 `operations` is a strict map keyed by resolvable `operationId`; each value permits only `output`, `flags`, `preferShorthand`, and `continuation`. Unknown/duplicate keys, nonexistent operations, non-streaming projections, and flag collisions are generation errors. Operation flags use the same `to`, `type`, `shorthand`, `summary`, `default`, `defaultFrom: schema`, and `suggestions` keys as intent flags, but cannot be `required`, variadic, or bind outside a single top-level body property. For a union request body the property must exist as the same scalar type in every variant. `defaultFrom: schema` requires the same actual default in every variant; the value appears in help while the generated SDK remains responsible for materializing that schema default on the wire.
 
-**Pinning auto-assigned shorthands** (`preferShorthand:`): generated flags receive `-<first letter>` only while no other top-level generated flag on the operation shares that letter, so adding a new optional field can silently take a shipped shorthand away. `preferShorthand` lists generated flag names that keep their letter when others share it:
+**Sticky auto-assigned shorthands** (`gen.lock` `cliShorthands`): a new top-level generated flag receives `-<first letter>` only while no other generated flag on the operation shares that letter. Once assigned, a letter is recorded per operation in `gen.lock` and stays with its flag on later generations, so adding a field with the same initial does not take a shipped shorthand away:
+
+```yaml
+cliShorthands:
+  CreatePet:
+    flags:
+      names: n
+    retired:
+      t: { flag: tag, freedIn: 1.4.0 }
+```
+
+`resolveOperationShorthands` (`includes/metadata.ts`) decides each operation's letters in this order: `preferShorthand` pins, letters recorded in the lock (a recorded letter also beats a new required path parameter), then the first-letter rule for the remaining flags over the letters still free. When a recorded flag disappears its letter moves to `retired`, so a later flag with the same initial does not silently inherit it. A retired letter returns to its flag if the flag comes back, a pin can reclaim it, and it is otherwise freed by the next breaking release (a higher major, or a higher minor while pre-1.0, judged from the version being generated); an unknown version keeps it reserved. A recorded letter that becomes reserved (for example `-a` once the operation paginates) is dropped. Without a lock section the result equals the plain first-letter rule, so the first generation after upgrading records the existing letters without changing them. `operationShorthands` resolves each operation once per template run and records the result through the `recordCLIShorthands` callback; the generator replaces the lock section with what the main template run recorded, so removed operations drop out. Snippet-only runs leave the section untouched.
+
+**Pinning shorthands** (`preferShorthand:`): `preferShorthand` lists generated flag names that take their first letter even when the lock or another flag holds it:
 
 ```yaml
 x-speakeasy-cli-commands:
@@ -1128,7 +1141,7 @@ x-speakeasy-cli-commands:
       preferShorthand: [name] # keeps -n when --nickname is added
 ```
 
-An operation entry may declare `preferShorthand` alone. Each entry must be a top-level kebab-case flag name generated for that operation (dotted nested flags never receive shorthands), entries must be unique and start with different letters, and the reserved persistent letters (`-o`, `-q`, `-H`, `-d`, `-h`) and, on paginated operations, `-a` are rejected. A pin takes precedence over a required path parameter that shares its letter. `computeFlagShorthands` receives the pins through `preferredShorthandFlagNames` (`includes/metadata.ts`), the one source for the runtime `FlagMeta` shorthands, `--usage` KDL, and declared-shorthand collision checks; an operation or intent flag declaring the pinned letter fails generation.
+An operation entry may declare `preferShorthand` alone. Each entry must be a top-level kebab-case flag name generated for that operation (dotted nested flags never receive shorthands), entries must be unique and start with different letters, and the reserved persistent letters (`-o`, `-q`, `-H`, `-d`, `-h`) and, on paginated operations, `-a` are rejected. A pin takes precedence over a required path parameter that shares its letter. `operationShorthands` is the one source for the runtime `FlagMeta` shorthands, `--usage` KDL, and declared-shorthand collision checks, so an operation or intent flag declaring a pinned or recorded letter fails generation.
 
 Operation-declared names are checked against generated parameter/body/security flags, inherited/root flags, `--schema`, `--body`, the operation whole-body flag, pagination (`--all/-a`, `--max-pages`), and binary output (`--output-file`, `--output-b64`). Each registered flag carries `speakeasy:op-declared-input=<body-key>`. The shared operation run function merges only flags with that annotation on the invoking Cobra command, so an intent that reuses the run function and independently declares `--stream` is unaffected. A changed operation flag merges into `--body`, the union whole-body flag, or stdin and produces the same duplicate-source error if that JSON already contains the key; `@path` and `@-` body values are resolved before this merge for both operation and intent inputs. With no body, flags synthesize a minimal JSON object only when the OpenAPI request body is optional; a required request body keeps its existing CLI-side missing-body error.
 

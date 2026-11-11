@@ -56,13 +56,16 @@ type Subsystem struct {
 	Sanitizer   Sanitizer
 	FileTracker *filetracking.Tracker
 	Patches     *patches.Subsystem // system for 3-way merge with persistent edits
+	// CLIShorthands collects CLI flag shorthands for the gen.lock cliShorthands section
+	CLIShorthands *CLIShorthands
 }
 
 func New(fileTracker *filetracking.Tracker) *Subsystem {
 	return &Subsystem{
-		Register:    register.New(),
-		Cycles:      cycles.New(),
-		FileTracker: fileTracker,
+		Register:      register.New(),
+		Cycles:        cycles.New(),
+		FileTracker:   fileTracker,
+		CLIShorthands: &CLIShorthands{},
 	}
 }
 
