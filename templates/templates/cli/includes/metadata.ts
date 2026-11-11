@@ -285,7 +285,9 @@ function operationShorthands(
     const name = entry.match(/FlagName: "([^"]+)"/)?.[1];
     if (name) flagNames.push(name);
   }
-  const recorded = (context.Global.Config.CLIShorthands || {})[key];
+  const lock = context.Global.Config.CLIShorthands;
+  const recorded =
+    lock && Object.prototype.hasOwnProperty.call(lock, key) ? lock[key] : null;
   const resolution = resolveOperationShorthands({
     flagNames,
     lock: recorded ? JSON.parse(JSON.stringify(recorded)) : null,

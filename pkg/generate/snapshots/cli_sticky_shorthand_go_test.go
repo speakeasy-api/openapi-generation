@@ -332,3 +332,33 @@ func TestSnapCLIStickyShorthandsLostInputs(t *testing.T) {
 		})
 	})
 }
+
+func TestSnapCLIStickyShorthandsPrototypeOperationID(t *testing.T) {
+	t.Parallel()
+
+	spec := strings.Replace(cliStickyListSpecWith("names"), "operationId: ListPets", "operationId: constructor", 1) + `  /pets/count:
+    get:
+      operationId: toString
+      description: An operation without inputs whose ID is an inherited object property.
+      tags: [pets]
+      security: []
+      responses:
+        '200':
+          description: OK
+`
+	shouldCompile := false
+	snaptest.DoTestSnapshot(t, snaptest.Options{
+		Spec:          spec,
+		GenYaml:       cliStickyGenYaml,
+		ShouldCompile: &shouldCompile,
+		AfterGenerate: func(t *testing.T, outputDir string) {
+			t.Helper()
+			require.Equal(t, map[string]string{"names": "n"}, cliStickyReadLock(t, outputDir).CLIShorthands["constructor"].Flags)
+
+			cliStickyRegenerate(t, outputDir, spec)
+			lock := cliStickyReadLock(t, outputDir).CLIShorthands
+			require.Equal(t, map[string]string{"names": "n"}, lock["constructor"].Flags)
+			require.NotContains(t, lock, "toString")
+		},
+	})
+}
