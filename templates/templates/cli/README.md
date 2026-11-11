@@ -1116,7 +1116,19 @@ x-speakeasy-cli-commands:
           summary: Stream events as they arrive
 ```
 
-`operations` is a strict map keyed by resolvable `operationId`; each value permits only `output.stream.select`, `output.stream.metadata`, and `flags`. Unknown/duplicate keys, nonexistent operations, non-streaming projections, and flag collisions are generation errors. Operation flags use the same `to`, `type`, `shorthand`, `summary`, `default`, `defaultFrom: schema`, and `suggestions` keys as intent flags, but cannot be `required`, variadic, or bind outside a single top-level body property. For a union request body the property must exist as the same scalar type in every variant. `defaultFrom: schema` requires the same actual default in every variant; the value appears in help while the generated SDK remains responsible for materializing that schema default on the wire.
+`operations` is a strict map keyed by resolvable `operationId`; each value permits only `output`, `flags`, `preferShorthand`, and `continuation`. Unknown/duplicate keys, nonexistent operations, non-streaming projections, and flag collisions are generation errors. Operation flags use the same `to`, `type`, `shorthand`, `summary`, `default`, `defaultFrom: schema`, and `suggestions` keys as intent flags, but cannot be `required`, variadic, or bind outside a single top-level body property. For a union request body the property must exist as the same scalar type in every variant. `defaultFrom: schema` requires the same actual default in every variant; the value appears in help while the generated SDK remains responsible for materializing that schema default on the wire.
+
+**Pinning auto-assigned shorthands** (`preferShorthand:`): generated flags receive `-<first letter>` only while no other top-level generated flag on the operation shares that letter, so adding a new optional field can silently take a shipped shorthand away. `preferShorthand` lists generated flag names that keep their letter when others share it:
+
+```yaml
+x-speakeasy-cli-commands:
+  version: 1
+  operations:
+    CreatePet:
+      preferShorthand: [name] # keeps -n when --nickname is added
+```
+
+An operation entry may declare `preferShorthand` alone. Each entry must be a top-level kebab-case flag name generated for that operation (dotted nested flags never receive shorthands), entries must be unique and start with different letters, and the reserved persistent letters (`-o`, `-q`, `-H`, `-d`, `-h`) and, on paginated operations, `-a` are rejected. A pin takes precedence over a required path parameter that shares its letter. `computeFlagShorthands` receives the pins through `preferredShorthandFlagNames` (`includes/metadata.ts`), the one source for the runtime `FlagMeta` shorthands, `--usage` KDL, and declared-shorthand collision checks; an operation or intent flag declaring the pinned letter fails generation.
 
 Operation-declared names are checked against generated parameter/body/security flags, inherited/root flags, `--schema`, `--body`, the operation whole-body flag, pagination (`--all/-a`, `--max-pages`), and binary output (`--output-file`, `--output-b64`). Each registered flag carries `speakeasy:op-declared-input=<body-key>`. The shared operation run function merges only flags with that annotation on the invoking Cobra command, so an intent that reuses the run function and independently declares `--stream` is unaffected. A changed operation flag merges into `--body`, the union whole-body flag, or stdin and produces the same duplicate-source error if that JSON already contains the key; `@path` and `@-` body values are resolved before this merge for both operation and intent inputs. With no body, flags synthesize a minimal JSON object only when the OpenAPI request body is optional; a required request body keeps its existing CLI-side missing-body error.
 

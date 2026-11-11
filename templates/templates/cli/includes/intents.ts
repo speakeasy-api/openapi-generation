@@ -1638,6 +1638,20 @@ function operationGeneratedFlagNames(op: Operation): Set<string> {
 }
 
 function validateCLIOperationFlagNames(op: Operation, declared: any): void {
+  const metadataFlags = operationMetadataFlagNames(op);
+  for (const flagName of declared.PreferShorthand || []) {
+    if (!metadataFlags.has(flagName)) {
+      throw new Error(
+        `x-speakeasy-cli-commands: operation "${declared.OperationID}" preferShorthand "${flagName}" does not match any generated flag on that operation`,
+      );
+    }
+    if (hasPagination(op) && flagName.startsWith("a")) {
+      throw new Error(
+        `x-speakeasy-cli-commands: operation "${declared.OperationID}" preferShorthand "${flagName}" cannot take -a, ` +
+          `which is reserved for the generated pagination flag --all on that operation`,
+      );
+    }
+  }
   const generated = operationGeneratedFlagNames(op);
   for (const flag of declared.Flags || []) {
     if (generated.has(flag.Name)) {

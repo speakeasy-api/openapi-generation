@@ -126,6 +126,32 @@ function requiredPathParamFlagNames(
   return names;
 }
 
+function operationMetadataFlagNames(op: Operation): Set<string> {
+  const names = new Set<string>();
+  for (const entry of buildOperationMetadataEntries(op)?.entries || []) {
+    const name = entry.match(/FlagName: "([^"]+)"/)?.[1];
+    if (name && !name.includes(".")) names.add(name);
+  }
+  return names;
+}
+
+// preferredShorthandFlagNames is the preferred set passed to
+// computeFlagShorthands. An x-speakeasy-cli-commands preferShorthand pin
+// replaces a required path parameter that shares its initial.
+function preferredShorthandFlagNames(
+  op: Operation,
+  entries: string[],
+): Set<string> {
+  const preferred = requiredPathParamFlagNames(op, entries);
+  for (const pinned of cliOperationDeclaration(op)?.PreferShorthand || []) {
+    for (const name of Array.from(preferred)) {
+      if (name[0] === pinned[0]) preferred.delete(name);
+    }
+    preferred.add(pinned);
+  }
+  return preferred;
+}
+
 // operationAutoShorthandOwners maps each auto-assigned single-letter
 // shorthand to its owning generated flag, mirroring templateFlagMetadataVar's
 // post-pass exactly (same entry traversal, same reservations). With
@@ -147,7 +173,7 @@ function operationAutoShorthandOwners(
     fieldPaths.set(name, entry.match(flagMetaEntryFieldPathRegex)?.[1] || "");
   }
   const extraReserved = hasPagination(op) ? new Set(["a"]) : undefined;
-  const preferred = requiredPathParamFlagNames(op, built.entries);
+  const preferred = preferredShorthandFlagNames(op, built.entries);
   const bodyFieldPath = templateBodyFieldPath(op);
   const owners = new Map<string, string>();
   for (const [name, letter] of computeFlagShorthands(
@@ -201,7 +227,7 @@ function templateFlagMetadataVar(op: Operation): string {
   const shorthands = computeFlagShorthands(
     flagNames,
     extraReserved,
-    requiredPathParamFlagNames(op, entries),
+    preferredShorthandFlagNames(op, entries),
   );
 
   // Inject Shorthand field into entries that got a shorthand

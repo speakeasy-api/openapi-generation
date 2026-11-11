@@ -282,6 +282,9 @@ type CLIOperation struct {
 	Flags        []CLICommandInput       `json:"flags,omitempty" yaml:"flags,omitempty"`
 	Continuation *CLICommandContinuation `json:"continuation,omitempty" yaml:"continuation,omitempty"`
 	BodyRequired bool                    `json:"bodyRequired,omitempty" yaml:"bodyRequired,omitempty"`
+	// PreferShorthand names generated flags that keep their first-letter
+	// shorthand when another generated flag shares the same initial.
+	PreferShorthand []string `json:"preferShorthand,omitempty" yaml:"preferShorthand,omitempty"`
 }
 
 // CLICommandContinuationBinding copies one resume value from the response
@@ -612,7 +615,7 @@ var cliOutputStreamKeys = []string{"select", "metadata"}
 
 var cliOutputStreamMetadataKeys = []string{"select", "label", "complete", "when"}
 
-var cliOperationKeys = []string{"output", "flags", "continuation"}
+var cliOperationKeys = []string{"output", "flags", "preferShorthand", "continuation"}
 
 var (
 	cliContinuationKeys        = []string{"bind", "merge", "sum", "maxHops", "default"}
@@ -923,6 +926,10 @@ func (d *cliManifestDecoder) decodeOperation(opID string, node *yaml.Node) (*CLI
 				return nil, err
 			}
 			op.Flags = flags
+		case "preferShorthand":
+			if op.PreferShorthand, err = decodePreferShorthand(opID, entry.Value); err != nil {
+				return nil, err
+			}
 		case "continuation":
 			if op.Continuation, err = d.decodeContinuation(fmt.Sprintf("operation %q", opID), entry.Value); err != nil {
 				return nil, err
@@ -931,10 +938,47 @@ func (d *cliManifestDecoder) decodeOperation(opID string, node *yaml.Node) (*CLI
 			return nil, fmt.Errorf("line %d: operation %q has unknown key %q%s", entry.Key.Line, opID, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliOperationKeys))
 		}
 	}
-	if op.Output == nil && len(op.Flags) == 0 && op.Continuation == nil {
-		return nil, fmt.Errorf("line %d: operation %q must declare output, flags, or continuation", node.Line, opID)
+	if op.Output == nil && len(op.Flags) == 0 && len(op.PreferShorthand) == 0 && op.Continuation == nil {
+		return nil, fmt.Errorf("line %d: operation %q must declare output, flags, preferShorthand, or continuation", node.Line, opID)
+	}
+	for _, preferred := range op.PreferShorthand {
+		for _, flag := range op.Flags {
+			if flag.Shorthand == preferred[:1] {
+				return nil, fmt.Errorf("operation %q flag %q shorthand -%s collides with preferShorthand %q", opID, flag.Name, flag.Shorthand, preferred)
+			}
+		}
 	}
 	return op, nil
+}
+
+func decodePreferShorthand(opID string, node *yaml.Node) ([]string, error) {
+	if node.Kind != yaml.SequenceNode || len(node.Content) == 0 {
+		return nil, fmt.Errorf("line %d: operation %q preferShorthand must be a non-empty list of generated flag names", node.Line, opID)
+	}
+	names := make([]string, 0, len(node.Content))
+	initials := map[string]string{}
+	for _, item := range node.Content {
+		if item.Kind != yaml.ScalarNode || item.Tag != "!!str" {
+			return nil, fmt.Errorf("line %d: operation %q preferShorthand entries must be flag name strings", item.Line, opID)
+		}
+		name := item.Value
+		if !cliInputNamePattern.MatchString(name) {
+			return nil, fmt.Errorf("line %d: operation %q preferShorthand %q must be a top-level kebab-case flag name", item.Line, opID, name)
+		}
+		if cliContains(names, name) {
+			return nil, fmt.Errorf("line %d: operation %q preferShorthand lists %q more than once", item.Line, opID, name)
+		}
+		initial := name[:1]
+		if owner, reserved := cliReservedFlagShorthands[initial]; reserved {
+			return nil, fmt.Errorf("line %d: operation %q preferShorthand %q cannot take -%s, which is reserved for --%s", item.Line, opID, name, initial, owner)
+		}
+		if previous, ok := initials[initial]; ok {
+			return nil, fmt.Errorf("line %d: operation %q preferShorthand %q and %q both start with %q; only one flag can own -%s", item.Line, opID, previous, name, initial, initial)
+		}
+		initials[initial] = name
+		names = append(names, name)
+	}
+	return names, nil
 }
 
 func checkOperationInputs(opID string, flags []CLICommandInput) error {
