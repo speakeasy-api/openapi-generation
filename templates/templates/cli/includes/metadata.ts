@@ -244,17 +244,26 @@ function resolveOperationShorthands(
 
 const operationShorthandsCache = new Map<string, Map<string, string>>();
 
+// operationShorthandsLockKey must not depend on how many request content
+// types the operation has: op.ID only gains a serialization suffix once an
+// operation is split, which would orphan the entry of its existing variant.
+function operationShorthandsLockKey(op: Operation): string {
+  const method = op.SerializationMethod?.toString() || "";
+  return method && method !== "json"
+    ? `${op.OriginalID}_${method}`
+    : op.OriginalID;
+}
+
 // operationShorthands resolves an operation's auto shorthands against its
 // gen.lock cliShorthands entry and records the result for the next lock.
 // The cache is per template job runtime; every job resolves the same
 // operation identically, so the metadata var, --usage and collision checks
-// all see one assignment. Entries are keyed by op.ID, which is unique per
-// request content-type variant and unaffected by name overrides.
+// all see one assignment.
 function operationShorthands(
   op: Operation,
   entries: string[],
 ): Map<string, string> {
-  const key = op.ID;
+  const key = operationShorthandsLockKey(op);
   const cached = operationShorthandsCache.get(key);
   if (cached) return cached;
 
@@ -280,9 +289,8 @@ function operationShorthands(
   return shorthands;
 }
 
-// recordOperationShorthands resolves every rendered operation, including one
-// without metadata flags, so a flag it lost moves to retired instead of the
-// operation's lock entry being dropped.
+// recordOperationShorthands resolves operations without metadata flags too,
+// which no other caller of operationShorthands reaches.
 function recordOperationShorthands(op: Operation): string {
   operationShorthands(op, buildOperationMetadataEntries(op)?.entries || []);
   return "";

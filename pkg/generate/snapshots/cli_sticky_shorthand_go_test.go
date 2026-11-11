@@ -82,6 +82,16 @@ func cliStickyReadLock(t *testing.T, outputDir string) cliStickyShorthandLock {
 	return lock
 }
 
+func cliStickyLockFlags(t *testing.T, outputDir string) map[string]map[string]string {
+	t.Helper()
+	flags := map[string]map[string]string{}
+	for key, entry := range cliStickyReadLock(t, outputDir).CLIShorthands {
+		require.Empty(t, entry.Retired, key)
+		flags[key] = entry.Flags
+	}
+	return flags
+}
+
 func cliStickyDeleteRetired(t *testing.T, outputDir, operationID, letter string) {
 	t.Helper()
 	lockPath := filepath.Join(outputDir, ".speakeasy", "gen.lock")
@@ -220,15 +230,6 @@ func TestSnapCLIStickyShorthandsSplitOperation(t *testing.T) {
 				"CreatePet":           {"bool": "b", "num": "n"},
 				"CreatePet_multipart": {"bool2": "b", "num2": "n"},
 			}
-			readLockFlags := func() map[string]map[string]string {
-				t.Helper()
-				flags := map[string]map[string]string{}
-				for key, entry := range cliStickyReadLock(t, outputDir).CLIShorthands {
-					require.Empty(t, entry.Retired, key)
-					flags[key] = entry.Flags
-				}
-				return flags
-			}
 
 			first := readOutputs()
 			require.Contains(t, first[0], `FlagName: "bool", Shorthand: "b"`)
@@ -237,11 +238,11 @@ func TestSnapCLIStickyShorthandsSplitOperation(t *testing.T) {
 			require.Contains(t, first[1], `FlagName: "num2", Shorthand: "n"`)
 			require.Contains(t, first[2], `-b --bool2`)
 			require.Contains(t, first[2], `-n --num2`)
-			require.Equal(t, wantLock, readLockFlags())
+			require.Equal(t, wantLock, cliStickyLockFlags(t, outputDir))
 
 			cliStickyRegenerate(t, outputDir, cliStickySplitSpec)
 			require.Equal(t, first, readOutputs())
-			require.Equal(t, wantLock, readLockFlags())
+			require.Equal(t, wantLock, cliStickyLockFlags(t, outputDir))
 		},
 	})
 }
@@ -376,4 +377,126 @@ func TestSnapCLIStickyShorthandsPrototypeOperationID(t *testing.T) {
 			require.NotContains(t, lock, "toString")
 		},
 	})
+}
+
+const cliStickyContentTypeSpec = `openapi: 3.0.3
+info:
+  title: Pet API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    post:
+      operationId: CreatePet
+      description: Request content types are added and removed while each one keeps its recorded shorthands.
+      tags: [pets]
+      security: []
+      requestBody:
+        required: true
+        content:
+%s      responses:
+        '200':
+          description: OK
+`
+
+func cliStickyContentTypeSpecWith(contentTypes map[string][]string) string {
+	var b strings.Builder
+	for _, contentType := range []string{"application/json", "multipart/form-data"} {
+		fields, ok := contentTypes[contentType]
+		if !ok {
+			continue
+		}
+		b.WriteString("          " + contentType + ":\n            schema:\n              type: object\n              properties:\n")
+		for _, field := range fields {
+			b.WriteString("                " + field + ": {type: string}\n")
+		}
+	}
+	return fmt.Sprintf(cliStickyContentTypeSpec, b.String())
+}
+
+func TestSnapCLIStickyShorthandsContentTypeChanges(t *testing.T) {
+	t.Parallel()
+
+	type generation struct {
+		contentTypes map[string][]string
+		usage        []string
+		lock         map[string]map[string]string
+	}
+	sequences := map[string][]generation{
+		"multipart operation gains and loses a JSON body": {
+			{
+				contentTypes: map[string][]string{"multipart/form-data": {"names", "tag"}},
+				usage:        []string{`-n --names <names>`, `-t --tag <tag>`},
+				lock:         map[string]map[string]string{"CreatePet_multipart": {"names": "n", "tag": "t"}},
+			},
+			{
+				contentTypes: map[string][]string{
+					"application/json":    {"nova", "title"},
+					"multipart/form-data": {"names", "nick_name", "tag"},
+				},
+				usage: []string{`-n --names <names>`, `-t --tag <tag>`, `-n --nova <nova>`, `-t --title <title>`},
+				lock: map[string]map[string]string{
+					"CreatePet":           {"nova": "n", "title": "t"},
+					"CreatePet_multipart": {"names": "n", "tag": "t"},
+				},
+			},
+			{
+				contentTypes: map[string][]string{"multipart/form-data": {"names", "nick_name", "tag"}},
+				usage:        []string{`-n --names <names>`, `-t --tag <tag>`},
+				lock:         map[string]map[string]string{"CreatePet_multipart": {"names": "n", "tag": "t"}},
+			},
+		},
+		"JSON operation gains and loses a multipart body": {
+			{
+				contentTypes: map[string][]string{"application/json": {"names", "tag"}},
+				usage:        []string{`-n --names <names>`, `-t --tag <tag>`},
+				lock:         map[string]map[string]string{"CreatePet": {"names": "n", "tag": "t"}},
+			},
+			{
+				contentTypes: map[string][]string{
+					"application/json":    {"names", "nick_name", "tag"},
+					"multipart/form-data": {"nova", "title"},
+				},
+				usage: []string{`-n --names <names>`, `-t --tag <tag>`, `-n --nova <nova>`, `-t --title <title>`},
+				lock: map[string]map[string]string{
+					"CreatePet":           {"names": "n", "tag": "t"},
+					"CreatePet_multipart": {"nova": "n", "title": "t"},
+				},
+			},
+			{
+				contentTypes: map[string][]string{"application/json": {"names", "nick_name", "tag"}},
+				usage:        []string{`-n --names <names>`, `-t --tag <tag>`},
+				lock:         map[string]map[string]string{"CreatePet": {"names": "n", "tag": "t"}},
+			},
+		},
+	}
+
+	for _, nameResolutionFeb2025 := range []bool{true, false} {
+		for name, generations := range sequences {
+			t.Run(fmt.Sprintf("%s nameResolutionFeb2025=%t", name, nameResolutionFeb2025), func(t *testing.T) {
+				t.Parallel()
+				shouldCompile := false
+				snaptest.DoTestSnapshot(t, snaptest.Options{
+					Spec:          cliStickyContentTypeSpecWith(generations[0].contentTypes),
+					GenYaml:       cliStickyGenYaml + fmt.Sprintf("generation:\n  fixes:\n    nameResolutionFeb2025: %t\n", nameResolutionFeb2025),
+					ShouldCompile: &shouldCompile,
+					AfterGenerate: func(t *testing.T, outputDir string) {
+						t.Helper()
+						for i, gen := range generations {
+							if i > 0 {
+								cliStickyRegenerate(t, outputDir, cliStickyContentTypeSpecWith(gen.contentTypes))
+							}
+							usage := cliStickyReadFile(t, outputDir, "internal", "usage", "schema.go")
+							for _, line := range gen.usage {
+								require.Contains(t, usage, line, "generation %d", i+1)
+							}
+							require.NotContains(t, usage, `-n --nick-name`, "generation %d", i+1)
+							require.Equal(t, gen.lock, cliStickyLockFlags(t, outputDir), "generation %d", i+1)
+						}
+					},
+				})
+			})
+		}
+	}
 }
