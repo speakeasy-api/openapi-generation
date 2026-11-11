@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -77,6 +78,20 @@ func cliStickyReadFile(t *testing.T, outputDir string, elem ...string) string {
 	return string(content)
 }
 
+// cliStickyUsageCommand returns the usage schema entry of one command, keyed
+// by its command path, so assertions cannot match another command's flags.
+func cliStickyUsageCommand(t *testing.T, outputDir, commandPath string) string {
+	t.Helper()
+	prefix := strconv.Quote(commandPath) + ":"
+	for _, line := range strings.Split(cliStickyReadFile(t, outputDir, "internal", "usage", "schema.go"), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), prefix) {
+			return line
+		}
+	}
+	require.FailNow(t, "usage entry not found", commandPath)
+	return ""
+}
+
 func cliStickyReadLock(t *testing.T, outputDir string) cliStickyShorthandLock {
 	t.Helper()
 	var lock cliStickyShorthandLock
@@ -111,9 +126,9 @@ func cliStickyDeleteRetired(t *testing.T, outputDir, operationID, method, letter
 	require.NoError(t, os.WriteFile(lockPath, content, 0o644))
 }
 
-func cliStickyRegenerate(t *testing.T, outputDir, spec string) []error {
+func cliStickyRegenerate(t *testing.T, outputDir, spec string, opts ...generate.GeneratorOptions) []error {
 	t.Helper()
-	generator, err := generate.New(generate.WithLogger(logging.NewLogger(zapcore.WarnLevel)))
+	generator, err := generate.New(append([]generate.GeneratorOptions{generate.WithLogger(logging.NewLogger(zapcore.WarnLevel))}, opts...)...)
 	require.NoError(t, err)
 	ctx := generationaccess.WithDirect(context.Background(), generationaccess.ElectAGPL())
 	require.Empty(t, generator.Generate(ctx, []byte(spec), "test-schema.yaml", "cli", outputDir, false, false))
@@ -410,7 +425,7 @@ paths:
 
 func cliStickyRequestContent(contentTypes map[string][]string) string {
 	var b strings.Builder
-	for _, contentType := range []string{"application/json", "multipart/form-data"} {
+	for _, contentType := range []string{"application/json", "application/x-www-form-urlencoded", "multipart/form-data"} {
 		fields, ok := contentTypes[contentType]
 		if !ok {
 			continue
@@ -767,13 +782,7 @@ const cliStickySuffixedPathTemplate = `  /notes:
       requestBody:
         required: true
         content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                names: {type: string}
-                nick_name: {type: string}
-      responses:
+%s      responses:
         '200':
           description: OK
 `
@@ -788,9 +797,11 @@ var cliStickyCollidingIDOrders = map[string]struct {
 	"suffixed operation last":  {suffixedFirst: false, group: "notes"},
 }
 
-func cliStickyCollidingIDSpec(suffixedFirst bool, group, manifest string, contentTypes map[string][]string) string {
+var cliStickySuffixedContent = map[string][]string{"application/json": {"names", "nick_name"}}
+
+func cliStickyCollidingIDSpec(suffixedFirst bool, group, manifest string, contentTypes, suffixedContentTypes map[string][]string) string {
 	split := fmt.Sprintf(cliStickySplitPathTemplate, cliStickyRequestContent(contentTypes))
-	suffixed := fmt.Sprintf(cliStickySuffixedPathTemplate, group)
+	suffixed := fmt.Sprintf(cliStickySuffixedPathTemplate, group, cliStickyRequestContent(suffixedContentTypes))
 	paths := split + suffixed
 	if suffixedFirst {
 		paths = suffixed + split
@@ -839,7 +850,7 @@ func TestSnapCLIStickyShorthandsSplitOperationWithCollidingID(t *testing.T) {
 			t.Run(orderName+" "+name, func(t *testing.T) {
 				t.Parallel()
 				spec := func(gen generation) string {
-					return cliStickyCollidingIDSpec(order.suffixedFirst, order.group, "", gen.contentTypes)
+					return cliStickyCollidingIDSpec(order.suffixedFirst, order.group, "", gen.contentTypes, cliStickySuffixedContent)
 				}
 				shouldCompile := false
 				snaptest.DoTestSnapshot(t, snaptest.Options{
@@ -885,14 +896,14 @@ func TestSnapCLIStickyShorthandsPinOnCollidingID(t *testing.T) {
 			t.Parallel()
 			shouldCompile := false
 			snaptest.DoTestSnapshot(t, snaptest.Options{
-				Spec:          cliStickyCollidingIDSpec(order.suffixedFirst, order.group, "", contentTypes("nick_name")),
+				Spec:          cliStickyCollidingIDSpec(order.suffixedFirst, order.group, "", contentTypes("nick_name"), cliStickySuffixedContent),
 				GenYaml:       cliStickyGenYaml,
 				ShouldCompile: &shouldCompile,
 				AfterGenerate: func(t *testing.T, outputDir string) {
 					t.Helper()
 					require.Equal(t, map[string]string{"nick-name": "n"}, cliStickyLockFlags(t, outputDir)["CreatePet"]["multipart"])
 
-					pinned := cliStickyCollidingIDSpec(order.suffixedFirst, order.group, fmt.Sprintf(cliStickyCollidingIDPin, "names"), contentTypes("names", "nick_name"))
+					pinned := cliStickyCollidingIDSpec(order.suffixedFirst, order.group, fmt.Sprintf(cliStickyCollidingIDPin, "names"), contentTypes("names", "nick_name"), cliStickySuffixedContent)
 					warnings := cliStickyRegenerate(t, outputDir, pinned)
 					for _, warning := range warnings {
 						require.NotContains(t, warning.Error(), `operation "CreatePet" (multipart request)`)
@@ -905,6 +916,15 @@ func TestSnapCLIStickyShorthandsPinOnCollidingID(t *testing.T) {
 					require.Contains(t, suffixed, `FlagName: "names", Shorthand: "n"`)
 					require.NotContains(t, suffixed, `FlagName: "nick-name", Shorthand:`)
 
+					splitUsage := cliStickyUsageCommand(t, outputDir, "pets create-pet-multipart")
+					require.Contains(t, splitUsage, `-n --nick-name <nick_name>`)
+					require.Contains(t, splitUsage, `--names <names>`)
+					require.NotContains(t, splitUsage, `-n --names`)
+					suffixedUsage := cliStickyUsageCommand(t, outputDir, order.group+" create-pet-multipart")
+					require.Contains(t, suffixedUsage, `-n --names <names>`)
+					require.Contains(t, suffixedUsage, `--nick-name <nick_name>`)
+					require.NotContains(t, suffixedUsage, `-n --nick-name`)
+
 					lock := cliStickyLockFlags(t, outputDir)
 					require.Equal(t, map[string]string{"nick-name": "n"}, lock["CreatePet"]["multipart"])
 					require.Equal(t, map[string]string{"names": "n"}, lock["CreatePet_multipart"]["json"])
@@ -916,7 +936,7 @@ func TestSnapCLIStickyShorthandsPinOnCollidingID(t *testing.T) {
 			t.Parallel()
 			shouldCompile := false
 			snaptest.DoTestSnapshot(t, snaptest.Options{
-				Spec:          cliStickyCollidingIDSpec(order.suffixedFirst, order.group, fmt.Sprintf(cliStickyCollidingIDPin, "tag"), contentTypes("tag")),
+				Spec:          cliStickyCollidingIDSpec(order.suffixedFirst, order.group, fmt.Sprintf(cliStickyCollidingIDPin, "tag"), contentTypes("tag"), cliStickySuffixedContent),
 				GenYaml:       cliStickyGenYaml,
 				ShouldCompile: &shouldCompile,
 				ExpectErrors: []string{
@@ -925,4 +945,66 @@ func TestSnapCLIStickyShorthandsPinOnCollidingID(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestSnapCLIStickyShorthandsCollidingIDSerializationChange(t *testing.T) {
+	t.Parallel()
+
+	splitContent := map[string][]string{
+		"application/json":    {"bool"},
+		"multipart/form-data": {"num"},
+	}
+
+	for orderName, order := range cliStickyCollidingIDOrders {
+		t.Run(orderName, func(t *testing.T) {
+			t.Parallel()
+			shouldCompile := false
+			snaptest.DoTestSnapshot(t, snaptest.Options{
+				Spec:          cliStickyCollidingIDSpec(order.suffixedFirst, order.group, "", splitContent, map[string][]string{"application/json": {"names"}}),
+				GenYaml:       cliStickyGenYaml,
+				ShouldCompile: &shouldCompile,
+				AfterGenerate: func(t *testing.T, outputDir string) {
+					t.Helper()
+					require.Equal(t, map[string]map[string]string{"json": {"names": "n"}}, cliStickyLockFlags(t, outputDir)["CreatePet_multipart"])
+
+					cliStickyRegenerate(t, outputDir, cliStickyCollidingIDSpec(order.suffixedFirst, order.group, "", splitContent, map[string][]string{
+						"application/x-www-form-urlencoded": {"names", "nick_name"},
+					}))
+					command := cliStickyReadFile(t, outputDir, "internal", "cli", order.group, "createpetmultipart.go")
+					require.Contains(t, command, `FlagName: "names", Shorthand: "n"`)
+					require.NotContains(t, command, `FlagName: "nick-name", Shorthand:`)
+					usage := cliStickyUsageCommand(t, outputDir, order.group+" create-pet-multipart")
+					require.Contains(t, usage, `-n --names <names>`)
+					require.NotContains(t, usage, `-n --nick-name`)
+					require.Equal(t, map[string]map[string]string{"form": {"names": "n"}}, cliStickyLockFlags(t, outputDir)["CreatePet_multipart"])
+				},
+			})
+		})
+	}
+}
+
+func TestSnapCLIStickyShorthandsUsageGeneration(t *testing.T) {
+	t.Parallel()
+
+	shouldCompile := false
+	snaptest.DoTestSnapshot(t, snaptest.Options{
+		Spec:          cliStickyShorthandSpecWith(cliStickyNamesField),
+		GenYaml:       cliStickyGenYaml,
+		ShouldCompile: &shouldCompile,
+		AfterGenerate: func(t *testing.T, outputDir string) {
+			t.Helper()
+			require.Equal(t, map[string]string{"names": "n"}, cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"]["json"].Flags)
+
+			cliStickyRegenerate(t, outputDir, cliStickyShorthandSpecWith(cliStickyNamesField, cliStickyNickNameField, cliStickyTagField), generate.WithOutputUsageGroup("all"))
+			command := cliStickyReadFile(t, outputDir, "internal", "cli", "pets", "createpet.go")
+			require.Contains(t, command, `FlagName: "names", Shorthand: "n"`)
+			require.Contains(t, command, `FlagName: "tag", Shorthand: "t"`)
+			require.NotContains(t, command, `FlagName: "nick-name", Shorthand:`)
+			recorded := cliStickyReadLock(t, outputDir).CLIShorthands
+			require.Equal(t, map[string]string{"names": "n", "tag": "t"}, recorded["CreatePet"]["json"].Flags)
+
+			cliStickyRegenerate(t, outputDir, cliStickyShorthandSpecWith(cliStickyNickNameField), generate.WithUsageSnippetArgsGenerateAll())
+			require.Equal(t, recorded, cliStickyReadLock(t, outputDir).CLIShorthands)
+		},
+	})
 }
