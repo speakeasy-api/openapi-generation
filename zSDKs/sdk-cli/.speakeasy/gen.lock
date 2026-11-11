@@ -17506,90 +17506,110 @@ ast: |
 astversion: 0.3.0
 cliShorthands:
   binaryAndStringUpload:
-    flags:
-      binary: b
-      string: s
+    json:
+      flags:
+        binary: b
+        string: s
   createNamespaceConflict:
-    flags:
-      errors: e
-      id: i
-      models: m
-      name: "n"
-      request: r
-      species: s
-      utils: u
+    json:
+      flags:
+        errors: e
+        id: i
+        models: m
+        name: "n"
+        request: r
+        species: s
+        utils: u
   createSingleNamespaceFooPet:
-    flags:
-      errors: e
-      id: i
-      models: m
-      name: "n"
-      request: r
-      species: s
-      utils: u
+    json:
+      flags:
+        errors: e
+        id: i
+        models: m
+        name: "n"
+        request: r
+        species: s
+        utils: u
   createUser:
-    flags:
-      email: e
-      first-name: f
-      gender: g
-      id: i
-      last-name: l
-      postal-code: p
+    json:
+      flags:
+        email: e
+        first-name: f
+        gender: g
+        id: i
+        last-name: l
+        postal-code: p
   createWithUnion:
-    flags:
-      name: "n"
-      shape: s
+    json:
+      flags:
+        name: "n"
+        shape: s
   deleteUser:
-    flags:
-      id: i
+    json:
+      flags:
+        id: i
   getAsset:
-    flags:
-      id: i
-      stream: s
+    json:
+      flags:
+        id: i
+        stream: s
   getFullyFlattenedRequest:
-    flags:
-      emoji: e
-      gif: g
-      lang: l
-      max-length: m
-      name: "n"
-      private: p
-      reply: r
+    json:
+      flags:
+        emoji: e
+        gif: g
+        lang: l
+        max-length: m
+        name: "n"
+        private: p
+        reply: r
   getPositionalDefault:
-    flags:
-      id: i
+    json:
+      flags:
+        id: i
   getUnionErrors:
-    flags:
-      page: p
+    json:
+      flags:
+        page: p
   getUser:
-    flags:
-      id: i
+    json:
+      flags:
+        id: i
   listTest1:
-    flags:
-      page: p
+    json:
+      flags:
+        page: p
   parenthesesInPathAllowed:
-    flags:
-      id: i
-  postFile_multipart:
-    flags:
-      upload: u
-  postFileWithEncoding_multipart:
-    flags:
-      attachment: a
-      metadata: m
+    json:
+      flags:
+        id: i
+  postFile:
+    multipart:
+      flags:
+        upload: u
+  postFileWithEncoding:
+    multipart:
+      flags:
+        attachment: a
+        metadata: m
   postTest2:
-    flags:
-      type: t
+    json:
+      flags:
+        type: t
   putNamespaceConflict:
-    flags:
-      allof: a
-      namespaced: "n"
+    json:
+      flags:
+        allof: a
+        namespaced: "n"
   renderAsset:
-    flags:
-      prompt: p
+    json:
+      flags:
+        prompt: p
   testEndpoint:
-    flags:
-      test-name: t
+    json:
+      flags:
+        test-name: t
   updateUser:
-    flags:
-      id: i
+    json:
+      flags:
+        id: i
