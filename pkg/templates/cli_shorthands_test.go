@@ -256,3 +256,33 @@ func TestResolveOperationShorthandsIgnoresMalformedLockEntries(t *testing.T) {
 	assert.Equal(t, map[string]string{"count": "c", "nick-name": "n", "price": "p", "size": "s", "tag": "t"}, got.Flags)
 	assert.Equal(t, map[string]retiredShorthand{}, got.Retired)
 }
+
+func TestResolveOperationShorthandsReportsFlagsDisplacedByPins(t *testing.T) {
+	t.Parallel()
+
+	type displacedShorthand struct {
+		Letter string `json:"letter"`
+		Pin    string `json:"pin"`
+	}
+	type displacedResolution struct {
+		Flags     map[string]string             `json:"flags"`
+		Displaced map[string]displacedShorthand `json:"displaced"`
+	}
+
+	vm := loadCLIIncludes(t, "includes/flags.ts", "includes/metadata.ts")
+	got := callJSON[displacedResolution](t, vm, "resolveOperationShorthands", shorthandInput{
+		FlagNames: []string{"names", "nick-name", "tag", "title"},
+		Lock:      &shorthandLock{Flags: map[string]string{"nick-name": "n", "tag": "t"}},
+		Pinned:    []string{"names"},
+	})
+	assert.Equal(t, map[string]string{"names": "n", "tag": "t"}, got.Flags)
+	assert.Equal(t, map[string]displacedShorthand{"nick-name": {Letter: "n", Pin: "names"}}, got.Displaced)
+
+	got = callJSON[displacedResolution](t, vm, "resolveOperationShorthands", shorthandInput{
+		FlagNames: []string{"names", "nick-name"},
+		Lock:      &shorthandLock{Flags: map[string]string{"names": "n"}},
+		Pinned:    []string{"names"},
+	})
+	assert.Equal(t, map[string]string{"names": "n"}, got.Flags)
+	assert.Empty(t, got.Displaced)
+}

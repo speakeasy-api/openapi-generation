@@ -153,9 +153,15 @@ interface OperationShorthandInput {
   reserved?: string[] | null;
 }
 
+interface DisplacedShorthand {
+  letter: string;
+  pin: string;
+}
+
 interface OperationShorthandResolution {
   flags: Record<string, string>;
   retired: Record<string, RetiredShorthand>;
+  displaced: Record<string, DisplacedShorthand>;
 }
 
 function sortedRecord<T>(entries: Map<string, T>): Record<string, T> {
@@ -199,14 +205,18 @@ function resolveOperationShorthands(
     retired.set(letter, { flag: entry.flag });
   }
 
+  const pinned = new Set<string>();
   for (const name of input.pinned || []) {
     const letter = name[0];
     if (!present.has(name) || isReserved(letter) || owners.has(letter)) {
       continue;
     }
     assign(name, letter);
+    pinned.add(name);
     retired.delete(letter);
   }
+
+  const displaced = new Map<string, DisplacedShorthand>();
 
   for (const [name, letter] of Object.entries(input.lock?.flags || {})) {
     if (typeof letter !== "string" || letter.length !== 1) continue;
@@ -217,7 +227,12 @@ function resolveOperationShorthands(
       }
       continue;
     }
-    if (!owners.has(letter)) assign(name, letter);
+    const owner = owners.get(letter);
+    if (owner === undefined) {
+      assign(name, letter);
+    } else if (pinned.has(owner)) {
+      displaced.set(name, { letter, pin: owner });
+    }
   }
 
   for (const [letter, entry] of Array.from(retired.entries())) {
@@ -241,7 +256,11 @@ function resolveOperationShorthands(
     assign(name, letter);
   }
 
-  return { flags: sortedRecord(assigned), retired: sortedRecord(retired) };
+  return {
+    flags: sortedRecord(assigned),
+    retired: sortedRecord(retired),
+    displaced: sortedRecord(displaced),
+  };
 }
 
 const operationShorthandsCache = new Map<string, Map<string, string>>();
@@ -285,6 +304,12 @@ function operationShorthands(
     reserved: hasPagination(op) ? ["a"] : [],
   });
   recordCLIShorthands(key, resolution);
+  for (const [flag, { letter, pin }] of Object.entries(resolution.displaced)) {
+    logWarning(
+      `operation "${key}": preferShorthand "${pin}" takes -${letter} from "${flag}", which gen.lock records as its owner; existing -${letter} invocations now set --${pin}`,
+      op.Location?.Line ?? 0,
+    );
+  }
 
   const shorthands = new Map(Object.entries(resolution.flags));
   operationShorthandsCache.set(key, shorthands);

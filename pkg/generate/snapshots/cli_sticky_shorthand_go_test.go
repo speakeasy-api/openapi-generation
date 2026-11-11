@@ -106,12 +106,13 @@ func cliStickyDeleteRetired(t *testing.T, outputDir, operationID, letter string)
 	require.NoError(t, os.WriteFile(lockPath, content, 0o644))
 }
 
-func cliStickyRegenerate(t *testing.T, outputDir, spec string) {
+func cliStickyRegenerate(t *testing.T, outputDir, spec string) []error {
 	t.Helper()
 	generator, err := generate.New(generate.WithLogger(logging.NewLogger(zapcore.WarnLevel)))
 	require.NoError(t, err)
 	ctx := generationaccess.WithDirect(context.Background(), generationaccess.ElectAGPL())
 	require.Empty(t, generator.Generate(ctx, []byte(spec), "test-schema.yaml", "cli", outputDir, false, false))
+	return generator.GetWarnings()
 }
 
 func TestSnapCLIStickyShorthands(t *testing.T) {
@@ -499,4 +500,40 @@ func TestSnapCLIStickyShorthandsContentTypeChanges(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestSnapCLIStickyShorthandsPinDisplacesRecordedFlag(t *testing.T) {
+	t.Parallel()
+
+	pinnedSpec := strings.Replace(
+		cliStickyShorthandSpecWith(cliStickyNamesField, cliStickyNickNameField, cliStickyTagField),
+		"paths:\n",
+		"x-speakeasy-cli-commands:\n  version: 1\n  operations:\n    CreatePet:\n      preferShorthand: [names]\npaths:\n",
+		1,
+	)
+	countWarnings := func(warnings []error) int {
+		count := 0
+		for _, warning := range warnings {
+			if strings.Contains(warning.Error(), `preferShorthand "names" takes -n from "nick-name"`) {
+				count++
+			}
+		}
+		return count
+	}
+
+	shouldCompile := false
+	snaptest.DoTestSnapshot(t, snaptest.Options{
+		Spec:          cliStickyShorthandSpecWith(cliStickyNickNameField, cliStickyTagField),
+		GenYaml:       cliStickyGenYaml,
+		ShouldCompile: &shouldCompile,
+		AfterGenerate: func(t *testing.T, outputDir string) {
+			t.Helper()
+			require.Equal(t, map[string]string{"nick-name": "n", "tag": "t"}, cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"].Flags)
+
+			require.Equal(t, 1, countWarnings(cliStickyRegenerate(t, outputDir, pinnedSpec)))
+			require.Equal(t, map[string]string{"names": "n", "tag": "t"}, cliStickyReadLock(t, outputDir).CLIShorthands["CreatePet"].Flags)
+
+			require.Zero(t, countWarnings(cliStickyRegenerate(t, outputDir, pinnedSpec)))
+		},
+	})
 }
