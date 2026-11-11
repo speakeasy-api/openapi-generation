@@ -3682,10 +3682,13 @@ operations:
   CreateTask:
     flags:
       stream: {to: $.stream, defaultFrom: schema}
+    preferShorthand: [prompt]
+  CreateNote:
+    preferShorthand: [title, body-text]
 	`)
 	require.NoError(t, err)
 	assert.Empty(t, warnings)
-	require.Len(t, manifest.Operations, 2)
+	require.Len(t, manifest.Operations, 3)
 
 	streamTask := manifest.Operations[0]
 	assert.Equal(t, "StreamTask", streamTask.OperationID)
@@ -3696,10 +3699,19 @@ operations:
 	assert.Equal(t, "bool", streamTask.Flags[0].Type)
 	assert.Equal(t, true, streamTask.Flags[0].Default)
 
+	assert.Empty(t, streamTask.PreferShorthand)
+
 	createTask := manifest.Operations[1]
 	assert.True(t, createTask.BodyRequired)
 	require.Len(t, createTask.Flags, 1)
 	assert.Equal(t, true, createTask.Flags[0].Default)
+	assert.Equal(t, []string{"prompt"}, createTask.PreferShorthand)
+
+	createNote := manifest.Operations[2]
+	assert.Equal(t, "CreateNote", createNote.OperationID)
+	assert.Nil(t, createNote.Output)
+	assert.Empty(t, createNote.Flags)
+	assert.Equal(t, []string{"title", "body-text"}, createNote.PreferShorthand)
 }
 
 func TestCLICommands_OperationDeclarationsAreStrict(t *testing.T) {
@@ -3765,6 +3777,61 @@ operations:
     flags:
       engine: {to: $.engine}
 `, `property is absent from request body variant`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask: {}
+`, `operation "CreateTask" must declare output, flags, preferShorthand, or continuation`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: []
+`, `operation "CreateTask" preferShorthand must be a non-empty list of generated flag names`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: prompt
+`, `operation "CreateTask" preferShorthand must be a non-empty list of generated flag names`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [nested.flag]
+`, `operation "CreateTask" preferShorthand "nested.flag" must be a top-level kebab-case flag name`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [Prompt]
+`, `operation "CreateTask" preferShorthand "Prompt" must be a top-level kebab-case flag name`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [prompt, prompt]
+`, `operation "CreateTask" preferShorthand lists "prompt" more than once`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [output-mode]
+`, `operation "CreateTask" preferShorthand "output-mode" cannot take -o, which is reserved for --output-format`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [prompt, priority]
+`, `operation "CreateTask" preferShorthand "prompt" and "priority" both start with "p"`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [stream]
+    flags:
+      sync: {to: $.stream, shorthand: s}
+`, `operation "CreateTask" flag "sync" shorthand -s collides with preferShorthand "stream"`)
 }
 
 // --- Variant selectors (partial-body preset merge) -------------------------

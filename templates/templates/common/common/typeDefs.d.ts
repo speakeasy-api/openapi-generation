@@ -2468,6 +2468,7 @@ declare global {
     Flags?: CLICommandInput[] | null;
     Continuation?: CLICommandContinuation | null;
     BodyRequired?: boolean;
+    PreferShorthand?: string[] | null;
   };
 
   type CLICommandManifest = {

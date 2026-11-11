@@ -208,6 +208,10 @@ func (g *Generator) templateSDKInner(ctx context.Context, a *ast.AST) error {
 		}
 	}
 
+	if g.target.Target == "cli" {
+		g.subsystem.CLIShorthands.Start()
+	}
+
 	err := g.templateTarget(ctx, g.target, a, cfg, nil, g.onWriteFile(""), g.onReadFile(""))
 	if err != nil {
 		if g.debug {

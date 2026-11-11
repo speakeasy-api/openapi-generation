@@ -240,6 +240,12 @@ declare global {
   var logWarning: (msg: string, lineNumber: number) => void;
   var accountHasFeatureAccess: (feat: Feature) => boolean;
   var addIgnoreOverride: (ignoreRegex: string) => void;
+  var recordCLIShorthands: (
+    operationId: string,
+    serializationMethod: string,
+    resolution: any,
+    split: boolean,
+  ) => void;
   var getGenericMapTypeDef: () => TypeDef;
   var getGenericArrayTypeDef: () => TypeDef;
   var isRE2Regex: (pattern: string) => boolean;

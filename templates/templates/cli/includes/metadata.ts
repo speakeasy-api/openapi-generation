@@ -126,6 +126,265 @@ function requiredPathParamFlagNames(
   return names;
 }
 
+function operationMetadataFlagNames(op: Operation): Set<string> {
+  const names = new Set<string>();
+  for (const entry of buildOperationMetadataEntries(op)?.entries || []) {
+    const name = entry.match(/FlagName: "([^"]+)"/)?.[1];
+    if (name && !name.includes(".")) names.add(name);
+  }
+  return names;
+}
+
+interface RetiredShorthand {
+  flag: string;
+}
+
+// OperationShorthandLock is one operation's gen.lock cliShorthands entry.
+interface OperationShorthandLock {
+  flags?: Record<string, string> | null;
+  retired?: Record<string, RetiredShorthand> | null;
+}
+
+interface OperationShorthandInput {
+  flagNames: string[];
+  lock?: OperationShorthandLock | null;
+  pinned?: string[] | null;
+  preferred?: string[] | null;
+  reserved?: string[] | null;
+}
+
+interface DisplacedShorthand {
+  letter: string;
+  pin: string;
+}
+
+interface OperationShorthandResolution {
+  flags: Record<string, string>;
+  retired: Record<string, RetiredShorthand>;
+  displaced: Record<string, DisplacedShorthand>;
+}
+
+function lockSection<T>(value: unknown): Record<string, T> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, T>)
+    : {};
+}
+
+const shorthandLetterRegex = /^[A-Za-z0-9]$/;
+
+function sortedRecord<T>(entries: Map<string, T>): Record<string, T> {
+  const record: Record<string, T> = {};
+  for (const key of Array.from(entries.keys()).sort()) {
+    record[key] = entries.get(key)!;
+  }
+  return record;
+}
+
+// resolveOperationShorthands assigns an operation's auto shorthands from its
+// recorded gen.lock state. Precedence: preferShorthand pins, then letters the
+// lock records (including a retired letter whose flag has returned), then
+// computeFlagShorthands for the remaining flags over the letters still free.
+// A recorded flag that no longer exists retires its letter, which stays
+// unavailable until a pin reclaims it or the entry is deleted from gen.lock.
+// With no lock the result equals computeFlagShorthands with the pins preferred.
+function resolveOperationShorthands(
+  input: OperationShorthandInput,
+): OperationShorthandResolution {
+  const present = new Set(
+    input.flagNames.filter((name) => !name.includes(".")),
+  );
+  const extraReserved = new Set(input.reserved || []);
+  const isReserved = (letter: string) =>
+    !letter ||
+    extraReserved.has(letter) ||
+    reservedShorthandLetters.has(letter) ||
+    reservedShorthandLetters.has(letter.toUpperCase());
+
+  const assigned = new Map<string, string>();
+  const owners = new Map<string, string>();
+  const assign = (name: string, letter: string) => {
+    assigned.set(name, letter);
+    owners.set(letter, name);
+  };
+
+  const retired = new Map<string, RetiredShorthand>();
+  for (const [letter, entry] of Object.entries(
+    lockSection<RetiredShorthand>(input.lock?.retired),
+  )) {
+    if (!shorthandLetterRegex.test(letter) || isReserved(letter)) continue;
+    if (typeof entry?.flag !== "string") continue;
+    retired.set(letter, { flag: entry.flag });
+  }
+
+  const pinned = new Set<string>();
+  for (const name of input.pinned || []) {
+    const letter = name[0];
+    if (!present.has(name) || isReserved(letter) || owners.has(letter)) {
+      continue;
+    }
+    assign(name, letter);
+    pinned.add(name);
+    retired.delete(letter);
+  }
+
+  const displaced = new Map<string, DisplacedShorthand>();
+
+  for (const [name, letter] of Object.entries(
+    lockSection<string>(input.lock?.flags),
+  )) {
+    if (typeof letter !== "string" || !shorthandLetterRegex.test(letter)) {
+      continue;
+    }
+    if (isReserved(letter) || assigned.has(name)) continue;
+    if (!present.has(name)) {
+      if (!owners.has(letter)) {
+        retired.set(letter, { flag: name });
+      }
+      continue;
+    }
+    const owner = owners.get(letter);
+    if (owner === undefined) {
+      assign(name, letter);
+    } else if (pinned.has(owner)) {
+      displaced.set(name, { letter, pin: owner });
+    }
+  }
+
+  for (const [letter, entry] of Array.from(retired.entries())) {
+    if (owners.has(letter)) {
+      retired.delete(letter);
+    } else if (present.has(entry.flag) && !assigned.has(entry.flag)) {
+      assign(entry.flag, letter);
+      retired.delete(letter);
+    }
+  }
+
+  const blocked = new Set([
+    ...Array.from(extraReserved),
+    ...Array.from(owners.keys()),
+    ...Array.from(retired.keys()),
+  ]);
+  const remaining = input.flagNames.filter((name) => !assigned.has(name));
+  for (const [name, letter] of Array.from(
+    computeFlagShorthands(remaining, blocked, new Set(input.preferred || [])),
+  )) {
+    assign(name, letter);
+  }
+
+  return {
+    flags: sortedRecord(assigned),
+    retired: sortedRecord(retired),
+    displaced: sortedRecord(displaced),
+  };
+}
+
+const operationShorthandsCache = new Map<string, Map<string, string>>();
+
+// operationShorthandsMethod keys an operation's gen.lock entry under its
+// operationId. It must not depend on how many request content types the
+// operation has: op.ID only gains a serialization suffix once an operation is
+// split, which would orphan the entry of its existing variant.
+function operationShorthandsMethod(op: Operation): string {
+  return op.SerializationMethod?.toString() || "json";
+}
+
+let operationRequestMethodsCache: Map<string, Set<string>> | null = null;
+
+function operationRequestMethods(originalID: string): Set<string> {
+  if (!operationRequestMethodsCache) {
+    operationRequestMethodsCache = new Map();
+    for (const op of allOperations(context.Global.AST.MainSDK, {
+      dedupe: false,
+    })) {
+      const methods =
+        operationRequestMethodsCache.get(op.OriginalID) || new Set<string>();
+      methods.add(operationShorthandsMethod(op));
+      operationRequestMethodsCache.set(op.OriginalID, methods);
+    }
+  }
+  return operationRequestMethodsCache.get(originalID) || new Set();
+}
+
+function hasOwnEntry(record: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(record, key);
+}
+
+// recordedOperationShorthands returns the gen.lock entry for an operation's
+// request serialization method. An operation rendered as a single command
+// whose method has no entry inherits its operation's only recorded entry, so
+// the command keeps its letters when its request body changes serialization
+// (for example a bodyless command gaining a multipart body).
+function recordedOperationShorthands(
+  op: Operation,
+  method: string,
+): OperationShorthandLock | null {
+  const lock = lockSection<unknown>(context.Global.Config.CLIShorthands);
+  if (!hasOwnEntry(lock, op.OriginalID)) return null;
+  const methods = lockSection<OperationShorthandLock>(lock[op.OriginalID]);
+  if (hasOwnEntry(methods, method)) return methods[method];
+  const recordedMethods = Object.keys(methods);
+  if (
+    recordedMethods.length === 1 &&
+    operationRequestMethods(op.OriginalID).size === 1
+  ) {
+    return methods[recordedMethods[0]];
+  }
+  return null;
+}
+
+// operationShorthands resolves an operation's auto shorthands against its
+// gen.lock cliShorthands entry and records the result for the next lock.
+// The cache is per template job runtime; every job resolves the same
+// operation identically, so the metadata var, --usage and collision checks
+// all see one assignment.
+function operationShorthands(
+  op: Operation,
+  entries: string[],
+): Map<string, string> {
+  const method = operationShorthandsMethod(op);
+  const key = JSON.stringify([op.OriginalID, method]);
+  const cached = operationShorthandsCache.get(key);
+  if (cached) return cached;
+
+  const flagNames: string[] = [];
+  for (const entry of entries) {
+    const name = entry.match(/FlagName: "([^"]+)"/)?.[1];
+    if (name) flagNames.push(name);
+  }
+  const recorded = recordedOperationShorthands(op, method);
+  const resolution = resolveOperationShorthands({
+    flagNames,
+    lock: recorded ? JSON.parse(JSON.stringify(recorded)) : null,
+    pinned: cliOperationDeclaration(op)?.PreferShorthand || [],
+    preferred: Array.from(requiredPathParamFlagNames(op, entries)),
+    reserved: hasPagination(op) ? ["a"] : [],
+  });
+  recordCLIShorthands(
+    op.OriginalID,
+    method,
+    resolution,
+    operationRequestMethods(op.OriginalID).size > 1,
+  );
+  for (const [flag, { letter, pin }] of Object.entries(resolution.displaced)) {
+    logWarning(
+      `operation "${op.OriginalID}" (${method} request): preferShorthand "${pin}" takes -${letter} from "${flag}", which gen.lock records as its owner; existing -${letter} invocations now set --${pin}`,
+      op.Location?.Line ?? 0,
+    );
+  }
+
+  const shorthands = new Map(Object.entries(resolution.flags));
+  operationShorthandsCache.set(key, shorthands);
+  return shorthands;
+}
+
+// recordOperationShorthands resolves operations without metadata flags too,
+// which no other caller of operationShorthands reaches.
+function recordOperationShorthands(op: Operation): string {
+  operationShorthands(op, buildOperationMetadataEntries(op)?.entries || []);
+  return "";
+}
+registerTemplateFunc("recordOperationShorthands", recordOperationShorthands);
+
 // operationAutoShorthandOwners maps each auto-assigned single-letter
 // shorthand to its owning generated flag, mirroring templateFlagMetadataVar's
 // post-pass exactly (same entry traversal, same reservations). With
@@ -138,22 +397,16 @@ function operationAutoShorthandOwners(
   const built = buildOperationMetadataEntries(op);
   if (!built) return new Map();
   const flagNameRegex = /FlagName: "([^"]+)"/;
-  const names: string[] = [];
   const fieldPaths = new Map<string, string>();
   for (const entry of built.entries) {
     const name = entry.match(flagNameRegex)?.[1];
     if (!name) continue;
-    names.push(name);
     fieldPaths.set(name, entry.match(flagMetaEntryFieldPathRegex)?.[1] || "");
   }
-  const extraReserved = hasPagination(op) ? new Set(["a"]) : undefined;
-  const preferred = requiredPathParamFlagNames(op, built.entries);
   const bodyFieldPath = templateBodyFieldPath(op);
   const owners = new Map<string, string>();
-  for (const [name, letter] of computeFlagShorthands(
-    names,
-    extraReserved,
-    preferred,
+  for (const [name, letter] of Array.from(
+    operationShorthands(op, built.entries),
   )) {
     if (nonBodyOnly) {
       const fieldPath = fieldPaths.get(name) || "";
@@ -187,22 +440,9 @@ function templateFlagMetadataVar(op: Operation): string {
     return `var ${metaVarName} = []flagutil.FlagMeta{}`;
   }
 
-  // Post-pass: assign single-letter shorthands to non-conflicting flags.
-  // Extract flag names from entries, compute shorthands, then inject Shorthand field.
+  // Post-pass: inject the resolved single-letter shorthands.
   const flagNameRegex = /FlagName: "([^"]+)"/;
-  const flagNames: string[] = [];
-  for (const entry of entries) {
-    const match = entry.match(flagNameRegex);
-    if (match) flagNames.push(match[1]);
-  }
-
-  // "-a" is reserved on paginated commands (used by --all)
-  const extraReserved = hasPagination(op) ? new Set(["a"]) : undefined;
-  const shorthands = computeFlagShorthands(
-    flagNames,
-    extraReserved,
-    requiredPathParamFlagNames(op, entries),
-  );
+  const shorthands = operationShorthands(op, entries);
 
   // Inject Shorthand field into entries that got a shorthand
   const enrichedEntries = entries.map((entry) => {
