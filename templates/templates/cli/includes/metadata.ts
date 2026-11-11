@@ -137,7 +137,6 @@ function operationMetadataFlagNames(op: Operation): Set<string> {
 
 interface RetiredShorthand {
   flag: string;
-  freedIn: string;
 }
 
 // OperationShorthandLock is one operation's gen.lock cliShorthands entry.
@@ -152,27 +151,11 @@ interface OperationShorthandInput {
   pinned?: string[] | null;
   preferred?: string[] | null;
   reserved?: string[] | null;
-  sdkVersion?: string | null;
 }
 
 interface OperationShorthandResolution {
   flags: Record<string, string>;
   retired: Record<string, RetiredShorthand>;
-}
-
-const shorthandVersionRegex = /^v?(\d+)\.(\d+)/;
-
-// retiredShorthandFreed reports whether sdkVersion is a breaking release
-// after freedIn: a higher major, or a higher minor while both are pre-1.0.
-// An unparseable version on either side keeps the letter reserved.
-function retiredShorthandFreed(freedIn: string, sdkVersion: string): boolean {
-  const freed = freedIn.match(shorthandVersionRegex);
-  const current = sdkVersion.match(shorthandVersionRegex);
-  if (!freed || !current) return false;
-  const freedMajor = Number(freed[1]);
-  const major = Number(current[1]);
-  if (major !== freedMajor) return major > freedMajor;
-  return major === 0 && Number(current[2]) > Number(freed[2]);
 }
 
 function sortedRecord<T>(entries: Map<string, T>): Record<string, T> {
@@ -188,12 +171,11 @@ function sortedRecord<T>(entries: Map<string, T>): Record<string, T> {
 // lock records (including a retired letter whose flag has returned), then
 // computeFlagShorthands for the remaining flags over the letters still free.
 // A recorded flag that no longer exists retires its letter, which stays
-// unavailable until a breaking release or a pin reclaims it. With no lock the
-// result equals computeFlagShorthands with the pins preferred.
+// unavailable until a pin reclaims it or the entry is deleted from gen.lock.
+// With no lock the result equals computeFlagShorthands with the pins preferred.
 function resolveOperationShorthands(
   input: OperationShorthandInput,
 ): OperationShorthandResolution {
-  const sdkVersion = input.sdkVersion || "";
   const present = new Set(
     input.flagNames.filter((name) => !name.includes(".")),
   );
@@ -213,11 +195,7 @@ function resolveOperationShorthands(
 
   const retired = new Map<string, RetiredShorthand>();
   for (const [letter, entry] of Object.entries(input.lock?.retired || {})) {
-    const freedIn = entry.freedIn || "";
-    if (isReserved(letter) || retiredShorthandFreed(freedIn, sdkVersion)) {
-      continue;
-    }
-    retired.set(letter, { flag: entry.flag, freedIn: freedIn || sdkVersion });
+    if (!isReserved(letter)) retired.set(letter, { flag: entry.flag });
   }
 
   for (const name of input.pinned || []) {
@@ -233,7 +211,7 @@ function resolveOperationShorthands(
     if (isReserved(letter) || assigned.has(name)) continue;
     if (!present.has(name)) {
       if (!owners.has(letter)) {
-        retired.set(letter, { flag: name, freedIn: sdkVersion });
+        retired.set(letter, { flag: name });
       }
       continue;
     }
@@ -294,7 +272,6 @@ function operationShorthands(
     pinned: cliOperationDeclaration(op)?.PreferShorthand || [],
     preferred: Array.from(requiredPathParamFlagNames(op, entries)),
     reserved: hasPagination(op) ? ["a"] : [],
-    sdkVersion: context.Global.Config.SDKVersion,
   });
   recordCLIShorthands(key, resolution);
 

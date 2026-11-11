@@ -59,8 +59,7 @@ type cliStickyShorthandLock struct {
 	CLIShorthands map[string]struct {
 		Flags   map[string]string `yaml:"flags"`
 		Retired map[string]struct {
-			Flag    string `yaml:"flag"`
-			FreedIn string `yaml:"freedIn"`
+			Flag string `yaml:"flag"`
 		} `yaml:"retired"`
 	} `yaml:"cliShorthands"`
 }
@@ -83,17 +82,26 @@ func cliStickyReadLock(t *testing.T, outputDir string) cliStickyShorthandLock {
 	return lock
 }
 
-func cliStickyGenerate(t *testing.T, outputDir, spec string) []error {
+func cliStickyDeleteRetired(t *testing.T, outputDir, operationID, letter string) {
 	t.Helper()
-	generator, err := generate.New(generate.WithLogger(logging.NewLogger(zapcore.WarnLevel)))
+	lockPath := filepath.Join(outputDir, ".speakeasy", "gen.lock")
+	var lock map[string]any
+	require.NoError(t, yaml.Unmarshal([]byte(cliStickyReadFile(t, outputDir, ".speakeasy", "gen.lock")), &lock))
+	entry := lock["cliShorthands"].(map[string]any)[operationID].(map[string]any)
+	retired := entry["retired"].(map[string]any)
+	require.Contains(t, retired, letter)
+	delete(retired, letter)
+	content, err := yaml.Marshal(lock)
 	require.NoError(t, err)
-	ctx := generationaccess.WithDirect(context.Background(), generationaccess.ElectAGPL())
-	return generator.Generate(ctx, []byte(spec), "test-schema.yaml", "cli", outputDir, false, false)
+	require.NoError(t, os.WriteFile(lockPath, content, 0o644))
 }
 
 func cliStickyRegenerate(t *testing.T, outputDir, spec string) {
 	t.Helper()
-	require.Empty(t, cliStickyGenerate(t, outputDir, spec))
+	generator, err := generate.New(generate.WithLogger(logging.NewLogger(zapcore.WarnLevel)))
+	require.NoError(t, err)
+	ctx := generationaccess.WithDirect(context.Background(), generationaccess.ElectAGPL())
+	require.Empty(t, generator.Generate(ctx, []byte(spec), "test-schema.yaml", "cli", outputDir, false, false))
 }
 
 func TestSnapCLIStickyShorthands(t *testing.T) {
@@ -144,7 +152,14 @@ func TestSnapCLIStickyShorthands(t *testing.T) {
 			entry := readLock().CLIShorthands["CreatePet"]
 			require.Equal(t, map[string]string{"tag": "t"}, entry.Flags)
 			require.Equal(t, "names", entry.Retired["n"].Flag)
-			require.NotEmpty(t, entry.Retired["n"].FreedIn)
+
+			cliStickyDeleteRetired(t, outputDir, "CreatePet", "n")
+			regenerate(cliStickyShorthandSpecWith(cliStickyNickNameField, cliStickyTagField))
+			require.Contains(t, readCommand(), `FlagName: "nick-name", Shorthand: "n"`)
+			require.Contains(t, readUsage(), `-n --nick-name <nick_name>`)
+			entry = readLock().CLIShorthands["CreatePet"]
+			require.Equal(t, map[string]string{"nick-name": "n", "tag": "t"}, entry.Flags)
+			require.Empty(t, entry.Retired)
 		},
 	})
 }

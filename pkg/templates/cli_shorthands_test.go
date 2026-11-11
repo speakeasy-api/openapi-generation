@@ -13,8 +13,7 @@ import (
 )
 
 type retiredShorthand struct {
-	Flag    string `json:"flag"`
-	FreedIn string `json:"freedIn"`
+	Flag string `json:"flag"`
 }
 
 type shorthandLock struct {
@@ -23,12 +22,11 @@ type shorthandLock struct {
 }
 
 type shorthandInput struct {
-	FlagNames  []string       `json:"flagNames"`
-	Lock       *shorthandLock `json:"lock,omitempty"`
-	Pinned     []string       `json:"pinned,omitempty"`
-	Preferred  []string       `json:"preferred,omitempty"`
-	Reserved   []string       `json:"reserved,omitempty"`
-	SDKVersion string         `json:"sdkVersion"`
+	FlagNames []string       `json:"flagNames"`
+	Lock      *shorthandLock `json:"lock,omitempty"`
+	Pinned    []string       `json:"pinned,omitempty"`
+	Preferred []string       `json:"preferred,omitempty"`
+	Reserved  []string       `json:"reserved,omitempty"`
 }
 
 type shorthandResolution struct {
@@ -104,8 +102,7 @@ func TestResolveOperationShorthands(t *testing.T) {
 		{
 			name: "no lock assigns unique initials",
 			input: shorthandInput{
-				FlagNames:  []string{"names", "nick-name", "tag", "owner", "address.city"},
-				SDKVersion: "1.0.0",
+				FlagNames: []string{"names", "nick-name", "tag", "owner", "address.city"},
 			},
 			wantFlags:   map[string]string{"tag": "t"},
 			wantRetired: noRetired,
@@ -113,10 +110,9 @@ func TestResolveOperationShorthands(t *testing.T) {
 		{
 			name: "no lock prefers required path parameters and pins",
 			input: shorthandInput{
-				FlagNames:  []string{"pet-id", "price", "names", "nick-name"},
-				Preferred:  []string{"pet-id"},
-				Pinned:     []string{"names"},
-				SDKVersion: "1.0.0",
+				FlagNames: []string{"pet-id", "price", "names", "nick-name"},
+				Preferred: []string{"pet-id"},
+				Pinned:    []string{"names"},
 			},
 			wantFlags:   map[string]string{"names": "n", "pet-id": "p"},
 			wantRetired: noRetired,
@@ -124,9 +120,8 @@ func TestResolveOperationShorthands(t *testing.T) {
 		{
 			name: "lock keeps a letter when a new flag shares it",
 			input: shorthandInput{
-				FlagNames:  []string{"names", "nick-name", "tag"},
-				Lock:       &shorthandLock{Flags: map[string]string{"names": "n", "tag": "t"}},
-				SDKVersion: "1.1.0",
+				FlagNames: []string{"names", "nick-name", "tag"},
+				Lock:      &shorthandLock{Flags: map[string]string{"names": "n", "tag": "t"}},
 			},
 			wantFlags:   map[string]string{"names": "n", "tag": "t"},
 			wantRetired: noRetired,
@@ -134,10 +129,9 @@ func TestResolveOperationShorthands(t *testing.T) {
 		{
 			name: "lock beats a new required path parameter",
 			input: shorthandInput{
-				FlagNames:  []string{"price", "pet-id"},
-				Preferred:  []string{"pet-id"},
-				Lock:       &shorthandLock{Flags: map[string]string{"price": "p"}},
-				SDKVersion: "1.1.0",
+				FlagNames: []string{"price", "pet-id"},
+				Preferred: []string{"pet-id"},
+				Lock:      &shorthandLock{Flags: map[string]string{"price": "p"}},
 			},
 			wantFlags:   map[string]string{"price": "p"},
 			wantRetired: noRetired,
@@ -145,10 +139,9 @@ func TestResolveOperationShorthands(t *testing.T) {
 		{
 			name: "pin takes a locked letter from another flag",
 			input: shorthandInput{
-				FlagNames:  []string{"names", "nick-name"},
-				Lock:       &shorthandLock{Flags: map[string]string{"names": "n"}},
-				Pinned:     []string{"nick-name"},
-				SDKVersion: "1.1.0",
+				FlagNames: []string{"names", "nick-name"},
+				Lock:      &shorthandLock{Flags: map[string]string{"names": "n"}},
+				Pinned:    []string{"nick-name"},
 			},
 			wantFlags:   map[string]string{"nick-name": "n"},
 			wantRetired: noRetired,
@@ -156,13 +149,12 @@ func TestResolveOperationShorthands(t *testing.T) {
 		{
 			name: "removed flag retires its letter",
 			input: shorthandInput{
-				FlagNames:  []string{"nick-name", "tag"},
-				Lock:       &shorthandLock{Flags: map[string]string{"names": "n", "tag": "t"}},
-				SDKVersion: "1.4.0",
+				FlagNames: []string{"nick-name", "tag"},
+				Lock:      &shorthandLock{Flags: map[string]string{"names": "n", "tag": "t"}},
 			},
 			wantFlags: map[string]string{"tag": "t"},
 			wantRetired: map[string]retiredShorthand{
-				"n": {Flag: "names", FreedIn: "1.4.0"},
+				"n": {Flag: "names"},
 			},
 		},
 		{
@@ -170,9 +162,8 @@ func TestResolveOperationShorthands(t *testing.T) {
 			input: shorthandInput{
 				FlagNames: []string{"names", "nick-name"},
 				Lock: &shorthandLock{Retired: map[string]retiredShorthand{
-					"n": {Flag: "names", FreedIn: "1.4.0"},
+					"n": {Flag: "names"},
 				}},
-				SDKVersion: "1.5.0",
 			},
 			wantFlags:   map[string]string{"names": "n"},
 			wantRetired: noRetired,
@@ -182,105 +173,41 @@ func TestResolveOperationShorthands(t *testing.T) {
 			input: shorthandInput{
 				FlagNames: []string{"nick-name"},
 				Lock: &shorthandLock{Retired: map[string]retiredShorthand{
-					"n": {Flag: "names", FreedIn: "1.4.0"},
+					"n": {Flag: "names"},
 				}},
-				Pinned:     []string{"nick-name"},
-				SDKVersion: "1.5.0",
+				Pinned: []string{"nick-name"},
 			},
 			wantFlags:   map[string]string{"nick-name": "n"},
 			wantRetired: noRetired,
 		},
 		{
-			name: "retired letter stays reserved within a major version",
+			name: "retired letter stays reserved for a new flag",
 			input: shorthandInput{
 				FlagNames: []string{"nick-name"},
 				Lock: &shorthandLock{Retired: map[string]retiredShorthand{
-					"n": {Flag: "names", FreedIn: "1.4.0"},
+					"n": {Flag: "names"},
 				}},
-				SDKVersion: "1.9.3",
 			},
 			wantFlags: map[string]string{},
 			wantRetired: map[string]retiredShorthand{
-				"n": {Flag: "names", FreedIn: "1.4.0"},
+				"n": {Flag: "names"},
 			},
 		},
 		{
-			name: "major bump frees a retired letter",
+			name: "letter deleted from retired goes to a new flag",
 			input: shorthandInput{
-				FlagNames: []string{"nick-name"},
-				Lock: &shorthandLock{Retired: map[string]retiredShorthand{
-					"n": {Flag: "names", FreedIn: "1.4.0"},
-				}},
-				SDKVersion: "2.0.0",
+				FlagNames: []string{"nick-name", "tag"},
+				Lock:      &shorthandLock{Flags: map[string]string{"tag": "t"}},
 			},
-			wantFlags:   map[string]string{"nick-name": "n"},
+			wantFlags:   map[string]string{"nick-name": "n", "tag": "t"},
 			wantRetired: noRetired,
-		},
-		{
-			name: "pre-1.0 minor bump frees a retired letter",
-			input: shorthandInput{
-				FlagNames: []string{"nick-name"},
-				Lock: &shorthandLock{Retired: map[string]retiredShorthand{
-					"n": {Flag: "names", FreedIn: "0.3.0"},
-				}},
-				SDKVersion: "0.4.0",
-			},
-			wantFlags:   map[string]string{"nick-name": "n"},
-			wantRetired: noRetired,
-		},
-		{
-			name: "pre-1.0 patch bump keeps a retired letter",
-			input: shorthandInput{
-				FlagNames: []string{"nick-name"},
-				Lock: &shorthandLock{Retired: map[string]retiredShorthand{
-					"n": {Flag: "names", FreedIn: "0.3.0"},
-				}},
-				SDKVersion: "0.3.5",
-			},
-			wantFlags: map[string]string{},
-			wantRetired: map[string]retiredShorthand{
-				"n": {Flag: "names", FreedIn: "0.3.0"},
-			},
-		},
-		{
-			name: "empty version keeps retired letters reserved",
-			input: shorthandInput{
-				FlagNames: []string{"nick-name", "owner-name"},
-				Lock: &shorthandLock{
-					Flags: map[string]string{"price": "p"},
-					Retired: map[string]retiredShorthand{
-						"n": {Flag: "names", FreedIn: "1.4.0"},
-					},
-				},
-				SDKVersion: "",
-			},
-			wantFlags: map[string]string{},
-			wantRetired: map[string]retiredShorthand{
-				"n": {Flag: "names", FreedIn: "1.4.0"},
-				"p": {Flag: "price", FreedIn: ""},
-			},
-		},
-		{
-			name: "known version stamps a retired letter that has no release",
-			input: shorthandInput{
-				FlagNames: []string{"nick-name"},
-				Lock: &shorthandLock{Retired: map[string]retiredShorthand{
-					"n": {Flag: "names", FreedIn: ""},
-				}},
-				SDKVersion: "2.0.0",
-			},
-			wantFlags: map[string]string{},
-			wantRetired: map[string]retiredShorthand{
-				"n": {Flag: "names", FreedIn: "2.0.0"},
-			},
 		},
 		{
 			name: "letter that became reserved is dropped",
 			input: shorthandInput{
-				FlagNames:  []string{"after", "tag"},
-				Lock:       &shorthandLock{Flags: map[string]string{"after": "a", "tag": "t"}},
-				Reserved:   []string{"a"},
-				SDKVersion: "1.1.0",
+				FlagNames: []string{"after", "tag"},
+				Lock:      &shorthandLock{Flags: map[string]string{"after": "a", "tag": "t"}},
+				Reserved:  []string{"a"},
 			},
 			wantFlags:   map[string]string{"tag": "t"},
 			wantRetired: noRetired,
