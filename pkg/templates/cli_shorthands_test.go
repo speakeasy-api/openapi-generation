@@ -255,6 +255,16 @@ func TestResolveOperationShorthandsIgnoresMalformedLockEntries(t *testing.T) {
 	})
 	assert.Equal(t, map[string]string{"count": "c", "nick-name": "n", "price": "p", "size": "s", "tag": "t"}, got.Flags)
 	assert.Equal(t, map[string]retiredShorthand{}, got.Retired)
+
+	got = callJSON[shorthandResolution](t, vm, "resolveOperationShorthands", map[string]any{
+		"flagNames": []string{"names", "tag"},
+		"lock": map[string]any{
+			"flags":   "xy",
+			"retired": []string{"n"},
+		},
+	})
+	assert.Equal(t, map[string]string{"names": "n", "tag": "t"}, got.Flags)
+	assert.Equal(t, map[string]retiredShorthand{}, got.Retired)
 }
 
 func TestResolveOperationShorthandsReportsFlagsDisplacedByPins(t *testing.T) {
