@@ -408,7 +408,7 @@ paths:
           description: OK
 `
 
-func cliStickyContentTypeSpecWith(contentTypes map[string][]string) string {
+func cliStickyRequestContent(contentTypes map[string][]string) string {
 	var b strings.Builder
 	for _, contentType := range []string{"application/json", "multipart/form-data"} {
 		fields, ok := contentTypes[contentType]
@@ -420,7 +420,11 @@ func cliStickyContentTypeSpecWith(contentTypes map[string][]string) string {
 			b.WriteString("                " + field + ": {type: string}\n")
 		}
 	}
-	return fmt.Sprintf(cliStickyContentTypeSpec, b.String())
+	return b.String()
+}
+
+func cliStickyContentTypeSpecWith(contentTypes map[string][]string) string {
+	return fmt.Sprintf(cliStickyContentTypeSpec, cliStickyRequestContent(contentTypes))
 }
 
 func TestSnapCLIStickyShorthandsContentTypeChanges(t *testing.T) {
@@ -729,4 +733,137 @@ func TestSnapCLIStickyShorthandsSplitEndsWithoutShorthands(t *testing.T) {
 			}, cliStickyLockFlags(t, outputDir))
 		},
 	})
+}
+
+const cliStickyCollidingIDSpecHeader = `openapi: 3.0.3
+info:
+  title: Pet API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+%spaths:
+`
+
+const cliStickySplitPathTemplate = `  /pets:
+    post:
+      operationId: CreatePet
+      description: Request content types render as separate commands; the multipart command's generated ID equals another operation's operationId.
+      tags: [pets]
+      security: []
+      requestBody:
+        required: true
+        content:
+%s      responses:
+        '200':
+          description: OK
+`
+
+const cliStickySuffixedPathTemplate = `  /notes:
+    post:
+      operationId: CreatePet_multipart
+      description: An operation whose operationId equals the generated ID of another operation's multipart command.
+      tags: [%s]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                names: {type: string}
+                nick_name: {type: string}
+      responses:
+        '200':
+          description: OK
+`
+
+// cliStickyCollidingIDOrders places the suffixed operation before or after
+// the split one, in both path and group order.
+var cliStickyCollidingIDOrders = map[string]struct {
+	suffixedFirst bool
+	group         string
+}{
+	"suffixed operation first": {suffixedFirst: true, group: "animals"},
+	"suffixed operation last":  {suffixedFirst: false, group: "notes"},
+}
+
+func cliStickyCollidingIDSpec(suffixedFirst bool, group, manifest string, contentTypes map[string][]string) string {
+	split := fmt.Sprintf(cliStickySplitPathTemplate, cliStickyRequestContent(contentTypes))
+	suffixed := fmt.Sprintf(cliStickySuffixedPathTemplate, group)
+	paths := split + suffixed
+	if suffixedFirst {
+		paths = suffixed + split
+	}
+	return fmt.Sprintf(cliStickyCollidingIDSpecHeader, manifest) + paths
+}
+
+func TestSnapCLIStickyShorthandsSplitOperationWithCollidingID(t *testing.T) {
+	t.Parallel()
+
+	type generation struct {
+		contentTypes map[string][]string
+		lock         map[string]map[string]string
+	}
+	sequences := map[string][]generation{
+		"multipart command removed": {
+			{
+				contentTypes: map[string][]string{
+					"application/json":    {"names", "nick_name"},
+					"multipart/form-data": {"names"},
+				},
+				lock: map[string]map[string]string{"json": nil, "multipart": {"names": "n"}},
+			},
+			{
+				contentTypes: map[string][]string{"application/json": {"names", "nick_name"}},
+				lock:         nil,
+			},
+		},
+		"JSON command added": {
+			{
+				contentTypes: map[string][]string{"multipart/form-data": {"names"}},
+				lock:         map[string]map[string]string{"multipart": {"names": "n"}},
+			},
+			{
+				contentTypes: map[string][]string{
+					"application/json":    {"names", "nick_name"},
+					"multipart/form-data": {"names"},
+				},
+				lock: map[string]map[string]string{"json": nil, "multipart": {"names": "n"}},
+			},
+		},
+	}
+
+	for orderName, order := range cliStickyCollidingIDOrders {
+		for name, generations := range sequences {
+			t.Run(orderName+" "+name, func(t *testing.T) {
+				t.Parallel()
+				spec := func(gen generation) string {
+					return cliStickyCollidingIDSpec(order.suffixedFirst, order.group, "", gen.contentTypes)
+				}
+				shouldCompile := false
+				snaptest.DoTestSnapshot(t, snaptest.Options{
+					Spec:          spec(generations[0]),
+					GenYaml:       cliStickyGenYaml,
+					ShouldCompile: &shouldCompile,
+					AfterGenerate: func(t *testing.T, outputDir string) {
+						t.Helper()
+						for i, gen := range generations {
+							if i > 0 {
+								cliStickyRegenerate(t, outputDir, spec(gen))
+							}
+							if _, ok := gen.contentTypes["application/json"]; ok {
+								command := cliStickyReadFile(t, outputDir, "internal", "cli", "pets", "createpet.go")
+								require.NotContains(t, command, `FlagName: "names", Shorthand:`, "generation %d", i+1)
+								require.NotContains(t, command, `FlagName: "nick-name", Shorthand:`, "generation %d", i+1)
+							}
+							lock := cliStickyLockFlags(t, outputDir)
+							require.Equal(t, gen.lock, lock["CreatePet"], "generation %d", i+1)
+							require.NotContains(t, lock, "CreatePet_multipart", "generation %d", i+1)
+						}
+					},
+				})
+			})
+		}
+	}
 }

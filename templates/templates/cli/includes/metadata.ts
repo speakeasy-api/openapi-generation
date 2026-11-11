@@ -293,7 +293,9 @@ let operationRequestMethodsCache: Map<string, Set<string>> | null = null;
 function operationRequestMethods(originalID: string): Set<string> {
   if (!operationRequestMethodsCache) {
     operationRequestMethodsCache = new Map();
-    for (const op of allOperations()) {
+    for (const op of allOperations(context.Global.AST.MainSDK, {
+      dedupe: false,
+    })) {
       const methods =
         operationRequestMethodsCache.get(op.OriginalID) || new Set<string>();
       methods.add(operationShorthandsMethod(op));
