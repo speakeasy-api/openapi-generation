@@ -234,3 +234,25 @@ func TestResolveOperationShorthands(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveOperationShorthandsIgnoresMalformedLockEntries(t *testing.T) {
+	t.Parallel()
+
+	vm := loadCLIIncludes(t, "includes/flags.ts", "includes/metadata.ts")
+	got := callJSON[shorthandResolution](t, vm, "resolveOperationShorthands", map[string]any{
+		"flagNames": []string{"nick-name", "tag", "price", "count", "size"},
+		"lock": map[string]any{
+			"flags": map[string]any{
+				"count": 5,
+				"size":  "ss",
+			},
+			"retired": map[string]any{
+				"n": nil,
+				"t": map[string]any{},
+				"p": "price",
+			},
+		},
+	})
+	assert.Equal(t, map[string]string{"count": "c", "nick-name": "n", "price": "p", "size": "s", "tag": "t"}, got.Flags)
+	assert.Equal(t, map[string]retiredShorthand{}, got.Retired)
+}

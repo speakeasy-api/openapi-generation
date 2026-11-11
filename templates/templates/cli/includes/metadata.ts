@@ -195,7 +195,8 @@ function resolveOperationShorthands(
 
   const retired = new Map<string, RetiredShorthand>();
   for (const [letter, entry] of Object.entries(input.lock?.retired || {})) {
-    if (!isReserved(letter)) retired.set(letter, { flag: entry.flag });
+    if (isReserved(letter) || typeof entry?.flag !== "string") continue;
+    retired.set(letter, { flag: entry.flag });
   }
 
   for (const name of input.pinned || []) {
@@ -208,6 +209,7 @@ function resolveOperationShorthands(
   }
 
   for (const [name, letter] of Object.entries(input.lock?.flags || {})) {
+    if (typeof letter !== "string" || letter.length !== 1) continue;
     if (isReserved(letter) || assigned.has(name)) continue;
     if (!present.has(name)) {
       if (!owners.has(letter)) {
