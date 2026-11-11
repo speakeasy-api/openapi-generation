@@ -974,6 +974,13 @@ public class RequestBodiesShould
         CommonHelpers.RecordTest("request-bodies-post-json-optional-nullable");
         var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
 
+        var wire = await Helpers.GetSerializedBodyJson(OptionalNullableJsonAllSet());
+        Assert.Contains("\"optNullBigInt\":8821239038968084", wire);
+        Assert.Contains("\"optNullBigIntStr\":\"9223372036854775808\"", wire);
+        Assert.Contains("\"optNullBigIntStrArr\":[\"9223372036854775808\",\"7\",null]", wire);
+        Assert.Contains("\"optNullDecimalStr\":\"3.14159265358979344719667586\"", wire);
+        Assert.Contains("\"optNullDecimalStrMap\":{\"pi\":\"3.14159265358979344719667586\",\"none\":null}", wire);
+
         // Set: every field present, tri-state survives the round trip (incl. nested).
         var setJson = (
             await sdk.RequestBodies.RequestBodyPostJsonOptionalNullableAsync(OptionalNullableJsonAllSet())

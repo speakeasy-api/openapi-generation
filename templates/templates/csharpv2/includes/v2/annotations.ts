@@ -85,35 +85,6 @@ function getStjConverterAttribute(typeDef: TypeDef): string {
 }
 
 // @ts-ignore
-// A wrapped `format: decimalStr` field must (de)serialize its inner decimal as a JSON
-// string. The generic OptionalNullableJsonConverter<T> routes the inner through the
-// type-default (number-wire) converter, which loses precision across intermediaries that
-// parse bare numbers as float64. Returns the fully-qualified string-wire wrapper converter
-// for the scalar and string-keyed map shapes, or "" for anything else (falls back to the
-// generic wrapper).
-function optionalNullableDecimalStrConverter(fieldDef: FieldDef): string {
-  const modelNs = getModelNamespace("");
-  const top = fieldDef.Type;
-  if (!top) return "";
-  const topKind = top.Type?.toString();
-
-  if (topKind === "decimal" && top.Format === "string") {
-    return `global::${modelNs}.OptionalNullableDecimalStringJsonConverter`;
-  }
-  if (topKind === "map") {
-    const value = top.ItemType;
-    if (
-      value &&
-      value.Type?.toString() === "decimal" &&
-      value.Format === "string"
-    ) {
-      return `global::${modelNs}.OptionalNullableDecimalStringMapJsonConverter`;
-    }
-  }
-  return "";
-}
-
-// @ts-ignore
 function templateJSONAnnotation(
   fieldDef: FieldDef,
   annotation: JSONAnnotation,
@@ -168,16 +139,14 @@ function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
       resolved.push("[System.Text.Json.Serialization.JsonRequired]");
     }
     if (needsOptionalNullableWrapper(fieldDef)) {
-      const decimalStrConverter = optionalNullableDecimalStrConverter(fieldDef);
-      const converter = decimalStrConverter
-        ? decimalStrConverter
-        : `global::${getModelNamespace(
-            "",
-          )}.OptionalNullableJsonConverter<${sanitizeType(
-            fieldDef.Type,
-            true,
-            "",
-          )}>`;
+      const factory = getStjConverterFactory(fieldDef.Type);
+      const typeArgs = [sanitizeType(fieldDef.Type, true, "")];
+      if (factory) {
+        typeArgs.push(factory);
+      }
+      const converter = `global::${getModelNamespace(
+        "",
+      )}.OptionalNullableJsonConverter<${typeArgs.join(", ")}>`;
       resolved.push(
         `[System.Text.Json.Serialization.JsonConverter(typeof(${converter}))]`,
       );

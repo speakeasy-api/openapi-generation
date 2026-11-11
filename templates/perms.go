@@ -666,6 +666,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/csharpv2/tests/Common/Compat.cs.stmpl":                                   0o644,
 	"templates/csharpv2/tests/primary":                                                  0o20000000755,
 	"templates/csharpv2/tests/primary/NullableItemFormatCollectionsAdditionalShould.cs": 0o644,
+	"templates/csharpv2/tests/primary/OptionalNullableStringWireAdditionalShould.cs":    0o644,
 	"templates/csharpv2/tests/primary/SseStreamExtensionsShould.cs":                     0o644,
 	"templates/csharpv2/testusage":                                                      0o20000000755,
 	"templates/csharpv2/testusage/testusage.csproj.stmpl":                               0o644,
