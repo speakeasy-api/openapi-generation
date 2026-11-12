@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { APIPromise, SDK as StandardSDK } from "../index.js";
 import { SDK as NodeSDK } from "../node.js";
+import { SseOverloadChatAcceptEnum } from "../sdk/eventstreams.lazy.js";
 import { HTTPBIN_URL } from "./common_helpers.js";
 
 describe.each([
@@ -69,7 +70,10 @@ describe.each([
   test("multi-overload SSE method returns APIPromise on non-streaming overload", async () => {
     const sdk = new SDK({ serverURL: HTTPBIN_URL });
 
-    const p = sdk.eventstreams.sseOverloadChat({ prompt: "x" });
+    const p = sdk.eventstreams.sseOverloadChat(
+      { prompt: "x" },
+      { acceptHeaderOverride: SseOverloadChatAcceptEnum.applicationJson },
+    );
     expect(p).toBeInstanceOf(APIPromise);
 
     const { response } = await p.withResponse();
@@ -80,7 +84,10 @@ describe.each([
   test("multi-overload SSE method returns APIPromise on streaming overload", async () => {
     const sdk = new SDK({ serverURL: HTTPBIN_URL });
 
-    const p = sdk.eventstreams.sseOverloadChat({ prompt: "x", stream: true });
+    const p = sdk.eventstreams.sseOverloadChat(
+      { prompt: "x", stream: true },
+      { acceptHeaderOverride: SseOverloadChatAcceptEnum.textEventStream },
+    );
     expect(p).toBeInstanceOf(APIPromise);
 
     const response = await p.asResponse();

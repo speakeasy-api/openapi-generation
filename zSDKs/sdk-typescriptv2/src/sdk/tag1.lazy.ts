@@ -17,18 +17,24 @@ const tag1Deprecated1 =
     >
   ) =>
     new APIPromise(
-      (tag1Deprecated1$module ??= import("../funcs/tag1Deprecated1.js")).then((
-        module,
-      ) => module.tag1Deprecated1(...args).$inspect()),
+      (tag1Deprecated1$module ??= import("../funcs/tag1Deprecated1.js").catch(
+        (error: unknown) => {
+          tag1Deprecated1$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.tag1Deprecated1(...args).$inspect()),
     )) as typeof import("../funcs/tag1Deprecated1.js").tag1Deprecated1;
 
 let tag1Auth$module: Promise<typeof import("../funcs/tag1Auth.js")> | undefined;
 const tag1Auth =
   ((...args: Parameters<typeof import("../funcs/tag1Auth.js").tag1Auth>) =>
     new APIPromise(
-      (tag1Auth$module ??= import("../funcs/tag1Auth.js")).then((module) =>
-        module.tag1Auth(...args).$inspect()
-      ),
+      (tag1Auth$module ??= import("../funcs/tag1Auth.js").catch(
+        (error: unknown) => {
+          tag1Auth$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.tag1Auth(...args).$inspect()),
     )) as typeof import("../funcs/tag1Auth.js").tag1Auth;
 
 let tag1ListTest1$module:
@@ -41,9 +47,12 @@ const tag1ListTest1 =
     >
   ) =>
     new APIPromise(
-      (tag1ListTest1$module ??= import("../funcs/tag1ListTest1.js")).then((
-        module,
-      ) => module.tag1ListTest1(...args).$inspect()),
+      (tag1ListTest1$module ??= import("../funcs/tag1ListTest1.js").catch(
+        (error: unknown) => {
+          tag1ListTest1$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.tag1ListTest1(...args).$inspect()),
     )) as typeof import("../funcs/tag1ListTest1.js").tag1ListTest1;
 
 let tag1PostFileWithEncoding$module:
@@ -58,7 +67,10 @@ const tag1PostFileWithEncoding =
     new APIPromise(
       (tag1PostFileWithEncoding$module ??= import(
         "../funcs/tag1PostFileWithEncoding.js"
-      )).then((module) => module.tag1PostFileWithEncoding(...args).$inspect()),
+      ).catch((error: unknown) => {
+        tag1PostFileWithEncoding$module = undefined;
+        throw error;
+      })).then((module) => module.tag1PostFileWithEncoding(...args).$inspect()),
     )) as typeof import("../funcs/tag1PostFileWithEncoding.js").tag1PostFileWithEncoding;
 
 export class Tag1 extends ClientSDK {

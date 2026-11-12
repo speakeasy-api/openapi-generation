@@ -18,7 +18,10 @@ const testGroupTag2PostTest =
     new APIPromise(
       (testGroupTag2PostTest$module ??= import(
         "../funcs/testGroupTag2PostTest.js"
-      )).then((module) => module.testGroupTag2PostTest(...args).$inspect()),
+      ).catch((error: unknown) => {
+        testGroupTag2PostTest$module = undefined;
+        throw error;
+      })).then((module) => module.testGroupTag2PostTest(...args).$inspect()),
     )) as typeof import("../funcs/testGroupTag2PostTest.js").testGroupTag2PostTest;
 
 export class Tag3 extends ClientSDK {

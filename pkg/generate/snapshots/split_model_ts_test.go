@@ -69,7 +69,7 @@ components:
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./errors/sdk-validation-error.js";
@@ -100,26 +100,29 @@ export type BigModel = {
 };
 
 /** @internal */
-export const BigModel$inboundSchema: z.ZodMiniType<BigModel, unknown> = z.pipe(
-  z.object({
-    field_000: types.optional(Field000$inboundSchema),
-    field_001: types.optional(Field001$inboundSchema),
-    field_002: types.optional(Field002$inboundSchema),
-    field_003: types.optional(Field003$inboundSchema),
-    field_004: types.optional(Field004$inboundSchema),
-    field_005: types.optional(Field005$inboundSchema),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      "field_000": "field000",
-      "field_001": "field001",
-      "field_002": "field002",
-      "field_003": "field003",
-      "field_004": "field004",
-      "field_005": "field005",
-    });
-  }),
-);
+export const BigModel$inboundSchema: z.ZodMiniType<BigModel, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.pipe(
+      z.object({
+        field_000: types.optional(Field000$inboundSchema),
+        field_001: types.optional(Field001$inboundSchema),
+        field_002: types.optional(Field002$inboundSchema),
+        field_003: types.optional(Field003$inboundSchema),
+        field_004: types.optional(Field004$inboundSchema),
+        field_005: types.optional(Field005$inboundSchema),
+      }),
+      z.transform((v) => {
+        return remap$(v, {
+          "field_000": "field000",
+          "field_001": "field001",
+          "field_002": "field002",
+          "field_003": "field003",
+          "field_004": "field004",
+          "field_005": "field005",
+        });
+      }),
+    )
+  );
 
 export function bigModelFromJSON(
   jsonString: string,
@@ -140,7 +143,7 @@ export function bigModelFromJSON(
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./errors/sdk-validation-error.js";
@@ -158,10 +161,12 @@ export type Field002 = {
 };
 
 /** @internal */
-export const Field000$inboundSchema: z.ZodMiniType<Field000, unknown> = z
-  .object({
-    value: types.optional(types.string()),
-  });
+export const Field000$inboundSchema: z.ZodMiniType<Field000, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      value: types.optional(types.string()),
+    })
+  );
 
 export function field000FromJSON(
   jsonString: string,
@@ -174,10 +179,12 @@ export function field000FromJSON(
 }
 
 /** @internal */
-export const Field001$inboundSchema: z.ZodMiniType<Field001, unknown> = z
-  .object({
-    value: types.optional(types.string()),
-  });
+export const Field001$inboundSchema: z.ZodMiniType<Field001, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      value: types.optional(types.string()),
+    })
+  );
 
 export function field001FromJSON(
   jsonString: string,
@@ -190,10 +197,12 @@ export function field001FromJSON(
 }
 
 /** @internal */
-export const Field002$inboundSchema: z.ZodMiniType<Field002, unknown> = z
-  .object({
-    value: types.optional(types.string()),
-  });
+export const Field002$inboundSchema: z.ZodMiniType<Field002, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      value: types.optional(types.string()),
+    })
+  );
 
 export function field002FromJSON(
   jsonString: string,
@@ -214,7 +223,7 @@ export function field002FromJSON(
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./errors/sdk-validation-error.js";
@@ -232,10 +241,12 @@ export type Field005 = {
 };
 
 /** @internal */
-export const Field003$inboundSchema: z.ZodMiniType<Field003, unknown> = z
-  .object({
-    value: types.optional(types.string()),
-  });
+export const Field003$inboundSchema: z.ZodMiniType<Field003, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      value: types.optional(types.string()),
+    })
+  );
 
 export function field003FromJSON(
   jsonString: string,
@@ -248,10 +259,12 @@ export function field003FromJSON(
 }
 
 /** @internal */
-export const Field004$inboundSchema: z.ZodMiniType<Field004, unknown> = z
-  .object({
-    value: types.optional(types.string()),
-  });
+export const Field004$inboundSchema: z.ZodMiniType<Field004, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      value: types.optional(types.string()),
+    })
+  );
 
 export function field004FromJSON(
   jsonString: string,
@@ -264,10 +277,12 @@ export function field004FromJSON(
 }
 
 /** @internal */
-export const Field005$inboundSchema: z.ZodMiniType<Field005, unknown> = z
-  .object({
-    value: types.optional(types.string()),
-  });
+export const Field005$inboundSchema: z.ZodMiniType<Field005, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      value: types.optional(types.string()),
+    })
+  );
 
 export function field005FromJSON(
   jsonString: string,

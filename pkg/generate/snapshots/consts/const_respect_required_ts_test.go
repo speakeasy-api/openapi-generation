@@ -285,6 +285,7 @@ components:
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import { Decimal as Decimal$ } from "../types/decimal.js";
 import { ClosedEnum } from "../types/enums.js";
 
@@ -396,36 +397,36 @@ export type ConstModel = {
 /** @internal */
 export const RequiredConstEnum$outboundSchema: z.ZodMiniEnum<
   typeof RequiredConstEnum
-> = z.enum(RequiredConstEnum);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(RequiredConstEnum));
 
 /** @internal */
 export const OptionalConstEnum$outboundSchema: z.ZodMiniEnum<
   typeof OptionalConstEnum
-> = z.enum(OptionalConstEnum);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(OptionalConstEnum));
 
 /** @internal */
 export const RequiredDefaultEnum$outboundSchema: z.ZodMiniEnum<
   typeof RequiredDefaultEnum
-> = z.enum(RequiredDefaultEnum);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(RequiredDefaultEnum));
 
 /** @internal */
 export const OptionalDefaultEnum$outboundSchema: z.ZodMiniEnum<
   typeof OptionalDefaultEnum
-> = z.enum(OptionalDefaultEnum);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(OptionalDefaultEnum));
 
 /** @internal */
-export const OptionalEnum$outboundSchema: z.ZodMiniEnum<typeof OptionalEnum> = z
-  .enum(OptionalEnum);
+export const OptionalEnum$outboundSchema: z.ZodMiniEnum<typeof OptionalEnum> =
+  /* @__PURE__ */ lazySchema$(() => z.enum(OptionalEnum));
 
 /** @internal */
 export const RequiredConstDefaultEnum$outboundSchema: z.ZodMiniEnum<
   typeof RequiredConstDefaultEnum
-> = z.enum(RequiredConstDefaultEnum);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(RequiredConstDefaultEnum));
 
 /** @internal */
 export const OptionalConstDefaultEnum$outboundSchema: z.ZodMiniEnum<
   typeof OptionalConstDefaultEnum
-> = z.enum(OptionalConstDefaultEnum);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(OptionalConstDefaultEnum));
 
 /** @internal */
 export type ConstModel$Outbound = {
@@ -491,45 +492,44 @@ export type ConstModel$Outbound = {
 export const ConstModel$outboundSchema: z.ZodMiniType<
   ConstModel$Outbound,
   ConstModel
-> = z.object({
-  requiredConstString: z.literal("fixed-string"),
-  requiredConstNumber: z.literal(42.5),
-  requiredConstBoolean: z.literal(true),
-  requiredConstEnum: z.literal("A"),
-  requiredConstDate: z.pipe(
-    z.date(),
-    z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
-  ),
-  requiredConstDateTime: z.pipe(
-    z.date().check(z.refine((v) =>
-      v.getTime() === new Date("2023-12-25T10:30:00Z").getTime(), {
-      message: "Value must be equivalent to 2023-12-25T10:30:00Z",
-    })),
-    z.transform(v =>
-      v.toISOString()
-    ),
-  ),
-  requiredConstBigint: z.literal(9007199254740991),
-  requiredConstDecimal: z.pipe(
-    z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]).check(
-      z.refine((v) => v.toString() === "123.456789", {
-        message: "Value must be 123.456789",
-      }),
-    ),
-    z.transform(v => typeof v === "number" ? v : v.toNumber()),
-  ),
-  optionalConstString: z.optional(z.literal("optional-const-string")),
-  optionalConstNumber: z.optional(z.literal(123.45)),
-  optionalConstBoolean: z.optional(z.literal(false)),
-  optionalConstEnum: z.optional(z.literal("A")),
-  optionalConstDate: z.optional(
-    z.pipe(
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    requiredConstString: z.literal("fixed-string"),
+    requiredConstNumber: z.literal(42.5),
+    requiredConstBoolean: z.literal(true),
+    requiredConstEnum: z.literal("A"),
+    requiredConstDate: z.pipe(
       z.date(),
       z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
     ),
-  ),
-  optionalConstDateTime: z.optional(
-    z.pipe(
+    requiredConstDateTime: z.pipe(
+      z.date().check(
+        z.refine((v) =>
+          v.getTime() === new Date("2023-12-25T10:30:00Z").getTime(), {
+          message: "Value must be equivalent to 2023-12-25T10:30:00Z",
+        }),
+      ),
+      z.transform(v => v.toISOString()),
+    ),
+    requiredConstBigint: z.literal(9007199254740991),
+    requiredConstDecimal: z.pipe(
+      z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()])
+        .check(
+          z.refine((v) => v.toString() === "123.456789", {
+            message: "Value must be 123.456789",
+          }),
+        ),
+      z.transform(v => typeof v === "number" ? v : v.toNumber()),
+    ),
+    optionalConstString: z.optional(z.literal("optional-const-string")),
+    optionalConstNumber: z.optional(z.literal(123.45)),
+    optionalConstBoolean: z.optional(z.literal(false)),
+    optionalConstEnum: z.optional(z.literal("A")),
+    optionalConstDate: z.optional(z.pipe(
+      z.date(),
+      z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
+    )),
+    optionalConstDateTime: z.optional(z.pipe(
       z.date().check(
         z.refine((v) =>
           v.getTime() === new Date("2025-06-15T15:30:00Z").getTime(), {
@@ -537,154 +537,145 @@ export const ConstModel$outboundSchema: z.ZodMiniType<
         }),
       ),
       z.transform(v => v.toISOString()),
-    ),
-  ),
-  optionalConstBigint: z.optional(z.literal(987654321098765400)),
-  optionalConstDecimal: z.optional(
-    z.pipe(
+    )),
+    optionalConstBigint: z.optional(z.literal(987654321098765400)),
+    optionalConstDecimal: z.optional(z.pipe(
       z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()])
         .check(z.refine((v) =>
           v.toString() === "456.123789", {
           message: "Value must be 456.123789",
         })),
-      z.transform(v =>
-        typeof v === "number" ? v : v.toNumber()
-      ),
-    ),
-  ),
-  requiredDefaultString: z._default(z.string(), "default-string"),
-  requiredDefaultNumber: z._default(z.number(), 99.9),
-  requiredDefaultBoolean: z._default(z.boolean(), false),
-  requiredDefaultEnum: z._default(RequiredDefaultEnum$outboundSchema, "A"),
-  requiredDefaultDate: z.pipe(
-    z._default(z.date(), new Date("2024-01-01")),
-    z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
-  ),
-  requiredDefaultDateTime: z.pipe(
-    z._default(z.date(), () => new Date("2024-01-01T00:00:00Z")),
-    z.transform(v => v.toISOString()),
-  ),
-  requiredDefaultBigint: z._default(z.number(), 1234567890123456800),
-  requiredDefaultDecimal: z.pipe(
-    z._default(
-      z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
-      () =>
-        new Decimal$("999.999999"),
-    ),
-    z.transform(v => typeof v === "number" ? v : v.toNumber()),
-  ),
-  optionalDefaultString: z._default(z.string(), "optional-default"),
-  optionalDefaultNumber: z._default(z.number(), 77.7),
-  optionalDefaultBoolean: z._default(z.boolean(), true),
-  optionalDefaultEnum: z._default(OptionalDefaultEnum$outboundSchema, "A"),
-  optionalDefaultDate: z.pipe(
-    z._default(z.date(), new Date("2024-12-31")),
-    z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
-  ),
-  optionalDefaultDateTime: z.pipe(
-    z._default(z.date(), () => new Date("2024-12-31T23:59:59Z")),
-    z.transform(v => v.toISOString()),
-  ),
-  optionalDefaultBigint: z._default(z.number(), 555666777888999),
-  optionalDefaultDecimal: z.pipe(
-    z._default(
-      z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
-      () =>
-        new Decimal$("111.222333"),
-    ),
-    z.transform(v => typeof v === "number" ? v : v.toNumber()),
-  ),
-  optionalString: z.optional(z.string()),
-  optionalNumber: z.optional(z.number()),
-  optionalBoolean: z.optional(z.boolean()),
-  optionalEnum: z.optional(OptionalEnum$outboundSchema),
-  optionalDate: z.optional(
-    z.pipe(
-      z.date(),
+      z.transform(v => typeof v === "number" ? v : v.toNumber()),
+    )),
+    requiredDefaultString: z._default(z.string(), "default-string"),
+    requiredDefaultNumber: z._default(z.number(), 99.9),
+    requiredDefaultBoolean: z._default(z.boolean(), false),
+    requiredDefaultEnum: z._default(RequiredDefaultEnum$outboundSchema, "A"),
+    requiredDefaultDate: z.pipe(
+      z._default(z.date(), new Date("2024-01-01")),
       z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
     ),
-  ),
-  optionalDateTime: z.optional(
-    z.pipe(z.date(), z.transform(v => v.toISOString())),
-  ),
-  optionalBigint: z.optional(z.number()),
-  optionalDecimal: z.optional(
-    z.pipe(
+    requiredDefaultDateTime: z.pipe(
+      z._default(z.date(), () => new Date("2024-01-01T00:00:00Z")),
+      z.transform(v => v.toISOString()),
+    ),
+    requiredDefaultBigint: z._default(z.number(), 1234567890123456800),
+    requiredDefaultDecimal: z.pipe(
+      z._default(
+        z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
+        () => new Decimal$("999.999999"),
+      ),
+      z.transform(v => typeof v === "number" ? v : v.toNumber()),
+    ),
+    optionalDefaultString: z._default(z.string(), "optional-default"),
+    optionalDefaultNumber: z._default(z.number(), 77.7),
+    optionalDefaultBoolean: z._default(z.boolean(), true),
+    optionalDefaultEnum: z._default(OptionalDefaultEnum$outboundSchema, "A"),
+    optionalDefaultDate: z.pipe(
+      z._default(z.date(), new Date("2024-12-31")),
+      z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
+    ),
+    optionalDefaultDateTime: z.pipe(
+      z._default(z.date(), () => new Date("2024-12-31T23:59:59Z")),
+      z.transform(v => v.toISOString()),
+    ),
+    optionalDefaultBigint: z._default(z.number(), 555666777888999),
+    optionalDefaultDecimal: z.pipe(
+      z._default(
+        z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
+        () => new Decimal$("111.222333"),
+      ),
+      z.transform(v => typeof v === "number" ? v : v.toNumber()),
+    ),
+    optionalString: z.optional(z.string()),
+    optionalNumber: z.optional(z.number()),
+    optionalBoolean: z.optional(z.boolean()),
+    optionalEnum: z.optional(OptionalEnum$outboundSchema),
+    optionalDate: z.optional(z.pipe(
+      z.date(),
+      z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
+    )),
+    optionalDateTime: z.optional(z.pipe(
+      z.date(),
+      z.transform(v => v.toISOString()),
+    )),
+    optionalBigint: z.optional(z.number()),
+    optionalDecimal: z.optional(z.pipe(
       z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
       z.transform(v =>
         typeof v === "number" ? v : v.toNumber()
       ),
+    )),
+    requiredConstDefaultString: z._default(
+      z.literal("fixed-string"),
+      "fixed-string" as const,
     ),
-  ),
-  requiredConstDefaultString: z._default(
-    z.literal("fixed-string"),
-    "fixed-string" as const,
-  ),
-  requiredConstDefaultNumber: z._default(z.literal(42.5), 42.5 as const),
-  requiredConstDefaultBoolean: z._default(z.literal(true), true as const),
-  requiredConstDefaultEnum: z._default(z.literal("A"), "A"),
-  requiredConstDefaultDate: z.pipe(
-    z._default(z.date(), new Date("2023-12-25")),
-    z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
-  ),
-  requiredConstDefaultDateTime: z.pipe(
-    z._default(z.date(), new Date("2023-12-25T10:30:00Z")).check(z.refine((v) =>
-      v.getTime() === new Date("2023-12-25T10:30:00Z").getTime(), {
-      message: "Value must be equivalent to 2023-12-25T10:30:00Z",
-    })),
-    z.transform(v =>
-      v.toISOString()
+    requiredConstDefaultNumber: z._default(z.literal(42.5), 42.5 as const),
+    requiredConstDefaultBoolean: z._default(z.literal(true), true as const),
+    requiredConstDefaultEnum: z._default(z.literal("A"), "A"),
+    requiredConstDefaultDate: z.pipe(
+      z._default(z.date(), new Date("2023-12-25")),
+      z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
     ),
-  ),
-  requiredConstDefaultBigint: z._default(
-    z.literal(9007199254740991),
-    9007199254740991 as const,
-  ),
-  requiredConstDefaultDecimal: z.pipe(
-    z._default(
-      z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
-      new Decimal$("123.456789"),
-    ).check(z.refine((v) =>
-      v.toString() === "123.456789", { message: "Value must be 123.456789" })),
-    z.transform(v =>
-      typeof v === "number" ? v : v.toNumber()
+    requiredConstDefaultDateTime: z.pipe(
+      z._default(z.date(), new Date("2023-12-25T10:30:00Z")).check(
+        z.refine((v) =>
+          v.getTime() === new Date("2023-12-25T10:30:00Z").getTime(), {
+          message: "Value must be equivalent to 2023-12-25T10:30:00Z",
+        }),
+      ),
+      z.transform(v => v.toISOString()),
     ),
-  ),
-  optionalConstDefaultString: z._default(
-    z.literal("optional-const-string"),
-    "optional-const-string" as const,
-  ),
-  optionalConstDefaultNumber: z._default(z.literal(123.45), 123.45 as const),
-  optionalConstDefaultBoolean: z._default(z.literal(false), false as const),
-  optionalConstDefaultEnum: z._default(z.literal("A"), "A"),
-  optionalConstDefaultDate: z.pipe(
-    z._default(z.date(), new Date("2025-06-15")),
-    z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
-  ),
-  optionalConstDefaultDateTime: z.pipe(
-    z._default(z.date(), new Date("2025-06-15T15:30:00Z")).check(z.refine((v) =>
-      v.getTime() === new Date("2025-06-15T15:30:00Z").getTime(), {
-      message: "Value must be equivalent to 2025-06-15T15:30:00Z",
-    })),
-    z.transform(v =>
-      v.toISOString()
+    requiredConstDefaultBigint: z._default(
+      z.literal(9007199254740991),
+      9007199254740991 as const,
     ),
-  ),
-  optionalConstDefaultBigint: z._default(
-    z.literal(987654321098765400),
-    987654321098765400 as const,
-  ),
-  optionalConstDefaultDecimal: z.pipe(
-    z._default(
-      z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
-      new Decimal$("456.123789"),
-    ).check(z.refine((v) =>
-      v.toString() === "456.123789", { message: "Value must be 456.123789" })),
-    z.transform(v =>
-      typeof v === "number" ? v : v.toNumber()
+    requiredConstDefaultDecimal: z.pipe(
+      z._default(
+        z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
+        new Decimal$("123.456789"),
+      ).check(z.refine((v) =>
+        v.toString() === "123.456789", {
+        message: "Value must be 123.456789",
+      })),
+      z.transform(v => typeof v === "number" ? v : v.toNumber()),
     ),
-  ),
-});
+    optionalConstDefaultString: z._default(
+      z.literal("optional-const-string"),
+      "optional-const-string" as const,
+    ),
+    optionalConstDefaultNumber: z._default(z.literal(123.45), 123.45 as const),
+    optionalConstDefaultBoolean: z._default(z.literal(false), false as const),
+    optionalConstDefaultEnum: z._default(z.literal("A"), "A"),
+    optionalConstDefaultDate: z.pipe(
+      z._default(z.date(), new Date("2025-06-15")),
+      z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
+    ),
+    optionalConstDefaultDateTime: z.pipe(
+      z._default(z.date(), new Date("2025-06-15T15:30:00Z")).check(
+        z.refine((v) =>
+          v.getTime() === new Date("2025-06-15T15:30:00Z").getTime(), {
+          message: "Value must be equivalent to 2025-06-15T15:30:00Z",
+        }),
+      ),
+      z.transform(v => v.toISOString()),
+    ),
+    optionalConstDefaultBigint: z._default(
+      z.literal(987654321098765400),
+      987654321098765400 as const,
+    ),
+    optionalConstDefaultDecimal: z.pipe(
+      z._default(
+        z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
+        new Decimal$("456.123789"),
+      ).check(z.refine((v) =>
+        v.toString() === "456.123789", {
+        message: "Value must be 456.123789",
+      })),
+      z.transform(v => typeof v === "number" ? v : v.toNumber()),
+    ),
+  })
+);
 
 export function constModelToJSON(constModel: ConstModel): string {
   return JSON.stringify(ConstModel$outboundSchema.parse(constModel));

@@ -17,7 +17,12 @@ const spacedTagNameGetSpacedTag =
     new APIPromise(
       (spacedTagNameGetSpacedTag$module ??= import(
         "../funcs/spacedTagNameGetSpacedTag.js"
-      )).then((module) => module.spacedTagNameGetSpacedTag(...args).$inspect()),
+      ).catch((error: unknown) => {
+        spacedTagNameGetSpacedTag$module = undefined;
+        throw error;
+      })).then((module) =>
+        module.spacedTagNameGetSpacedTag(...args).$inspect()
+      ),
     )) as typeof import("../funcs/spacedTagNameGetSpacedTag.js").spacedTagNameGetSpacedTag;
 
 export class SpacedTagName extends ClientSDK {

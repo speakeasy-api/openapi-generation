@@ -34,6 +34,10 @@ export function lazySchema<T extends object>(factory: () => T): T {
 
   return new Proxy(target, {
     get(_target, property) {
+      const descriptor = Reflect.getOwnPropertyDescriptor(target, property);
+      if (descriptor && !descriptor.configurable && "value" in descriptor && !descriptor.writable) {
+        return descriptor.value;
+      }
       const value = Reflect.get(getSchema(), property, getSchema());
       return property !== "constructor" && typeof value === "function"
         ? value.bind(getSchema())
@@ -41,7 +45,10 @@ export function lazySchema<T extends object>(factory: () => T): T {
     },
     getOwnPropertyDescriptor(_target, property) {
       const descriptor = Reflect.getOwnPropertyDescriptor(getSchema(), property);
-      return descriptor && { ...descriptor, configurable: true };
+      return descriptor && {
+        ...descriptor,
+        configurable: Reflect.getOwnPropertyDescriptor(target, property)?.configurable ?? true,
+      };
     },
     getPrototypeOf() {
       return Reflect.getPrototypeOf(getSchema());
@@ -51,6 +58,19 @@ export function lazySchema<T extends object>(factory: () => T): T {
     },
     ownKeys() {
       return Reflect.ownKeys(getSchema());
+    },
+    defineProperty(_target, property, descriptor) {
+      if (!Reflect.defineProperty(getSchema(), property, descriptor)) {
+        return false;
+      }
+      const defined = Reflect.getOwnPropertyDescriptor(getSchema(), property)!;
+      if (!defined.configurable) {
+        return Reflect.defineProperty(target, property, defined);
+      }
+      return true;
+    },
+    deleteProperty(_target, property) {
+      return Reflect.deleteProperty(getSchema(), property);
     },
     set(_target, property, value) {
       return Reflect.set(getSchema(), property, value, getSchema());

@@ -18,7 +18,10 @@ const groupSubGroupSubGroupOp =
     new APIPromise(
       (groupSubGroupSubGroupOp$module ??= import(
         "../funcs/groupSubGroupSubGroupOp.js"
-      )).then((module) => module.groupSubGroupSubGroupOp(...args).$inspect()),
+      ).catch((error: unknown) => {
+        groupSubGroupSubGroupOp$module = undefined;
+        throw error;
+      })).then((module) => module.groupSubGroupSubGroupOp(...args).$inspect()),
     )) as typeof import("../funcs/groupSubGroupSubGroupOp.js").groupSubGroupSubGroupOp;
 
 export class SubGroup extends ClientSDK {

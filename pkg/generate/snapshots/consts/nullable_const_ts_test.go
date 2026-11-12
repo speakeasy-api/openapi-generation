@@ -96,6 +96,7 @@ components:
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type NullableConstModel = {
   requiredNullableString: string | null;
@@ -126,25 +127,27 @@ export type NullableConstModel$Outbound = {
 export const NullableConstModel$outboundSchema: z.ZodMiniType<
   NullableConstModel$Outbound,
   NullableConstModel
-> = z.object({
-  requiredNullableString: z.nullable(z.string()),
-  requiredNullableConst: z.nullable(z.literal("required-const-value")),
-  optionalNullableString: z.optional(z.nullable(z.string())),
-  optionalNullableConst: z.optional(z.nullable(z.literal("const-value"))),
-  optionalNullableStringDefaultNull: z._default(z.nullable(z.string()), null),
-  optionalStringDefaultNull: z._default(z.nullable(z.string()), null),
-  optionalNullableConstDefaultNull: z._default(
-    z.nullable(z.literal("const-value")),
-    null,
-  ),
-  optionalConstDefaultNull: z._default(
-    z.nullable(z.literal("const-value")),
-    null,
-  ),
-  optionalNullableConstDefaultDifferent: z.nullable(
-    z._default(z.literal("const-value"), "const-value" as const),
-  ),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    requiredNullableString: z.nullable(z.string()),
+    requiredNullableConst: z.nullable(z.literal("required-const-value")),
+    optionalNullableString: z.optional(z.nullable(z.string())),
+    optionalNullableConst: z.optional(z.nullable(z.literal("const-value"))),
+    optionalNullableStringDefaultNull: z._default(z.nullable(z.string()), null),
+    optionalStringDefaultNull: z._default(z.nullable(z.string()), null),
+    optionalNullableConstDefaultNull: z._default(
+      z.nullable(z.literal("const-value")),
+      null,
+    ),
+    optionalConstDefaultNull: z._default(
+      z.nullable(z.literal("const-value")),
+      null,
+    ),
+    optionalNullableConstDefaultDifferent: z.nullable(
+      z._default(z.literal("const-value"), "const-value" as const),
+    ),
+  })
+);
 
 export function nullableConstModelToJSON(
   nullableConstModel: NullableConstModel,

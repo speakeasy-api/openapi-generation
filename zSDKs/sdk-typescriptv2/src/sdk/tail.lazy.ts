@@ -17,7 +17,10 @@ const groupSubGroupEmptyTailNestedGroupOp =
     new APIPromise(
       (groupSubGroupEmptyTailNestedGroupOp$module ??= import(
         "../funcs/groupSubGroupEmptyTailNestedGroupOp.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        groupSubGroupEmptyTailNestedGroupOp$module = undefined;
+        throw error;
+      })).then((module) =>
         module.groupSubGroupEmptyTailNestedGroupOp(...args).$inspect()
       ),
     )) as typeof import("../funcs/groupSubGroupEmptyTailNestedGroupOp.js").groupSubGroupEmptyTailNestedGroupOp;

@@ -20,7 +20,10 @@ const namespaceTestsSingleBarGetSingleNamespaceBarPet =
     new APIPromise(
       (namespaceTestsSingleBarGetSingleNamespaceBarPet$module ??= import(
         "../funcs/namespaceTestsSingleBarGetSingleNamespaceBarPet.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsSingleBarGetSingleNamespaceBarPet$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsSingleBarGetSingleNamespaceBarPet(...args)
           .$inspect()
       ),

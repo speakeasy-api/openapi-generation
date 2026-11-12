@@ -94,6 +94,7 @@ components:
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../../../lib/schemas.js";
 import * as openEnums from "../../../types/enums.js";
 import { OpenEnum } from "../../../types/enums.js";
 
@@ -106,7 +107,7 @@ export type ErrorCodeOpen = OpenEnum<typeof ErrorCode>;
 
 /** @internal */
 export const ErrorCode$inboundSchema: z.ZodMiniType<ErrorCodeOpen, unknown> =
-  openEnums.inboundSchema(ErrorCode);
+  /* @__PURE__ */ lazySchema$(() => openEnums.inboundSchema(ErrorCode));
 
 
 --- src/sdk/models/errors/bad-request-schema-error.ts ---
@@ -117,6 +118,7 @@ export const ErrorCode$inboundSchema: z.ZodMiniType<ErrorCodeOpen, unknown> =
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../../../lib/schemas.js";
 import * as types from "../../../types/primitives.js";
 import * as components from "../components/index.js";
 import { SDKError } from "./sdk-error.js";
@@ -149,21 +151,23 @@ export class BadRequestSchemaError extends SDKError {
 export const BadRequestSchemaError$inboundSchema: z.ZodMiniType<
   BadRequestSchemaError,
   unknown
-> = z.pipe(
-  z.object({
-    code: components.ErrorCode$inboundSchema,
-    message: types.string(),
-    request$: z.custom<Request>(x => x instanceof Request),
-    response$: z.custom<Response>(x => x instanceof Response),
-    body$: z.string(),
-  }),
-  z.transform((v) => {
-    return new BadRequestSchemaError(v, {
-      request: v.request$,
-      response: v.response$,
-      body: v.body$,
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      code: components.ErrorCode$inboundSchema,
+      message: types.string(),
+      request$: z.custom<Request>(x => x instanceof Request),
+      response$: z.custom<Response>(x => x instanceof Response),
+      body$: z.string(),
+    }),
+    z.transform((v) => {
+      return new BadRequestSchemaError(v, {
+        request: v.request$,
+        response: v.response$,
+        body: v.body$,
+      });
+    }),
+  )
 );
 
 
@@ -175,6 +179,7 @@ export const BadRequestSchemaError$inboundSchema: z.ZodMiniType<
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../../../lib/schemas.js";
 import * as components from "../components/index.js";
 import { SDKError } from "./sdk-error.js";
 
@@ -213,20 +218,22 @@ export class UnauthorizedResponseError extends SDKError {
 export const UnauthorizedResponseError$inboundSchema: z.ZodMiniType<
   UnauthorizedResponseError,
   unknown
-> = z.pipe(
-  z.object({
-    code: components.ErrorCode$inboundSchema,
-    request$: z.custom<Request>(x => x instanceof Request),
-    response$: z.custom<Response>(x => x instanceof Response),
-    body$: z.string(),
-  }),
-  z.transform((v) => {
-    return new UnauthorizedResponseError(v, {
-      request: v.request$,
-      response: v.response$,
-      body: v.body$,
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      code: components.ErrorCode$inboundSchema,
+      request$: z.custom<Request>(x => x instanceof Request),
+      response$: z.custom<Response>(x => x instanceof Response),
+      body$: z.string(),
+    }),
+    z.transform((v) => {
+      return new UnauthorizedResponseError(v, {
+        request: v.request$,
+        response: v.response$,
+        body: v.body$,
+      });
+    }),
+  )
 );
 
 

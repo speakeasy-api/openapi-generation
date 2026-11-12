@@ -44,7 +44,10 @@ const operationWithLeadingAndTrailingUnderscores =
     new APIPromise(
       (operationWithLeadingAndTrailingUnderscores$module ??= import(
         "../funcs/operationWithLeadingAndTrailingUnderscores.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        operationWithLeadingAndTrailingUnderscores$module = undefined;
+        throw error;
+      })).then((module) =>
         module.operationWithLeadingAndTrailingUnderscores(...args).$inspect()
       ),
     )) as typeof import("../funcs/operationWithLeadingAndTrailingUnderscores.js").operationWithLeadingAndTrailingUnderscores;
@@ -53,9 +56,12 @@ let postFile$module: Promise<typeof import("../funcs/postFile.js")> | undefined;
 const postFile =
   ((...args: Parameters<typeof import("../funcs/postFile.js").postFile>) =>
     new APIPromise(
-      (postFile$module ??= import("../funcs/postFile.js")).then((module) =>
-        module.postFile(...args).$inspect()
-      ),
+      (postFile$module ??= import("../funcs/postFile.js").catch(
+        (error: unknown) => {
+          postFile$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.postFile(...args).$inspect()),
     )) as typeof import("../funcs/postFile.js").postFile;
 
 let getPolymorphism$module:
@@ -68,9 +74,12 @@ const getPolymorphism =
     >
   ) =>
     new APIPromise(
-      (getPolymorphism$module ??= import("../funcs/getPolymorphism.js")).then((
-        module,
-      ) => module.getPolymorphism(...args).$inspect()),
+      (getPolymorphism$module ??= import("../funcs/getPolymorphism.js").catch(
+        (error: unknown) => {
+          getPolymorphism$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.getPolymorphism(...args).$inspect()),
     )) as typeof import("../funcs/getPolymorphism.js").getPolymorphism;
 
 let getUnionErrors$module:
@@ -83,9 +92,12 @@ const getUnionErrors =
     >
   ) =>
     new APIPromise(
-      (getUnionErrors$module ??= import("../funcs/getUnionErrors.js")).then((
-        module,
-      ) => module.getUnionErrors(...args).$inspect()),
+      (getUnionErrors$module ??= import("../funcs/getUnionErrors.js").catch(
+        (error: unknown) => {
+          getUnionErrors$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.getUnionErrors(...args).$inspect()),
     )) as typeof import("../funcs/getUnionErrors.js").getUnionErrors;
 
 let getRequestBodyFlattenedAway$module:
@@ -100,7 +112,10 @@ const getRequestBodyFlattenedAway =
     new APIPromise(
       (getRequestBodyFlattenedAway$module ??= import(
         "../funcs/getRequestBodyFlattenedAway.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        getRequestBodyFlattenedAway$module = undefined;
+        throw error;
+      })).then((module) =>
         module.getRequestBodyFlattenedAway(...args).$inspect()
       ),
     )) as typeof import("../funcs/getRequestBodyFlattenedAway.js").getRequestBodyFlattenedAway;
@@ -117,7 +132,10 @@ const getFullyFlattenedRequest =
     new APIPromise(
       (getFullyFlattenedRequest$module ??= import(
         "../funcs/getFullyFlattenedRequest.js"
-      )).then((module) => module.getFullyFlattenedRequest(...args).$inspect()),
+      ).catch((error: unknown) => {
+        getFullyFlattenedRequest$module = undefined;
+        throw error;
+      })).then((module) => module.getFullyFlattenedRequest(...args).$inspect()),
     )) as typeof import("../funcs/getFullyFlattenedRequest.js").getFullyFlattenedRequest;
 
 let createWithUnion$module:
@@ -130,9 +148,12 @@ const createWithUnion =
     >
   ) =>
     new APIPromise(
-      (createWithUnion$module ??= import("../funcs/createWithUnion.js")).then((
-        module,
-      ) => module.createWithUnion(...args).$inspect()),
+      (createWithUnion$module ??= import("../funcs/createWithUnion.js").catch(
+        (error: unknown) => {
+          createWithUnion$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.createWithUnion(...args).$inspect()),
     )) as typeof import("../funcs/createWithUnion.js").createWithUnion;
 
 let testEndpoint$module:
@@ -143,9 +164,12 @@ const testEndpoint =
     ...args: Parameters<typeof import("../funcs/testEndpoint.js").testEndpoint>
   ) =>
     new APIPromise(
-      (testEndpoint$module ??= import("../funcs/testEndpoint.js")).then((
-        module,
-      ) => module.testEndpoint(...args).$inspect()),
+      (testEndpoint$module ??= import("../funcs/testEndpoint.js").catch(
+        (error: unknown) => {
+          testEndpoint$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.testEndpoint(...args).$inspect()),
     )) as typeof import("../funcs/testEndpoint.js").testEndpoint;
 
 let createUser$module:
@@ -154,18 +178,24 @@ let createUser$module:
 const createUser =
   ((...args: Parameters<typeof import("../funcs/createUser.js").createUser>) =>
     new APIPromise(
-      (createUser$module ??= import("../funcs/createUser.js")).then((module) =>
-        module.createUser(...args).$inspect()
-      ),
+      (createUser$module ??= import("../funcs/createUser.js").catch(
+        (error: unknown) => {
+          createUser$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.createUser(...args).$inspect()),
     )) as typeof import("../funcs/createUser.js").createUser;
 
 let getUser$module: Promise<typeof import("../funcs/getUser.js")> | undefined;
 const getUser =
   ((...args: Parameters<typeof import("../funcs/getUser.js").getUser>) =>
     new APIPromise(
-      (getUser$module ??= import("../funcs/getUser.js")).then((module) =>
-        module.getUser(...args).$inspect()
-      ),
+      (getUser$module ??= import("../funcs/getUser.js").catch(
+        (error: unknown) => {
+          getUser$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.getUser(...args).$inspect()),
     )) as typeof import("../funcs/getUser.js").getUser;
 
 let updateUser$module:
@@ -174,9 +204,12 @@ let updateUser$module:
 const updateUser =
   ((...args: Parameters<typeof import("../funcs/updateUser.js").updateUser>) =>
     new APIPromise(
-      (updateUser$module ??= import("../funcs/updateUser.js")).then((module) =>
-        module.updateUser(...args).$inspect()
-      ),
+      (updateUser$module ??= import("../funcs/updateUser.js").catch(
+        (error: unknown) => {
+          updateUser$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.updateUser(...args).$inspect()),
     )) as typeof import("../funcs/updateUser.js").updateUser;
 
 let deleteUser$module:
@@ -185,36 +218,44 @@ let deleteUser$module:
 const deleteUser =
   ((...args: Parameters<typeof import("../funcs/deleteUser.js").deleteUser>) =>
     new APIPromise(
-      (deleteUser$module ??= import("../funcs/deleteUser.js")).then((module) =>
-        module.deleteUser(...args).$inspect()
-      ),
+      (deleteUser$module ??= import("../funcs/deleteUser.js").catch(
+        (error: unknown) => {
+          deleteUser$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.deleteUser(...args).$inspect()),
     )) as typeof import("../funcs/deleteUser.js").deleteUser;
 
 let login$module: Promise<typeof import("../funcs/login.js")> | undefined;
 const login =
   ((...args: Parameters<typeof import("../funcs/login.js").login>) =>
     new APIPromise(
-      (login$module ??= import("../funcs/login.js")).then((module) =>
-        module.login(...args).$inspect()
-      ),
+      (login$module ??= import("../funcs/login.js").catch((error: unknown) => {
+        login$module = undefined;
+        throw error;
+      })).then((module) => module.login(...args).$inspect()),
     )) as typeof import("../funcs/login.js").login;
 
 let validate$module: Promise<typeof import("../funcs/validate.js")> | undefined;
 const validate =
   ((...args: Parameters<typeof import("../funcs/validate.js").validate>) =>
     new APIPromise(
-      (validate$module ??= import("../funcs/validate.js")).then((module) =>
-        module.validate(...args).$inspect()
-      ),
+      (validate$module ??= import("../funcs/validate.js").catch(
+        (error: unknown) => {
+          validate$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.validate(...args).$inspect()),
     )) as typeof import("../funcs/validate.js").validate;
 
 let chat$module: Promise<typeof import("../funcs/chat.js")> | undefined;
 const chat =
   ((...args: Parameters<typeof import("../funcs/chat.js").chat>) =>
     new APIPromise(
-      (chat$module ??= import("../funcs/chat.js")).then((module) =>
-        module.chat(...args).$inspect()
-      ),
+      (chat$module ??= import("../funcs/chat.js").catch((error: unknown) => {
+        chat$module = undefined;
+        throw error;
+      })).then((module) => module.chat(...args).$inspect()),
     )) as typeof import("../funcs/chat.js").chat;
 
 let getBinaryDefaultResponse$module:
@@ -229,7 +270,10 @@ const getBinaryDefaultResponse =
     new APIPromise(
       (getBinaryDefaultResponse$module ??= import(
         "../funcs/getBinaryDefaultResponse.js"
-      )).then((module) => module.getBinaryDefaultResponse(...args).$inspect()),
+      ).catch((error: unknown) => {
+        getBinaryDefaultResponse$module = undefined;
+        throw error;
+      })).then((module) => module.getBinaryDefaultResponse(...args).$inspect()),
     )) as typeof import("../funcs/getBinaryDefaultResponse.js").getBinaryDefaultResponse;
 
 let testEnumFormats$module:
@@ -242,9 +286,12 @@ const testEnumFormats =
     >
   ) =>
     new APIPromise(
-      (testEnumFormats$module ??= import("../funcs/testEnumFormats.js")).then((
-        module,
-      ) => module.testEnumFormats(...args).$inspect()),
+      (testEnumFormats$module ??= import("../funcs/testEnumFormats.js").catch(
+        (error: unknown) => {
+          testEnumFormats$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.testEnumFormats(...args).$inspect()),
     )) as typeof import("../funcs/testEnumFormats.js").testEnumFormats;
 
 let binaryAndStringUpload$module:
@@ -259,7 +306,10 @@ const binaryAndStringUpload =
     new APIPromise(
       (binaryAndStringUpload$module ??= import(
         "../funcs/binaryAndStringUpload.js"
-      )).then((module) => module.binaryAndStringUpload(...args).$inspect()),
+      ).catch((error: unknown) => {
+        binaryAndStringUpload$module = undefined;
+        throw error;
+      })).then((module) => module.binaryAndStringUpload(...args).$inspect()),
     )) as typeof import("../funcs/binaryAndStringUpload.js").binaryAndStringUpload;
 
 let getErrorInUnion$module:
@@ -272,9 +322,12 @@ const getErrorInUnion =
     >
   ) =>
     new APIPromise(
-      (getErrorInUnion$module ??= import("../funcs/getErrorInUnion.js")).then((
-        module,
-      ) => module.getErrorInUnion(...args).$inspect()),
+      (getErrorInUnion$module ??= import("../funcs/getErrorInUnion.js").catch(
+        (error: unknown) => {
+          getErrorInUnion$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.getErrorInUnion(...args).$inspect()),
     )) as typeof import("../funcs/getErrorInUnion.js").getErrorInUnion;
 
 let getDuplicateExportCollision$module:
@@ -289,7 +342,10 @@ const getDuplicateExportCollision =
     new APIPromise(
       (getDuplicateExportCollision$module ??= import(
         "../funcs/getDuplicateExportCollision.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        getDuplicateExportCollision$module = undefined;
+        throw error;
+      })).then((module) =>
         module.getDuplicateExportCollision(...args).$inspect()
       ),
     )) as typeof import("../funcs/getDuplicateExportCollision.js").getDuplicateExportCollision;
@@ -306,7 +362,10 @@ const getNamedPrimitiveUnion =
     new APIPromise(
       (getNamedPrimitiveUnion$module ??= import(
         "../funcs/getNamedPrimitiveUnion.js"
-      )).then((module) => module.getNamedPrimitiveUnion(...args).$inspect()),
+      ).catch((error: unknown) => {
+        getNamedPrimitiveUnion$module = undefined;
+        throw error;
+      })).then((module) => module.getNamedPrimitiveUnion(...args).$inspect()),
     )) as typeof import("../funcs/getNamedPrimitiveUnion.js").getNamedPrimitiveUnion;
 
 let getEmptyObjectError$module:
@@ -319,8 +378,11 @@ const getEmptyObjectError =
     >
   ) =>
     new APIPromise(
-      (getEmptyObjectError$module ??= import("../funcs/getEmptyObjectError.js"))
-        .then((module) => module.getEmptyObjectError(...args).$inspect()),
+      (getEmptyObjectError$module ??= import("../funcs/getEmptyObjectError.js")
+        .catch((error: unknown) => {
+          getEmptyObjectError$module = undefined;
+          throw error;
+        })).then((module) => module.getEmptyObjectError(...args).$inspect()),
     )) as typeof import("../funcs/getEmptyObjectError.js").getEmptyObjectError;
 
 let urlValidationStressTest$module:
@@ -335,7 +397,10 @@ const urlValidationStressTest =
     new APIPromise(
       (urlValidationStressTest$module ??= import(
         "../funcs/urlValidationStressTest.js"
-      )).then((module) => module.urlValidationStressTest(...args).$inspect()),
+      ).catch((error: unknown) => {
+        urlValidationStressTest$module = undefined;
+        throw error;
+      })).then((module) => module.urlValidationStressTest(...args).$inspect()),
     )) as typeof import("../funcs/urlValidationStressTest.js").urlValidationStressTest;
 
 let parenthesesInPathAllowed$module:
@@ -350,7 +415,10 @@ const parenthesesInPathAllowed =
     new APIPromise(
       (parenthesesInPathAllowed$module ??= import(
         "../funcs/parenthesesInPathAllowed.js"
-      )).then((module) => module.parenthesesInPathAllowed(...args).$inspect()),
+      ).catch((error: unknown) => {
+        parenthesesInPathAllowed$module = undefined;
+        throw error;
+      })).then((module) => module.parenthesesInPathAllowed(...args).$inspect()),
     )) as typeof import("../funcs/parenthesesInPathAllowed.js").parenthesesInPathAllowed;
 
 let getNestedIntegerString$module:
@@ -365,7 +433,10 @@ const getNestedIntegerString =
     new APIPromise(
       (getNestedIntegerString$module ??= import(
         "../funcs/getNestedIntegerString.js"
-      )).then((module) => module.getNestedIntegerString(...args).$inspect()),
+      ).catch((error: unknown) => {
+        getNestedIntegerString$module = undefined;
+        throw error;
+      })).then((module) => module.getNestedIntegerString(...args).$inspect()),
     )) as typeof import("../funcs/getNestedIntegerString.js").getNestedIntegerString;
 
 let renderAsset$module:
@@ -376,18 +447,24 @@ const renderAsset =
     ...args: Parameters<typeof import("../funcs/renderAsset.js").renderAsset>
   ) =>
     new APIPromise(
-      (renderAsset$module ??= import("../funcs/renderAsset.js")).then((
-        module,
-      ) => module.renderAsset(...args).$inspect()),
+      (renderAsset$module ??= import("../funcs/renderAsset.js").catch(
+        (error: unknown) => {
+          renderAsset$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.renderAsset(...args).$inspect()),
     )) as typeof import("../funcs/renderAsset.js").renderAsset;
 
 let getAsset$module: Promise<typeof import("../funcs/getAsset.js")> | undefined;
 const getAsset =
   ((...args: Parameters<typeof import("../funcs/getAsset.js").getAsset>) =>
     new APIPromise(
-      (getAsset$module ??= import("../funcs/getAsset.js")).then((module) =>
-        module.getAsset(...args).$inspect()
-      ),
+      (getAsset$module ??= import("../funcs/getAsset.js").catch(
+        (error: unknown) => {
+          getAsset$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.getAsset(...args).$inspect()),
     )) as typeof import("../funcs/getAsset.js").getAsset;
 
 let getPositionalDefault$module:
@@ -402,7 +479,10 @@ const getPositionalDefault =
     new APIPromise(
       (getPositionalDefault$module ??= import(
         "../funcs/getPositionalDefault.js"
-      )).then((module) => module.getPositionalDefault(...args).$inspect()),
+      ).catch((error: unknown) => {
+        getPositionalDefault$module = undefined;
+        throw error;
+      })).then((module) => module.getPositionalDefault(...args).$inspect()),
     )) as typeof import("../funcs/getPositionalDefault.js").getPositionalDefault;
 
 let getErrorOnlyExample$module:
@@ -415,8 +495,11 @@ const getErrorOnlyExample =
     >
   ) =>
     new APIPromise(
-      (getErrorOnlyExample$module ??= import("../funcs/getErrorOnlyExample.js"))
-        .then((module) => module.getErrorOnlyExample(...args).$inspect()),
+      (getErrorOnlyExample$module ??= import("../funcs/getErrorOnlyExample.js")
+        .catch((error: unknown) => {
+          getErrorOnlyExample$module = undefined;
+          throw error;
+        })).then((module) => module.getErrorOnlyExample(...args).$inspect()),
     )) as typeof import("../funcs/getErrorOnlyExample.js").getErrorOnlyExample;
 
 export class SDK extends ClientSDK {

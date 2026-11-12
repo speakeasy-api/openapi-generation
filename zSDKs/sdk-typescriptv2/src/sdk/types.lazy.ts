@@ -20,7 +20,10 @@ const namespaceTestsTypesGetNamespaceTypes =
     new APIPromise(
       (namespaceTestsTypesGetNamespaceTypes$module ??= import(
         "../funcs/namespaceTestsTypesGetNamespaceTypes.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsTypesGetNamespaceTypes$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsTypesGetNamespaceTypes(...args).$inspect()
       ),
     )) as typeof import("../funcs/namespaceTestsTypesGetNamespaceTypes.js").namespaceTestsTypesGetNamespaceTypes;
@@ -37,7 +40,10 @@ const namespaceTestsTypesGetNamespaceAnimal =
     new APIPromise(
       (namespaceTestsTypesGetNamespaceAnimal$module ??= import(
         "../funcs/namespaceTestsTypesGetNamespaceAnimal.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsTypesGetNamespaceAnimal$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsTypesGetNamespaceAnimal(...args).$inspect()
       ),
     )) as typeof import("../funcs/namespaceTestsTypesGetNamespaceAnimal.js").namespaceTestsTypesGetNamespaceAnimal;
@@ -54,7 +60,10 @@ const namespaceTestsTypesGetNamespaceVehicle =
     new APIPromise(
       (namespaceTestsTypesGetNamespaceVehicle$module ??= import(
         "../funcs/namespaceTestsTypesGetNamespaceVehicle.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsTypesGetNamespaceVehicle$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsTypesGetNamespaceVehicle(...args).$inspect()
       ),
     )) as typeof import("../funcs/namespaceTestsTypesGetNamespaceVehicle.js").namespaceTestsTypesGetNamespaceVehicle;
@@ -73,7 +82,10 @@ const namespaceTestsTypesGetNamespaceOrganization =
     new APIPromise(
       (namespaceTestsTypesGetNamespaceOrganization$module ??= import(
         "../funcs/namespaceTestsTypesGetNamespaceOrganization.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsTypesGetNamespaceOrganization$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsTypesGetNamespaceOrganization(...args).$inspect()
       ),
     )) as typeof import("../funcs/namespaceTestsTypesGetNamespaceOrganization.js").namespaceTestsTypesGetNamespaceOrganization;

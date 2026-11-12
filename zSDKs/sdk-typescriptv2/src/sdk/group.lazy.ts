@@ -16,9 +16,12 @@ const groupRootGroupOp =
     >
   ) =>
     new APIPromise(
-      (groupRootGroupOp$module ??= import("../funcs/groupRootGroupOp.js")).then(
-        (module) => module.groupRootGroupOp(...args).$inspect()
-      ),
+      (groupRootGroupOp$module ??= import("../funcs/groupRootGroupOp.js").catch(
+        (error: unknown) => {
+          groupRootGroupOp$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.groupRootGroupOp(...args).$inspect()),
     )) as typeof import("../funcs/groupRootGroupOp.js").groupRootGroupOp;
 
 export class Group extends ClientSDK {

@@ -22,7 +22,10 @@ const namespaceTestsConflictsGetNamespaceConflict =
     new APIPromise(
       (namespaceTestsConflictsGetNamespaceConflict$module ??= import(
         "../funcs/namespaceTestsConflictsGetNamespaceConflict.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsConflictsGetNamespaceConflict$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsConflictsGetNamespaceConflict(...args).$inspect()
       ),
     )) as typeof import("../funcs/namespaceTestsConflictsGetNamespaceConflict.js").namespaceTestsConflictsGetNamespaceConflict;
@@ -41,7 +44,10 @@ const namespaceTestsConflictsPutNamespaceConflict =
     new APIPromise(
       (namespaceTestsConflictsPutNamespaceConflict$module ??= import(
         "../funcs/namespaceTestsConflictsPutNamespaceConflict.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsConflictsPutNamespaceConflict$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsConflictsPutNamespaceConflict(...args).$inspect()
       ),
     )) as typeof import("../funcs/namespaceTestsConflictsPutNamespaceConflict.js").namespaceTestsConflictsPutNamespaceConflict;
@@ -60,7 +66,10 @@ const namespaceTestsConflictsCreateNamespaceConflict =
     new APIPromise(
       (namespaceTestsConflictsCreateNamespaceConflict$module ??= import(
         "../funcs/namespaceTestsConflictsCreateNamespaceConflict.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsConflictsCreateNamespaceConflict$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsConflictsCreateNamespaceConflict(...args)
           .$inspect()
       ),
@@ -80,7 +89,10 @@ const namespaceTestsConflictsGetTripleNamespaceConflict =
     new APIPromise(
       (namespaceTestsConflictsGetTripleNamespaceConflict$module ??= import(
         "../funcs/namespaceTestsConflictsGetTripleNamespaceConflict.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsConflictsGetTripleNamespaceConflict$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsConflictsGetTripleNamespaceConflict(...args)
           .$inspect()
       ),
@@ -98,7 +110,10 @@ const namespaceTestsConflictsGetPetOwners =
     new APIPromise(
       (namespaceTestsConflictsGetPetOwners$module ??= import(
         "../funcs/namespaceTestsConflictsGetPetOwners.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsConflictsGetPetOwners$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsConflictsGetPetOwners(...args).$inspect()
       ),
     )) as typeof import("../funcs/namespaceTestsConflictsGetPetOwners.js").namespaceTestsConflictsGetPetOwners;

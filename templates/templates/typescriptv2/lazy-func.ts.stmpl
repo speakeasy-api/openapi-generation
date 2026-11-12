@@ -5,5 +5,8 @@
 let {{$funcName}}$module: Promise<typeof import("{{$path}}")> | undefined;
 const {{$funcName}} = ((...args: Parameters<typeof import("{{$path}}").{{$funcName}}>) =>
   new APIPromise(
-    ({{$funcName}}$module ??= import("{{$path}}")).then((module) => module.{{$funcName}}(...args).$inspect()),
+    ({{$funcName}}$module ??= import("{{$path}}").catch((error: unknown) => {
+      {{$funcName}}$module = undefined;
+      throw error;
+    })).then((module) => module.{{$funcName}}(...args).$inspect()),
   )) as typeof import("{{$path}}").{{$funcName}};

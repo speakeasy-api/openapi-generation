@@ -15,9 +15,12 @@ const tag1Deprecated1 =
     >
   ) =>
     new APIPromise(
-      (tag1Deprecated1$module ??= import("../funcs/tag1Deprecated1.js")).then((
-        module,
-      ) => module.tag1Deprecated1(...args).$inspect()),
+      (tag1Deprecated1$module ??= import("../funcs/tag1Deprecated1.js").catch(
+        (error: unknown) => {
+          tag1Deprecated1$module = undefined;
+          throw error;
+        },
+      )).then((module) => module.tag1Deprecated1(...args).$inspect()),
     )) as typeof import("../funcs/tag1Deprecated1.js").tag1Deprecated1;
 
 export class Obsolete extends ClientSDK {

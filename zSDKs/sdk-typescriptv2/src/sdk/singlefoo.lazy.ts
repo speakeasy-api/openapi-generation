@@ -20,7 +20,10 @@ const namespaceTestsSingleFooGetSingleNamespaceFooPet =
     new APIPromise(
       (namespaceTestsSingleFooGetSingleNamespaceFooPet$module ??= import(
         "../funcs/namespaceTestsSingleFooGetSingleNamespaceFooPet.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsSingleFooGetSingleNamespaceFooPet$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsSingleFooGetSingleNamespaceFooPet(...args)
           .$inspect()
       ),
@@ -40,7 +43,10 @@ const namespaceTestsSingleFooCreateSingleNamespaceFooPet =
     new APIPromise(
       (namespaceTestsSingleFooCreateSingleNamespaceFooPet$module ??= import(
         "../funcs/namespaceTestsSingleFooCreateSingleNamespaceFooPet.js"
-      )).then((module) =>
+      ).catch((error: unknown) => {
+        namespaceTestsSingleFooCreateSingleNamespaceFooPet$module = undefined;
+        throw error;
+      })).then((module) =>
         module.namespaceTestsSingleFooCreateSingleNamespaceFooPet(...args)
           .$inspect()
       ),

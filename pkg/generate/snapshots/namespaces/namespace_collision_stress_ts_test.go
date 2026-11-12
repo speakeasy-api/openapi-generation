@@ -496,7 +496,7 @@ async function $do(
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import * as types from "../../types/primitives.js";
 import { SDKValidationError } from "../errors/sdk-validation-error.js";
@@ -506,19 +506,24 @@ export type Widget = {
 };
 
 /** @internal */
-export const Widget$inboundSchema: z.ZodMiniType<Widget, unknown> = z.object({
-  types: types.optional(types.string()),
-});
+export const Widget$inboundSchema: z.ZodMiniType<Widget, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      types: types.optional(types.string()),
+    })
+  );
 /** @internal */
 export type Widget$Outbound = {
   types?: string | undefined;
 };
 
 /** @internal */
-export const Widget$outboundSchema: z.ZodMiniType<Widget$Outbound, Widget> = z
-  .object({
-    types: z.optional(z.string()),
-  });
+export const Widget$outboundSchema: z.ZodMiniType<Widget$Outbound, Widget> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      types: z.optional(z.string()),
+    })
+  );
 
 export function widgetToJSON(widget: Widget): string {
   return JSON.stringify(Widget$outboundSchema.parse(widget));
