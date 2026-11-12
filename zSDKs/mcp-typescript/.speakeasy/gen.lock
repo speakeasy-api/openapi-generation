@@ -458,7 +458,7 @@ trackedFiles:
   src/funcs/createWithUnion.ts:
     last_write_checksum: sha1:3dc08d9945512a72e4cdfd38f89630c4925a1fd8
   src/funcs/deleteUser.ts:
-    last_write_checksum: sha1:ea105ccaea62a2449b605d729168b27e47468d75
+    last_write_checksum: sha1:beb7f6a8ce51e8fe235e471025183792b8f41eb9
   src/funcs/getBinaryDefaultResponse.ts:
     last_write_checksum: sha1:c7a254a812b7afb07ed5a3e52efd50ba49d42cb5
   src/funcs/getDuplicateExportCollision.ts:
@@ -478,13 +478,13 @@ trackedFiles:
   src/funcs/getPolymorphism.ts:
     last_write_checksum: sha1:05b0abb079112d25a8e94465559f0c930eb0f6d4
   src/funcs/getPositionalDefault.ts:
-    last_write_checksum: sha1:e85b8fca397c134a49ebf834ea271097bd173199
+    last_write_checksum: sha1:b182991c386b7f6eda3cc30c3805e9d39c3a2da8
   src/funcs/getRequestBodyFlattenedAway.ts:
     last_write_checksum: sha1:6163228f8a3bdfb798212e89e8b2b351b25f4672
   src/funcs/getUnionErrors.ts:
     last_write_checksum: sha1:9d0a670bc9a5bb6465d02bcfe4361d42d576c424
   src/funcs/getUser.ts:
-    last_write_checksum: sha1:a7444719e85925ebccaf1fc93b35ddc9448726a3
+    last_write_checksum: sha1:37aa1fadf38b0347d12fb89d10080c3960c270a6
   src/funcs/groupRootGroupOp.ts:
     last_write_checksum: sha1:0a43626f469d4fa534972ef2ecdff9a36e78bd6f
   src/funcs/groupSubGroupEmptyTailNestedGroupOp.ts:
@@ -522,7 +522,7 @@ trackedFiles:
   src/funcs/operationWithLeadingAndTrailingUnderscores.ts:
     last_write_checksum: sha1:cc77ab7a7458ad3bdca759ec1833b4a9d8cd94e5
   src/funcs/parenthesesInPathAllowed.ts:
-    last_write_checksum: sha1:1fb00430ce0a4628414cf755b508f7b3f7fccb2e
+    last_write_checksum: sha1:3019059680dc364bacde27439d7b0ee4a9984e50
   src/funcs/postFile.ts:
     last_write_checksum: sha1:f8a83e4396b19088ccfcb7659d3601f73b914e10
   src/funcs/tag1Auth.ts:
@@ -530,11 +530,11 @@ trackedFiles:
   src/funcs/tag1Deprecated1.ts:
     last_write_checksum: sha1:56a1ccd0a3cad10500917377f53422e78c5ad340
   src/funcs/tag1ListTest1.ts:
-    last_write_checksum: sha1:86bf6fcd578885047dde87726243c16ce56c0e43
+    last_write_checksum: sha1:a4f0c2d79aab6525ef20cf81e391d783b0877af8
   src/funcs/tag1PostFileWithEncoding.ts:
     last_write_checksum: sha1:d78f061a887175362f7ae686d302ab9082ba08cf
   src/funcs/testEndpoint.ts:
-    last_write_checksum: sha1:e2c833d43a24ce5c521ec61004b8ac485046d28d
+    last_write_checksum: sha1:dd13e32409705f8be027b4010543328d80b50429
   src/funcs/testEnumFormats.ts:
     last_write_checksum: sha1:c621f8f1bf58eb9930f1edcdc4f0d35ca3887e8d
   src/funcs/testGroupTag2PostTest.ts:
@@ -542,7 +542,7 @@ trackedFiles:
   src/funcs/testGroupTag3PostTest.ts:
     last_write_checksum: sha1:e646038df20a67a5dc6574107b8a097d62f6b48d
   src/funcs/updateUser.ts:
-    last_write_checksum: sha1:8de517117b379cbbd177e1794b4dcf53cb507a96
+    last_write_checksum: sha1:f7f9de454bc1da6af3fcc070eb628c7a51ca6d37
   src/funcs/urlValidationStressTest.ts:
     last_write_checksum: sha1:d75f4396fcadcad43093ea710472647c32701991
   src/funcs/validate.ts:
@@ -578,7 +578,7 @@ trackedFiles:
   src/lib/schemas.ts:
     last_write_checksum: sha1:7c7ba40781682f6d44bb585b5016e2527b52660e
   src/lib/sdks.ts:
-    last_write_checksum: sha1:57ecf5ab44e6c8e86b75e1a5273c617b5c24a1dc
+    last_write_checksum: sha1:293ee5a49b7e59983fcfd4673962614483239c15
   src/lib/security.ts:
     last_write_checksum: sha1:4931e115d6ca115d26530659e523ced9882ab019
   src/lib/url.ts:
