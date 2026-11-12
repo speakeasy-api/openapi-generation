@@ -1,0 +1,63 @@
+{{- $op := nodeLoadingTestOperation -}}
+{{- if $op -}}
+{{- $funcName := sanitizeFuncName $op -}}
+{{- $className := templateSDKClassName (sanitizeClassName $op.OwningSDK.Type.Name) -}}
+{{- $filename := sanitizeTypeFilename $op.OwningSDK.Type.Name -}}
+{{- if eq $op.OwningSDK.Type.Name .Global.AST.MainSDK.Type.Name }}{{ $filename = "sdk" }}{{ end -}}
+import { expect, test, vi } from "vitest";
+import { {{templateSDKClassName (sanitizeClassName .Global.AST.MainSDK.Type.Name)}} as RootSDK, HTTPClient } from "../node.js";
+import { {{$className}} } from "../sdk/{{$filename}}.lazy.js";
+import { APIPromise } from "../{{getTypesLocation}}/async.js";
+import { OK, ERR } from "../{{getTypesLocation}}/fp.js";
+
+const state = vi.hoisted(() => ({ loaded: 0, calls: 0, fail: false }));
+const failure = new Error("operation failed");
+const response = new Response("{}", { headers: { "content-type": "application/json" } });
+
+vi.mock("../funcs/{{sanitizeFuncFilename $op}}.js", () => {
+  state.loaded++;
+  return {
+    {{$funcName}}: () => {
+      state.calls++;
+      return new APIPromise([
+        state.fail ? ERR(failure) : OK({ value: "parsed" }),
+        { status: "complete", request: new Request("https://example.com"), response },
+      ]);
+    },
+  };
+});
+
+test("Node entry point defers operation loading and shares runtime modules", async () => {
+  const httpClient = new HTTPClient({
+    fetcher: () => { throw new Error("unexpected network call"); },
+  });
+  const root = new RootSDK({ httpClient });
+  expect(root).toBeInstanceOf(RootSDK);
+  expect(state.loaded).toBe(0);
+
+  const sdk = new {{$className}}({ httpClient });
+  expect(state.loaded).toBe(0);
+  const first = sdk.{{sanitizeMethodName $op}}();
+  {{- if withAPIPromiseHelpers }}
+  expect(first).toBeInstanceOf(APIPromise);
+  const raw = await first.asResponse();
+  expect(raw).toBe(response);
+  {{- end }}
+  expect(await first).toEqual({ value: "parsed" });
+  expect(state.loaded).toBe(1);
+
+  await Promise.all([sdk.{{sanitizeMethodName $op}}(), sdk.{{sanitizeMethodName $op}}()]);
+  expect(state.loaded).toBe(1);
+  expect(state.calls).toBe(3);
+
+  state.fail = true;
+  await expect(sdk.{{sanitizeMethodName $op}}()).rejects.toBe(failure);
+  state.fail = false;
+
+  const standard = await import("../index.js");
+  expect(standard.HTTPClient).toBe(HTTPClient);
+  {{- if withAPIPromiseHelpers }}
+  expect(standard.APIPromise).toBe(APIPromise);
+  {{- end }}
+}, 30000);
+{{- end }}

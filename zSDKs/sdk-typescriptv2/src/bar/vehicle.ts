@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { SDKValidationError } from "../models/sdkvalidationerror.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { smartUnion } from "../types/smartUnion.js";
@@ -17,7 +17,9 @@ export type Vehicle = Car | Bike;
 
 /** @internal */
 export const Vehicle$inboundSchema: z.ZodMiniType<Vehicle, unknown> =
-  smartUnion([Car$inboundSchema, Bike$inboundSchema]);
+  /* @__PURE__ */ lazySchema$(() =>
+    smartUnion([Car$inboundSchema, Bike$inboundSchema])
+  );
 
 export function vehicleFromJSON(
   jsonString: string,

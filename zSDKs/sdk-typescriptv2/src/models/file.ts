@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type FileT = {
   fileName: string;
@@ -16,16 +17,18 @@ export type FileT$Outbound = {
 };
 
 /** @internal */
-export const FileT$outboundSchema: z.ZodMiniType<FileT$Outbound, FileT> = z
-  .object({
-    fileName: z.string(),
-    content: z.union([
-      z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
-      z.custom<Blob>(x => x instanceof Blob),
-      z.custom<ArrayBuffer>(x => x instanceof ArrayBuffer),
-      z.custom<Uint8Array>(x => x instanceof Uint8Array),
-    ]),
-  });
+export const FileT$outboundSchema: z.ZodMiniType<FileT$Outbound, FileT> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      fileName: z.string(),
+      content: z.union([
+        z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
+        z.custom<Blob>(x => x instanceof Blob),
+        z.custom<ArrayBuffer>(x => x instanceof ArrayBuffer),
+        z.custom<Uint8Array>(x => x instanceof Uint8Array),
+      ]),
+    })
+  );
 
 export function fileToJSON(fileT: FileT): string {
   return JSON.stringify(FileT$outboundSchema.parse(fileT));

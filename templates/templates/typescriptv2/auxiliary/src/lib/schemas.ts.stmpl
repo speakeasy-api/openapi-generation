@@ -22,6 +22,42 @@
 {{- addTypeImport "fp" "ERR" "lib"}}
 {{genImports}}
 
+export function lazySchema<T extends object>(factory: () => T): T {
+  let schema: T | undefined;
+  const getSchema = (): T => {
+    if (schema === undefined) {
+      schema = factory();
+    }
+    return schema;
+  };
+  const target = Object.create(null);
+
+  return new Proxy(target, {
+    get(_target, property) {
+      const value = Reflect.get(getSchema(), property, getSchema());
+      return property !== "constructor" && typeof value === "function"
+        ? value.bind(getSchema())
+        : value;
+    },
+    getOwnPropertyDescriptor(_target, property) {
+      const descriptor = Reflect.getOwnPropertyDescriptor(getSchema(), property);
+      return descriptor && { ...descriptor, configurable: true };
+    },
+    getPrototypeOf() {
+      return Reflect.getPrototypeOf(getSchema());
+    },
+    has(_target, property) {
+      return Reflect.has(getSchema(), property);
+    },
+    ownKeys() {
+      return Reflect.ownKeys(getSchema());
+    },
+    set(_target, property, value) {
+      return Reflect.set(getSchema(), property, value, getSchema());
+    },
+  });
+}
+
 /**
  * Utility function that executes some code which may throw a ZodError. It
  * intercepts this error and converts it to an SDKValidationError so as to not

@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { smartUnion } from "../types/smartUnion.js";
@@ -21,14 +21,16 @@ export type CircularUnion =
 export const CircularUnion$inboundSchema: z.ZodMiniType<
   CircularUnion,
   unknown
-> = smartUnion([
-  z.record(z.string(), z.lazy(() => CircularUnion$inboundSchema)),
-  types.string(),
-  types.number(),
-  types.boolean(),
-  z.array(z.lazy(() => CircularUnion$inboundSchema)),
-  types.number(),
-]);
+> = /* @__PURE__ */ lazySchema$(() =>
+  smartUnion([
+    z.record(z.string(), z.lazy(() => CircularUnion$inboundSchema)),
+    types.string(),
+    types.number(),
+    types.boolean(),
+    z.array(z.lazy(() => CircularUnion$inboundSchema)),
+    types.number(),
+  ])
+);
 
 export function circularUnionFromJSON(
   jsonString: string,

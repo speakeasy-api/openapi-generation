@@ -4,7 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { Enum, Enum$inboundSchema, EnumOpen } from "./enum.js";
@@ -95,8 +95,8 @@ export type ListTest1Response = {
 };
 
 /** @internal */
-export const QueryParam2$outboundSchema: z.ZodMiniEnum<typeof QueryParam2> = z
-  .enum(QueryParam2);
+export const QueryParam2$outboundSchema: z.ZodMiniEnum<typeof QueryParam2> =
+  /* @__PURE__ */ lazySchema$(() => z.enum(QueryParam2));
 
 /** @internal */
 export type ListTest1Request$Outbound = {
@@ -110,12 +110,14 @@ export type ListTest1Request$Outbound = {
 export const ListTest1Request$outboundSchema: z.ZodMiniType<
   ListTest1Request$Outbound,
   ListTest1Request
-> = z.object({
-  page: z.int(),
-  queryParam1: z.optional(z.string()),
-  queryParam2: QueryParam2$outboundSchema,
-  headerParam1: z.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    page: z.int(),
+    queryParam1: z.optional(z.string()),
+    queryParam2: QueryParam2$outboundSchema,
+    headerParam1: z.string(),
+  })
+);
 
 export function listTest1RequestToJSON(
   listTest1Request: ListTest1Request,
@@ -126,10 +128,12 @@ export function listTest1RequestToJSON(
 }
 
 /** @internal */
-export const ResultArray$inboundSchema: z.ZodMiniType<ResultArray, unknown> = z
-  .object({
-    test1: types.string(),
-  });
+export const ResultArray$inboundSchema: z.ZodMiniType<ResultArray, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      test1: types.string(),
+    })
+  );
 
 export function resultArrayFromJSON(
   jsonString: string,
@@ -145,11 +149,13 @@ export function resultArrayFromJSON(
 export const ListTest1ResponseBody$inboundSchema: z.ZodMiniType<
   ListTest1ResponseBody,
   unknown
-> = z.object({
-  resultArray: z.array(z.lazy(() => ResultArray$inboundSchema)),
-  totalCount: types.number(),
-  type: z._default(Enum$inboundSchema, Enum.First),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    resultArray: z.array(z.lazy(() => ResultArray$inboundSchema)),
+    totalCount: types.number(),
+    type: z._default(Enum$inboundSchema, Enum.First),
+  })
+);
 
 export function listTest1ResponseBodyFromJSON(
   jsonString: string,
@@ -165,15 +171,17 @@ export function listTest1ResponseBodyFromJSON(
 export const ListTest1Response$inboundSchema: z.ZodMiniType<
   ListTest1Response,
   unknown
-> = z.pipe(
-  z.object({
-    Result: z.lazy(() => ListTest1ResponseBody$inboundSchema),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      "Result": "result",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      Result: z.lazy(() => ListTest1ResponseBody$inboundSchema),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        "Result": "result",
+      });
+    }),
+  )
 );
 
 export function listTest1ResponseFromJSON(

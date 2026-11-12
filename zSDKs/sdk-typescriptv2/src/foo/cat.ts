@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { SDKValidationError } from "../models/sdkvalidationerror.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
@@ -18,11 +18,14 @@ export type Cat = {
 };
 
 /** @internal */
-export const Cat$inboundSchema: z.ZodMiniType<Cat, unknown> = z.object({
-  animalType: types.literal("cat"),
-  furLength: types.string(),
-  meowFrequency: types.optional(types.number()),
-});
+export const Cat$inboundSchema: z.ZodMiniType<Cat, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      animalType: types.literal("cat"),
+      furLength: types.string(),
+      meowFrequency: types.optional(types.number()),
+    })
+  );
 
 export function catFromJSON(
   jsonString: string,

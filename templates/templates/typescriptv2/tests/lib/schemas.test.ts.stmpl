@@ -8,6 +8,7 @@
 {{- addZodPackageImport }}
 import { expect, test } from "vitest";
 {{- addImport "../../lib/schemas.js" "collectExtraKeys" }}
+{{- addImport "../../lib/schemas.js" "lazySchema" }}
 
 test("collectExtraKeys collects excess object keys", () => {
   const schema = {{ templateTestSchemaPersonObject }};
@@ -99,5 +100,70 @@ test("collectExtraKeys does not clobber excess key name", () => {
       extraobj: [7, 8, 9],
     },
   });
+});
+
+test("lazySchema constructs once on first use and preserves sync parsing", () => {
+  let constructions = 0;
+  const schema = lazySchema(() => {
+    constructions += 1;
+    return z.string();
+  });
+
+  expect(constructions).toBe(0);
+  expect({{if isZodV4Mini}}z.parse(schema, "value"){{else}}schema.parse("value"){{end}}).toBe("value");
+  const invalid = {{if isZodV4Mini}}z.safeParse(schema, 1){{else}}schema.safeParse(1){{end}};
+  expect(invalid.success).toBe(false);
+  if (!invalid.success) {
+    expect(invalid.error instanceof {{if isZodV4Mini}}z.core.$ZodError{{else}}z.ZodError{{end}}).toBe(true);
+  }
+  expect(constructions).toBe(1);
+});
+
+test("lazySchema supports asynchronous parsing and composition", async () => {
+  const schema = lazySchema(() => z.string());
+  const composed = z.array(schema);
+
+  await expect({{if isZodV4Mini}}z.parseAsync(composed, ["value"]){{else}}composed.parseAsync(["value"]){{end}}).resolves.toEqual(["value"]);
+});
+
+test("lazySchema preserves recursive schema references", () => {
+  const node = lazySchema(() =>
+    z.object({
+      value: z.string(),
+      next: z.optional(z.lazy(() => node)),
+    }),
+  );
+
+  expect({{if isZodV4Mini}}z.parse(node, { value: "first", next: { value: "second" } }){{else}}node.parse({ value: "first", next: { value: "second" } }){{end}}).toEqual({
+    value: "first",
+    next: { value: "second" },
+  });
+});
+
+test("lazySchema preserves enum APIs and prototype reflection", () => {
+  const concrete = z.enum(["first", "second"]);
+  const schema = lazySchema(() => concrete);
+
+  expect(schema.enum).toEqual(concrete.enum);
+  expect({{if isZodV4Mini}}z.parse(schema, "first"){{else}}schema.parse("first"){{end}}).toBe("first");
+  expect(schema instanceof concrete.constructor).toBe(true);
+  expect(schema.constructor).toBe(concrete.constructor);
+  expect(Object.getPrototypeOf(schema)).toBe(Object.getPrototypeOf(concrete));
+  expect(Reflect.ownKeys(schema)).toEqual(Reflect.ownKeys(concrete));
+});
+
+test("lazySchema retries when the factory throws", () => {
+  let attempts = 0;
+  const schema = lazySchema(() => {
+    attempts += 1;
+    if (attempts === 1) {
+      throw new Error("initialization failed");
+    }
+    return z.string();
+  });
+
+  expect(() => {{if isZodV4Mini}}z.parse(schema, "value"){{else}}schema.parse("value"){{end}}).toThrow("initialization failed");
+  expect({{if isZodV4Mini}}z.parse(schema, "value"){{else}}schema.parse("value"){{end}}).toBe("value");
+  expect(attempts).toBe(2);
 });
 {{- end -}}

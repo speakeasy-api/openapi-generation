@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKBaseError } from "./sdkbaseerror.js";
@@ -41,9 +41,11 @@ export class ErrorType2 extends SDKBaseError {
 export const ErrorType2Error$inboundSchema: z.ZodMiniType<
   ErrorType2Error,
   unknown
-> = z.object({
-  message: types.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    message: types.string(),
+  })
+);
 
 export function errorType2ErrorFromJSON(
   jsonString: string,
@@ -56,19 +58,21 @@ export function errorType2ErrorFromJSON(
 }
 
 /** @internal */
-export const ErrorType2$inboundSchema: z.ZodMiniType<ErrorType2, unknown> = z
-  .pipe(
-    z.object({
-      error: z.lazy(() => ErrorType2Error$inboundSchema),
-      request$: z.custom<Request>(x => x instanceof Request),
-      response$: z.custom<Response>(x => x instanceof Response),
-      body$: z.string(),
-    }),
-    z.transform((v) => {
-      return new ErrorType2(v, {
-        request: v.request$,
-        response: v.response$,
-        body: v.body$,
-      });
-    }),
+export const ErrorType2$inboundSchema: z.ZodMiniType<ErrorType2, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.pipe(
+      z.object({
+        error: z.lazy(() => ErrorType2Error$inboundSchema),
+        request$: z.custom<Request>(x => x instanceof Request),
+        response$: z.custom<Response>(x => x instanceof Response),
+        body$: z.string(),
+      }),
+      z.transform((v) => {
+        return new ErrorType2(v, {
+          request: v.request$,
+          response: v.response$,
+          body: v.body$,
+        });
+      }),
+    )
   );

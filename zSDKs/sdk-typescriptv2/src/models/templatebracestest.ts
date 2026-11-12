@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -40,20 +40,22 @@ export type TemplateBracesTest = {
 export const TemplateBracesTest$inboundSchema: z.ZodMiniType<
   TemplateBracesTest,
   unknown
-> = z.object({
-  fieldWithBracesInDescription: types.optional(types.string()),
-  fieldWithBracesInDefault: z._default(
-    types.string(),
-    "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n",
-  ),
-  fieldWithBracesInConst: types.optional(
-    types.literal(
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    fieldWithBracesInDescription: types.optional(types.string()),
+    fieldWithBracesInDefault: z._default(
+      types.string(),
       "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n",
     ),
-  ),
-  fieldWithBracesInTitle: types.optional(types.string()),
-  fieldWithBracesInExample: types.optional(types.string()),
-});
+    fieldWithBracesInConst: types.optional(
+      types.literal(
+        "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n",
+      ),
+    ),
+    fieldWithBracesInTitle: types.optional(types.string()),
+    fieldWithBracesInExample: types.optional(types.string()),
+  })
+);
 /** @internal */
 export type TemplateBracesTest$Outbound = {
   fieldWithBracesInDescription?: string | undefined;
@@ -69,20 +71,22 @@ export type TemplateBracesTest$Outbound = {
 export const TemplateBracesTest$outboundSchema: z.ZodMiniType<
   TemplateBracesTest$Outbound,
   TemplateBracesTest
-> = z.object({
-  fieldWithBracesInDescription: z.optional(z.string()),
-  fieldWithBracesInDefault: z._default(
-    z.string(),
-    "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n",
-  ),
-  fieldWithBracesInConst: z.optional(
-    z.literal(
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    fieldWithBracesInDescription: z.optional(z.string()),
+    fieldWithBracesInDefault: z._default(
+      z.string(),
       "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n",
     ),
-  ),
-  fieldWithBracesInTitle: z.optional(z.string()),
-  fieldWithBracesInExample: z.optional(z.string()),
-});
+    fieldWithBracesInConst: z.optional(
+      z.literal(
+        "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n",
+      ),
+    ),
+    fieldWithBracesInTitle: z.optional(z.string()),
+    fieldWithBracesInExample: z.optional(z.string()),
+  })
+);
 
 export function templateBracesTestToJSON(
   templateBracesTest: TemplateBracesTest,

@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -17,12 +17,14 @@ export type MetadataAny = {
 };
 
 /** @internal */
-export const MetadataAny$inboundSchema: z.ZodMiniType<MetadataAny, unknown> = z
-  .catchall(
-    z.object({
-      notes: types.optional(types.string()),
-    }),
-    z.any(),
+export const MetadataAny$inboundSchema: z.ZodMiniType<MetadataAny, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.catchall(
+      z.object({
+        notes: types.optional(types.string()),
+      }),
+      z.any(),
+    )
   );
 /** @internal */
 export type MetadataAny$Outbound = {
@@ -34,11 +36,13 @@ export type MetadataAny$Outbound = {
 export const MetadataAny$outboundSchema: z.ZodMiniType<
   MetadataAny$Outbound,
   MetadataAny
-> = z.catchall(
-  z.object({
-    notes: z.optional(z.string()),
-  }),
-  z.any(),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.catchall(
+    z.object({
+      notes: z.optional(z.string()),
+    }),
+    z.any(),
+  )
 );
 
 export function metadataAnyToJSON(metadataAny: MetadataAny): string {

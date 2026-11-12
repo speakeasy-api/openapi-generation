@@ -1,0 +1,9 @@
+{{- $op := .Local.Operation -}}
+{{- $funcName := sanitizeFuncName $op -}}
+{{- $path := getFuncImportPath $op $op.OwningSDK.Type.OutputLocation -}}
+{{- addTypeImport "async" "APIPromise" $op.OwningSDK.Type.OutputLocation }}
+let {{$funcName}}$module: Promise<typeof import("{{$path}}")> | undefined;
+const {{$funcName}} = ((...args: Parameters<typeof import("{{$path}}").{{$funcName}}>) =>
+  new APIPromise(
+    ({{$funcName}}$module ??= import("{{$path}}")).then((module) => module.{{$funcName}}(...args).$inspect()),
+  )) as typeof import("{{$path}}").{{$funcName}};

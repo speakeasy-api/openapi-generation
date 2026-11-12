@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import * as openEnums from "../types/enums.js";
 import { OpenEnum } from "../types/enums.js";
 
@@ -15,8 +16,8 @@ export enum Enum {
 export type EnumOpen = OpenEnum<typeof Enum>;
 
 /** @internal */
-export const Enum$inboundSchema: z.ZodMiniType<EnumOpen, unknown> = openEnums
-  .inboundSchema(Enum);
+export const Enum$inboundSchema: z.ZodMiniType<EnumOpen, unknown> =
+  /* @__PURE__ */ lazySchema$(() => openEnums.inboundSchema(Enum));
 /** @internal */
-export const Enum$outboundSchema: z.ZodMiniType<string, EnumOpen> = openEnums
-  .outboundSchema(Enum);
+export const Enum$outboundSchema: z.ZodMiniType<string, EnumOpen> =
+  /* @__PURE__ */ lazySchema$(() => openEnums.outboundSchema(Enum));

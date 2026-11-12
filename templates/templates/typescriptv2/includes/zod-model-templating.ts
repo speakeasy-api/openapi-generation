@@ -185,20 +185,21 @@ function templateInboundSchemaDeclaration(
   inboundRemaps: { mappingObject: string; additionalPropsField: FieldDef },
   additionalPropsInbound: ResolvedTypes | false,
 ): string {
-  const schemaImpl = templateZodModelInboundObject(
+  const schema = templateZodModelInboundObject(
     fields,
     rootTypeDef,
     usageLocation,
     inboundRemaps,
     additionalPropsInbound,
   );
+  addInternalImport("schemas", "lazySchema as lazySchema$", usageLocation);
 
   const lines = [
     "/** @internal */",
     `export const ${zodName}inboundSchema: ${z.ZodType(
       typeName,
       "unknown",
-    )} = ${schemaImpl}`,
+    )} = /* @__PURE__ */ lazySchema$(() => ${schema})`,
   ];
 
   return lines.join("\n");
@@ -214,13 +215,14 @@ function templateOutboundSchemaDeclaration(
   outboundRemaps: { mappingObject: string; additionalPropsField: FieldDef },
   additionalPropsOutbound: ResolvedTypes | false,
 ): string {
-  const schemaImpl = templateZodModelOutboundObject(
+  const schema = templateZodModelOutboundObject(
     fields,
     rootTypeDef,
     usageLocation,
     outboundRemaps,
     additionalPropsOutbound,
   );
+  addInternalImport("schemas", "lazySchema as lazySchema$", usageLocation);
 
   const outboundTypeName = `${zodName}Outbound`;
   const lines = [
@@ -228,7 +230,7 @@ function templateOutboundSchemaDeclaration(
     `export const ${zodName}outboundSchema: ${z.ZodType(
       outboundTypeName,
       typeName,
-    )} = ${schemaImpl}`,
+    )} = /* @__PURE__ */ lazySchema$(() => ${schema})`,
   ];
 
   return lines.join("\n");

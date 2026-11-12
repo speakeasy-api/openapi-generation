@@ -4,7 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Decimal as Decimal$ } from "../types/decimal.js";
 import * as openEnums from "../types/enums.js";
 import { OpenEnum } from "../types/enums.js";
@@ -171,31 +171,31 @@ export type ExhaustiveObject = {
 
 /** @internal */
 export const IntEnum$inboundSchema: z.ZodMiniType<IntEnumOpen, unknown> =
-  openEnums.inboundSchemaInt(IntEnum);
+  /* @__PURE__ */ lazySchema$(() => openEnums.inboundSchemaInt(IntEnum));
 /** @internal */
 export const IntEnum$outboundSchema: z.ZodMiniType<number, IntEnumOpen> =
-  openEnums.outboundSchemaInt(IntEnum);
+  /* @__PURE__ */ lazySchema$(() => openEnums.outboundSchemaInt(IntEnum));
 
 /** @internal */
 export const Int32Enum$inboundSchema: z.ZodMiniType<Int32EnumOpen, unknown> =
-  openEnums.inboundSchemaInt(Int32Enum);
+  /* @__PURE__ */ lazySchema$(() => openEnums.inboundSchemaInt(Int32Enum));
 /** @internal */
 export const Int32Enum$outboundSchema: z.ZodMiniType<number, Int32EnumOpen> =
-  openEnums.outboundSchemaInt(Int32Enum);
+  /* @__PURE__ */ lazySchema$(() => openEnums.outboundSchemaInt(Int32Enum));
 
 /** @internal */
-export const Any$inboundSchema: z.ZodMiniType<Any, unknown> = smartUnion([
-  SimpleObject$inboundSchema,
-  types.string(),
-]);
+export const Any$inboundSchema: z.ZodMiniType<Any, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    smartUnion([SimpleObject$inboundSchema, types.string()])
+  );
 /** @internal */
 export type Any$Outbound = SimpleObject$Outbound | string;
 
 /** @internal */
-export const Any$outboundSchema: z.ZodMiniType<Any$Outbound, Any> = smartUnion([
-  SimpleObject$outboundSchema,
-  z.string(),
-]);
+export const Any$outboundSchema: z.ZodMiniType<Any$Outbound, Any> =
+  /* @__PURE__ */ lazySchema$(() =>
+    smartUnion([SimpleObject$outboundSchema, z.string()])
+  );
 
 export function anyToJSON(any: Any): string {
   return JSON.stringify(Any$outboundSchema.parse(any));
@@ -214,86 +214,96 @@ export function anyFromJSON(
 export const NullableIntEnum$inboundSchema: z.ZodMiniType<
   NullableIntEnumOpen,
   unknown
-> = openEnums.inboundSchemaInt(NullableIntEnum);
+> = /* @__PURE__ */ lazySchema$(() =>
+  openEnums.inboundSchemaInt(NullableIntEnum)
+);
 /** @internal */
 export const NullableIntEnum$outboundSchema: z.ZodMiniType<
   number,
   NullableIntEnumOpen
-> = openEnums.outboundSchemaInt(NullableIntEnum);
+> = /* @__PURE__ */ lazySchema$(() =>
+  openEnums.outboundSchemaInt(NullableIntEnum)
+);
 
 /** @internal */
 export const NullableStringEnum$inboundSchema: z.ZodMiniType<
   NullableStringEnumOpen,
   unknown
-> = openEnums.inboundSchema(NullableStringEnum);
+> = /* @__PURE__ */ lazySchema$(() =>
+  openEnums.inboundSchema(NullableStringEnum)
+);
 /** @internal */
 export const NullableStringEnum$outboundSchema: z.ZodMiniType<
   string,
   NullableStringEnumOpen
-> = openEnums.outboundSchema(NullableStringEnum);
+> = /* @__PURE__ */ lazySchema$(() =>
+  openEnums.outboundSchema(NullableStringEnum)
+);
 
 /** @internal */
-export const Icon$inboundSchema: z.ZodMiniType<IconOpen, unknown> = openEnums
-  .inboundSchema(Icon);
+export const Icon$inboundSchema: z.ZodMiniType<IconOpen, unknown> =
+  /* @__PURE__ */ lazySchema$(() => openEnums.inboundSchema(Icon));
 /** @internal */
-export const Icon$outboundSchema: z.ZodMiniType<string, IconOpen> = openEnums
-  .outboundSchema(Icon);
+export const Icon$outboundSchema: z.ZodMiniType<string, IconOpen> =
+  /* @__PURE__ */ lazySchema$(() => openEnums.outboundSchema(Icon));
 
 /** @internal */
 export const HeroWidth$inboundSchema: z.ZodMiniType<HeroWidthOpen, unknown> =
-  openEnums.inboundSchemaInt(HeroWidth);
+  /* @__PURE__ */ lazySchema$(() => openEnums.inboundSchemaInt(HeroWidth));
 /** @internal */
 export const HeroWidth$outboundSchema: z.ZodMiniType<number, HeroWidthOpen> =
-  openEnums.outboundSchemaInt(HeroWidth);
+  /* @__PURE__ */ lazySchema$(() => openEnums.outboundSchemaInt(HeroWidth));
 
 /** @internal */
 export const ExhaustiveObject$inboundSchema: z.ZodMiniType<
   ExhaustiveObject,
   unknown
-> = z.pipe(
-  z.object({
-    str: types.string(),
-    bool: types.boolean(),
-    int: types.number(),
-    int32: types.number(),
-    num: types.number(),
-    float32: types.number(),
-    enumProp: z._default(Enum$inboundSchema, Enum.First),
-    date: types.date(),
-    dateTime: types.date(),
-    anything: z.any(),
-    strOpt: types.optional(types.string()),
-    boolOpt: types.optional(types.boolean()),
-    intOptNull: types.optional(types.number()),
-    numOptNull: types.optional(types.number()),
-    intEnum: z._default(IntEnum$inboundSchema, IntEnum.Second),
-    int32Enum: Int32Enum$inboundSchema,
-    bigint: types.number(),
-    bigintStr: z._default(types.bigint(), 12345678901234567890n),
-    decimal: types.optional(
-      z.pipe(z.literal(3.141592653589), z.transform(v => new Decimal$(v))),
-    ),
-    decimalStr: z.pipe(z.string(), z.transform(v => new Decimal$(v))),
-    obj: SimpleObject$inboundSchema,
-    map: z.record(z.string(), SimpleObject$inboundSchema),
-    arr: z.array(SimpleObject$inboundSchema),
-    any: smartUnion([SimpleObject$inboundSchema, types.string()]),
-    type: z._default(types.string(), "0"),
-    "some.property.with.dots": types.optional(types.string()),
-    nullableIntEnum: z.nullable(
-      z._default(NullableIntEnum$inboundSchema, NullableIntEnum.Second),
-    ),
-    nullableStringEnum: types.nullable(NullableStringEnum$inboundSchema),
-    color: z._default(Color$inboundSchema, "blue"),
-    icon: Icon$inboundSchema,
-    heroWidth: types.optional(HeroWidth$inboundSchema),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      "int": "integer",
-      "some.property.with.dots": "somePropertyWithDots",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      str: types.string(),
+      bool: types.boolean(),
+      int: types.number(),
+      int32: types.number(),
+      num: types.number(),
+      float32: types.number(),
+      enumProp: z._default(Enum$inboundSchema, Enum.First),
+      date: types.date(),
+      dateTime: types.date(),
+      anything: z.any(),
+      strOpt: types.optional(types.string()),
+      boolOpt: types.optional(types.boolean()),
+      intOptNull: types.optional(types.number()),
+      numOptNull: types.optional(types.number()),
+      intEnum: z._default(IntEnum$inboundSchema, IntEnum.Second),
+      int32Enum: Int32Enum$inboundSchema,
+      bigint: types.number(),
+      bigintStr: z._default(types.bigint(), 12345678901234567890n),
+      decimal: types.optional(
+        z.pipe(z.literal(3.141592653589), z.transform(v => new Decimal$(v))),
+      ),
+      decimalStr: z.pipe(z.string(), z.transform(v => new Decimal$(v))),
+      obj: SimpleObject$inboundSchema,
+      map: z.record(z.string(), SimpleObject$inboundSchema),
+      arr: z.array(SimpleObject$inboundSchema),
+      any: smartUnion([SimpleObject$inboundSchema, types.string()]),
+      type: z._default(types.string(), "0"),
+      "some.property.with.dots": types.optional(types.string()),
+      nullableIntEnum: z.nullable(
+        z._default(NullableIntEnum$inboundSchema, NullableIntEnum.Second),
+      ),
+      nullableStringEnum: types.nullable(NullableStringEnum$inboundSchema),
+      color: z._default(Color$inboundSchema, "blue"),
+      icon: Icon$inboundSchema,
+      heroWidth: types.optional(HeroWidth$inboundSchema),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        "int": "integer",
+        "some.property.with.dots": "somePropertyWithDots",
+      });
+    }),
+  )
 );
 /** @internal */
 export type ExhaustiveObject$Outbound = {
@@ -334,68 +344,70 @@ export type ExhaustiveObject$Outbound = {
 export const ExhaustiveObject$outboundSchema: z.ZodMiniType<
   ExhaustiveObject$Outbound,
   ExhaustiveObject
-> = z.pipe(
-  z.object({
-    str: z.string(),
-    bool: z.boolean(),
-    integer: z.int(),
-    int32: z.int(),
-    num: z.number(),
-    float32: z.number(),
-    enumProp: z._default(Enum$outboundSchema, Enum.First),
-    date: z.pipe(
-      z.date(),
-      z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
-    ),
-    dateTime: z.pipe(z.date(), z.transform(v => v.toISOString())),
-    anything: z.any(),
-    strOpt: z.optional(z.string()),
-    boolOpt: z.optional(z.boolean()),
-    intOptNull: z.optional(z.int()),
-    numOptNull: z.optional(z.number()),
-    intEnum: z._default(IntEnum$outboundSchema, IntEnum.Second),
-    int32Enum: Int32Enum$outboundSchema,
-    bigint: z.number(),
-    bigintStr: z.pipe(
-      z._default(z.bigint(), BigInt("12345678901234567890")),
-      z.transform(v => `${v}`),
-    ),
-    decimal: z.optional(z.pipe(
-      z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()])
-        .check(z.refine((v) =>
-          v.toString() === "3.141592653589", {
-          message: "Value must be 3.141592653589",
-        })),
-      z.transform(v =>
-        typeof v === "number" ? v : v.toNumber()
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      str: z.string(),
+      bool: z.boolean(),
+      integer: z.int(),
+      int32: z.int(),
+      num: z.number(),
+      float32: z.number(),
+      enumProp: z._default(Enum$outboundSchema, Enum.First),
+      date: z.pipe(
+        z.date(),
+        z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
       ),
-    )),
-    decimalStr: z.pipe(
-      z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
-      z.transform(v =>
-        `${v}`
+      dateTime: z.pipe(z.date(), z.transform(v => v.toISOString())),
+      anything: z.any(),
+      strOpt: z.optional(z.string()),
+      boolOpt: z.optional(z.boolean()),
+      intOptNull: z.optional(z.int()),
+      numOptNull: z.optional(z.number()),
+      intEnum: z._default(IntEnum$outboundSchema, IntEnum.Second),
+      int32Enum: Int32Enum$outboundSchema,
+      bigint: z.number(),
+      bigintStr: z.pipe(
+        z._default(z.bigint(), BigInt("12345678901234567890")),
+        z.transform(v => `${v}`),
       ),
-    ),
-    obj: SimpleObject$outboundSchema,
-    map: z.record(z.string(), SimpleObject$outboundSchema),
-    arr: z.array(SimpleObject$outboundSchema),
-    any: smartUnion([SimpleObject$outboundSchema, z.string()]),
-    type: z._default(z.string(), "0"),
-    somePropertyWithDots: z.optional(z.string()),
-    nullableIntEnum: z.nullable(
-      z._default(NullableIntEnum$outboundSchema, NullableIntEnum.Second),
-    ),
-    nullableStringEnum: z.nullable(NullableStringEnum$outboundSchema),
-    color: z._default(Color$outboundSchema, "blue"),
-    icon: Icon$outboundSchema,
-    heroWidth: z.optional(HeroWidth$outboundSchema),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      integer: "int",
-      somePropertyWithDots: "some.property.with.dots",
-    });
-  }),
+      decimal: z.optional(
+        z.pipe(
+          z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()])
+            .check(z.refine((v) =>
+              v.toString() === "3.141592653589", {
+              message: "Value must be 3.141592653589",
+            })),
+          z.transform(v =>
+            typeof v === "number" ? v : v.toNumber()
+          ),
+        ),
+      ),
+      decimalStr: z.pipe(
+        z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
+        z.transform(v => `${v}`),
+      ),
+      obj: SimpleObject$outboundSchema,
+      map: z.record(z.string(), SimpleObject$outboundSchema),
+      arr: z.array(SimpleObject$outboundSchema),
+      any: smartUnion([SimpleObject$outboundSchema, z.string()]),
+      type: z._default(z.string(), "0"),
+      somePropertyWithDots: z.optional(z.string()),
+      nullableIntEnum: z.nullable(
+        z._default(NullableIntEnum$outboundSchema, NullableIntEnum.Second),
+      ),
+      nullableStringEnum: z.nullable(NullableStringEnum$outboundSchema),
+      color: z._default(Color$outboundSchema, "blue"),
+      icon: Icon$outboundSchema,
+      heroWidth: z.optional(HeroWidth$outboundSchema),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        integer: "int",
+        somePropertyWithDots: "some.property.with.dots",
+      });
+    }),
+  )
 );
 
 export function exhaustiveObjectToJSON(

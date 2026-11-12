@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -21,11 +21,13 @@ export type GetErrorOnlyExampleResponse = {
 export const GetErrorOnlyExampleResponse$inboundSchema: z.ZodMiniType<
   GetErrorOnlyExampleResponse,
   unknown
-> = z.object({
-  id: types.string(),
-  name: types.string(),
-  status: types.optional(types.string()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    id: types.string(),
+    name: types.string(),
+    status: types.optional(types.string()),
+  })
+);
 
 export function getErrorOnlyExampleResponseFromJSON(
   jsonString: string,

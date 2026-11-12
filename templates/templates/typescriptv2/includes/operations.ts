@@ -95,3 +95,24 @@ function opTemplateState(op: Operation, usageLoc?: string): OperationStateTS {
 }
 
 registerTemplateFunc("opTemplateState", opTemplateState);
+
+function nodeLoadingTestOperation(
+  sdk = context.Global.AST.MainSDK,
+): Operation | null {
+  for (const op of sdk.Operations) {
+    if (
+      !op.Webhook &&
+      op.Arguments.Sorted.length === 0 &&
+      !op.Extensions.Pagination &&
+      !shouldTemplateAcceptHeaderEnum(op)
+    ) {
+      return op;
+    }
+  }
+  for (const subSDK of sdk.SubSDKs) {
+    const op = nodeLoadingTestOperation(subSDK);
+    if (op) return op;
+  }
+  return null;
+}
+registerTemplateFunc("nodeLoadingTestOperation", nodeLoadingTestOperation);

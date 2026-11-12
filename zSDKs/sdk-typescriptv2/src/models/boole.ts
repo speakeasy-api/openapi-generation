@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type Boole = {
   bool?: boolean | undefined;
@@ -14,10 +15,12 @@ export type Boole$Outbound = {
 };
 
 /** @internal */
-export const Boole$outboundSchema: z.ZodMiniType<Boole$Outbound, Boole> = z
-  .object({
-    bool: z.optional(z.boolean()),
-  });
+export const Boole$outboundSchema: z.ZodMiniType<Boole$Outbound, Boole> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      bool: z.optional(z.boolean()),
+    })
+  );
 
 export function booleToJSON(boole: Boole): string {
   return JSON.stringify(Boole$outboundSchema.parse(boole));

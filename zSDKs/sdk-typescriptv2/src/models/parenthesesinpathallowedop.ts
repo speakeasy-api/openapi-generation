@@ -4,6 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import {
   TemplateBracesTest,
   TemplateBracesTest$Outbound,
@@ -25,16 +26,18 @@ export type ParenthesesInPathAllowedRequest$Outbound = {
 export const ParenthesesInPathAllowedRequest$outboundSchema: z.ZodMiniType<
   ParenthesesInPathAllowedRequest$Outbound,
   ParenthesesInPathAllowedRequest
-> = z.pipe(
-  z.object({
-    id: z.string(),
-    templateBracesTest: TemplateBracesTest$outboundSchema,
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      templateBracesTest: "TemplateBracesTest",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      id: z.string(),
+      templateBracesTest: TemplateBracesTest$outboundSchema,
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        templateBracesTest: "TemplateBracesTest",
+      });
+    }),
+  )
 );
 
 export function parenthesesInPathAllowedRequestToJSON(

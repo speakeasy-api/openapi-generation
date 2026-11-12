@@ -4,6 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import {
   Test2Request,
   Test2Request$Outbound,
@@ -60,17 +61,19 @@ export type PostTest2Request$Outbound = {
 export const PostTest2Request$outboundSchema: z.ZodMiniType<
   PostTest2Request$Outbound,
   PostTest2Request
-> = z.pipe(
-  z.object({
-    deprecatedQueryParam1: z.optional(z.string()),
-    deprecatedQueryParam2: z.optional(z.string()),
-    test2Request: Test2Request$outboundSchema,
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      test2Request: "Test2Request",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      deprecatedQueryParam1: z.optional(z.string()),
+      deprecatedQueryParam2: z.optional(z.string()),
+      test2Request: Test2Request$outboundSchema,
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        test2Request: "Test2Request",
+      });
+    }),
+  )
 );
 
 export function postTest2RequestToJSON(

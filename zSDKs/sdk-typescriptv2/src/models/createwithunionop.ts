@@ -4,7 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -44,16 +44,18 @@ export type CreateWithUnionRequest$Outbound = {
 export const CreateWithUnionRequest$outboundSchema: z.ZodMiniType<
   CreateWithUnionRequest$Outbound,
   CreateWithUnionRequest
-> = z.pipe(
-  z.object({
-    dryRun: z.optional(z.boolean()),
-    shapeRequest: ShapeRequest$outboundSchema,
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      shapeRequest: "ShapeRequest",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      dryRun: z.optional(z.boolean()),
+      shapeRequest: ShapeRequest$outboundSchema,
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        shapeRequest: "ShapeRequest",
+      });
+    }),
+  )
 );
 
 export function createWithUnionRequestToJSON(
@@ -68,10 +70,12 @@ export function createWithUnionRequestToJSON(
 export const CreateWithUnionResponse$inboundSchema: z.ZodMiniType<
   CreateWithUnionResponse,
   unknown
-> = z.object({
-  id: types.optional(types.string()),
-  shape: types.optional(Shape$inboundSchema),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    id: types.optional(types.string()),
+    shape: types.optional(Shape$inboundSchema),
+  })
+);
 
 export function createWithUnionResponseFromJSON(
   jsonString: string,

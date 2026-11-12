@@ -6,7 +6,7 @@ import * as z from "zod/v4-mini";
 import * as bar from "../bar/index.js";
 import * as baz from "../baz/index.js";
 import * as foo from "../foo/index.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
 
@@ -32,11 +32,13 @@ export type TripleNamespaceConflictTest = {
 export const TripleNamespaceConflictTest$inboundSchema: z.ZodMiniType<
   TripleNamespaceConflictTest,
   unknown
-> = z.object({
-  fooPet: foo.Pet$inboundSchema,
-  barPet: bar.Pet$inboundSchema,
-  bazPet: baz.Pet$inboundSchema,
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    fooPet: foo.Pet$inboundSchema,
+    barPet: bar.Pet$inboundSchema,
+    bazPet: baz.Pet$inboundSchema,
+  })
+);
 
 export function tripleNamespaceConflictTestFromJSON(
   jsonString: string,
