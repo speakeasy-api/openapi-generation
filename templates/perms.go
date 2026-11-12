@@ -2461,6 +2461,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/typescriptv2/tests/primary/open_discriminated_union.test.ts":                                        0o644,
 	"templates/typescriptv2/tests/primary/pagination.test.ts":                                                      0o644,
 	"templates/typescriptv2/tests/primary/parameter_additional.test.ts":                                            0o644,
+	"templates/typescriptv2/tests/primary/parameter_patterns_additional.test.ts":                                   0o644,
 	"templates/typescriptv2/tests/primary/primary_helpers.ts":                                                      0o644,
 	"templates/typescriptv2/tests/primary/react_query_additional.test.ts":                                          0o644,
 	"templates/typescriptv2/tests/primary/request_extras_additional.test.ts":                                       0o644,

@@ -1,0 +1,10 @@
+id: 1794464217-f98ed08b
+features:
+    - core
+targets:
+    - typescriptv2
+type: feat
+bump: patch
+description: validate request parameter values against schema patterns
+author: TristanSpeakEasy
+date: "2026-11-12"

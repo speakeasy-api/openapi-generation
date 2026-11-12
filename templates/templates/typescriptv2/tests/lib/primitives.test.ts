@@ -1,5 +1,29 @@
 import { test, expect } from "vitest";
-import { abortSignalAny } from "../../lib/primitives.js";
+import { abortSignalAny, matchesPattern } from "../../lib/primitives.js";
+
+test("matchesPattern tests values against the pattern", () => {
+  const matches = matchesPattern("^[a-z0-9-]+$");
+
+  expect(matches("abc-1")).toBe(true);
+  expect(matches("..")).toBe(false);
+  expect(matches("ABC")).toBe(false);
+});
+
+test("matchesPattern uses Unicode mode when the pattern allows it", () => {
+  expect(matchesPattern("^.$")("😀")).toBe(true);
+});
+
+test("matchesPattern falls back to legacy mode", () => {
+  // A class range from an escape is only a syntax error in Unicode mode.
+  const matches = matchesPattern("^[\\w-]+$");
+
+  expect(matches("a_b-c")).toBe(true);
+  expect(matches("a b")).toBe(false);
+});
+
+test("matchesPattern accepts every value for an uncompilable pattern", () => {
+  expect(matchesPattern("(?i)abc")("anything")).toBe(true);
+});
 
 test("abortSignalAny with one signal", () => {
   const sig = new AbortController().signal;
