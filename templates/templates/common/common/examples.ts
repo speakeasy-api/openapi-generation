@@ -2,6 +2,7 @@ require("common/faker.ts");
 require("common/typematching.ts");
 require("common/constants.ts");
 require("common/annotations.ts");
+require("common/patterns.ts");
 
 const DEBUG_EXAMPLE_LOGGING = false; // Set this to true to enable very verbose logging of example generation results (don't leave this set to true outside local dev)
 const DEBUG_EXAMPLE_OP_FILTER = ""; // Set this to a specific operation ID to only log example results for that operation (don't leave this set outside local dev)
@@ -1124,6 +1125,7 @@ function calculateBasicExample(
       } else {
         example = templatePlaceholderString(arrayIdx);
       }
+      example = conformExampleToPattern(fieldDef, example);
     }
 
     return example;
@@ -1992,6 +1994,27 @@ function fakeNumber(fieldType: string) {
     default:
       return faker.number.float({ min: 0, max: 10000, fractionDigits: 2 });
   }
+}
+
+// Targets whose clients reject parameter values that do not match a portable
+// schema pattern.
+const patternEnforcingLanguages = new Set(["typescript"]);
+
+function conformExampleToPattern(fieldDef: FieldDef, value: string): string {
+  if (
+    !patternEnforcingLanguages.has(context.Global.Config.Language) ||
+    !isParameterField(fieldDef)
+  ) {
+    return value;
+  }
+  const pattern = portableStringPattern(fieldDef.Type);
+  if (!pattern) {
+    return value;
+  }
+  if (new RegExp(pattern, "u").test(value)) {
+    return value;
+  }
+  return exampleForPortablePattern(pattern) ?? value;
 }
 
 function templatePlaceholderString(arrayIdx?: number) {

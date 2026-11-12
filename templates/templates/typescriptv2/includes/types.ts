@@ -83,6 +83,8 @@ function callImportTypesFunc(func: () => string): string {
 
 registerTemplateFunc("callImportTypesFunc", callImportTypesFunc);
 
+type PatternConstraint = { pattern: string; message?: string };
+
 function toOutbound(options: {
   usageLocation: string;
   typeDef: TypeDef;
@@ -91,6 +93,7 @@ function toOutbound(options: {
   defaultValue?: unknown;
   visited: Set<string>;
   optional: boolean;
+  patternConstraint?: PatternConstraint;
 }): ResolvedTypes {
   const {
     usageLocation,
@@ -100,6 +103,7 @@ function toOutbound(options: {
     defaultValue,
     visited,
     optional,
+    patternConstraint,
   } = options;
 
   const rootModel = rootTypeDef.ResolvedModel;
@@ -429,6 +433,17 @@ function toOutbound(options: {
       }
 
       let zod = z.string();
+      if (patternConstraint) {
+        const { pattern, message } = patternConstraint;
+        const literal = (s: string) =>
+          JSON.stringify(s).replaceAll("{{", `{{"{{"}}`);
+        const errorMessage = message || `Value must match pattern ${pattern}`;
+        zod = z.refine(
+          zod,
+          `matchesPattern$(${literal(pattern)})`,
+          `{ message: ${literal(errorMessage)} }`,
+        );
+      }
       if (defaultValue != null) {
         const dv = quote(String(defaultValue)).replaceAll("{{", `{{"{{"}}`);
         zod = z.default(zod, dv);
@@ -440,7 +455,16 @@ function toOutbound(options: {
         outputType: "string",
         importOutputTypes: () => "",
         zod,
-        importZodTypes: () => addZodPackageImport(),
+        importZodTypes: () => {
+          if (patternConstraint) {
+            addInternalImport(
+              "primitives",
+              "matchesPattern as matchesPattern$",
+              usageLocation,
+            );
+          }
+          return addZodPackageImport();
+        },
       };
     }
     case "date": {
@@ -1000,6 +1024,7 @@ function resolveOutbound(options: {
   visited?: Set<string>;
   constValue?: AnyValue;
   defaultValue?: AnyValue;
+  patternConstraint?: PatternConstraint;
 }): ResolvedTypes {
   const {
     usageLocation,
@@ -1011,6 +1036,7 @@ function resolveOutbound(options: {
     visited,
     constValue,
     defaultValue,
+    patternConstraint,
   } = options;
 
   if (usageLocation == null) {
@@ -1043,6 +1069,7 @@ function resolveOutbound(options: {
     defaultValue: defaultValue?.Value,
     visited: visited || new Set(),
     optional,
+    patternConstraint,
   });
 
   if (streamable) {
@@ -1118,6 +1145,51 @@ function resolveOutbound(options: {
 }
 
 registerTemplateFunc("resolveOutbound", resolveOutbound);
+
+const patternConstrainedParamTypes = new Set([
+  "pathParam",
+  "queryParam",
+  "header",
+]);
+
+// Object parameter properties also carry a param annotation, and their model
+// can be shared with request bodies, so only the operation's own request model
+// is constrained.
+function requestParamPatternConstraint(
+  field: FieldDef,
+  rootTypeDef: TypeDef,
+): PatternConstraint | undefined {
+  if (
+    isNoZod() ||
+    field.Type.Type.toString() !== "string" ||
+    !rootTypeDef.IsRequest()
+  ) {
+    return undefined;
+  }
+  const ann = field.Annotations.Get("param");
+  if (
+    ann == null ||
+    !isParamAnnotation(ann) ||
+    !patternConstrainedParamTypes.has(ann.ParamType)
+  ) {
+    return undefined;
+  }
+  const pattern = portableStringPattern(field.Type);
+  if (!pattern) {
+    return undefined;
+  }
+  // zod v3 runs refinements on defaults, so a default that violates its own
+  // pattern would fail every call that omits the parameter.
+  const defaultValue = field.Default?.Value;
+  if (
+    defaultValue != null &&
+    !new RegExp(pattern, "u").test(String(defaultValue))
+  ) {
+    return undefined;
+  }
+  const message = field.Type.Extensions?.PatternErrorMessage;
+  return { pattern, message: message ? String(message) : undefined };
+}
 
 function toInbound(options: {
   usageLocation: string;

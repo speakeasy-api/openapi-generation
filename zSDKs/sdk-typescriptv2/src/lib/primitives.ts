@@ -164,3 +164,8 @@ export function isPlainObject(
     return false;
   }
 }
+
+export function matchesPattern(pattern: string): (value: string) => boolean {
+  const re = new RegExp(pattern, "u");
+  return (value) => re.test(value);
+}

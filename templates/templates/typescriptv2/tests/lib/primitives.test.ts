@@ -1,5 +1,17 @@
 import { test, expect } from "vitest";
-import { abortSignalAny } from "../../lib/primitives.js";
+import { abortSignalAny, matchesPattern } from "../../lib/primitives.js";
+
+test("matchesPattern tests values against the pattern", () => {
+  const matches = matchesPattern("^[a-z0-9-]+$");
+
+  expect(matches("abc-1")).toBe(true);
+  expect(matches("..")).toBe(false);
+  expect(matches("ABC")).toBe(false);
+});
+
+test("matchesPattern uses Unicode mode", () => {
+  expect(matchesPattern("^.$")("😀")).toBe(true);
+});
 
 test("abortSignalAny with one signal", () => {
   const sig = new AbortController().signal;
