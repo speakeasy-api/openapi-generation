@@ -5,7 +5,7 @@
 import * as z from "zod/v4-mini";
 import * as bar from "../bar/index.js";
 import * as foo from "../foo/index.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
 
@@ -39,13 +39,15 @@ export type NamespaceTypesTest = {
 export const NamespaceTypesTest$inboundSchema: z.ZodMiniType<
   NamespaceTypesTest,
   unknown
-> = z.object({
-  fooSpecies: foo.PetSpecies$inboundSchema,
-  barStatus: bar.PetStatus$inboundSchema,
-  fooAnimal: foo.Animal$inboundSchema,
-  barVehicle: bar.Vehicle$inboundSchema,
-  fooOrg: foo.Organization$inboundSchema,
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    fooSpecies: foo.PetSpecies$inboundSchema,
+    barStatus: bar.PetStatus$inboundSchema,
+    fooAnimal: foo.Animal$inboundSchema,
+    barVehicle: bar.Vehicle$inboundSchema,
+    fooOrg: foo.Organization$inboundSchema,
+  })
+);
 
 export function namespaceTypesTestFromJSON(
   jsonString: string,

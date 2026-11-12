@@ -11,6 +11,7 @@
 {{- else -}}
 {{- if shouldIncludeInboundOrOutboundSchema .Local.Type -}}
 {{- addZodPackageImport }}
+{{- addInternalImport "schemas" "lazySchema as lazySchema$" $usageLocation }}
 {{- end }}
 
 {{- /* 🟢 START open enum */ -}}
@@ -18,12 +19,12 @@
 
 {{- if shouldIncludeInboundSchema .Local.Type }}
 /** @internal */
-export const {{$zodName}}inboundSchema: {{zodType $tsType "unknown"}} = {{templateOpenEnumInboundSchema .Local.Type $typeName $usageLocation}};
+export const {{$zodName}}inboundSchema: {{zodType $tsType "unknown"}} = /* @__PURE__ */ lazySchema$(() => {{templateOpenEnumInboundSchema .Local.Type $typeName $usageLocation}});
 {{- end }}
 
 {{- if shouldIncludeOutboundSchema .Local.Type }}
 /** @internal */
-export const {{$zodName}}outboundSchema: {{zodType $dataType $tsType}} = {{templateOpenEnumOutboundSchema .Local.Type $typeName $usageLocation}};
+export const {{$zodName}}outboundSchema: {{zodType $dataType $tsType}} = /* @__PURE__ */ lazySchema$(() => {{templateOpenEnumOutboundSchema .Local.Type $typeName $usageLocation}});
 {{- end }}
 
 {{- /* 🟢 START closed enum */ -}}
@@ -31,12 +32,12 @@ export const {{$zodName}}outboundSchema: {{zodType $dataType $tsType}} = {{templ
 
 {{- if shouldIncludeInboundSchema .Local.Type }}
 /** @internal */
-export const {{$zodName}}inboundSchema: {{zodEnumType (printf "typeof %s" $typeName)}} = {{zodEnum $typeName}};
+export const {{$zodName}}inboundSchema: {{zodEnumType (printf "typeof %s" $typeName)}} = /* @__PURE__ */ lazySchema$(() => {{zodEnum $typeName}});
 {{- end }}
 
 {{- if shouldIncludeOutboundSchema .Local.Type }}
 /** @internal */
-export const {{$zodName}}outboundSchema: {{zodEnumType (printf "typeof %s" $typeName)}} = {{- if shouldIncludeInboundSchema .Local.Type }}{{$zodName}}inboundSchema{{- else }}{{zodEnum $typeName}}{{- end }};
+export const {{$zodName}}outboundSchema: {{zodEnumType (printf "typeof %s" $typeName)}} = {{- if shouldIncludeInboundSchema .Local.Type }}{{$zodName}}inboundSchema{{- else }}/* @__PURE__ */ lazySchema$(() => {{zodEnum $typeName}}){{- end }};
 {{- end }}
 {{- end }}
 {{- end }}

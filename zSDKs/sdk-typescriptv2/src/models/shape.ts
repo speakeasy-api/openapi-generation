@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import * as discriminatedUnionTypes from "../types/discriminatedUnion.js";
 import { discriminatedUnion } from "../types/discriminatedUnion.js";
 import { Result as SafeParseResult } from "../types/fp.js";
@@ -31,16 +31,20 @@ export type Shape =
 
 /** @internal */
 export const Shape$inboundSchema: z.ZodMiniType<Shape, unknown> =
-  discriminatedUnion("type", {
-    circle: Circle$inboundSchema,
-    rectangle: Rectangle$inboundSchema,
-  });
+  /* @__PURE__ */ lazySchema$(() =>
+    discriminatedUnion("type", {
+      circle: Circle$inboundSchema,
+      rectangle: Rectangle$inboundSchema,
+    })
+  );
 /** @internal */
 export type Shape$Outbound = Circle$Outbound | Rectangle$Outbound;
 
 /** @internal */
-export const Shape$outboundSchema: z.ZodMiniType<Shape$Outbound, Shape> = z
-  .union([Circle$outboundSchema, Rectangle$outboundSchema]);
+export const Shape$outboundSchema: z.ZodMiniType<Shape$Outbound, Shape> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.union([Circle$outboundSchema, Rectangle$outboundSchema])
+  );
 
 export function shapeToJSON(shape: Shape): string {
   return JSON.stringify(Shape$outboundSchema.parse(shape));

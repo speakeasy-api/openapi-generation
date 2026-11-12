@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -31,13 +31,15 @@ export type Rectangle = {
 };
 
 /** @internal */
-export const Rectangle$inboundSchema: z.ZodMiniType<Rectangle, unknown> = z
-  .object({
-    type: types.literal("rectangle"),
-    width: types.number(),
-    height: types.number(),
-    color: types.optional(types.string()),
-  });
+export const Rectangle$inboundSchema: z.ZodMiniType<Rectangle, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      type: types.literal("rectangle"),
+      width: types.number(),
+      height: types.number(),
+      color: types.optional(types.string()),
+    })
+  );
 /** @internal */
 export type Rectangle$Outbound = {
   type: "rectangle";
@@ -50,12 +52,14 @@ export type Rectangle$Outbound = {
 export const Rectangle$outboundSchema: z.ZodMiniType<
   Rectangle$Outbound,
   Rectangle
-> = z.object({
-  type: z.literal("rectangle"),
-  width: z.number(),
-  height: z.number(),
-  color: z.optional(z.string()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    type: z.literal("rectangle"),
+    width: z.number(),
+    height: z.number(),
+    color: z.optional(z.string()),
+  })
+);
 
 export function rectangleToJSON(rectangle: Rectangle): string {
   return JSON.stringify(Rectangle$outboundSchema.parse(rectangle));

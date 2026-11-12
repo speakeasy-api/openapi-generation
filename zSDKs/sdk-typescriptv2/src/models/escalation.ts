@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -21,12 +21,14 @@ export type Escalation = {
 };
 
 /** @internal */
-export const Escalation$inboundSchema: z.ZodMiniType<Escalation, unknown> = z
-  .object({
-    enabled: types.boolean(),
-    expiration: types.number(),
-    fallbackApprovers: z.array(types.string()),
-  });
+export const Escalation$inboundSchema: z.ZodMiniType<Escalation, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      enabled: types.boolean(),
+      expiration: types.number(),
+      fallbackApprovers: z.array(types.string()),
+    })
+  );
 
 export function escalationFromJSON(
   jsonString: string,

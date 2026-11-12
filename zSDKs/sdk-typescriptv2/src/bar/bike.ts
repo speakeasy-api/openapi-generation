@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { SDKValidationError } from "../models/sdkvalidationerror.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
@@ -17,10 +17,13 @@ export type Bike = {
 };
 
 /** @internal */
-export const Bike$inboundSchema: z.ZodMiniType<Bike, unknown> = z.object({
-  wheels: types.literal(2),
-  hasPedals: types.boolean(),
-});
+export const Bike$inboundSchema: z.ZodMiniType<Bike, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      wheels: types.literal(2),
+      hasPedals: types.boolean(),
+    })
+  );
 
 export function bikeFromJSON(
   jsonString: string,

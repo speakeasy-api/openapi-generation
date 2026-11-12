@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import * as openEnums from "../types/enums.js";
 import { OpenEnum } from "../types/enums.js";
 
@@ -15,7 +16,7 @@ export type GenderOpen = OpenEnum<typeof Gender>;
 
 /** @internal */
 export const Gender$inboundSchema: z.ZodMiniType<GenderOpen, unknown> =
-  openEnums.inboundSchema(Gender);
+  /* @__PURE__ */ lazySchema$(() => openEnums.inboundSchema(Gender));
 /** @internal */
 export const Gender$outboundSchema: z.ZodMiniType<string, GenderOpen> =
-  openEnums.outboundSchema(Gender);
+  /* @__PURE__ */ lazySchema$(() => openEnums.outboundSchema(Gender));

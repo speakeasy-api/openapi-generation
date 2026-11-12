@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -40,12 +40,14 @@ export type VariantRecord =
   | (ImageRecord & { type: "$image" });
 
 /** @internal */
-export const ImageRecord$inboundSchema: z.ZodMiniType<ImageRecord, unknown> = z
-  .object({
-    type: types.string(),
-    imageId: types.string(),
-    caption: types.optional(types.string()),
-  });
+export const ImageRecord$inboundSchema: z.ZodMiniType<ImageRecord, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      type: types.string(),
+      imageId: types.string(),
+      caption: types.optional(types.string()),
+    })
+  );
 /** @internal */
 export type ImageRecord$Outbound = {
   type: string;
@@ -57,11 +59,13 @@ export type ImageRecord$Outbound = {
 export const ImageRecord$outboundSchema: z.ZodMiniType<
   ImageRecord$Outbound,
   ImageRecord
-> = z.object({
-  type: z.string(),
-  imageId: z.string(),
-  caption: z.optional(z.string()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    type: z.string(),
+    imageId: z.string(),
+    caption: z.optional(z.string()),
+  })
+);
 
 export function imageRecordToJSON(imageRecord: ImageRecord): string {
   return JSON.stringify(ImageRecord$outboundSchema.parse(imageRecord));
@@ -77,12 +81,14 @@ export function imageRecordFromJSON(
 }
 
 /** @internal */
-export const TextRecord$inboundSchema: z.ZodMiniType<TextRecord, unknown> = z
-  .object({
-    type: types.string(),
-    text: types.string(),
-    note: types.optional(types.string()),
-  });
+export const TextRecord$inboundSchema: z.ZodMiniType<TextRecord, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      type: types.string(),
+      text: types.string(),
+      note: types.optional(types.string()),
+    })
+  );
 /** @internal */
 export type TextRecord$Outbound = {
   type: string;
@@ -94,11 +100,13 @@ export type TextRecord$Outbound = {
 export const TextRecord$outboundSchema: z.ZodMiniType<
   TextRecord$Outbound,
   TextRecord
-> = z.object({
-  type: z.string(),
-  text: z.string(),
-  note: z.optional(z.string()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    type: z.string(),
+    text: z.string(),
+    note: z.optional(z.string()),
+  })
+);
 
 export function textRecordToJSON(textRecord: TextRecord): string {
   return JSON.stringify(TextRecord$outboundSchema.parse(textRecord));
@@ -117,16 +125,18 @@ export function textRecordFromJSON(
 export const VariantRecord$inboundSchema: z.ZodMiniType<
   VariantRecord,
   unknown
-> = z.union([
-  z.intersection(
-    z.lazy(() => TextRecord$inboundSchema),
-    z.object({ type: z.literal("$text") }),
-  ),
-  z.intersection(
-    z.lazy(() => ImageRecord$inboundSchema),
-    z.object({ type: z.literal("$image") }),
-  ),
-]);
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.union([
+    z.intersection(
+      z.lazy(() => TextRecord$inboundSchema),
+      z.object({ type: z.literal("$text") }),
+    ),
+    z.intersection(
+      z.lazy(() => ImageRecord$inboundSchema),
+      z.object({ type: z.literal("$image") }),
+    ),
+  ])
+);
 /** @internal */
 export type VariantRecord$Outbound =
   | (TextRecord$Outbound & { type: "$text" })
@@ -136,16 +146,18 @@ export type VariantRecord$Outbound =
 export const VariantRecord$outboundSchema: z.ZodMiniType<
   VariantRecord$Outbound,
   VariantRecord
-> = z.union([
-  z.intersection(
-    z.lazy(() => TextRecord$outboundSchema),
-    z.object({ type: z.literal("$text") }),
-  ),
-  z.intersection(
-    z.lazy(() => ImageRecord$outboundSchema),
-    z.object({ type: z.literal("$image") }),
-  ),
-]);
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.union([
+    z.intersection(
+      z.lazy(() => TextRecord$outboundSchema),
+      z.object({ type: z.literal("$text") }),
+    ),
+    z.intersection(
+      z.lazy(() => ImageRecord$outboundSchema),
+      z.object({ type: z.literal("$image") }),
+    ),
+  ])
+);
 
 export function variantRecordToJSON(variantRecord: VariantRecord): string {
   return JSON.stringify(VariantRecord$outboundSchema.parse(variantRecord));

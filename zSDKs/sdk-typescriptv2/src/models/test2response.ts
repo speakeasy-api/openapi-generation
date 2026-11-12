@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -21,11 +21,13 @@ export type Test2Response = {
 export const Test2Response$inboundSchema: z.ZodMiniType<
   Test2Response,
   unknown
-> = z.object({
-  test2: z.optional(z.nullable(types.string())),
-  someConst: types.optional(types.literal("someConstValue")),
-  requiredNullableField: types.nullable(types.string()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    test2: z.optional(z.nullable(types.string())),
+    someConst: types.optional(types.literal("someConstValue")),
+    requiredNullableField: types.nullable(types.string()),
+  })
+);
 
 export function test2ResponseFromJSON(
   jsonString: string,

@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import * as types from "../types/primitives.js";
 import { SDKBaseError } from "./sdkbaseerror.js";
 
@@ -47,20 +48,22 @@ export class Test2ResponseError extends SDKBaseError {
 export const Test2ResponseError$inboundSchema: z.ZodMiniType<
   Test2ResponseError,
   unknown
-> = z.pipe(
-  z.object({
-    test2: z.optional(z.nullable(types.string())),
-    someConst: types.optional(types.literal("someConstValue")),
-    requiredNullableField: types.nullable(types.string()),
-    request$: z.custom<Request>(x => x instanceof Request),
-    response$: z.custom<Response>(x => x instanceof Response),
-    body$: z.string(),
-  }),
-  z.transform((v) => {
-    return new Test2ResponseError(v, {
-      request: v.request$,
-      response: v.response$,
-      body: v.body$,
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      test2: z.optional(z.nullable(types.string())),
+      someConst: types.optional(types.literal("someConstValue")),
+      requiredNullableField: types.nullable(types.string()),
+      request$: z.custom<Request>(x => x instanceof Request),
+      response$: z.custom<Response>(x => x instanceof Response),
+      body$: z.string(),
+    }),
+    z.transform((v) => {
+      return new Test2ResponseError(v, {
+        request: v.request$,
+        response: v.response$,
+        body: v.body$,
+      });
+    }),
+  )
 );

@@ -4,7 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { smartUnion } from "../types/smartUnion.js";
@@ -52,9 +52,11 @@ export type GetUnionErrorsRequest$Outbound = {
 export const GetUnionErrorsRequest$outboundSchema: z.ZodMiniType<
   GetUnionErrorsRequest$Outbound,
   GetUnionErrorsRequest
-> = z.object({
-  page: z.int(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    page: z.int(),
+  })
+);
 
 export function getUnionErrorsRequestToJSON(
   getUnionErrorsRequest: GetUnionErrorsRequest,
@@ -65,17 +67,19 @@ export function getUnionErrorsRequestToJSON(
 }
 
 /** @internal */
-export const ClientError$inboundSchema: z.ZodMiniType<ClientError, unknown> = z
-  .union([
-    z.pipe(
-      TaggedError1$inboundSchema,
-      z.custom<(TaggedError1 & { tag: Tag.Tag1 })>(
-        (x) => x.tag === Tag.Tag1,
-        "Must be exactly \"Tag.Tag1\"",
+export const ClientError$inboundSchema: z.ZodMiniType<ClientError, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.union([
+      z.pipe(
+        TaggedError1$inboundSchema,
+        z.custom<(TaggedError1 & { tag: Tag.Tag1 })>(
+          (x) => x.tag === Tag.Tag1,
+          "Must be exactly \"Tag.Tag1\"",
+        ),
       ),
-    ),
-    TaggedError2$inboundSchema,
-  ]);
+      TaggedError2$inboundSchema,
+    ])
+  );
 
 export function clientErrorFromJSON(
   jsonString: string,
@@ -91,7 +95,9 @@ export function clientErrorFromJSON(
 export const GetUnionErrorsInternalServerError$inboundSchema: z.ZodMiniType<
   GetUnionErrorsInternalServerError,
   unknown
-> = smartUnion([ErrorType1$inboundSchema, ErrorType2$inboundSchema]);
+> = /* @__PURE__ */ lazySchema$(() =>
+  smartUnion([ErrorType1$inboundSchema, ErrorType2$inboundSchema])
+);
 
 export function getUnionErrorsInternalServerErrorFromJSON(
   jsonString: string,
@@ -107,9 +113,11 @@ export function getUnionErrorsInternalServerErrorFromJSON(
 export const GetUnionErrorsResponseBody$inboundSchema: z.ZodMiniType<
   GetUnionErrorsResponseBody,
   unknown
-> = z.object({
-  pages: z.array(types.string()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    pages: z.array(types.string()),
+  })
+);
 
 export function getUnionErrorsResponseBodyFromJSON(
   jsonString: string,
@@ -125,15 +133,17 @@ export function getUnionErrorsResponseBodyFromJSON(
 export const GetUnionErrorsResponse$inboundSchema: z.ZodMiniType<
   GetUnionErrorsResponse,
   unknown
-> = z.pipe(
-  z.object({
-    Result: z.lazy(() => GetUnionErrorsResponseBody$inboundSchema),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      "Result": "result",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      Result: z.lazy(() => GetUnionErrorsResponseBody$inboundSchema),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        "Result": "result",
+      });
+    }),
+  )
 );
 
 export function getUnionErrorsResponseFromJSON(

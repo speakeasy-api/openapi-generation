@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { smartUnion } from "../types/smartUnion.js";
@@ -85,7 +85,9 @@ export type GetPolymorphismResponse = {
 export const OneOfWithUnionDescription$inboundSchema: z.ZodMiniType<
   OneOfWithUnionDescription,
   unknown
-> = smartUnion([ExhaustiveObject$inboundSchema, SimpleObject$inboundSchema]);
+> = /* @__PURE__ */ lazySchema$(() =>
+  smartUnion([ExhaustiveObject$inboundSchema, SimpleObject$inboundSchema])
+);
 
 export function oneOfWithUnionDescriptionFromJSON(
   jsonString: string,
@@ -98,11 +100,13 @@ export function oneOfWithUnionDescriptionFromJSON(
 }
 
 /** @internal */
-export const SimpleAllOf$inboundSchema: z.ZodMiniType<SimpleAllOf, unknown> = z
-  .object({
-    str: types.optional(types.string()),
-    bool: types.optional(types.boolean()),
-  });
+export const SimpleAllOf$inboundSchema: z.ZodMiniType<SimpleAllOf, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      str: types.optional(types.string()),
+      bool: types.optional(types.boolean()),
+    })
+  );
 
 export function simpleAllOfFromJSON(
   jsonString: string,
@@ -118,11 +122,13 @@ export function simpleAllOfFromJSON(
 export const AllOfWithFactoredOutProperties$inboundSchema: z.ZodMiniType<
   AllOfWithFactoredOutProperties,
   unknown
-> = z.object({
-  anOverridingProperty: types.optional(types.string()),
-  anotherProperty: types.optional(types.string()),
-  anExtraProperty: types.optional(types.string()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    anOverridingProperty: types.optional(types.string()),
+    anotherProperty: types.optional(types.string()),
+    anExtraProperty: types.optional(types.string()),
+  })
+);
 
 export function allOfWithFactoredOutPropertiesFromJSON(
   jsonString: string,
@@ -138,20 +144,22 @@ export function allOfWithFactoredOutPropertiesFromJSON(
 export const GetPolymorphismResponse$inboundSchema: z.ZodMiniType<
   GetPolymorphismResponse,
   unknown
-> = z.object({
-  oneOfWithUnionDescription: types.optional(
-    smartUnion([ExhaustiveObject$inboundSchema, SimpleObject$inboundSchema]),
-  ),
-  oneOfWithFactoredOutProperties: types.optional(
-    OneOfWithFactoredOutProperties$inboundSchema,
-  ),
-  simpleAllOf: types.optional(z.lazy(() => SimpleAllOf$inboundSchema)),
-  allOfWithFactoredOutProperties: types.optional(
-    z.lazy(() => AllOfWithFactoredOutProperties$inboundSchema),
-  ),
-  circularUnion: types.optional(CircularUnion$inboundSchema),
-  recursiveFormField: types.optional(RecursiveFormField$inboundSchema),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    oneOfWithUnionDescription: types.optional(
+      smartUnion([ExhaustiveObject$inboundSchema, SimpleObject$inboundSchema]),
+    ),
+    oneOfWithFactoredOutProperties: types.optional(
+      OneOfWithFactoredOutProperties$inboundSchema,
+    ),
+    simpleAllOf: types.optional(z.lazy(() => SimpleAllOf$inboundSchema)),
+    allOfWithFactoredOutProperties: types.optional(
+      z.lazy(() => AllOfWithFactoredOutProperties$inboundSchema),
+    ),
+    circularUnion: types.optional(CircularUnion$inboundSchema),
+    recursiveFormField: types.optional(RecursiveFormField$inboundSchema),
+  })
+);
 
 export function getPolymorphismResponseFromJSON(
   jsonString: string,

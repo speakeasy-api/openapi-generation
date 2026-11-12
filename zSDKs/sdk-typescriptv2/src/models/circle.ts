@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -27,11 +27,14 @@ export type Circle = {
 };
 
 /** @internal */
-export const Circle$inboundSchema: z.ZodMiniType<Circle, unknown> = z.object({
-  type: types.literal("circle"),
-  radius: types.number(),
-  color: types.optional(types.string()),
-});
+export const Circle$inboundSchema: z.ZodMiniType<Circle, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      type: types.literal("circle"),
+      radius: types.number(),
+      color: types.optional(types.string()),
+    })
+  );
 /** @internal */
 export type Circle$Outbound = {
   type: "circle";
@@ -40,12 +43,14 @@ export type Circle$Outbound = {
 };
 
 /** @internal */
-export const Circle$outboundSchema: z.ZodMiniType<Circle$Outbound, Circle> = z
-  .object({
-    type: z.literal("circle"),
-    radius: z.number(),
-    color: z.optional(z.string()),
-  });
+export const Circle$outboundSchema: z.ZodMiniType<Circle$Outbound, Circle> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      type: z.literal("circle"),
+      radius: z.number(),
+      color: z.optional(z.string()),
+    })
+  );
 
 export function circleToJSON(circle: Circle): string {
   return JSON.stringify(Circle$outboundSchema.parse(circle));

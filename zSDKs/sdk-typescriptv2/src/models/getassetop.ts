@@ -4,7 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { Stream } from "../lib/event-streams.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { smartUnion } from "../types/smartUnion.js";
 import { AssetResult, AssetResult$inboundSchema } from "./assetresult.js";
@@ -37,10 +37,12 @@ export type GetAssetRequest$Outbound = {
 export const GetAssetRequest$outboundSchema: z.ZodMiniType<
   GetAssetRequest$Outbound,
   GetAssetRequest
-> = z.object({
-  id: z.string(),
-  stream: z._default(z.boolean(), true),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    id: z.string(),
+    stream: z._default(z.boolean(), true),
+  })
+);
 
 export function getAssetRequestToJSON(
   getAssetRequest: GetAssetRequest,
@@ -52,27 +54,29 @@ export function getAssetRequestToJSON(
 export const AssetStatusStream$inboundSchema: z.ZodMiniType<
   AssetStatusStream,
   unknown
-> = z.object({
-  data: z.pipe(
-    z.pipe(
-      z.unknown(),
-      z.transform((v, ctx) => {
-        if (typeof v !== "string") return v;
-        try {
-          return JSON.parse(v);
-        } catch (err) {
-          ctx.issues.push({
-            input: v,
-            code: "custom",
-            message: `malformed json: ${err}`,
-          });
-          return z.NEVER;
-        }
-      }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    data: z.pipe(
+      z.pipe(
+        z.unknown(),
+        z.transform((v, ctx) => {
+          if (typeof v !== "string") return v;
+          try {
+            return JSON.parse(v);
+          } catch (err) {
+            ctx.issues.push({
+              input: v,
+              code: "custom",
+              message: `malformed json: ${err}`,
+            });
+            return z.NEVER;
+          }
+        }),
+      ),
+      AssetResult$inboundSchema,
     ),
-    AssetResult$inboundSchema,
-  ),
-});
+  })
+);
 
 export function assetStatusStreamFromJSON(
   jsonString: string,
@@ -88,23 +92,25 @@ export function assetStatusStreamFromJSON(
 export const GetAssetResponse$inboundSchema: z.ZodMiniType<
   GetAssetResponse,
   unknown
-> = smartUnion([
-  AssetResult$inboundSchema,
-  z.pipe(
-    z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
-    z.transform(stream => {
-      return new Stream(stream, rawEvent => {
-        return {
-          done: false,
-          value: z.parse(
-            z.lazy(() => AssetStatusStream$inboundSchema),
-            rawEvent,
-          )?.data,
-        };
-      });
-    }),
-  ),
-]);
+> = /* @__PURE__ */ lazySchema$(() =>
+  smartUnion([
+    AssetResult$inboundSchema,
+    z.pipe(
+      z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
+      z.transform(stream => {
+        return new Stream(stream, rawEvent => {
+          return {
+            done: false,
+            value: z.parse(
+              z.lazy(() => AssetStatusStream$inboundSchema),
+              rawEvent,
+            )?.data,
+          };
+        });
+      }),
+    ),
+  ])
+);
 
 export function getAssetResponseFromJSON(
   jsonString: string,

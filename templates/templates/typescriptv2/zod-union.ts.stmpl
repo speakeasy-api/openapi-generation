@@ -13,11 +13,12 @@
 {{- $inboundType := resolveInbound (dict "usageLocation" $usageLocation "typeDef" $rootType "rootTypeDef" $rootType "optional" $isOptional "nullable" .Local.Nullable) -}}
 {{- if shouldIncludeInboundOrOutboundSchema .Local.Type -}}
 {{- addZodPackageImport }}
+{{- addInternalImport "schemas" "lazySchema as lazySchema$" $usageLocation }}
 {{- end }}
 
 {{- if shouldIncludeInboundSchema .Local.Type }}
 /** @internal */
-export const {{$zodName}}inboundSchema: {{zodType $typeName "unknown"}} = {{callImportTypesFunc $inboundType.importZodTypes}}{{ $inboundType.zod }};
+export const {{$zodName}}inboundSchema: {{zodType $typeName "unknown"}} = /* @__PURE__ */ lazySchema$(() => {{callImportTypesFunc $inboundType.importZodTypes}}{{ $inboundType.zod }});
 {{- end }}
 
 {{- if shouldIncludeOutboundSchema .Local.Type }}
@@ -30,7 +31,7 @@ export type {{$zodName}}Outbound = {{callImportTypesFunc $outboundType.importOut
   {{ $outboundIn = "" }}
 {{ end }}
 /** @internal */
-export const {{$zodName}}outboundSchema: {{zodType (printf "%sOutbound" $zodName) $outboundIn}} = {{callImportTypesFunc $outboundType.importZodTypes}}{{ $outboundType.zod }};
+export const {{$zodName}}outboundSchema: {{zodType (printf "%sOutbound" $zodName) $outboundIn}} = /* @__PURE__ */ lazySchema$(() => {{callImportTypesFunc $outboundType.importZodTypes}}{{ $outboundType.zod }});
 {{- end }}
 {{- end }}
 

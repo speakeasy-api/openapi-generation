@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import * as types from "../types/primitives.js";
 import { SDKBaseError } from "./sdkbaseerror.js";
 
@@ -40,19 +41,21 @@ export class RequestTimeoutError extends SDKBaseError {
 export const RequestTimeoutError$inboundSchema: z.ZodMiniType<
   RequestTimeoutError,
   unknown
-> = z.pipe(
-  z.object({
-    code: types.optional(types.number()),
-    message: types.optional(types.string()),
-    request$: z.custom<Request>(x => x instanceof Request),
-    response$: z.custom<Response>(x => x instanceof Response),
-    body$: z.string(),
-  }),
-  z.transform((v) => {
-    return new RequestTimeoutError(v, {
-      request: v.request$,
-      response: v.response$,
-      body: v.body$,
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      code: types.optional(types.number()),
+      message: types.optional(types.string()),
+      request$: z.custom<Request>(x => x instanceof Request),
+      response$: z.custom<Response>(x => x instanceof Response),
+      body$: z.string(),
+    }),
+    z.transform((v) => {
+      return new RequestTimeoutError(v, {
+        request: v.request$,
+        response: v.response$,
+        body: v.body$,
+      });
+    }),
+  )
 );

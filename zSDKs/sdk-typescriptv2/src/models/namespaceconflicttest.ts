@@ -5,7 +5,7 @@
 import * as z from "zod/v4-mini";
 import * as bar from "../bar/index.js";
 import * as foo from "../foo/index.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
 
@@ -27,10 +27,12 @@ export type NamespaceConflictTest = {
 export const NamespaceConflictTest$inboundSchema: z.ZodMiniType<
   NamespaceConflictTest,
   unknown
-> = z.object({
-  fooPet: foo.Pet$inboundSchema,
-  barPet: bar.Pet$inboundSchema,
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    fooPet: foo.Pet$inboundSchema,
+    barPet: bar.Pet$inboundSchema,
+  })
+);
 
 export function namespaceConflictTestFromJSON(
   jsonString: string,

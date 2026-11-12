@@ -4,6 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type UserPassAuth = {
   username: string;
@@ -58,10 +59,12 @@ export type UserPassAuth$Outbound = {
 export const UserPassAuth$outboundSchema: z.ZodMiniType<
   UserPassAuth$Outbound,
   UserPassAuth
-> = z.object({
-  username: z.string(),
-  password: z.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    username: z.string(),
+    password: z.string(),
+  })
+);
 
 export function userPassAuthToJSON(userPassAuth: UserPassAuth): string {
   return JSON.stringify(UserPassAuth$outboundSchema.parse(userPassAuth));
@@ -77,16 +80,18 @@ export type SecurityOption2$Outbound = {
 export const SecurityOption2$outboundSchema: z.ZodMiniType<
   SecurityOption2$Outbound,
   SecurityOption2
-> = z.pipe(
-  z.object({
-    bearerAuth: z.string(),
-    myApiKey: z.string(),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      myApiKey: "MyApiKey",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      bearerAuth: z.string(),
+      myApiKey: z.string(),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        myApiKey: "MyApiKey",
+      });
+    }),
+  )
 );
 
 export function securityOption2ToJSON(
@@ -104,9 +109,11 @@ export type SecurityOption3$Outbound = {
 export const SecurityOption3$outboundSchema: z.ZodMiniType<
   SecurityOption3$Outbound,
   SecurityOption3
-> = z.object({
-  oauth2: z.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    oauth2: z.string(),
+  })
+);
 
 export function securityOption3ToJSON(
   securityOption3: SecurityOption3,
@@ -124,10 +131,12 @@ export type SecurityOption4$Outbound = {
 export const SecurityOption4$outboundSchema: z.ZodMiniType<
   SecurityOption4$Outbound,
   SecurityOption4
-> = z.object({
-  appId: z.string(),
-  secret: z.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    appId: z.string(),
+    secret: z.string(),
+  })
+);
 
 export function securityOption4ToJSON(
   securityOption4: SecurityOption4,
@@ -144,9 +153,11 @@ export type SecurityOption5$Outbound = {
 export const SecurityOption5$outboundSchema: z.ZodMiniType<
   SecurityOption5$Outbound,
   SecurityOption5
-> = z.object({
-  mobileAuth: z.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    mobileAuth: z.string(),
+  })
+);
 
 export function securityOption5ToJSON(
   securityOption5: SecurityOption5,
@@ -165,11 +176,13 @@ export type SecurityOption6$Outbound = {
 export const SecurityOption6$outboundSchema: z.ZodMiniType<
   SecurityOption6$Outbound,
   SecurityOption6
-> = z.object({
-  clientID: z.string(),
-  clientSecret: z.string(),
-  tokenURL: z._default(z.string(), "/clientcredentials/token"),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    clientID: z.string(),
+    clientSecret: z.string(),
+    tokenURL: z._default(z.string(), "/clientcredentials/token"),
+  })
+);
 
 export function securityOption6ToJSON(
   securityOption6: SecurityOption6,
@@ -186,15 +199,17 @@ export type MyApiKey$Outbound = {
 export const MyApiKey$outboundSchema: z.ZodMiniType<
   MyApiKey$Outbound,
   MyApiKey
-> = z.pipe(
-  z.object({
-    myApiKey: z.string(),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      myApiKey: "MyApiKey",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      myApiKey: z.string(),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        myApiKey: "MyApiKey",
+      });
+    }),
+  )
 );
 
 export function myApiKeyToJSON(myApiKey: MyApiKey): string {
@@ -216,27 +231,29 @@ export type Security$Outbound = {
 export const Security$outboundSchema: z.ZodMiniType<
   Security$Outbound,
   Security
-> = z.pipe(
-  z.object({
-    userPassAuth: z.optional(z.lazy(() => UserPassAuth$outboundSchema)),
-    option2: z.optional(z.lazy(() => SecurityOption2$outboundSchema)),
-    option3: z.optional(z.lazy(() => SecurityOption3$outboundSchema)),
-    option4: z.optional(z.lazy(() => SecurityOption4$outboundSchema)),
-    option5: z.optional(z.lazy(() => SecurityOption5$outboundSchema)),
-    option6: z.optional(z.lazy(() => SecurityOption6$outboundSchema)),
-    myApiKey: z.optional(z.lazy(() => MyApiKey$outboundSchema)),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      userPassAuth: "UserPassAuth",
-      option2: "Option2",
-      option3: "Option3",
-      option4: "Option4",
-      option5: "Option5",
-      option6: "Option6",
-      myApiKey: "MyApiKey",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      userPassAuth: z.optional(z.lazy(() => UserPassAuth$outboundSchema)),
+      option2: z.optional(z.lazy(() => SecurityOption2$outboundSchema)),
+      option3: z.optional(z.lazy(() => SecurityOption3$outboundSchema)),
+      option4: z.optional(z.lazy(() => SecurityOption4$outboundSchema)),
+      option5: z.optional(z.lazy(() => SecurityOption5$outboundSchema)),
+      option6: z.optional(z.lazy(() => SecurityOption6$outboundSchema)),
+      myApiKey: z.optional(z.lazy(() => MyApiKey$outboundSchema)),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        userPassAuth: "UserPassAuth",
+        option2: "Option2",
+        option3: "Option3",
+        option4: "Option4",
+        option5: "Option5",
+        option6: "Option6",
+        myApiKey: "MyApiKey",
+      });
+    }),
+  )
 );
 
 export function securityToJSON(security: Security): string {

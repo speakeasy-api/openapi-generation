@@ -8,6 +8,7 @@
 {{- addZodPackageImport }}
 import { expect, test } from "vitest";
 {{- addImport "../../lib/schemas.js" "collectExtraKeys" }}
+{{- addImport "../../lib/schemas.js" "lazySchema" }}
 
 test("collectExtraKeys collects excess object keys", () => {
   const schema = {{ templateTestSchemaPersonObject }};
@@ -99,5 +100,125 @@ test("collectExtraKeys does not clobber excess key name", () => {
       extraobj: [7, 8, 9],
     },
   });
+});
+
+test("lazySchema constructs once on first use and preserves sync parsing", () => {
+  let constructions = 0;
+  const schema = lazySchema(() => {
+    constructions += 1;
+    return z.string();
+  });
+
+  expect(constructions).toBe(0);
+  expect({{if isZodV4Mini}}z.parse(schema, "value"){{else}}schema.parse("value"){{end}}).toBe("value");
+  const invalid = {{if isZodV4Mini}}z.safeParse(schema, 1){{else}}schema.safeParse(1){{end}};
+  expect(invalid.success).toBe(false);
+  if (!invalid.success) {
+    expect(invalid.error instanceof {{if isZodV4Mini}}z.core.$ZodError{{else}}z.ZodError{{end}}).toBe(true);
+  }
+  expect(constructions).toBe(1);
+});
+
+test("lazySchema supports asynchronous parsing and composition", async () => {
+  const schema = lazySchema(() => z.string());
+  const composed = z.array(schema);
+
+  await expect({{if isZodV4Mini}}z.parseAsync(composed, ["value"]){{else}}composed.parseAsync(["value"]){{end}}).resolves.toEqual(["value"]);
+});
+
+test("lazySchema preserves recursive schema references", () => {
+  type Node = { value: string; next?: Node | undefined };
+  const node: {{if isZodV4Mini}}z.ZodMiniType<Node>{{else}}z.ZodType<Node>{{end}} = lazySchema(() =>
+    z.object({
+      value: z.string(),
+      next: z.optional(z.lazy(() => node)),
+    }),
+  );
+
+  expect({{if isZodV4Mini}}z.parse(node, { value: "first", next: { value: "second" } }){{else}}node.parse({ value: "first", next: { value: "second" } }){{end}}).toEqual({
+    value: "first",
+    next: { value: "second" },
+  });
+});
+
+test("lazySchema preserves enum APIs and prototype reflection", () => {
+  const concrete = z.enum(["first", "second"]);
+  const schema = lazySchema(() => concrete);
+
+  {{- if isZodV4Mini }}
+  expect(schema.options).toEqual(["first", "second"]);
+  {{- else }}
+  expect(schema.enum).toEqual({ first: "first", second: "second" });
+  {{- end }}
+  expect({{if isZodV4Mini}}z.parse(schema, "first"){{else}}schema.parse("first"){{end}}).toBe("first");
+  expect(schema instanceof concrete.constructor).toBe(true);
+  expect(schema.constructor).toBe(concrete.constructor);
+  expect(Object.getPrototypeOf(schema)).toBe(Object.getPrototypeOf(concrete));
+  expect(Reflect.ownKeys(schema)).toEqual(Reflect.ownKeys(concrete));
+});
+
+test("lazySchema forwards property definitions, assignment, and deletion", () => {
+  const concrete = { value: 1 };
+  const schema = lazySchema(() => concrete);
+
+  Object.defineProperty(schema, "value", { value: 2, configurable: true, writable: true });
+  expect(concrete.value).toBe(2);
+  expect(schema.value).toBe(2);
+  schema.value = 3;
+  expect(concrete.value).toBe(3);
+  expect(Reflect.deleteProperty(schema, "value")).toBe(true);
+  expect("value" in concrete).toBe(false);
+  expect("value" in schema).toBe(false);
+  expect(Reflect.ownKeys(schema)).toEqual([]);
+});
+
+test("lazySchema preserves non-configurable property invariants", () => {
+  const concrete = { value: 1 };
+  const schema = lazySchema(() => concrete);
+  const method = () => "value";
+
+  Object.defineProperty(schema, "method", { value: method });
+  expect(Reflect.get(schema, "method")).toBe(method);
+  expect(Object.getOwnPropertyDescriptor(schema, "method")).toEqual(Object.getOwnPropertyDescriptor(concrete, "method"));
+  expect(Reflect.deleteProperty(schema, "method")).toBe(false);
+  expect(Reflect.set(schema, "method", () => "other")).toBe(false);
+  expect(Reflect.defineProperty(schema, "method", { configurable: true })).toBe(false);
+
+  Object.defineProperty(schema, "value", { configurable: false, writable: true });
+  schema.value = 2;
+  Object.defineProperty(schema, "value", { writable: false });
+  expect(schema.value).toBe(2);
+  expect(Object.getOwnPropertyDescriptor(schema, "value")).toEqual(Object.getOwnPropertyDescriptor(concrete, "value"));
+  expect(Reflect.ownKeys(schema)).toEqual(Reflect.ownKeys(concrete));
+});
+
+test("lazySchema forwards accessor definitions", () => {
+  const concrete = { value: 1 };
+  const schema = lazySchema(() => concrete);
+  Object.defineProperty(schema, "double", {
+    get() { return this.value * 2; },
+    set(value: number) { this.value = value / 2; },
+  });
+
+  expect(Reflect.get(schema, "double")).toBe(2);
+  expect(Reflect.set(schema, "double", 6)).toBe(true);
+  expect(concrete.value).toBe(3);
+  expect(Reflect.get(schema, "double")).toBe(6);
+  expect(Object.getOwnPropertyDescriptor(schema, "double")).toEqual(Object.getOwnPropertyDescriptor(concrete, "double"));
+});
+
+test("lazySchema retries when the factory throws", () => {
+  let attempts = 0;
+  const schema = lazySchema(() => {
+    attempts += 1;
+    if (attempts === 1) {
+      throw new Error("initialization failed");
+    }
+    return z.string();
+  });
+
+  expect(() => {{if isZodV4Mini}}z.parse(schema, "value"){{else}}schema.parse("value"){{end}}).toThrow("initialization failed");
+  expect({{if isZodV4Mini}}z.parse(schema, "value"){{else}}schema.parse("value"){{end}}).toBe("value");
+  expect(attempts).toBe(2);
 });
 {{- end -}}

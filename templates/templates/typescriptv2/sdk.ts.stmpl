@@ -10,14 +10,29 @@
 
 {{ range $op := .Local.Operations}}
 {{ if shouldTemplateAcceptHeaderEnum $op }}
+{{- if $.Local.LazyOperations }}
+export enum {{sanitizeAcceptEnumName $op}} {
+  {{- range $op.GetAcceptTypes}}
+  {{ sanitizeAcceptEnumKey . }} = "{{ sanitizeAcceptEnumValue . }}",
+  {{- end}}
+}
+{{- else }}
 {{- addFuncAcceptEnumImport $op $usageLocation }}
 export { {{sanitizeAcceptEnumName .}} } from "{{getFuncImportPath $op $usageLocation}}";
 {{- end }}
+{{- end }}
 {{- end}}
+
+{{- if .Local.LazyOperations }}
+{{- range .Local.Operations }}
+{{templateString "lazy-func.ts.stmpl" (dict "Operation" .)}}
+{{- end }}
+{{- end }}
 
 export class {{templateSDKClassName $sdkName}} extends ClientSDK {
 {{- range .Local.SubSDKs -}}
-  {{- addImport (print "./" (sanitizeTypeFilename .Type.Name) ".js") (sanitizeClassName .Type.Name) -}}
+  {{- $suffix := ".js" }}{{ if $.Local.LazyOperations }}{{ $suffix = ".lazy.js" }}{{ end }}
+  {{- addImport (print "./" (sanitizeTypeFilename .Type.Name) $suffix) (sanitizeClassName .Type.Name) -}}
   {{- $subName := .Type.Name }}
   {{- $fieldName := sanitizeSubSDKFieldName .FieldName }}
   {{- if ne $subName "" -}}
@@ -34,7 +49,7 @@ export class {{templateSDKClassName $sdkName}} extends ClientSDK {
 
 {{- range .Local.Operations -}}
   {{- addInternalImport "sdks" "RequestOptions" $usageLocation}}
-  {{- addFuncImport . $usageLocation}}
+  {{- if not $.Local.LazyOperations }}{{- addFuncImport . $usageLocation}}{{- end }}
   {{- if and .Extensions.Pagination .Response (gt (len .Response.Responses) 0) }}
   {{- addTypeImport "operations" "PageIterator" "funcs"}}
   {{- end }}

@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -17,9 +17,11 @@ export type SimpleObject = {
 
 /** @internal */
 export const SimpleObject$inboundSchema: z.ZodMiniType<SimpleObject, unknown> =
-  z.object({
-    str: types.string(),
-  });
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      str: types.string(),
+    })
+  );
 /** @internal */
 export type SimpleObject$Outbound = {
   str: string;
@@ -29,9 +31,11 @@ export type SimpleObject$Outbound = {
 export const SimpleObject$outboundSchema: z.ZodMiniType<
   SimpleObject$Outbound,
   SimpleObject
-> = z.object({
-  str: z.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    str: z.string(),
+  })
+);
 
 export function simpleObjectToJSON(simpleObject: SimpleObject): string {
   return JSON.stringify(SimpleObject$outboundSchema.parse(simpleObject));

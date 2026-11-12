@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import * as types from "../types/primitives.js";
 import { SDKBaseError } from "./sdkbaseerror.js";
 
@@ -38,24 +39,27 @@ export class TaggedError1 extends SDKBaseError {
 }
 
 /** @internal */
-export const Tag$inboundSchema: z.ZodMiniEnum<typeof Tag> = z.enum(Tag);
+export const Tag$inboundSchema: z.ZodMiniEnum<typeof Tag> =
+  /* @__PURE__ */ lazySchema$(() => z.enum(Tag));
 
 /** @internal */
 export const TaggedError1$inboundSchema: z.ZodMiniType<TaggedError1, unknown> =
-  z.pipe(
-    z.object({
-      tag: Tag$inboundSchema,
-      error: types.string(),
-      message: types.string(),
-      request$: z.custom<Request>(x => x instanceof Request),
-      response$: z.custom<Response>(x => x instanceof Response),
-      body$: z.string(),
-    }),
-    z.transform((v) => {
-      return new TaggedError1(v, {
-        request: v.request$,
-        response: v.response$,
-        body: v.body$,
-      });
-    }),
+  /* @__PURE__ */ lazySchema$(() =>
+    z.pipe(
+      z.object({
+        tag: Tag$inboundSchema,
+        error: types.string(),
+        message: types.string(),
+        request$: z.custom<Request>(x => x instanceof Request),
+        response$: z.custom<Response>(x => x instanceof Response),
+        body$: z.string(),
+      }),
+      z.transform((v) => {
+        return new TaggedError1(v, {
+          request: v.request$,
+          response: v.response$,
+          body: v.body$,
+        });
+      }),
+    )
   );

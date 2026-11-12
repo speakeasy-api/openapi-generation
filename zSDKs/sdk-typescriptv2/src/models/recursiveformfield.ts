@@ -4,7 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import * as discriminatedUnionTypes from "../types/discriminatedUnion.js";
 import { discriminatedUnion } from "../types/discriminatedUnion.js";
 import { Result as SafeParseResult } from "../types/fp.js";
@@ -59,11 +59,13 @@ export type RecursiveFormFieldArray = {
 export const RecursiveFormFieldText$inboundSchema: z.ZodMiniType<
   RecursiveFormFieldText,
   unknown
-> = z.object({
-  type: types.literal("text"),
-  label: types.string(),
-  required: types.optional(types.boolean()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    type: types.literal("text"),
+    label: types.string(),
+    required: types.optional(types.boolean()),
+  })
+);
 
 export function recursiveFormFieldTextFromJSON(
   jsonString: string,
@@ -79,11 +81,13 @@ export function recursiveFormFieldTextFromJSON(
 export const RecursiveFormFieldNumber$inboundSchema: z.ZodMiniType<
   RecursiveFormFieldNumber,
   unknown
-> = z.object({
-  type: types.literal("number"),
-  label: types.string(),
-  required: types.optional(types.boolean()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    type: types.literal("number"),
+    label: types.string(),
+    required: types.optional(types.boolean()),
+  })
+);
 
 export function recursiveFormFieldNumberFromJSON(
   jsonString: string,
@@ -99,11 +103,13 @@ export function recursiveFormFieldNumberFromJSON(
 export const RecursiveFormField$inboundSchema: z.ZodMiniType<
   RecursiveFormField,
   unknown
-> = discriminatedUnion("type", {
-  text: z.lazy(() => RecursiveFormFieldText$inboundSchema),
-  number: z.lazy(() => RecursiveFormFieldNumber$inboundSchema),
-  array: z.lazy(() => RecursiveFormFieldArray$inboundSchema),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  discriminatedUnion("type", {
+    text: z.lazy(() => RecursiveFormFieldText$inboundSchema),
+    number: z.lazy(() => RecursiveFormFieldNumber$inboundSchema),
+    array: z.lazy(() => RecursiveFormFieldArray$inboundSchema),
+  })
+);
 
 export function recursiveFormFieldFromJSON(
   jsonString: string,
@@ -119,22 +125,24 @@ export function recursiveFormFieldFromJSON(
 export const RecursiveFormFieldArray$inboundSchema: z.ZodMiniType<
   RecursiveFormFieldArray,
   unknown
-> = z.pipe(
-  z.object({
-    type: types.literal("array"),
-    label: types.string(),
-    required: types.optional(types.boolean()),
-    item_type: discriminatedUnion("type", {
-      text: z.lazy(() => RecursiveFormFieldText$inboundSchema),
-      number: z.lazy(() => RecursiveFormFieldNumber$inboundSchema),
-      array: z.lazy(() => RecursiveFormFieldArray$inboundSchema),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      type: types.literal("array"),
+      label: types.string(),
+      required: types.optional(types.boolean()),
+      item_type: discriminatedUnion("type", {
+        text: z.lazy(() => RecursiveFormFieldText$inboundSchema),
+        number: z.lazy(() => RecursiveFormFieldNumber$inboundSchema),
+        array: z.lazy(() => RecursiveFormFieldArray$inboundSchema),
+      }),
     }),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      "item_type": "itemType",
-    });
-  }),
+    z.transform((v) => {
+      return remap$(v, {
+        "item_type": "itemType",
+      });
+    }),
+  )
 );
 
 export function recursiveFormFieldArrayFromJSON(

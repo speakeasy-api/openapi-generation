@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { Escalation, Escalation$inboundSchema } from "./escalation.js";
@@ -24,10 +24,12 @@ export type ApprovalConfig = {
 export const ApprovalConfig$inboundSchema: z.ZodMiniType<
   ApprovalConfig,
   unknown
-> = z.object({
-  approvers: z.array(types.string()),
-  escalation: Escalation$inboundSchema,
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    approvers: z.array(types.string()),
+    escalation: Escalation$inboundSchema,
+  })
+);
 
 export function approvalConfigFromJSON(
   jsonString: string,

@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -21,11 +21,13 @@ export type ValidateResponse = {
 export const ValidateResponse$inboundSchema: z.ZodMiniType<
   ValidateResponse,
   unknown
-> = z.object({
-  valid: types.optional(types.boolean()),
-  id: types.optional(types.string()),
-  lastLogin: types.optional(types.date()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    valid: types.optional(types.boolean()),
+    id: types.optional(types.string()),
+    lastLogin: types.optional(types.date()),
+  })
+);
 
 export function validateResponseFromJSON(
   jsonString: string,

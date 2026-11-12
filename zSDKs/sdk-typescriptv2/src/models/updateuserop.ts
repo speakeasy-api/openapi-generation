@@ -4,6 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import { User, User$Outbound, User$outboundSchema } from "./user.js";
 
 export type UpdateUserRequest = {
@@ -21,16 +22,18 @@ export type UpdateUserRequest$Outbound = {
 export const UpdateUserRequest$outboundSchema: z.ZodMiniType<
   UpdateUserRequest$Outbound,
   UpdateUserRequest
-> = z.pipe(
-  z.object({
-    id: z.string(),
-    user: User$outboundSchema,
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      user: "User",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      id: z.string(),
+      user: User$outboundSchema,
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        user: "User",
+      });
+    }),
+  )
 );
 
 export function updateUserRequestToJSON(

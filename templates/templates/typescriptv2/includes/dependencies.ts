@@ -239,6 +239,7 @@ function templateAdditionalPackageJSON(): string {
       exports: {
         ".": "./src/index.ts",
         "./package.json": "./package.json",
+        "./node": "./src/node.ts",
         ...toTshy(makeBarrelExports()),
         "./*.js": "./src/*.ts",
         "./*": "./src/*.ts",
@@ -254,6 +255,11 @@ function templateAdditionalPackageJSON(): string {
         default: "./esm/index.js",
       },
       "./package.json": "./package.json",
+      "./node": {
+        source: "./src/node.ts",
+        types: "./esm/node.d.ts",
+        default: "./esm/node.js",
+      },
       ...makeBarrelExports(),
       "./*.js": {
         source: "./src/*.ts",

@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { smartUnion } from "../types/smartUnion.js";
@@ -17,8 +17,8 @@ export type MyObject = {};
 export type SomeUnion = string | MyObject | boolean;
 
 /** @internal */
-export const MyObject$inboundSchema: z.ZodMiniType<MyObject, unknown> = z
-  .object({});
+export const MyObject$inboundSchema: z.ZodMiniType<MyObject, unknown> =
+  /* @__PURE__ */ lazySchema$(() => z.object({}));
 
 export function myObjectFromJSON(
   jsonString: string,
@@ -32,11 +32,13 @@ export function myObjectFromJSON(
 
 /** @internal */
 export const SomeUnion$inboundSchema: z.ZodMiniType<SomeUnion, unknown> =
-  smartUnion([
-    types.string(),
-    z.lazy(() => MyObject$inboundSchema),
-    types.boolean(),
-  ]);
+  /* @__PURE__ */ lazySchema$(() =>
+    smartUnion([
+      types.string(),
+      z.lazy(() => MyObject$inboundSchema),
+      types.boolean(),
+    ])
+  );
 
 export function someUnionFromJSON(
   jsonString: string,

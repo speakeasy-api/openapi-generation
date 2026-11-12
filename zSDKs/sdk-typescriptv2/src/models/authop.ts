@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type AuthSecurity = {
   accessToken: string;
@@ -17,9 +18,11 @@ export type AuthSecurity$Outbound = {
 export const AuthSecurity$outboundSchema: z.ZodMiniType<
   AuthSecurity$Outbound,
   AuthSecurity
-> = z.object({
-  accessToken: z.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    accessToken: z.string(),
+  })
+);
 
 export function authSecurityToJSON(authSecurity: AuthSecurity): string {
   return JSON.stringify(AuthSecurity$outboundSchema.parse(authSecurity));
