@@ -1,0 +1,11 @@
+id: 1794462313-1f3dc8f5
+features:
+    - core
+targets:
+    - typescriptv2
+    - mcp-typescript
+type: fix
+bump: patch
+description: reject path parameter values that form . or .. URL segments
+author: TristanSpeakEasy
+date: "2026-11-12"
