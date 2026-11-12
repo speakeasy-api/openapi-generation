@@ -1,0 +1,13 @@
+id: 1794489558-4204c7f1
+features:
+    - core
+targets:
+    - go
+    - cli
+    - mockserver
+    - terraform
+type: fix
+bump: patch
+description: bump staticcheck pin from v0.8.1 to v0.8.2 for Go 1.27.2 support
+author: ThomasRooney
+date: "2026-11-12"
