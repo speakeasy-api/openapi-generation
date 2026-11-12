@@ -6,15 +6,17 @@ const hasOwn = Object.prototype.hasOwnProperty;
 
 export type Params = Partial<Record<string, string | number>>;
 
-// WHATWG URL parsing strips tab and newline characters, treats "\" as "/" in
-// special schemes, and resolves "%2e" as "." when removing dot segments.
+// WHATWG URL parsing strips tab and newline characters, ends the path at "?" or
+// "#", treats "\" as "/" in special schemes, and resolves "%2e" as "." when
+// removing dot segments.
 const ignoredURLCharsRE = /[\t\n\r]/g;
-const segmentSeparatorRE = /[/\\?#]/;
+const pathEndRE = /[?#]/;
+const segmentSeparatorRE = /[/\\]/;
 const dotSegmentRE = /^(?:\.|%2e){1,2}$/i;
 
 function hasDotSegment(value: string): boolean {
-  return value
-    .replace(ignoredURLCharsRE, "")
+  const path = value.replace(ignoredURLCharsRE, "").split(pathEndRE, 1)[0];
+  return (path ?? "")
     .split(segmentSeparatorRE)
     .some((part) => dotSegmentRE.test(part));
 }

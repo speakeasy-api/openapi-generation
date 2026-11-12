@@ -143,6 +143,8 @@ describe("pathToFunc dot segments", () => {
     ["..a", "..a"],
     ["%2e%2e%2e", "%2e%2e%2e"],
     ["%2e%2", "%2e%2"],
+    ["safe?next=/..", "safe?next=/.."],
+    ["safe#/../x", "safe#/../x"],
     [1.5, "1.5"],
   ])("allows %j", (value, segment) => {
     expect(pathToFunc(pattern)({ store_id: value, item_id: "item-1" })).toEqual(
