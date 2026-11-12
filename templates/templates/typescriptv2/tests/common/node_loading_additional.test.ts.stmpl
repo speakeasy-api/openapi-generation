@@ -36,13 +36,16 @@ test("Node entry point defers operation loading and shares runtime modules", asy
   const httpClient = new HTTPClient({
     fetcher: () => { throw new Error("unexpected network call"); },
   });
-  const root = new RootSDK({ httpClient });
+  const options = { httpClient, {{constants.serverURL}}: "https://example.com" };
+  const root = new RootSDK(options);
   expect(root).toBeInstanceOf(RootSDK);
   expect(state.loaded).toBe(0);
 
-  const sdk = new {{$className}}({ httpClient });
+  const sdk = new {{$className}}(options);
   expect(state.loaded).toBe(0);
-  await expect(sdk.{{sanitizeMethodName $op}}()).rejects.toThrow();
+  await expect(sdk.{{sanitizeMethodName $op}}()).rejects.toHaveProperty(
+    "cause.message", "operation module unavailable",
+  );
   expect(state.loaded).toBe(1);
   expect(state.calls).toBe(0);
 
