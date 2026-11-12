@@ -17,9 +17,20 @@ function hasDotSegment(value: string): boolean {
     .some((part) => dotSegmentRE.test(part));
 }
 
+function dotSegmentError(names: string[]): Error {
+  const subject =
+    names.length === 1
+      ? `Parameter '${names[0]}'`
+      : `Parameters '${names.join("', '")}'`;
+  return new Error(`${subject} must not form a '.' or '..' path segment`);
+}
+
 export function pathToFunc(
   pathPattern: string,
-  options?: { charEncoding?: "percent" | "none" },
+  options?: {
+    charEncoding?: "percent" | "none";
+    rejectDotSegments?: boolean;
+  },
 ): (params?: Params) => string {
   const paramRE = /\{([a-zA-Z0-9_][a-zA-Z0-9_-]*?)\}/g;
 
@@ -27,7 +38,7 @@ export function pathToFunc(
     return pathPattern
       .split("/")
       .map((segment) => {
-        const placeholders: string[] = [];
+        const contributors: string[] = [];
         const rendered = segment.replace(paramRE, function (_, placeholder) {
           if (!hasOwn.call(params, placeholder)) {
             throw new Error(`Parameter '${placeholder}' is required`);
@@ -40,17 +51,22 @@ export function pathToFunc(
             );
           }
 
-          placeholders.push(placeholder);
-          return options?.charEncoding === "percent"
-            ? encodeURIComponent(`${value}`)
-            : `${value}`;
+          const encoded =
+            options?.charEncoding === "percent"
+              ? encodeURIComponent(`${value}`)
+              : `${value}`;
+          if (encoded !== "") {
+            contributors.push(placeholder);
+          }
+          return encoded;
         });
 
-        if (placeholders.length > 0 && hasDotSegment(rendered)) {
-          const names = placeholders.join("', '");
-          throw new Error(
-            `Parameter '${names}' must not form a '.' or '..' path segment`,
-          );
+        if (
+          options?.rejectDotSegments &&
+          contributors.length > 0 &&
+          hasDotSegment(rendered)
+        ) {
+          throw dotSegmentError(contributors);
         }
 
         return rendered;

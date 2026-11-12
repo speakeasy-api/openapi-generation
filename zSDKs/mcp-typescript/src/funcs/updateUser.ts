@@ -87,7 +87,7 @@ async function $do(
       charEncoding: "percent",
     }),
   };
-  const path$ = pathToFunc("/user/{id}")(
+  const path$ = pathToFunc("/user/{id}", { rejectDotSegments: true })(
     pathParams$,
   );
 

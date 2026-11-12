@@ -90,7 +90,9 @@ async function $do(
       charEncoding: "percent",
     }),
   };
-  const path$ = pathToFunc("/positionalDefault/{id}")(
+  const path$ = pathToFunc("/positionalDefault/{id}", {
+    rejectDotSegments: true,
+  })(
     pathParams$,
   );
 

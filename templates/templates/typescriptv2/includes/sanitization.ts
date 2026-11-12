@@ -1255,6 +1255,7 @@ const FUNC_LOCALS = new Set([
   "parsed",
   "path",
   "pathParams",
+  "pathResult",
   "payload",
   "query",
   "raw",

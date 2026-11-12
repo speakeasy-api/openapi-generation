@@ -100,7 +100,7 @@ async function $do(
       charEncoding: "percent",
     }),
   };
-  const path$ = pathToFunc("/jobs/job({id})")(
+  const path$ = pathToFunc("/jobs/job({id})", { rejectDotSegments: true })(
     pathParams$,
   );
 

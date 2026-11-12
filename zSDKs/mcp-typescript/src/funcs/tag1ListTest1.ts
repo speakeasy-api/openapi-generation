@@ -99,7 +99,7 @@ async function $do(
       charEncoding: "percent",
     }),
   };
-  const path$ = pathToFunc("/test1/{page}")(
+  const path$ = pathToFunc("/test1/{page}", { rejectDotSegments: true })(
     pathParams$,
   );
   const query$ = encodeFormQuery({

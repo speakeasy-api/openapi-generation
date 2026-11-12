@@ -238,11 +238,13 @@ async function $do(
   };
   {{- end}}
   {{- addInternalImport "url" "pathToFunc" "funcs" }}
-  const path$ = pathToFunc("{{ $op.Path }}")(
-    {{- if $hasPathParams }}
+  {{- if $hasPathParams }}
+  const path$ = pathToFunc("{{ $op.Path }}", { rejectDotSegments: true })(
     pathParams$,
-    {{- end }}
   );
+  {{- else }}
+  const path$ = pathToFunc("{{ $op.Path }}")();
+  {{- end }}
 
   {{- if $hasQueryParams }}
   const query$ = {{genQueryParamEncoder $requestParams.query}};
@@ -671,11 +673,13 @@ async function $do(
   };
   {{- end}}
   {{- addInternalImport "url" "pathToFunc" "funcs" }}
-  const path$ = pathToFunc("{{ $op.Path }}")(
-    {{- if $hasPathParams }}
+  {{- if $hasPathParams }}
+  const path$ = pathToFunc("{{ $op.Path }}", { rejectDotSegments: true })(
     pathParams$,
-    {{- end }}
   );
+  {{- else }}
+  const path$ = pathToFunc("{{ $op.Path }}")();
+  {{- end }}
 
   {{- if $hasQueryParams }}
   const query$ = {{genQueryParamEncoder $requestParams.query}};

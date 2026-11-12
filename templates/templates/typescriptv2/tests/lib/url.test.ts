@@ -74,7 +74,11 @@ test("pathToFunc encodes param values", () => {
 describe("pathToFunc dot segments", () => {
   const pattern = "/stores/{store_id}/items/{item_id}/details";
   const dotSegmentError =
-    /Parameter 'store_id' must not form a '\.' or '\.\.' path segment/;
+    /^Parameter 'store_id' must not form a '\.' or '\.\.' path segment$/;
+  const checked = (
+    path: string,
+    options?: { charEncoding?: "percent" | "none" },
+  ) => pathToFunc(path, { ...options, rejectDotSegments: true });
 
   test.each([
     "..",
@@ -94,13 +98,13 @@ describe("pathToFunc dot segments", () => {
     "\r..",
   ])("rejects %j when values are pre-encoded", (value) => {
     expect(() =>
-      pathToFunc(pattern)({ store_id: value, item_id: "item-1" }),
+      checked(pattern)({ store_id: value, item_id: "item-1" }),
     ).toThrow(dotSegmentError);
   });
 
   test.each([".", ".."])("rejects %j under percent encoding", (value) => {
     expect(() =>
-      pathToFunc(pattern, { charEncoding: "percent" })({
+      checked(pattern, { charEncoding: "percent" })({
         store_id: value,
         item_id: "item-1",
       }),
@@ -116,20 +120,30 @@ describe("pathToFunc dot segments", () => {
     ["label, percent", encodeLabel("id", ".", { charEncoding: "percent" })],
   ])("rejects encoder output: %s", (_, encoded) => {
     expect(() =>
-      pathToFunc(pattern)({ store_id: encoded!, item_id: "item-1" }),
+      checked(pattern)({ store_id: encoded!, item_id: "item-1" }),
     ).toThrow(dotSegmentError);
   });
 
-  test("names every placeholder that shares the dot segment", () => {
-    expect(() => pathToFunc("/x/{a}{b}/y")({ a: ".", b: "." })).toThrow(
-      "Parameter 'a', 'b' must not form a '.' or '..' path segment",
+  test("names every placeholder that contributes to the dot segment", () => {
+    expect(() => checked("/x/{a}{b}/y")({ a: ".", b: "." })).toThrow(
+      "Parameters 'a', 'b' must not form a '.' or '..' path segment",
     );
+  });
+
+  test("omits empty placeholders from the error", () => {
+    expect(() => checked("/x/{a}{b}/y")({ a: "..", b: "" })).toThrow(
+      /^Parameter 'a' must not form/,
+    );
+  });
+
+  test("allows a literal dot segment when the placeholder is empty", () => {
+    expect(checked("/x/.{a}/y")({ a: "" })).toEqual("x/./y");
   });
 
   test("rejects dot segments in any parameter position", () => {
     expect(() =>
-      pathToFunc(pattern)({ store_id: "store_1", item_id: ".." }),
-    ).toThrow(/Parameter 'item_id'/);
+      checked(pattern)({ store_id: "store_1", item_id: ".." }),
+    ).toThrow(/^Parameter 'item_id'/);
   });
 
   test.each<[value: string | number, segment: string]>([
@@ -147,14 +161,14 @@ describe("pathToFunc dot segments", () => {
     ["safe#/../x", "safe#/../x"],
     [1.5, "1.5"],
   ])("allows %j", (value, segment) => {
-    expect(pathToFunc(pattern)({ store_id: value, item_id: "item-1" })).toEqual(
+    expect(checked(pattern)({ store_id: value, item_id: "item-1" })).toEqual(
       `stores/${segment}/items/item-1/details`,
     );
   });
 
   test("percent encoding neutralises encoded dots", () => {
     expect(
-      pathToFunc(pattern, { charEncoding: "percent" })({
+      checked(pattern, { charEncoding: "percent" })({
         store_id: "%2e%2e",
         item_id: "item-1",
       }),
@@ -162,30 +176,34 @@ describe("pathToFunc dot segments", () => {
   });
 
   test("allows dots alongside literal text in the same segment", () => {
-    expect(pathToFunc("/entity/user-{id}")({ id: ".." })).toEqual(
+    expect(checked("/entity/user-{id}")({ id: ".." })).toEqual(
       "entity/user-..",
     );
-    expect(pathToFunc("/items/{name}.{ext}")({ name: "a", ext: "b" })).toEqual(
+    expect(checked("/items/{name}.{ext}")({ name: "a", ext: "b" })).toEqual(
       "items/a.b",
     );
   });
 
   test("leaves literal template segments unchanged", () => {
-    expect(pathToFunc("/v1/../{id}")({ id: "x" })).toEqual("v1/../x");
+    expect(checked("/v1/../{id}")({ id: "x" })).toEqual("v1/../x");
   });
 
-  test("allows server URL templates", () => {
+  test("does not check templates unless rejectDotSegments is set", () => {
+    expect(pathToFunc(pattern)({ store_id: "..", item_id: "item-1" })).toEqual(
+      "stores/../items/item-1/details",
+    );
+    expect(pathToFunc("https://{host}/x")({ host: ".." })).toEqual(
+      "https://../x",
+    );
     expect(
-      pathToFunc("http://{hostname}:{port}/{basePath}")({
-        hostname: "localhost",
-        port: 8080,
-        basePath: "v1",
-      }),
-    ).toEqual("http://localhost:8080/v1");
+      pathToFunc("http://{hostname}:{port}/{basePath}", {
+        charEncoding: "percent",
+      })({ hostname: "localhost", port: 8080, basePath: "." }),
+    ).toEqual("http://localhost:8080/.");
   });
 
   test("resolves allowed values to the intended route", () => {
-    const path = pathToFunc(pattern)({
+    const path = checked(pattern)({
       store_id: "...",
       item_id: "item.1",
     });
