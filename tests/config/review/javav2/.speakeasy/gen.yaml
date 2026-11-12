@@ -51,6 +51,7 @@ java:
   enableFormatting: true
   enableSlf4jLogging: true
   enableStreamingUploads: true
+  enforceOperationTimeout: true
   explicitDocImports: true
   flattenGlobalSecurity: true
   forwardCompatibleEnumsByDefault: true

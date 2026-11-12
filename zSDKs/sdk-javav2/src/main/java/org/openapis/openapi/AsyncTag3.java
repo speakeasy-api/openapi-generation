@@ -77,6 +77,28 @@ public class AsyncTag3 {
      * @param deprecatedQueryParam2
      * @param test2Request
      * @param serverURL Overrides the server URL.
+     * @return {@code CompletableFuture<PostTest2Response>} - The async response
+     */
+    public CompletableFuture<PostTest2Response> postTest(
+            @Nullable String deprecatedQueryParam1,
+            @Nullable String deprecatedQueryParam2,
+            @Nonnull Test2Request test2Request,
+            @Nullable String serverURL) {
+        return postTest(deprecatedQueryParam1, deprecatedQueryParam2, test2Request, serverURL, null);
+    }
+
+    /**
+     * Post Test2
+     *
+     * <p>This is a test endpoint.
+     * It has a description.
+     *
+     * <p>If set, this operation will use Security#myApiKey from the global security.
+     *
+     * @param deprecatedQueryParam1 A deprecated description
+     * @param deprecatedQueryParam2
+     * @param test2Request
+     * @param serverURL Overrides the server URL.
      * @param options additional options
      * @return {@code CompletableFuture<PostTest2Response>} - The async response
      */

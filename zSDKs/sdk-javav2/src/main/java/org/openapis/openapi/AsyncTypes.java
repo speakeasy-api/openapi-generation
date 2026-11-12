@@ -5,6 +5,7 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.AsyncRequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.models.operations.async.GetNamespaceAnimalRequestBuilder;
 import org.openapis.openapi.models.operations.async.GetNamespaceAnimalResponse;
@@ -19,6 +20,7 @@ import org.openapis.openapi.operations.GetNamespaceOrganization;
 import org.openapis.openapi.operations.GetNamespaceTypes;
 import org.openapis.openapi.operations.GetNamespaceVehicle;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class AsyncTypes {
     private static final Headers _headers = Headers.EMPTY;
@@ -60,8 +62,21 @@ public class AsyncTypes {
      * @return {@code CompletableFuture<GetNamespaceTypesResponse>} - The async response
      */
     public CompletableFuture<GetNamespaceTypesResponse> getNamespaceTypesDirect() {
+        return getNamespaceTypes(null);
+    }
+
+    /**
+     * Get Namespace Types Test
+     *
+     * <p>This endpoint tests x-speakeasy-model-namespace with enums, discriminated unions,
+     * non-discriminated unions, and models with nested inline schemas.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetNamespaceTypesResponse>} - The async response
+     */
+    public CompletableFuture<GetNamespaceTypesResponse> getNamespaceTypes(@Nullable Options options) {
         AsyncRequestlessOperation<GetNamespaceTypesResponse> operation =
-                new GetNamespaceTypes.Async(sdkConfiguration, _headers);
+                new GetNamespaceTypes.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -86,8 +101,21 @@ public class AsyncTypes {
      * @return {@code CompletableFuture<GetNamespaceAnimalResponse>} - The async response
      */
     public CompletableFuture<GetNamespaceAnimalResponse> getNamespaceAnimalDirect() {
+        return getNamespaceAnimal(null);
+    }
+
+    /**
+     * Get Namespace Animal (Discriminated Union)
+     *
+     * <p>This endpoint tests a discriminated union type in a custom namespace.
+     * The response can be either a foo.Dog or foo.Cat.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetNamespaceAnimalResponse>} - The async response
+     */
+    public CompletableFuture<GetNamespaceAnimalResponse> getNamespaceAnimal(@Nullable Options options) {
         AsyncRequestlessOperation<GetNamespaceAnimalResponse> operation =
-                new GetNamespaceAnimal.Async(sdkConfiguration, _headers);
+                new GetNamespaceAnimal.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -112,8 +140,21 @@ public class AsyncTypes {
      * @return {@code CompletableFuture<GetNamespaceVehicleResponse>} - The async response
      */
     public CompletableFuture<GetNamespaceVehicleResponse> getNamespaceVehicleDirect() {
+        return getNamespaceVehicle(null);
+    }
+
+    /**
+     * Get Namespace Vehicle (Non-Discriminated Union)
+     *
+     * <p>This endpoint tests a non-discriminated union type in a custom namespace.
+     * The response can be either a bar.Car or bar.Bike.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetNamespaceVehicleResponse>} - The async response
+     */
+    public CompletableFuture<GetNamespaceVehicleResponse> getNamespaceVehicle(@Nullable Options options) {
         AsyncRequestlessOperation<GetNamespaceVehicleResponse> operation =
-                new GetNamespaceVehicle.Async(sdkConfiguration, _headers);
+                new GetNamespaceVehicle.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -140,8 +181,22 @@ public class AsyncTypes {
      * @return {@code CompletableFuture<GetNamespaceOrganizationResponse>} - The async response
      */
     public CompletableFuture<GetNamespaceOrganizationResponse> getNamespaceOrganizationDirect() {
+        return getNamespaceOrganization(null);
+    }
+
+    /**
+     * Get Namespace Organization (Nested Inline Schemas)
+     *
+     * <p>This endpoint tests nested inline object schemas in a custom namespace.
+     * The organization model contains nested address and department types that
+     * should inherit the foo namespace.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetNamespaceOrganizationResponse>} - The async response
+     */
+    public CompletableFuture<GetNamespaceOrganizationResponse> getNamespaceOrganization(@Nullable Options options) {
         AsyncRequestlessOperation<GetNamespaceOrganizationResponse> operation =
-                new GetNamespaceOrganization.Async(sdkConfiguration, _headers);
+                new GetNamespaceOrganization.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 }

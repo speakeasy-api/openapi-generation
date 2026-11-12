@@ -6,19 +6,28 @@ package org.openapis.openapi.models.operations;
 import static org.openapis.openapi.operations.Operations.RequestOperation;
 
 import jakarta.annotation.Nullable;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.shared.ObjWithRenamedProperties;
 import org.openapis.openapi.operations.PutNamespaceConflict;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class PutNamespaceConflictRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
     private ObjWithRenamedProperties request;
+    private final Options.Builder optionsBuilder;
 
     public PutNamespaceConflictRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public PutNamespaceConflictRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public PutNamespaceConflictRequestBuilder request(@Nullable ObjWithRenamedProperties request) {
@@ -43,8 +52,9 @@ public class PutNamespaceConflictRequestBuilder {
      * @return The response from the server.
      */
     public PutNamespaceConflictResponse call() {
+        Options options = optionsBuilder.build();
         RequestOperation<ObjWithRenamedProperties, PutNamespaceConflictResponse> operation =
-                new PutNamespaceConflict.Sync(sdkConfiguration, _headers);
+                new PutNamespaceConflict.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(this._buildRequest()));
     }
 }

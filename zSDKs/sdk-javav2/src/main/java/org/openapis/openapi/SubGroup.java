@@ -5,10 +5,12 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import org.openapis.openapi.models.operations.SubGroupOpRequestBuilder;
 import org.openapis.openapi.models.operations.SubGroupOpResponse;
 import org.openapis.openapi.operations.SubGroupOp;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class SubGroup {
     private static final Headers _headers = Headers.EMPTY;
@@ -51,7 +53,18 @@ public class SubGroup {
      * @throws RuntimeException subclass if the API call fails
      */
     public SubGroupOpResponse subGroupOpDirect() {
-        RequestlessOperation<SubGroupOpResponse> operation = new SubGroupOp.Sync(sdkConfiguration, _headers);
+        return subGroupOp(null);
+    }
+
+    /**
+     * An operation at the group's top level
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public SubGroupOpResponse subGroupOp(@Nullable Options options) {
+        RequestlessOperation<SubGroupOpResponse> operation = new SubGroupOp.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }

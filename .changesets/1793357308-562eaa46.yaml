@@ -1,0 +1,10 @@
+id: 1793357308-562eaa46
+features:
+    - operationTimeout
+targets:
+    - javav2
+type: feat
+bump: minor
+description: add an SDK-wide and per-call timeout that bounds the whole call including the response body and streams, on both HTTP clients, and honour x-speakeasy-timeout behind the enforceOperationTimeout option, which is on for new SDKs and off for existing ones
+author: AshGodfrey
+date: "2026-10-30"

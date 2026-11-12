@@ -6,20 +6,30 @@ package org.openapis.openapi.models.operations.async;
 import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.operations.BinaryAndStringUploadRequest;
 import org.openapis.openapi.operations.BinaryAndStringUpload;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class BinaryAndStringUploadRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
     private BinaryAndStringUploadRequest request;
+    private final Options.Builder optionsBuilder;
 
     public BinaryAndStringUploadRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public BinaryAndStringUploadRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public BinaryAndStringUploadRequestBuilder request(@Nonnull BinaryAndStringUploadRequest request) {
@@ -44,8 +54,9 @@ public class BinaryAndStringUploadRequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<BinaryAndStringUploadResponse> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<BinaryAndStringUploadRequest, BinaryAndStringUploadResponse> operation =
-                new BinaryAndStringUpload.Async(sdkConfiguration, _headers);
+                new BinaryAndStringUpload.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse);
     }
 }

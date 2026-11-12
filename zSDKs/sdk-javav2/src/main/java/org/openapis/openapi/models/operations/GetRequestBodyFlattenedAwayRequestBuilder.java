@@ -5,9 +5,12 @@ package org.openapis.openapi.models.operations;
 
 import static org.openapis.openapi.operations.Operations.RequestOperation;
 
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.GetRequestBodyFlattenedAway;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class GetRequestBodyFlattenedAwayRequestBuilder {
@@ -15,11 +18,18 @@ public class GetRequestBodyFlattenedAwayRequestBuilder {
     private final Headers _headers = new Headers();
     private final GetRequestBodyFlattenedAwayRequest.Builder pojoBuilder;
     private GetRequestBodyFlattenedAwayRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public GetRequestBodyFlattenedAwayRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = GetRequestBodyFlattenedAwayRequest.builder();
+        this.optionsBuilder = Options.builder();
+    }
+
+    public GetRequestBodyFlattenedAwayRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     private GetRequestBodyFlattenedAwayRequest _buildRequest() {
@@ -42,8 +52,9 @@ public class GetRequestBodyFlattenedAwayRequestBuilder {
      * @return The response from the server.
      */
     public GetRequestBodyFlattenedAwayResponse call() {
+        Options options = optionsBuilder.build();
         RequestOperation<GetRequestBodyFlattenedAwayRequest, GetRequestBodyFlattenedAwayResponse> operation =
-                new GetRequestBodyFlattenedAway.Sync(sdkConfiguration, _headers);
+                new GetRequestBodyFlattenedAway.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(this._buildRequest()));
     }
 }
