@@ -1152,10 +1152,18 @@ const patternConstrainedParamTypes = new Set([
   "header",
 ]);
 
+// Object parameter properties also carry a param annotation, and their model
+// can be shared with request bodies, so only the operation's own request model
+// is constrained.
 function requestParamPatternConstraint(
   field: FieldDef,
+  rootTypeDef: TypeDef,
 ): PatternConstraint | undefined {
-  if (isNoZod() || field.Type.Type.toString() !== "string") {
+  if (
+    isNoZod() ||
+    field.Type.Type.toString() !== "string" ||
+    !rootTypeDef.IsRequest()
+  ) {
     return undefined;
   }
   const ann = field.Annotations.Get("param");
@@ -1166,10 +1174,17 @@ function requestParamPatternConstraint(
   ) {
     return undefined;
   }
-  // Pointer-valued in the AST: coerce to a JS string and skip when unset.
-  const raw = field.Type.Validations?.Pattern;
-  const pattern = raw == null ? "" : String(raw);
+  const pattern = portableStringPattern(field.Type);
   if (!pattern) {
+    return undefined;
+  }
+  // zod v3 runs refinements on defaults, so a default that violates its own
+  // pattern would fail every call that omits the parameter.
+  const defaultValue = field.Default?.Value;
+  if (
+    defaultValue != null &&
+    !new RegExp(pattern, "u").test(String(defaultValue))
+  ) {
     return undefined;
   }
   const message = field.Type.Extensions?.PatternErrorMessage;

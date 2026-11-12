@@ -9,20 +9,8 @@ test("matchesPattern tests values against the pattern", () => {
   expect(matches("ABC")).toBe(false);
 });
 
-test("matchesPattern uses Unicode mode when the pattern allows it", () => {
+test("matchesPattern uses Unicode mode", () => {
   expect(matchesPattern("^.$")("😀")).toBe(true);
-});
-
-test("matchesPattern falls back to legacy mode", () => {
-  // A class range from an escape is only a syntax error in Unicode mode.
-  const matches = matchesPattern("^[\\w-a]+$");
-
-  expect(matches("a_b-c")).toBe(true);
-  expect(matches("a b")).toBe(false);
-});
-
-test("matchesPattern accepts every value for an uncompilable pattern", () => {
-  expect(matchesPattern("(?i)abc")("anything")).toBe(true);
 });
 
 test("abortSignalAny with one signal", () => {

@@ -1083,7 +1083,7 @@ trackedFiles:
   src/lib/oauth2-sessions.ts:
     last_write_checksum: sha1:cd3c9512e03ef6d854e49d5ba3f8a64cdbe6d1f7
   src/lib/primitives.ts:
-    last_write_checksum: sha1:a7a84c5c53c1c72b6779dcf8dfb41bec63e6d9fc
+    last_write_checksum: sha1:e474032285b35387e88e86b78547dadae9b8cdc3
   src/lib/retries.ts:
     last_write_checksum: sha1:42c8f6cc4c875be236230a8c760f4f32d8c1ab68
   src/lib/schemas.ts:

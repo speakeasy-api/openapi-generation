@@ -165,17 +165,7 @@ export function isPlainObject(
   }
 }
 
-// A pattern that this runtime cannot compile is left for the server to enforce.
 export function matchesPattern(pattern: string): (value: string) => boolean {
-  let re: RegExp;
-  try {
-    re = new RegExp(pattern, "u");
-  } catch {
-    try {
-      re = new RegExp(pattern);
-    } catch {
-      return () => true;
-    }
-  }
+  const re = new RegExp(pattern, "u");
   return (value) => re.test(value);
 }

@@ -31,7 +31,7 @@ const zodTemplating = {
       streamable: isMultipartFileField(field),
       constValue: field.Const,
       defaultValue: field.Default,
-      patternConstraint: requestParamPatternConstraint(field),
+      patternConstraint: requestParamPatternConstraint(field, rootTypeDef),
     });
 
     fieldType.importZodTypes();

@@ -90,8 +90,16 @@ describe("request parameter patterns", () => {
     );
   });
 
-  test("enforces ECMAScript-only syntax such as lookaheads", async () => {
-    await expectRejected({ code: "abc", slug: "xyz" }, "Avoid the x prefix.");
+  test("leaves non-portable patterns such as lookaheads to the server", async () => {
+    const log: RequestLogEntry[] = [];
+
+    const res = await newSDK(log).cliHygiene.cliPatternMessages({
+      code: "abc",
+      slug: "xyz",
+    });
+
+    expect(res.httpMeta.response.status).toBe(200);
+    expect(log).toHaveLength(1);
   });
 
   test("leaves request body properties unconstrained", async () => {
