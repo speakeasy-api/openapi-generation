@@ -9,9 +9,26 @@ import { parametersPathParameterJson } from "../funcs/parametersPathParameterJso
 import { parametersJsonQueryParamsObject } from "../funcs/parametersJsonQueryParamsObject.js";
 import { parametersMixedQueryParams } from "../funcs/parametersMixedQueryParams.js";
 import { parametersHeaderParamsNil } from "../funcs/parametersHeaderParamsNil.js";
+import { parametersPathEncoding } from "../funcs/parametersPathEncoding.js";
+import { InvalidRequestError } from "../models/errors/httpclienterrors.js";
 {{ if isStrictMCPServer }}
 const roundTrip = (v: unknown) => JSON.parse(JSON.stringify(v));
 {{- end }}
+
+test("Test Path Dot Segment Rejection", async () => {
+  const result = await parametersPathEncoding(new SDK({}), {
+    param1: "..",
+    param2: "value",
+  });
+
+  expect(result.ok).toBe(false);
+  if (!result.ok) {
+    expect(result.error).toBeInstanceOf(InvalidRequestError);
+    expect(result.error.message).toBe(
+      "Parameter 'param1' must not form a '.' or '..' path segment",
+    );
+  }
+});
 
 test("Test Path Parameter JSON", async () => {
   recordTest("parameters-path-parameter-json");

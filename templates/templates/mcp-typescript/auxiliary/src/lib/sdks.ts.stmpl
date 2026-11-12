@@ -11,6 +11,7 @@ import { Logger } from "./logger.js";
 import { encodeForm } from "./encodings.js";
 import { stringToBase64 } from "./base64.js";
 import { SDKOptions, SDK_METADATA, serverURLFromOptions } from "./config.js";
+import { Params, pathToFunc } from "./url.js";
 import { SDKHooks } from "../hooks/hooks.js";
 import { HookContext } from "../hooks/types.js";
 {{- if and .Global.Config.EnvVarPrefix .Global.AST.MainSDK.Globals }}
@@ -60,6 +61,21 @@ type RequestConfig = {
   userAgent?: string | undefined;
   timeoutMs?: number;
 };
+
+{{- addErrorTypeImport "InvalidRequestError" "lib" }}
+
+export function encodePath(
+  pathPattern: string,
+  params: Params,
+): Result<string, InvalidRequestError> {
+  try {
+    return OK(pathToFunc(pathPattern, { rejectDotSegments: true })(params));
+  } catch (err: unknown) {
+    return ERR(
+      new InvalidRequestError(err instanceof Error ? err.message : String(err)),
+    );
+  }
+}
 
 const gt: unknown = typeof globalThis === "undefined" ? null : globalThis;
 const webWorkerLike =
@@ -391,6 +407,7 @@ import { Logger } from "./logger.js";
 import { encodeForm } from "./encodings.js";
 import { stringToBase64 } from "./base64.js";
 import { SDKOptions, SDK_METADATA, serverURLFromOptions } from "./config.js";
+import { Params, pathToFunc } from "./url.js";
 import { SDKHooks } from "../hooks/hooks.js";
 import { HookContext } from "../hooks/types.js";
 {{- if and .Global.Config.EnvVarPrefix .Global.AST.MainSDK.Globals }}
@@ -440,6 +457,21 @@ type RequestConfig = {
   userAgent?: string | undefined;
   timeoutMs?: number;
 };
+
+{{- addErrorTypeImport "InvalidRequestError" "lib" }}
+
+export function encodePath(
+  pathPattern: string,
+  params: Params,
+): Result<string, InvalidRequestError> {
+  try {
+    return OK(pathToFunc(pathPattern, { rejectDotSegments: true })(params));
+  } catch (err: unknown) {
+    return ERR(
+      new InvalidRequestError(err instanceof Error ? err.message : String(err)),
+    );
+  }
+}
 
 const gt: unknown = typeof globalThis === "undefined" ? null : globalThis;
 const webWorkerLike =
