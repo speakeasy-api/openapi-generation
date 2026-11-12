@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
@@ -32,6 +34,7 @@ type CapturedRequest struct {
 	Method     string
 	Path       string
 	PathParams map[string]string
+	Query      url.Values
 	Body       map[string]any
 }
 
@@ -514,6 +517,7 @@ func (h *ResourceHandler) handleGetWithConfig(w http.ResponseWriter, r *http.Req
 		Method:     r.Method,
 		Path:       r.URL.Path,
 		PathParams: pathParams,
+		Query:      r.URL.Query(),
 		Body:       nil, // GET requests typically don't have a body
 	})
 
@@ -586,11 +590,30 @@ func (h *ResourceHandler) handleDeleteWithConfig(w http.ResponseWriter, r *http.
 	for _, p := range config.params {
 		pathParams[p] = r.PathValue(p)
 	}
+	var requestData map[string]interface{}
+	rawBody, readErr := io.ReadAll(r.Body)
+	if readErr != nil || len(rawBody) > 0 {
+		if readErr == nil {
+			readErr = json.Unmarshal(rawBody, &requestData)
+		}
+		if readErr != nil {
+			h.testingContext.Logf("🔴 [MOCK SERVER] DELETE - Failed to read or decode body: %v\n", readErr)
+			config.Requests.Append(CapturedRequest{
+				Method:     r.Method,
+				Path:       r.URL.Path,
+				PathParams: pathParams,
+				Body:       nil,
+			})
+			h.writeError(w, 400, "Invalid JSON data", "VALIDATION_ERROR")
+			return
+		}
+		h.testingContext.Logf("🔵 [MOCK SERVER] DELETE - Request body: %+v\n", requestData)
+	}
 	config.Requests.Append(CapturedRequest{
 		Method:     r.Method,
 		Path:       r.URL.Path,
 		PathParams: pathParams,
-		Body:       nil, // DELETE requests typically don't have a body
+		Body:       requestData,
 	})
 
 	h.testingContext.Logf("🔵 [MOCK SERVER] DELETE - Id: %s,\n", StoreKey)
