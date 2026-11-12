@@ -831,12 +831,31 @@ function templateErrorMessageJSONFallback(errorObject: string): string {
 return string(data)`;
 }
 
+const errorCodeTypes = new Set([
+  "string",
+  "integer",
+  "int32",
+  "number",
+  "float32",
+  "enum",
+]);
+
+function inferErrorCodeField(owner: TypeDef): FieldDef | undefined {
+  return owner.Fields.find(
+    (f) =>
+      f.Name === "code" &&
+      errorCodeTypes.has(f.Type.Type.toString()) &&
+      !isPointerType(f.Type),
+  );
+}
+
 // @ts-ignore
 function templateErrorMessage(errorType: TypeDef, errorObject: string): string {
   const topLevelField = getErrorMessageField(errorType);
-  const path = topLevelField
+  const markedPath = topLevelField
     ? [topLevelField]
-    : getOrInferErrorMessageFieldDeep(errorType);
+    : getErrorMessageFieldDeep(errorType);
+  const path = markedPath ?? inferErrorMessageField(errorType);
 
   if (!path?.length) {
     return templateErrorMessageJSONFallback(errorObject);
@@ -854,31 +873,45 @@ function templateErrorMessage(errorType: TypeDef, errorObject: string): string {
       errorType,
     )}`;
     if (topLevelKind === "pointer") {
-      return `if ${access} == nil {
+      return `if ${access} == nil || *${access} == "" {
     return "unknown error"
 }
 
 return *${access}`;
     }
-    return `return ${access}`;
+    return `if ${access} == "" {
+    return "unknown error"
+}
+
+return ${access}`;
   }
 
   const lines: string[] = [`if ${errorObject} != nil {`];
   let expr = errorObject;
   let owner = errorType;
   let leaf = "";
+  let leafOwnerExpr = errorObject;
+  let leafOwner = errorType;
   let openBlocks = 1;
   const indent = () => "\t".repeat(openBlocks);
 
   path.forEach((field, hop) => {
     const access = `${expr}.${errorMessageHopAccessor(field, owner)}`;
     const isLeaf = hop === path.length - 1;
+    const isStringLeaf = isLeaf && field.Type.Type.toString() === "string";
     const local = `v${hop}`;
+
+    if (isLeaf) {
+      leafOwnerExpr = expr;
+      leafOwner = owner;
+    }
 
     switch (errorMessageHopKind(field, owner)) {
       case "wrapper":
         lines.push(
-          `${indent()}if ${local}, ok := ${access}.Get(); ok && ${local} != nil {`,
+          `${indent()}if ${local}, ok := ${access}.Get(); ok && ${local} != nil${
+            isStringLeaf ? ` && *${local} != ""` : ""
+          } {`,
         );
         openBlocks++;
         expr = local;
@@ -886,7 +919,11 @@ return *${access}`;
         break;
       case "pointer":
         if (isLeaf) {
-          lines.push(`${indent()}if ${access} != nil {`);
+          lines.push(
+            `${indent()}if ${access} != nil${
+              isStringLeaf ? ` && *${access} != ""` : ""
+            } {`,
+          );
           leaf = `*${access}`;
         } else {
           lines.push(`${indent()}if ${local} := ${access}; ${local} != nil {`);
@@ -898,6 +935,9 @@ return *${access}`;
         if (isLeaf && isPointerType(field.Type)) {
           lines.push(`${indent()}if ${access} != nil {`);
           openBlocks++;
+        } else if (isStringLeaf) {
+          lines.push(`${indent()}if ${access} != "" {`);
+          openBlocks++;
         }
         expr = access;
         leaf = access;
@@ -906,12 +946,55 @@ return *${access}`;
     owner = field.Type;
   });
 
-  lines.push(
-    `${indent()}return ${stringifyErrorMessageLeaf(
-      leaf,
-      path[path.length - 1],
-    )}`,
-  );
+  const message = stringifyErrorMessageLeaf(leaf, path[path.length - 1]);
+  const codeField = markedPath ? undefined : inferErrorCodeField(leafOwner);
+  if (codeField) {
+    const access = `${leafOwnerExpr}.${errorMessageHopAccessor(
+      codeField,
+      leafOwner,
+    )}`;
+    const isStringCode = codeField.Type.Type.toString() === "string";
+    let code = access;
+    let guarded = true;
+    switch (errorMessageHopKind(codeField, leafOwner)) {
+      case "wrapper":
+        lines.push(
+          `${indent()}if code, ok := ${access}.Get(); ok && code != nil${
+            isStringCode ? ` && *code != ""` : ""
+          } {`,
+        );
+        code = "*code";
+        break;
+      case "pointer":
+        lines.push(
+          `${indent()}if ${access} != nil${
+            isStringCode ? ` && *${access} != ""` : ""
+          } {`,
+        );
+        code = `*${access}`;
+        break;
+      case "value":
+        if (isStringCode) {
+          lines.push(`${indent()}if ${access} != "" {`);
+        } else {
+          guarded = false;
+        }
+        break;
+    }
+    addImport("fmt");
+    const formatted = `fmt.Sprintf("%v: %s", ${code}, ${message})`;
+    if (guarded) {
+      openBlocks++;
+      lines.push(`${indent()}return ${formatted}`);
+      openBlocks--;
+      lines.push(`${indent()}}`);
+      lines.push(`${indent()}return ${message}`);
+    } else {
+      lines.push(`${indent()}return ${formatted}`);
+    }
+  } else {
+    lines.push(`${indent()}return ${message}`);
+  }
   while (openBlocks > 0) {
     openBlocks--;
     lines.push(`${indent()}}`);

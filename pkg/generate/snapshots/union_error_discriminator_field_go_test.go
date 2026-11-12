@@ -216,7 +216,9 @@ func (u BadRequest) Error() string {
 	switch u.Type {
 	case BadRequestTypeErr:
 		if u.ErrorInfo != nil {
-			return u.ErrorInfo.Message
+			if u.ErrorInfo.Message != "" {
+				return u.ErrorInfo.Message
+			}
 		}
 
 		data, _ := json.Marshal(u.ErrorInfo)
