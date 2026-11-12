@@ -42,7 +42,12 @@ describe("request parameter patterns", () => {
       tag: "abc",
       xLabel: "abc",
       changed: "123",
+      composed: "abc",
+      same: "abc",
+      replaced: "123",
+      wrapper: "abc",
       unionCode: "123",
+      unionSame: "abc",
       slug: "abc",
     });
 
@@ -75,6 +80,13 @@ describe("request parameter patterns", () => {
     await expectRejected(
       { code: "abc", changed: "abc" },
       "Value must match pattern ^[0-9]+$",
+    );
+  });
+
+  test("rejects a string oneOf parameter against its merged pattern", async () => {
+    await expectRejected(
+      { code: "abc", unionCode: "ABC" },
+      "Value must match pattern (^[a-z]+$|^[0-9]+$)",
     );
   });
 
