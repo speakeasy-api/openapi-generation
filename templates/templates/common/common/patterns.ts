@@ -72,6 +72,143 @@ function isPortablePattern(pattern: string): boolean {
   return true;
 }
 
+const patternExamplePool =
+  "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-_.~ ";
+const patternLiteralEscapes: Record<string, string> = {
+  t: "\t",
+  n: "\n",
+  r: "\r",
+  f: "\f",
+  v: "\v",
+};
+
+/**
+ * A deterministic value matching a portable pattern (see isPortablePattern),
+ * or undefined when none could be built. Alternation takes the first branch,
+ * unbounded repetition produces three items, and character sets draw from a
+ * small printable pool.
+ */
+function exampleForPortablePattern(pattern: string): string | undefined {
+  let i = 0;
+  let picks = 0;
+
+  const classEnd = (start: number): number => {
+    let j = start + 1;
+    if (pattern[j] === "^") j++;
+    while (j < pattern.length && pattern[j] !== "]") {
+      j += pattern[j] === "\\" ? (pattern[j + 1] === "x" ? 4 : 2) : 1;
+    }
+    return j;
+  };
+
+  const parseAtom = (): (() => string) | undefined => {
+    const c = pattern[i];
+    if (c === "^" || c === "$") {
+      i++;
+      return () => "";
+    }
+    if (c === "(") {
+      i += pattern[i + 1] === "?" ? 3 : 1;
+      const inner = parseAlternation();
+      if (inner === undefined || pattern[i] !== ")") return undefined;
+      i++;
+      return () => inner;
+    }
+    let set: string;
+    if (c === "[") {
+      const end = classEnd(i);
+      set = pattern.slice(i, end + 1);
+      i = end + 1;
+    } else if (c === "\\") {
+      const next = pattern[i + 1] ?? "";
+      if (next === "x") {
+        const ch = String.fromCharCode(
+          parseInt(pattern.slice(i + 2, i + 4), 16),
+        );
+        i += 4;
+        return () => ch;
+      }
+      i += 2;
+      if (next === "b" || next === "B") return () => "";
+      const literal = patternLiteralEscapes[next];
+      if (literal !== undefined) return () => literal;
+      if (!"dDwW".includes(next)) return () => next;
+      set = `\\${next}`;
+    } else if (c === ".") {
+      set = ".";
+      i++;
+    } else {
+      i++;
+      return () => c;
+    }
+    const setRE = new RegExp(`^${set}$`, "u");
+    const choices = patternExamplePool.split("").filter((ch) => setRE.test(ch));
+    if (choices.length === 0) return undefined;
+    return () => choices[picks++ % choices.length]!;
+  };
+
+  const parseQuantifier = (): [number, number] => {
+    let range: [number, number];
+    const c = pattern[i];
+    if (c === "*") {
+      range = [0, Infinity];
+      i++;
+    } else if (c === "+") {
+      range = [1, Infinity];
+      i++;
+    } else if (c === "?") {
+      range = [0, 1];
+      i++;
+    } else if (c === "{") {
+      const bound = /^\{(\d+)(,(\d*))?\}/.exec(pattern.slice(i));
+      if (!bound) return [1, 1];
+      const min = Number(bound[1]);
+      const max =
+        bound[2] === undefined
+          ? min
+          : bound[3] === ""
+          ? Infinity
+          : Number(bound[3]);
+      range = [min, max];
+      i += bound[0].length;
+    } else {
+      return [1, 1];
+    }
+    if (pattern[i] === "?") i++;
+    return range;
+  };
+
+  const parseSequence = (): string | undefined => {
+    let out = "";
+    while (i < pattern.length && pattern[i] !== "|" && pattern[i] !== ")") {
+      const atom = parseAtom();
+      if (!atom) return undefined;
+      const [min, max] = parseQuantifier();
+      const count = Math.min(max, Math.max(min, 3));
+      for (let n = 0; n < count; n++) out += atom();
+    }
+    return out;
+  };
+
+  function parseAlternation(): string | undefined {
+    const first = parseSequence();
+    while (first !== undefined && pattern[i] === "|") {
+      i++;
+      if (parseSequence() === undefined) return undefined;
+    }
+    return first;
+  }
+
+  let example: string | undefined;
+  try {
+    example = parseAlternation();
+  } catch {
+    return undefined;
+  }
+  if (example === undefined || i !== pattern.length) return undefined;
+  return new RegExp(pattern, "u").test(example) ? example : undefined;
+}
+
 /**
  * The schema pattern of a string type when it is portable, otherwise "".
  * Validations.Pattern is pointer-valued in the AST, so it is coerced to a JS

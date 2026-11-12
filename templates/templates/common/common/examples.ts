@@ -2011,27 +2011,10 @@ function conformExampleToPattern(fieldDef: FieldDef, value: string): string {
   if (!pattern) {
     return value;
   }
-  const re = new RegExp(pattern, "u");
-  if (re.test(value)) {
+  if (new RegExp(pattern, "u").test(value)) {
     return value;
   }
-  // fromRegExp treats anchors as literal characters.
-  let body = pattern.startsWith("^") ? pattern.slice(1) : pattern;
-  if (body.endsWith("$") && !body.endsWith("\\$")) {
-    body = body.slice(0, -1);
-  }
-  for (let attempt = 0; attempt < 5; attempt++) {
-    let candidate: string;
-    try {
-      candidate = faker.helpers.fromRegExp(body);
-    } catch {
-      return value;
-    }
-    if (re.test(candidate)) {
-      return candidate;
-    }
-  }
-  return value;
+  return exampleForPortablePattern(pattern) ?? value;
 }
 
 function templatePlaceholderString(arrayIdx?: number) {
