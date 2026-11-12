@@ -165,14 +165,18 @@ func (u ClientError) Error() string {
 	switch u.Type {
 	case ClientErrorTypeTag1:
 		if u.TaggedError1 != nil {
-			return u.TaggedError1.Message
+			if u.TaggedError1.Message != "" {
+				return u.TaggedError1.Message
+			}
 		}
 
 		data, _ := json.Marshal(u.TaggedError1)
 		return string(data)
 	case ClientErrorTypeTag2:
 		if u.TaggedError2 != nil {
-			return u.TaggedError2.Error_.Message
+			if u.TaggedError2.Error_.Message != "" {
+				return u.TaggedError2.Error_.Message
+			}
 		}
 
 		data, _ := json.Marshal(u.TaggedError2)
@@ -325,7 +329,9 @@ func (u GetUnionErrorsInternalServerError) Error() string {
 		return string(data)
 	case GetUnionErrorsInternalServerErrorTypeErrorType2:
 		if u.ErrorType2 != nil {
-			return u.ErrorType2.Error_.Message
+			if u.ErrorType2.Error_.Message != "" {
+				return u.ErrorType2.Error_.Message
+			}
 		}
 
 		data, _ := json.Marshal(u.ErrorType2)

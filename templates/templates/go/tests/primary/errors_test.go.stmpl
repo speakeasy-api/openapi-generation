@@ -122,7 +122,7 @@ func TestStatusGetErrorXSpeakeasyErrors(t *testing.T) {
 	res, err = s.Errors.StatusGetXSpeakeasyErrors(context.Background(), 501)
 	assert.Nil(t, res)
 	assert.Error(t, err)
-	assert.Equal(t, "an error occurred", err.Error())
+	assert.Equal(t, "501: an error occurred", err.Error())
 
 	var e501 *apierrors.StatusGetXSpeakeasyErrorsResponseBody
 	if assert.ErrorAs(t, err, &e501) {
@@ -330,6 +330,35 @@ func TestOptionalNullableNestedErrorMessageExplicitNull(t *testing.T) {
 	var nullMessage apierrors.NestedNullableOptionalErrorMessage
 	require.NoError(t, json.Unmarshal([]byte(`{"code":"512","cause":{"message":null}}`), &nullMessage))
 	assert.Equal(t, `{"cause":{},"code":"512"}`, nullMessage.Error())
+}
+
+func TestErrorMessageEmptyAndCode(t *testing.T) {
+	jsonFallback := func(t *testing.T, e error) string {
+		t.Helper()
+		data, err := json.Marshal(e)
+		require.NoError(t, err)
+		return string(data)
+	}
+
+	var inferred apierrors.StatusGetXSpeakeasyErrorsResponseBody
+	require.NoError(t, json.Unmarshal([]byte(`{"code":"501","message":"boom"}`), &inferred))
+	assert.Equal(t, "501: boom", inferred.Error())
+
+	inferred = apierrors.StatusGetXSpeakeasyErrorsResponseBody{}
+	require.NoError(t, json.Unmarshal([]byte(`{"code":"","message":"boom"}`), &inferred))
+	assert.Equal(t, "boom", inferred.Error())
+
+	inferred = apierrors.StatusGetXSpeakeasyErrorsResponseBody{}
+	require.NoError(t, json.Unmarshal([]byte(`{"code":"501","message":""}`), &inferred))
+	assert.Equal(t, jsonFallback(t, &inferred), inferred.Error())
+
+	var marked apierrors.NullableOptionalErrorMessage
+	require.NoError(t, json.Unmarshal([]byte(`{"code":"512","message":""}`), &marked))
+	assert.Equal(t, "unknown error", marked.Error())
+
+	var nested apierrors.NestedNullableOptionalErrorMessage
+	require.NoError(t, json.Unmarshal([]byte(`{"code":"512","cause":{"message":""}}`), &nested))
+	assert.Equal(t, jsonFallback(t, &nested), nested.Error())
 }
 
 func TestErrorUnionRedecodePreservesHTTPMeta(t *testing.T) {

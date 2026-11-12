@@ -41,7 +41,9 @@ var _ error = &ErrorType2{}
 
 func (e *ErrorType2) Error() string {
 	if e != nil {
-		return e.Error_.Message
+		if e.Error_.Message != "" {
+			return e.Error_.Message
+		}
 	}
 
 	data, _ := json.Marshal(e)
