@@ -1,3 +1,5 @@
+{{- /* v1-only: Newtonsoft materializes ISO strings as DateTime before OpenEnumConverter; v2 reads strings verbatim. */ -}}
+{{- if not isCsharpV2 -}}
 using Newtonsoft.Json;
 using Company.Product.Feature.Subnamespace.Models.Shared;
 using Xunit;
@@ -17,3 +19,4 @@ public class OpenEnumsShould
         Assert.Equal("2024-01-02T03:04:05Z", parsed.Value);
     }
 }
+{{ end -}}

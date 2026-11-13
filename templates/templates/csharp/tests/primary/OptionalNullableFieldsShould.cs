@@ -10,13 +10,13 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using Openapi;
+using Openapi.Models;
 using Openapi.Models.Shared;
 using Openapi.Utils;
 using Xunit;
 
-public class OptionalNullableFieldsShould
+public partial class OptionalNullableFieldsShould
 {
     // ── OptionalNullable<T> struct surface ──────────────────────────────────
 
@@ -78,184 +78,125 @@ public class OptionalNullableFieldsShould
         Assert.Throws<System.InvalidOperationException>(() => opt.Value);
     }
 
-    [Fact]
-    public void Serialize_AbsentOmittedViaShouldSerialize()
-    {
-        var model = new NullableModel { };
-        var json = JsonConvert.SerializeObject(model, Utilities.GetDefaultJsonSerializerSettings());
-        Assert.DoesNotContain("\"field\"", json);
-    }
+    // ── Presence-aware JSON on generated models ─────────────────────────────
 
     [Fact]
-    public void Serialize_AbsentOmittedViaShouldSerialize_ValueTypeInner()
+    public void Serialize_Absent_Omitted()
     {
-        var model = new NullableValueModel { };
-        var json = JsonConvert.SerializeObject(model, Utilities.GetDefaultJsonSerializerSettings());
-        Assert.DoesNotContain("\"field\"", json);
+        var json = Compat.SerializeWithDefaultSettings(new ObjectWithOptionalNullableFields { ReqStr = "r" });
+        Assert.DoesNotContain("\"optNullStr\"", json);
+        Assert.DoesNotContain("\"optNullInt\"", json);
     }
 
     [Fact]
     public void Serialize_ExplicitNull_WritesNull()
     {
-        var model = new NullableModel { Field = OptionalNullable<string?>.Set(null) };
-        var json = JsonConvert.SerializeObject(model, Utilities.GetDefaultJsonSerializerSettings());
-        Assert.Contains("\"field\":null", json);
+        var model = new ObjectWithOptionalNullableFields
+        {
+            ReqStr = "r",
+            OptNullStr = OptionalNullable<string?>.Set(null),
+        };
+        var json = Compat.SerializeWithDefaultSettings(model);
+        Assert.Contains("\"optNullStr\":null", json);
     }
 
     [Fact]
     public void Serialize_Value_WritesValue()
     {
-        var model = new NullableModel { Field = "x" };
-        var json = JsonConvert.SerializeObject(model, Utilities.GetDefaultJsonSerializerSettings());
-        Assert.Contains("\"field\":\"x\"", json);
+        var model = new ObjectWithOptionalNullableFields { ReqStr = "r", OptNullStr = "x" };
+        var json = Compat.SerializeWithDefaultSettings(model);
+        Assert.Contains("\"optNullStr\":\"x\"", json);
     }
 
     [Fact]
     public void Serialize_OptionalNullableMap_PreservesAbsentNullAndValue()
     {
-        var absent = JsonConvert.SerializeObject(new NullableMapModel { }, Utilities.GetDefaultJsonSerializerSettings());
-        Assert.DoesNotContain("\"field\"", absent);
+        var absent = Compat.SerializeWithDefaultSettings(new ObjectWithOptionalNullableFields { ReqStr = "r" });
+        Assert.DoesNotContain("\"optNullMap\"", absent);
 
-        var explicitNull = JsonConvert.SerializeObject(
-            new NullableMapModel { Field = OptionalNullable<Dictionary<string, string>?>.Set(null) },
-            Utilities.GetDefaultJsonSerializerSettings()
+        var explicitNull = Compat.SerializeWithDefaultSettings(
+            new ObjectWithOptionalNullableFields
+            {
+                ReqStr = "r",
+                OptNullMap = OptionalNullable<Dictionary<string, string>?>.Set(null),
+            }
         );
-        Assert.Contains("\"field\":null", explicitNull);
+        Assert.Contains("\"optNullMap\":null", explicitNull);
 
-        var value = JsonConvert.SerializeObject(
-            new NullableMapModel { Field = new Dictionary<string, string> { ["k"] = "v" } },
-            Utilities.GetDefaultJsonSerializerSettings()
+        var value = Compat.SerializeWithDefaultSettings(
+            new ObjectWithOptionalNullableFields
+            {
+                ReqStr = "r",
+                OptNullMap = new Dictionary<string, string> { ["k"] = "v" },
+            }
         );
-        Assert.Contains("\"field\":{\"k\":\"v\"}", value);
-    }
-
-    [Fact]
-    public void Serialize_OptionalNullableAny_PreservesAbsentNullAndValue()
-    {
-        var absent = JsonConvert.SerializeObject(new NullableAnyModel { }, Utilities.GetDefaultJsonSerializerSettings());
-        Assert.DoesNotContain("\"field\"", absent);
-
-        var explicitNull = JsonConvert.SerializeObject(
-            new NullableAnyModel { Field = OptionalNullable<object?>.Set(null) },
-            Utilities.GetDefaultJsonSerializerSettings()
-        );
-        Assert.Contains("\"field\":null", explicitNull);
-
-        var value = JsonConvert.SerializeObject(
-            new NullableAnyModel { Field = new Dictionary<string, object> { ["k"] = "v" } },
-            Utilities.GetDefaultJsonSerializerSettings()
-        );
-        Assert.Contains("\"field\":{\"k\":\"v\"}", value);
+        Assert.Contains("\"optNullMap\":{\"k\":\"v\"}", value);
     }
 
     [Fact]
     public void Deserialize_Absent_IsAbsent()
     {
-        var model = JsonConvert.DeserializeObject<NullableModel>(
-            "{}",
-            Utilities.GetDefaultJsonDeserializerSettings()
-        )!;
-        Assert.False(model.Field.IsSet);
+        var model = Compat.DeserializeWithDefaultSettings<ObjectWithOptionalNullableFields>("{\"reqStr\":\"r\"}")!;
+        Assert.False(model.OptNullStr.IsSet);
+        Assert.False(model.OptNullInt.IsSet);
     }
 
     [Fact]
     public void Deserialize_ExplicitNull_IsSetAndNull()
     {
-        var model = JsonConvert.DeserializeObject<NullableModel>(
-            "{\"field\":null}",
-            Utilities.GetDefaultJsonDeserializerSettings()
+        var model = Compat.DeserializeWithDefaultSettings<ObjectWithOptionalNullableFields>(
+            "{\"reqStr\":\"r\",\"optNullStr\":null,\"optNullInt\":null}"
         )!;
-        Assert.True(model.Field.IsSet);
-        Assert.True(model.Field.IsNull);
+        Assert.True(model.OptNullStr.IsSet);
+        Assert.True(model.OptNullStr.IsNull);
+        Assert.True(model.OptNullInt.IsSet);
+        Assert.True(model.OptNullInt.IsNull);
     }
 
     [Fact]
     public void Deserialize_Value_RoundTrips()
     {
-        var model = JsonConvert.DeserializeObject<NullableModel>(
-            "{\"field\":\"y\"}",
-            Utilities.GetDefaultJsonDeserializerSettings()
+        var model = Compat.DeserializeWithDefaultSettings<ObjectWithOptionalNullableFields>(
+            "{\"reqStr\":\"r\",\"optNullStr\":\"y\",\"optNullInt\":7}"
         )!;
-        Assert.True(model.Field.IsSet);
-        Assert.False(model.Field.IsNull);
-        Assert.Equal("y", model.Field.Value);
+        Assert.True(model.OptNullStr.IsSet);
+        Assert.False(model.OptNullStr.IsNull);
+        Assert.Equal("y", model.OptNullStr.Value);
+        Assert.Equal(7L, model.OptNullInt.Value);
     }
 
     [Fact]
     public void Deserialize_IsoDateTimeString_PreservedVerbatim()
     {
-        // A string-typed OptionalNullable must not be coerced by Json.NET's
-        // default DateParseHandling (which would tz-normalize/reformat the value).
-        // Presence-aware path adds DateParseHandling.None to JsonSerializerSettings.
-        var model = JsonConvert.DeserializeObject<NullableModel>(
-            "{\"field\":\"2024-01-02T03:04:05Z\"}",
-            Utilities.GetDefaultJsonDeserializerSettings()
+        // A string-typed OptionalNullable must not be coerced into a DateTime
+        // (which would tz-normalize/reformat the value).
+        var model = Compat.DeserializeWithDefaultSettings<ObjectWithOptionalNullableFields>(
+            "{\"reqStr\":\"r\",\"optNullStr\":\"2024-01-02T03:04:05Z\"}"
         )!;
-        Assert.True(model.Field.IsSet);
-        Assert.False(model.Field.IsNull);
-        Assert.Equal("2024-01-02T03:04:05Z", model.Field.Value);
+        Assert.True(model.OptNullStr.IsSet);
+        Assert.False(model.OptNullStr.IsNull);
+        Assert.Equal("2024-01-02T03:04:05Z", model.OptNullStr.Value);
     }
 
     [Fact]
     public void OptionalNonNullable_NullAssignment_OmittedOnWire()
     {
-        var model = new OptionalNonNullableModel { Field = null };
-        var json = JsonConvert.SerializeObject(model, Utilities.GetDefaultJsonSerializerSettings());
-        Assert.DoesNotContain("\"field\"", json);
+        var json = Compat.SerializeWithDefaultSettings(new ObjectWithOptionalNullableFields { ReqStr = "r", OptStr = null });
+        Assert.DoesNotContain("\"optStr\"", json);
     }
 
     [Fact]
     public void OptionalNonNullable_NotAssigned_OmittedOnWire()
     {
-        var model = new OptionalNonNullableModel { };
-        var json = JsonConvert.SerializeObject(model, Utilities.GetDefaultJsonSerializerSettings());
-        Assert.DoesNotContain("\"field\"", json);
+        var json = Compat.SerializeWithDefaultSettings(new ObjectWithOptionalNullableFields { ReqStr = "r" });
+        Assert.DoesNotContain("\"optStr\"", json);
     }
 
     [Fact]
     public void OptionalNonNullable_ValueAssignment_OnWire()
     {
-        var model = new OptionalNonNullableModel { Field = "x" };
-        var json = JsonConvert.SerializeObject(model, Utilities.GetDefaultJsonSerializerSettings());
-        Assert.Contains("\"field\":\"x\"", json);
-    }
-
-    private class OptionalNonNullableModel
-    {
-        [JsonProperty("field", Required = Newtonsoft.Json.Required.Default)]
-        public string? Field { get; set; }
-    }
-
-    private class NullableModel
-    {
-        [JsonProperty("field", Required = Newtonsoft.Json.Required.Default, NullValueHandling = NullValueHandling.Include)]
-        public OptionalNullable<string?> Field { get; set; }
-
-        public bool ShouldSerializeField() => Field.IsSet;
-    }
-
-    private class NullableValueModel
-    {
-        [JsonProperty("field", Required = Newtonsoft.Json.Required.Default, NullValueHandling = NullValueHandling.Include)]
-        public OptionalNullable<long?> Field { get; set; }
-
-        public bool ShouldSerializeField() => Field.IsSet;
-    }
-
-    private class NullableMapModel
-    {
-        [JsonProperty("field", Required = Newtonsoft.Json.Required.Default, NullValueHandling = NullValueHandling.Include)]
-        public OptionalNullable<Dictionary<string, string>?> Field { get; set; }
-
-        public bool ShouldSerializeField() => Field.IsSet;
-    }
-
-    private class NullableAnyModel
-    {
-        [JsonProperty("field", Required = Newtonsoft.Json.Required.Default, NullValueHandling = NullValueHandling.Include)]
-        public OptionalNullable<object?> Field { get; set; }
-
-        public bool ShouldSerializeField() => Field.IsSet;
+        var json = Compat.SerializeWithDefaultSettings(new ObjectWithOptionalNullableFields { ReqStr = "r", OptStr = "x" });
+        Assert.Contains("\"optStr\":\"x\"", json);
     }
 
     // ── Optional + nullable: absent/null/value remain distinct ─────────────

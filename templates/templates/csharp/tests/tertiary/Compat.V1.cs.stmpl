@@ -1,0 +1,11 @@
+{{- /* v1-only: v2 Compat lives in csharpv2/tests/Common/Compat.cs.stmpl. */ -}}
+{{- if not isCsharpV2 -}}
+#nullable enable
+using No_Security.API.Utils.Sse;
+
+// v1 counterpart of templates/csharpv2/tests/Common/Compat.cs.stmpl for the tertiary group.
+public static class Compat
+{
+    public static EventStream<T>? Events<T>(EventStream<T>? stream) => stream;
+}
+{{ end -}}

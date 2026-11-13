@@ -1,0 +1,13 @@
+{{- $name := sanitizeEnumName .Local.Name false}}
+{{- $deprecated := and .Local.Comments .Local.Comments.Deprecated}}
+{{- $enumType := sanitizeType .Local.Enum.Type false ""}}
+{{- $stringEnum := eq $enumType "string"}}
+
+    {{- templateComments .Local.Comments 1 "class" false}}
+    {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
+    [GenerateEnumConverter(Open = false, Type = EnumType.{{if $stringEnum}}String{{else}}Int{{end}})]
+    [System.Text.Json.Serialization.JsonConverter(typeof({{$name}}{{if not $stringEnum}}Int{{end}}JsonConverter))]
+    public enum {{$name}}
+    {
+        {{- templateEnums .Local}}
+    }

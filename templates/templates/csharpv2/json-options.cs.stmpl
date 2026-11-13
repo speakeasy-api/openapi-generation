@@ -1,0 +1,88 @@
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Numerics;
+{{- if requiresNodatime}}
+using NodaTime;
+{{- end}}
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+
+namespace {{.Local.Namespace}};
+
+internal static class JsonOptions
+{
+    private static readonly ObjectJsonConverter _objectConverter = new ObjectJsonConverter();
+
+    // Source-gen contexts bake STJ's built-in ObjectConverter into every
+    // JsonTypeInfo whose property type is `object`. That converter reads JSON
+    // as `JsonElement`, bypassing the runtime `ObjectJsonConverter` registered
+    // in SerializerOptions.Converters. WithAddedModifier walks each TypeInfo
+    // returned by the chain and swaps the per-property CustomConverter for
+    // `object`-typed slots, restoring native CLR type round-trips under AOT.
+    private static readonly IJsonTypeInfoResolver _resolverChain =
+        JsonTypeInfoResolver.Combine(
+            {{.Local.Resolvers}}
+        ).WithAddedModifier(static typeInfo =>
+        {
+            foreach (var prop in typeInfo.Properties)
+            {
+                if (prop.PropertyType == typeof(object) && prop.CustomConverter is null)
+                {
+                    prop.CustomConverter = _objectConverter;
+                }
+            }
+        }).WithAddedModifier(RejectExplicitNull);
+
+    internal static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
+    {
+        TypeInfoResolver = _resolverChain,
+        NumberHandling = JsonNumberHandling.{{.Local.NumberHandling}},
+        Converters =
+        {
+{{- range .Local.Converters}}
+            {{.}},
+{{- end}}
+        }
+    };
+
+    private static readonly Dictionary<Type, (string JsonName, bool Required)[]> _nullCheckedFields =
+        new Dictionary<Type, (string JsonName, bool Required)[]>
+        {
+{{- range .Local.NullCheckedTypes}}
+            [typeof({{.Type}})] = new[] { {{- range $i, $f := .Fields}}{{if $i}},{{end}} ("{{$f.JsonName}}", {{$f.Required}}){{end}} },
+{{- end}}
+        };
+
+    private static void RejectExplicitNull(JsonTypeInfo typeInfo)
+    {
+        if (!_nullCheckedFields.TryGetValue(typeInfo.Type, out var fields)) return;
+        foreach (var prop in typeInfo.Properties)
+        {
+            if (prop.Set is not { } set) continue;
+            if (prop.PropertyType.IsValueType && Nullable.GetUnderlyingType(prop.PropertyType) is null) continue;
+            foreach (var (jsonName, required) in fields)
+            {
+                if (prop.Name != jsonName) continue;
+                var message = required
+                    ? $"Required property '{jsonName}' expects a value but got null."
+                    : $"Required property '{jsonName}' expects a non-null value.";
+                prop.Set = (obj, value) =>
+                {
+                    if (IsJsonNull(value)) throw new JsonException(message);
+                    set(obj, value);
+                };
+                break;
+            }
+        }
+    }
+
+    private static bool IsJsonNull(object? value) =>
+        value is null
+{{- if .Local.HasOpenUnion}}
+        || value is global::{{getModelNamespace ""}}.IOpenUnion union && union.GetUnknownRaw() is { ValueKind: JsonValueKind.Null }
+{{- end}};
+}

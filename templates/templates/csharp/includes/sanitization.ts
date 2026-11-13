@@ -515,6 +515,16 @@ function sanitizeTypeName(
     case "date-time":
       return "DateTime";
     case "event-stream":
+      if (isCsharpV2()) {
+        addUsageImport("System.Collections.Generic");
+        return `IAsyncEnumerable<${sanitizeItemType(
+          typeDef,
+          usageLocation,
+          containingClass,
+          isUsage,
+        )}>`;
+      }
+
       addUsageImport("Utils.Sse", true);
       return `EventStream<${sanitizeItemType(
         typeDef,
@@ -688,10 +698,9 @@ function sanitizeClass(
     (className == containingClass ||
       doesTypeConflict(className, typeDef.OutputLocation))
   ) {
-    return `${getModelNamespace(
-      typeDef.OutputLocation,
-      isUsage || usingGlobalImports() || hasNamespaceConflict(),
-    )}.${className}`;
+    const useFQN =
+      isUsage || usingGlobalImports() || hasNamespaceConflict() || isCsharpV2();
+    return `${getModelNamespace(typeDef.OutputLocation, useFQN)}.${className}`;
   }
 
   addUsageImportForType(typeDef);

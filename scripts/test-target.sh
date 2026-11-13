@@ -78,15 +78,35 @@ function targettest_sdk() {
         print_msg_with_ctx "${SKIP_ICON} {yellow}{bold}Skipping Target Tests{reset}" "target=${target}|variant=${variant}"
         return
     fi
+    if [[ "${target}" == "csharpv2" ]]; then
+        check_no_newtonsoft "${sdk_target_dir}" "${variant}"
+    fi
+
     print_msg_with_ctx "${TARGET_ICON} {blue}{bold}Running Target Tests{reset}" "target=${target}|variant=${variant}"
     run_cmd go run cmd/targettest/main.go -t "${target}" -o "${sdk_target_dir}" || exit 1
 }
 
+function check_no_newtonsoft() {
+    local -r sdk_target_dir="$1"
+    local -r variant="$2"
+    local matches
+
+    matches="$(find "${sdk_target_dir}" -name '*.csproj' \
+        -not -path '*/Tests/*' -not -path '*/bin/*' -not -path '*/obj/*' \
+        -exec grep -El 'PackageReference[^>]*Include="Newtonsoft\.Json"' {} + || true)"
+    if [[ -n "${matches}" ]]; then
+        print_msg_with_ctx "${FAIL_ICON} {red}{bold}Newtonsoft.Json package referenced by generated csharpv2 SDK{reset}" "variant=${variant}"
+        printf '%s\n' "${matches}"
+        exit 1
+    fi
+}
+
 function test_usage_file() {
-    # Test USAGE.md templating (running 'tests/testusage.go' for the primary spec)
+    # Test USAGE.md templating (running 'tests/testusage.go' for the given spec)
     local -r target="$1"
-    print_msg_with_ctx "${SNIPPETS_ICON} {blue}{bold}Testing Usage Example Selection{reset}" "target=${target}|variant=primary"
-    pushd "${PROJECT_ROOT}" > /dev/null && run_cmd go run ./tests -lang "${target}" -mode usage -group primary || exit 1; popd > /dev/null
+    local -r variant="${2:-primary}"
+    print_msg_with_ctx "${SNIPPETS_ICON} {blue}{bold}Testing Usage Example Selection{reset}" "target=${target}|variant=${variant}"
+    pushd "${PROJECT_ROOT}" > /dev/null && run_cmd go run ./tests -lang "${target}" -mode usage -group "${variant}" || exit 1; popd > /dev/null
 }
 
 function test_standalone_usage() {
@@ -123,6 +143,11 @@ function test_target() {
         else
             test_usage_file "${target}"
         fi
+    fi
+
+    # csharpv2 quaternary targets netstandard2.0: AOT-publish its net8 asset too
+    if [[ "${target}" == "csharpv2" && " ${variants[@]} " =~ " quaternary " && "${skip_primary_usage}" != "true" ]]; then
+        test_usage_file "${target}" quaternary
     fi
 
     # Run standalone usage tests if not skipped

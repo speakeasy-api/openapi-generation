@@ -1,0 +1,19 @@
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Numerics;
+{{- if requiresNodatime}}
+using NodaTime;
+{{- end}}
+using System.Text.Json.Serialization.Metadata;
+
+namespace {{.Local.Namespace}};
+
+internal static class JsonTypeInfos
+{
+{{- range .Local.Types}}
+    internal static JsonTypeInfo<{{.Type}}> {{.Name}} => (JsonTypeInfo<{{.Type}}>)JsonOptions.SerializerOptions.GetTypeInfo(typeof({{.Type}}));
+{{- end}}
+}

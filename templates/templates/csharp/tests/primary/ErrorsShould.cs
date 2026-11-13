@@ -220,12 +220,11 @@ public class ErrorsShould
             () => sdk.Errors.StatusGetXSpeakeasyErrorsAsync(418)
         );
         var exMsg = "Failed to deserialize response body into ErrorPayload. Body: {,}.";
-        var innerMsg = "Invalid property identifier character: ,. Path '', line 1, position 1.";
         Assert.Equal(exMsg, ex.Message);
         Assert.NotNull(ex.InnerException);
-        Assert.IsType<Newtonsoft.Json.JsonReaderException>(ex.InnerException);
-        Assert.Equal(innerMsg, ex.InnerException.Message);
-        Assert.Equal($"Status: 418. {exMsg}\n{innerMsg}", ex.ToString());
+
+        Compat.AssertIsJsonParseException(ex.InnerException);
+        Assert.Contains($"Status: 418. {exMsg}\n", ex.ToString());
     }
 
     [Theory]

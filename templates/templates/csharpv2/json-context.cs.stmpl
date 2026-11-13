@@ -1,0 +1,29 @@
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Numerics;
+{{- if requiresNodatime}}
+using NodaTime;
+{{- end}}
+using System.Text.Json.Serialization;
+
+namespace {{.Local.Namespace}};
+
+{{range .Local.Types}}
+[JsonSerializable(typeof({{.Type}}), TypeInfoPropertyName = "{{.Name}}")]
+{{- end}}
+[JsonSourceGenerationOptions(
+    WriteIndented = false,
+    GenerationMode = JsonSourceGenerationMode.Default,
+    NumberHandling = JsonNumberHandling.{{.Local.NumberHandling}},
+    Converters = new[]
+    {
+{{- range $i, $c := .Local.Converters}}
+  {{- if $i}},{{end}}
+        typeof({{$c}})
+{{- end}}
+    }
+)]
+internal partial class {{.Local.ClassName}} : JsonSerializerContext { }

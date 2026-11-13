@@ -1773,8 +1773,14 @@ func (g *Generator) GetTarget(ctx context.Context, target, outDir string) (types
 		return types.NewTargetFromTemplate(target), nil
 	}
 
-	// Allow targeting a specific template version for debugging or WASM environment
-	if os.Getenv("SPEAKEASY_DEBUG") == "true" || mode.IsSpeakeasyExecutionContextValidation(ctx) {
+	// A versioned template name (e.g. typescriptv2) selects that template directly;
+	// a bare target name resolves its template from gen.yaml templateVersion.
+	if versioned := types.NewTargetFromTemplate(target); versioned.Template != versioned.Target {
+		return versioned, nil
+	}
+
+	// Allow targeting a specific template version for WASM environment
+	if mode.IsSpeakeasyExecutionContextValidation(ctx) {
 		if _, isSunset := templatesConfig.GetMinimumTargetVersion()[target]; !isSunset {
 			return types.NewTargetFromTemplate(target), nil
 		}

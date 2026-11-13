@@ -3,7 +3,10 @@
 {{- $class := (getTestSimpleClassName $testGroup) -}}
 #nullable enable
 {{genTestFileImports .Local}}
+{{- if not isCsharpV2}}
+{{- /* v2 Tests.csproj excludes Newtonsoft at compile time. */}}
 using Newtonsoft.Json;
+{{- end}}
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/speakeasy-api/openapi-generation/v2/internal/templatedir"
 	"github.com/speakeasy-api/openapi-generation/v2/pkg/templates"
 	"github.com/speakeasy-api/openapi/sequencedmap"
 
@@ -115,6 +116,15 @@ func getFeatureSections(lang string, targetVersions map[string]string, previousV
 // language. For example, for lang "python", it will return ["pythonv2"] if only
 // pythonv2/ exists, or ["python", "pythonv2"] if both exist.
 func getChangelogFolders(lang string) []string {
+	return getChangelogFoldersForTemplate(lang, map[string]struct{}{})
+}
+
+func getChangelogFoldersForTemplate(lang string, visited map[string]struct{}) []string {
+	if _, ok := visited[lang]; ok {
+		return nil
+	}
+	visited[lang] = struct{}{}
+
 	otherTemplateVersions := templates.GetAvailableTemplates()
 	candidates := make([]string, 0, len(otherTemplateVersions)+1)
 	candidates = append(candidates, lang)
@@ -130,6 +140,14 @@ func getChangelogFolders(lang string) []string {
 	for _, folder := range candidates {
 		if _, err := changeLogs.ReadDir(folder); err == nil {
 			folders = append(folders, folder)
+		}
+	}
+
+	if cfg, err := templatedir.LoadConfig(lang); err == nil && cfg.BaseTemplate != "" {
+		for _, folder := range getChangelogFoldersForTemplate(cfg.BaseTemplate, visited) {
+			if !slices.Contains(folders, folder) {
+				folders = append(folders, folder)
+			}
 		}
 	}
 
