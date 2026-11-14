@@ -244,3 +244,36 @@ func TestSensitiveBodyGraphPlainUnionVariants(t *testing.T) {
 	node := g.Nodes[sensitive[0]]
 	assert.False(t, node.PlainObject || node.PlainArray || node.PlainString || node.PlainNumber || node.PlainBoolean, "a union whose members all hold sensitive values has no plain member")
 }
+
+func TestTypeDefHasSensitiveValues(t *testing.T) {
+	t.Parallel()
+
+	union := func(name string, variants ...*TypeDef) *TypeDef {
+		return &TypeDef{Type: DataTypeUnion, Name: name, AssociatedTypes: variants}
+	}
+	password := &TypeDef{Type: DataTypeString, Format: "password"}
+
+	plainLoop := union("PlainLoop", plainString())
+	plainLoop.AssociatedTypes = append(plainLoop.AssociatedTypes, plainLoop)
+	sensitiveLoop := union("SensitiveLoop", plainString())
+	sensitiveLoop.AssociatedTypes = append(sensitiveLoop.AssociatedTypes, class("Node", field("next", sensitiveLoop), field("key", sensitiveString())))
+
+	for name, tc := range map[string]struct {
+		typ  *TypeDef
+		want bool
+	}{
+		"plain members":             {union("Plain", plainString(), class("Label", field("label", plainString()))), false},
+		"plain recursive union":     {plainLoop, false},
+		"sensitive member property": {union("Credential", class("APIKey", field("key", sensitiveString())), plainString()), true},
+		"password format member":    {union("Secret", password, &TypeDef{Type: DataTypeInteger}), true},
+		"sensitive array item":      {union("Tokens", &TypeDef{Type: DataTypeArray, ItemType: sensitiveString()}, plainString()), true},
+		"sensitive map value":       {union("Vault", &TypeDef{Type: DataTypeMap, ItemType: sensitiveString()}, plainString()), true},
+		"nested sensitive union":    {union("Outer", plainString(), union("Inner", sensitiveString(), plainString())), true},
+		"sensitive recursive union": {sensitiveLoop, true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.want, tc.typ.HasSensitiveValues())
+		})
+	}
+}
