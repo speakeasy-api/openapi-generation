@@ -953,7 +953,11 @@ return ${access}`;
       codeField,
       leafOwner,
     )}`;
-    const isStringCode = codeField.Type.Type.toString() === "string";
+    const codeType = codeField.Type.Type.toString();
+    const isStringCode =
+      codeType === "string" ||
+      (codeType === "enum" &&
+        codeField.Type.Enum?.Type.Type.toString() === "string");
     let code = access;
     let guarded = true;
     switch (errorMessageHopKind(codeField, leafOwner)) {

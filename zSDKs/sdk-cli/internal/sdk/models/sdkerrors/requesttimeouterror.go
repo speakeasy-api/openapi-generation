@@ -4,6 +4,7 @@ package sdkerrors
 
 import (
 	"encoding/json"
+	"fmt"
 	"openapi/internal/sdk/models/components"
 )
 
@@ -18,7 +19,10 @@ var _ error = &RequestTimeoutError{}
 
 func (e *RequestTimeoutError) Error() string {
 	if e != nil {
-		if e.Message != nil {
+		if e.Message != nil && *e.Message != "" {
+			if e.Code != nil {
+				return fmt.Sprintf("%v: %s", *e.Code, *e.Message)
+			}
 			return *e.Message
 		}
 	}
