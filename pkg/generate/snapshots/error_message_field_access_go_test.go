@@ -127,7 +127,7 @@ var _ error = &ConflictError{}
 func (e *ConflictError) Error() string {
 	if e != nil {
 		if v0 := e.ErrorInfo; v0 != nil {
-			if v0.GetMessage() != nil {
+			if v0.GetMessage() != nil && *v0.GetMessage() != "" {
 				return *v0.GetMessage()
 			}
 		}
@@ -402,7 +402,9 @@ func (u BadRequest) Error() string {
 	switch u.Type {
 	case BadRequestTypeFailure:
 		if u.WidgetFailure != nil {
-			return u.WidgetFailure.Error.Message
+			if u.WidgetFailure.Error.Message != "" {
+				return u.WidgetFailure.Error.Message
+			}
 		}
 
 		data, _ := json.Marshal(u.WidgetFailure)

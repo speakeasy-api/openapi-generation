@@ -1,0 +1,10 @@
+id: 1794524968-fc46a4a4
+features:
+    - errors
+targets:
+    - go
+type: fix
+bump: patch
+description: prefix inferred Go error messages with the error code and fall back when the message is empty
+author: TristanSpeakEasy
+date: "2026-11-13"
