@@ -668,7 +668,7 @@ trackedFiles:
   scripts/install.ps1:
     last_write_checksum: sha1:c03368407505979c2b4498d0d754c7bcda82769a
   scripts/install.sh:
-    last_write_checksum: sha1:ba255d220bc830375d4f2bc34a7ca01e0a0a8fe2
+    last_write_checksum: sha1:6537dfb61f550be0ee3a98d04d1ea5ab0b790279
   tests/artifact_test.go:
     last_write_checksum: sha1:80691e63c96f85539e12254654f82edd0511dc59
   tests/async_test.go:
