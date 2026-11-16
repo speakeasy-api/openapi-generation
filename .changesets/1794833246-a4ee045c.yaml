@@ -1,0 +1,10 @@
+id: 1794833246-a4ee045c
+features:
+    - mcpServer
+targets:
+    - typescriptv2
+type: fix
+bump: patch
+description: compile the MCP server when the OpenAPI document defines no servers
+author: AshGodfrey
+date: "2026-11-16"

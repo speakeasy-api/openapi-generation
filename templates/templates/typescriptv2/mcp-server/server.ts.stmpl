@@ -39,7 +39,7 @@ export function createMCPServer(deps: {
   {{      $fieldName }}?: SDKOptions["{{$fieldName}}"] | undefined;
   {{-   end}}
   {{- end}}{{/* if (ne $globalSDK.Globals nil) */}}
-  {{- if $globalSDK.Servers}}{{if $serverMap}}
+  {{- if $hasServers}}{{if $serverMap}}
   {{- addImport "../lib/config.js" "SDKOptions" }}
   server?: SDKOptions["server"] | undefined;
   {{- else}}
@@ -77,7 +77,7 @@ export function createMCPServer(deps: {
     {{-   end}}
     {{- end}}{{/* if (ne $globalSDK.Globals nil) */}}
     serverURL: deps.serverURL,
-    {{- if $globalSDK.Servers}}{{if $serverMap}}
+    {{- if $hasServers}}{{if $serverMap}}
     server: deps.server,
     {{- else}}
     serverIdx: deps.serverIdx,
