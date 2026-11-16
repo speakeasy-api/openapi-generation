@@ -62,6 +62,13 @@ describe("request parameter patterns", () => {
     );
   });
 
+  test("rejects a value over maxLength before testing the pattern", async () => {
+    await expectRejected(
+      { code: "abcdefg" },
+      "Value must be at most 6 characters long",
+    );
+  });
+
   test("rejects a query parameter with its custom message", async () => {
     await expectRejected(
       { code: "abc", tag: "ABC" },

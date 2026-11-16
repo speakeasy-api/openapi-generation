@@ -83,7 +83,11 @@ function callImportTypesFunc(func: () => string): string {
 
 registerTemplateFunc("callImportTypesFunc", callImportTypesFunc);
 
-type PatternConstraint = { pattern: string; message?: string };
+type PatternConstraint = {
+  pattern: string;
+  message?: string;
+  maxLength?: number;
+};
 
 function toOutbound(options: {
   usageLocation: string;
@@ -434,13 +438,26 @@ function toOutbound(options: {
 
       let zod = z.string();
       if (patternConstraint) {
-        const { pattern, message } = patternConstraint;
+        const { pattern, message, maxLength } = patternConstraint;
         const literal = (s: string) =>
           JSON.stringify(s).replaceAll("{{", `{{"{{"}}`);
         const errorMessage = message || `Value must match pattern ${pattern}`;
+        if (maxLength !== undefined) {
+          zod = z.refine(
+            zod,
+            `withinMaxLength$(${maxLength})`,
+            `{ message: ${literal(
+              `Value must be at most ${maxLength} characters long`,
+            )} }`,
+          );
+        }
+        const patternArgs =
+          maxLength === undefined
+            ? literal(pattern)
+            : `${literal(pattern)}, ${maxLength}`;
         zod = z.refine(
           zod,
-          `matchesPattern$(${literal(pattern)})`,
+          `matchesPattern$(${patternArgs})`,
           `{ message: ${literal(errorMessage)} }`,
         );
       }
@@ -462,6 +479,13 @@ function toOutbound(options: {
               "matchesPattern as matchesPattern$",
               usageLocation,
             );
+            if (patternConstraint.maxLength !== undefined) {
+              addInternalImport(
+                "primitives",
+                "withinMaxLength as withinMaxLength$",
+                usageLocation,
+              );
+            }
           }
           return addZodPackageImport();
         },
@@ -1178,17 +1202,31 @@ function requestParamPatternConstraint(
   if (!pattern) {
     return undefined;
   }
+  // Pointer-valued in the AST: coerce through Number and skip when unset.
+  const rawMaxLength = field.Type.Validations?.MaxLength;
+  const maxLengthValue = rawMaxLength == null ? NaN : Number(rawMaxLength);
+  const maxLength =
+    Number.isInteger(maxLengthValue) && maxLengthValue >= 0
+      ? maxLengthValue
+      : undefined;
   // zod v3 runs refinements on defaults, so a default that violates its own
-  // pattern would fail every call that omits the parameter.
+  // constraints would fail every call that omits the parameter.
   const defaultValue = field.Default?.Value;
-  if (
-    defaultValue != null &&
-    !new RegExp(pattern, "u").test(String(defaultValue))
-  ) {
-    return undefined;
+  if (defaultValue != null) {
+    const value = String(defaultValue);
+    if (
+      !new RegExp(pattern, "u").test(value) ||
+      (maxLength !== undefined && [...value].length > maxLength)
+    ) {
+      return undefined;
+    }
   }
   const message = field.Type.Extensions?.PatternErrorMessage;
-  return { pattern, message: message ? String(message) : undefined };
+  return {
+    pattern,
+    message: message ? String(message) : undefined,
+    maxLength,
+  };
 }
 
 function toInbound(options: {

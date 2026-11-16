@@ -85,10 +85,13 @@ const patternLiteralEscapes: Record<string, string> = {
 /**
  * A deterministic value matching a portable pattern (see isPortablePattern),
  * or undefined when none could be built. Alternation takes the first branch,
- * unbounded repetition produces three items, and character sets draw from a
- * small printable pool.
+ * repetition produces `repeat` items within the quantifier's bounds, and
+ * character sets draw from a small printable pool.
  */
-function exampleForPortablePattern(pattern: string): string | undefined {
+function exampleForPortablePattern(
+  pattern: string,
+  repeat: number = 3,
+): string | undefined {
   let i = 0;
   let picks = 0;
 
@@ -184,7 +187,7 @@ function exampleForPortablePattern(pattern: string): string | undefined {
       const atom = parseAtom();
       if (!atom) return undefined;
       const [min, max] = parseQuantifier();
-      const count = Math.min(max, Math.max(min, 3));
+      const count = Math.min(max, Math.max(min, repeat));
       for (let n = 0; n < count; n++) out += atom();
     }
     return out;

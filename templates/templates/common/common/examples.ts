@@ -2011,10 +2011,19 @@ function conformExampleToPattern(fieldDef: FieldDef, value: string): string {
   if (!pattern) {
     return value;
   }
-  if (new RegExp(pattern, "u").test(value)) {
+  const rawMaxLength = fieldDef.Type.Validations?.MaxLength;
+  const maxLength = rawMaxLength == null ? Infinity : Number(rawMaxLength);
+  const fits = (s: string) => [...s].length <= maxLength;
+  if (new RegExp(pattern, "u").test(value) && fits(value)) {
     return value;
   }
-  return exampleForPortablePattern(pattern) ?? value;
+  for (const repeat of [3, 1, 0]) {
+    const example = exampleForPortablePattern(pattern, repeat);
+    if (example !== undefined && fits(example)) {
+      return example;
+    }
+  }
+  return value;
 }
 
 function templatePlaceholderString(arrayIdx?: number) {
