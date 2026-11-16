@@ -1215,8 +1215,8 @@ function requestParamPatternConstraint(
   if (defaultValue != null) {
     const value = String(defaultValue);
     if (
-      !new RegExp(pattern, "u").test(value) ||
-      (maxLength !== undefined && [...value].length > maxLength)
+      (maxLength !== undefined && [...value].length > maxLength) ||
+      !new RegExp(pattern, "u").test(value)
     ) {
       return undefined;
     }

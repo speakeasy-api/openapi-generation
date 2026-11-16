@@ -2014,7 +2014,7 @@ function conformExampleToPattern(fieldDef: FieldDef, value: string): string {
   const rawMaxLength = fieldDef.Type.Validations?.MaxLength;
   const maxLength = rawMaxLength == null ? Infinity : Number(rawMaxLength);
   const fits = (s: string) => [...s].length <= maxLength;
-  if (new RegExp(pattern, "u").test(value) && fits(value)) {
+  if (fits(value) && new RegExp(pattern, "u").test(value)) {
     return value;
   }
   for (const repeat of [3, 1, 0]) {
