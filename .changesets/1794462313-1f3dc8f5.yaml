@@ -1,0 +1,11 @@
+id: 1794462313-1f3dc8f5
+features:
+    - core
+targets:
+    - typescriptv2
+    - mcp-typescript
+type: fix
+bump: patch
+description: "behaviour change: operation path parameter values that form . or .. URL segments are now rejected with an InvalidRequestError (an MCP tool error for MCP servers) instead of sending the request to a different route"
+author: TristanSpeakEasy
+date: "2026-11-12"

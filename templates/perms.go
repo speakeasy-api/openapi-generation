@@ -1227,6 +1227,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/mcp-typescript/tests/lib/async.test.ts.stmpl":                                                       0o644,
 	"templates/mcp-typescript/tests/lib/oauth2-sessions.test.ts.stmpl":                                             0o644,
 	"templates/mcp-typescript/tests/lib/schemas.test.ts.stmpl":                                                     0o644,
+	"templates/mcp-typescript/tests/lib/url.test.ts":                                                               0o644,
 	"templates/mcp-typescript/tests/primary":                                                                       0o20000000755,
 	"templates/mcp-typescript/tests/primary/auth_additional.test.ts.stmpl":                                         0o644,
 	"templates/mcp-typescript/tests/primary/authnew_additional.test.ts.stmpl":                                      0o644,

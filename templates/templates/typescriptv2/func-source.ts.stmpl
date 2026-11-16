@@ -391,15 +391,26 @@ async function $do(
     {{sanitizeKey $spec.name}}: {{genSingleParamEncoder $spec.fieldDef $spec.accessor}},
   {{- end }}
   };
-  {{- end}}
+  {{- addInternalImport "sdks" "encodePath" "funcs" }}
+  const {{funcLocal "pathResult"}} = encodePath("{{$op.Path}}", {{funcLocal "pathParams"}});
+  if (!{{funcLocal "pathResult"}}.ok) {
+    return [{{if $isPaginated}}haltIterator({{funcLocal "pathResult"}}){{else}}{{funcLocal "pathResult"}}{{end}}, { status: "invalid" }];
+  }
+  {{ if $hasURLPagination -}}
+  const {{funcLocal "path"}} = options?.[URL_OVERRIDE] ? "" : {{funcLocal "pathResult"}}.value;
+  {{ else -}}
+  const {{funcLocal "path"}} = {{funcLocal "pathResult"}}.value;
+  {{ end -}}
+  {{- else }}
   {{- addInternalImport "url" "pathToFunc" "funcs" }}
   {{ if $hasURLPagination -}}
   const {{funcLocal "path"}} = options?.[URL_OVERRIDE]
       ? ""
-      : pathToFunc("{{$op.Path}}")({{- if $hasPathParams }}{{funcLocal "pathParams"}}{{end}});
+      : pathToFunc("{{$op.Path}}")();
   {{ else -}}
-  const {{funcLocal "path"}} = pathToFunc("{{$op.Path}}")({{- if $hasPathParams }}{{funcLocal "pathParams"}}{{end}});
+  const {{funcLocal "path"}} = pathToFunc("{{$op.Path}}")();
   {{ end -}}
+  {{- end}}
 
   {{ if $hasQueryParams }}
   {{ if $hasURLPagination -}}
