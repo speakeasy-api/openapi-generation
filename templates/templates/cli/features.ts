@@ -1,7 +1,7 @@
 //@ts-ignore
 // TODO: determine if this needs to be insync with the go version or can define these differently
 const supportedFeatures = {
-  core: "0.9.27",
+  core: "0.9.32",
   allowReserved: "0.2.0",
   getRequestBodies: "0.0.1",
   flattening: "0.0.0",
@@ -49,7 +49,7 @@ const supportedFeatures = {
   transformJq: "0.0.0",
   jsonlResponses: "0.0.1",
   customCodeRegions: "0.0.1",
-  cliCommands: "0.4.0",
+  cliCommands: "0.4.2",
 };
 
 // @ts-ignore
@@ -363,6 +363,16 @@ function isTestSkipped(test: string): boolean {
     "auth-global-security-flattening-empty",
     "unknown-fields-json-round-trip",
     "parameters-default-path-params",
+    "hooks-client-credentials-scopes-from-env",
+    "debug-env-var-false-keeps-logging-off",
+    "unions-body-variant-overloads-discriminated",
+    "unions-body-variant-overloads-non-body-arguments",
+    "unions-body-variant-overloads-non-discriminated",
+    "unions-body-variant-overloads-renamed-argument",
+    "unions-body-variant-overloads-request-body",
+    "unions-body-variant-overloads-nested-union",
+    "unions-body-variant-overloads-open-enum",
+    "request-bodies-base64-file-input-raw-bytes",
   ].includes(test);
 }
 

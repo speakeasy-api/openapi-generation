@@ -46,11 +46,11 @@ module OpenApiSDK
             :circular_union,
             Crystalline::Nilable.new(
               Crystalline::Union.new(
-                Crystalline::Hash.new(Symbol, Crystalline::Hash.new(Symbol, Object)),
+                Crystalline::Hash.new(::Symbol, Crystalline::Hash.new(::Symbol, ::Object)),
                 ::String,
                 ::Integer,
                 Crystalline::Boolean.new,
-                Crystalline::Array.new(Crystalline::Hash.new(Symbol, Object)),
+                Crystalline::Array.new(Crystalline::Hash.new(::Symbol, ::Object)),
                 ::Float
               )
             ),
@@ -90,11 +90,11 @@ module OpenApiSDK
               all_of_with_factored_out_properties: T.nilable(Operations::V2::Schemas::AllOfWithFactoredOutProperties),
               circular_union: T.nilable(
                 T.any(
-                  T::Hash[Symbol, T::Hash[Symbol, Object]],
+                  T::Hash[::Symbol, T::Hash[::Symbol, ::Object]],
                   ::String,
                   ::Integer,
                   T::Boolean,
-                  T::Array[T::Hash[Symbol, Object]],
+                  T::Array[T::Hash[::Symbol, ::Object]],
                   ::Float
                 )
               ),

@@ -19,7 +19,7 @@ module OpenApiSDK
       )
       refute_nil(s)
 
-      res = s.tag1.deprecated1(server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"))
+      res = s.tag1.deprecated1(server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"))
       refute_nil(res)
       assert_equal(200, res.status_code)
     end
@@ -41,7 +41,7 @@ module OpenApiSDK
       res = s
         .tag1
         .list_test1(
-          server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+          server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
           page: 100,
           query_param2: Operations::V2::Schemas::QueryParam2::ONE,
           header_param1: "some example header param",
@@ -67,7 +67,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("postFileWithEncoding")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -75,7 +75,7 @@ module OpenApiSDK
       req = Operations::V2::Schemas::PostFileWithEncodingRequest.new(
         file: Operations::V2::Schemas::File.new(
           file_name: "example.file",
-          content: File.binread(".speakeasy/testfiles/example.file")
+          content: ::File.binread(".speakeasy/testfiles/example.file")
         )
       )
       res = s.tag1.post_file_with_encoding(request: req)

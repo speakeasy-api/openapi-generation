@@ -96,6 +96,7 @@ const (
 	TestGlobalsOptionalPathParameterOperationRequired
 	TestGlobalsOptionalPathParameterPathRequired
 	TestGlobalsKebabCaseParamGet
+	TestDebugEnvVarFalseKeepsLoggingOff
 	TestHeadersOverrideRequestHeaders
 	TestHeadersEmptyResponseBodyWithHeaders
 	TestHeadersErrorResponseHeadersNone
@@ -257,6 +258,7 @@ const (
 	TestRequestBodiesBase64InputModeFileSplitComponents
 	TestRequestBodiesBase64InputModeFileSharedComponent
 	TestRequestBodiesBase64FileInputIdempotent
+	TestRequestBodiesBase64FileInputRawBytes
 	TestRequestBodiesUUIDFormat
 	TestRequestBodiesDurationFormat
 	TestResponseBodiesJSONGet
@@ -521,6 +523,7 @@ const (
 	TestHooksClientCredentialsSuccessAltTokenURL
 	TestHooksClientCredentialsOptionSuccess
 	TestHooksClientCredentialsOptionSuccessAltTokenURL
+	TestHooksClientCredentialsScopesFromEnv
 	TestHooksClientCredentialsBasicSuccess
 	TestHooksClientCredentialsBasicSuccessGlobalServer
 	TestHooksClientCredentialsBasicSuccessAltTokenURL
@@ -656,6 +659,13 @@ const (
 	TestReactQueryKeyOptInInfersQueryType
 	TestReactQueryKeyIncludesParametersAndRequestBody
 	TestReactQueryBuildersKeyDistinctBodies
+	TestUnionsBodyVariantOverloadsDiscriminated
+	TestUnionsBodyVariantOverloadsNonDiscriminated
+	TestUnionsBodyVariantOverloadsRequestBody
+	TestUnionsBodyVariantOverloadsNonBodyArguments
+	TestUnionsBodyVariantOverloadsRenamedArgument
+	TestUnionsBodyVariantOverloadsNestedUnion
+	TestUnionsBodyVariantOverloadsOpenEnum
 
 	// Custom CLI-target behaviour tests recorded by the generated CLI test
 	// suite (exit codes, pre-request classification, catalogs, intents,

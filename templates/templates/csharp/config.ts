@@ -295,6 +295,15 @@ function getConfigFields(
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
+    bodyVariantOverloads: {
+      Name: "bodyVariantOverloads",
+      Required: false,
+      DefaultValue: false,
+      Description:
+        "When an operation's required request body is a union and a method parameter, generate one method overload per union member that takes the member value and forwards to the main method through the matching Create* factory. Members of nested unions get no overload of their own. Members that would be ambiguous are skipped, as are optional request bodies and request bodies wrapped in a request object (operations that are not flattened or exceed maxMethodParams). Enabling the option, or adding a union member, can make existing calls ambiguous (CS0121): null or default passed as the request body, an argument that is not exactly a member type but converts to two of them (for example an int when the union has a BigInteger and another numeric member, or a literal 0 when it has an enum and an integral member), and a method group without a target type (CS8917).",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
     partialTypes: {
       Name: "partialTypes",
       Required: false,

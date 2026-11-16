@@ -13,5 +13,9 @@ type ErrorsError struct {
 var _ error = &ErrorsError{}
 
 func (e *ErrorsError) Error() string {
+	if e.Error_ == "" {
+		return "unknown error"
+	}
+
 	return e.Error_
 }

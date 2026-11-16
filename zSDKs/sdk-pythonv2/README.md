@@ -1777,7 +1777,7 @@ logging.basicConfig(level=logging.DEBUG)
 s = SDK(debug_logger=logging.getLogger("speakeasy.new_openapi"))
 ```
 
-You can also enable a default debug logger by setting an environment variable `SPEAKEASY_DEBUG` to true.
+You can also enable a default debug logger by setting an environment variable `SPEAKEASY_DEBUG` to `true`, `1`, `yes` or `on` (case-insensitive). Any other value leaves it off.
 <!-- End Debugging [debug] -->
 
 <!-- Placeholder for Future Speakeasy SDK Sections -->

@@ -149,10 +149,10 @@ function templateTypeMarkdown({
         ? `T::Hash[Symbol, ${itemMarkdown}]`
         : `Crystalline::Hash[Symbol, ${itemMarkdown}]`;
     case "date-time": {
-      return `[Date](https://ruby-doc.org/stdlib-2.6.1/libdoc/date/rdoc/Date.html)`;
+      return `[DateTime](https://ruby-doc.org/stdlib-2.6.1/libdoc/date/rdoc/DateTime.html)`;
     }
     case "date": {
-      return `[DateTime](https://ruby-doc.org/stdlib-2.6.1/libdoc/date/rdoc/DateTime.html)`;
+      return `[Date](https://ruby-doc.org/stdlib-2.6.1/libdoc/date/rdoc/Date.html)`;
     }
     case "response":
       return `[Faraday::Response](https://www.rubydoc.info/gems/faraday/Faraday/Response)`;

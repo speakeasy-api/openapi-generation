@@ -80,45 +80,7 @@ func DoTestSnapshot(t *testing.T, opts Options) {
 	// Always keep the temp directory for debugging - no cleanup
 	t.Logf("Generated SDK preserved at: %s", tempDir)
 
-	// Parse user-provided genYaml to determine target and overrides
-	var userConfig map[string]any
-	err = yaml.Unmarshal([]byte(opts.GenYaml), &userConfig)
-	require.NoError(t, err)
-
-	// Determine target from config (look for language keys like 'go', 'typescript', 'python', etc.)
-	target := "python" // default
-	for key := range userConfig {
-		if key != "configVersion" && key != "generation" {
-			target = key
-			break
-		}
-	}
-
-	// Get default configuration for the target
-	defaultConfig, err := config.GetDefaultConfig(true, generate.GetLanguageConfigDefaults, map[string]bool{target: true})
-	require.NoError(t, err)
-
-	// Convert default config to map for merging
-	defaultBytes, err := yaml.Marshal(defaultConfig)
-	require.NoError(t, err)
-
-	var defaultMap map[string]any
-	err = yaml.Unmarshal(defaultBytes, &defaultMap)
-	require.NoError(t, err)
-
-	// Deep merge user config into default config
-	deepMerge(defaultMap, userConfig)
-
-	// Write the merged configuration to gen.yaml
-	genYamlPath := filepath.Join(tempDir, ".speakeasy", "gen.yaml")
-	err = os.MkdirAll(filepath.Dir(genYamlPath), 0o755)
-	require.NoError(t, err)
-
-	mergedConfigBytes, err := yaml.Marshal(defaultMap)
-	require.NoError(t, err)
-
-	err = os.WriteFile(genYamlPath, mergedConfigBytes, 0o644)
-	require.NoError(t, err)
+	target, genYamlPath := WriteGenYaml(t, tempDir, opts.GenYaml)
 
 	// Write the OpenAPI spec to .speakeasy/out.openapi.yaml for debugging
 	specPath := filepath.Join(tempDir, ".speakeasy", "out.openapi.yaml")
@@ -227,6 +189,54 @@ func DoTestSnapshot(t *testing.T, opts Options) {
 	if report.HasFailures() || snapshotMismatch || excludeViolation {
 		t.FailNow()
 	}
+}
+
+// WriteGenYaml writes dir/.speakeasy/gen.yaml with genYaml merged over the
+// default configuration of the target it configures, returning the target and
+// the written path.
+func WriteGenYaml(t *testing.T, dir, genYaml string) (string, string) {
+	t.Helper()
+
+	// Parse user-provided genYaml to determine target and overrides
+	var userConfig map[string]any
+	err := yaml.Unmarshal([]byte(genYaml), &userConfig)
+	require.NoError(t, err)
+
+	// Determine target from config (look for language keys like 'go', 'typescript', 'python', etc.)
+	target := "python" // default
+	for key := range userConfig {
+		if key != "configVersion" && key != "generation" {
+			target = key
+			break
+		}
+	}
+
+	// Get default configuration for the target
+	defaultConfig, err := config.GetDefaultConfig(true, generate.GetLanguageConfigDefaults, map[string]bool{target: true})
+	require.NoError(t, err)
+
+	// Convert default config to map for merging
+	defaultBytes, err := yaml.Marshal(defaultConfig)
+	require.NoError(t, err)
+
+	var defaultMap map[string]any
+	err = yaml.Unmarshal(defaultBytes, &defaultMap)
+	require.NoError(t, err)
+
+	// Deep merge user config into default config
+	deepMerge(defaultMap, userConfig)
+
+	// Write the merged configuration to gen.yaml
+	genYamlPath := filepath.Join(dir, ".speakeasy", "gen.yaml")
+	err = os.MkdirAll(filepath.Dir(genYamlPath), 0o755)
+	require.NoError(t, err)
+
+	mergedConfigBytes, err := yaml.Marshal(defaultMap)
+	require.NoError(t, err)
+
+	err = os.WriteFile(genYamlPath, mergedConfigBytes, 0o644)
+	require.NoError(t, err)
+	return target, genYamlPath
 }
 
 func analyzeGenerateErrors(errs []error, shouldCompile bool, expectedErrors []string) GenerateReport {

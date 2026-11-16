@@ -1,5 +1,6 @@
 interface UnionConversion {
   Member: TypeDef;
+  MemberName: string;
   ParamType: string;
   ParamTypeIgnoringNullableReferences: string;
   IsValueType: boolean;
@@ -85,6 +86,7 @@ function directUnionConversions(typeDef: TypeDef): {
       const factory = `Create${sanitizeClassName(m.Name)}`;
       return {
         Member: m.Type,
+        MemberName: m.Name,
         ParamType: sanitizeType(m.Type, false, m.Type.OutputLocation),
         ParamTypeIgnoringNullableReferences:
           sanitizeTypeIgnoringNullableReferences(m.Type, m.Type.OutputLocation),

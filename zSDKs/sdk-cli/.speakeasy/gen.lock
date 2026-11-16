@@ -11,9 +11,9 @@ features:
   cli:
     additionalProperties: 0.0.1
     bigint: 0.0.0
-    cliCommands: 0.4.0
+    cliCommands: 0.4.2
     constsAndDefaults: 0.0.0
-    core: 0.9.27
+    core: 0.9.32
     customSecuritySchemes: 0.0.0
     decimal: 0.0.0
     deprecations: 0.0.0
@@ -224,7 +224,7 @@ trackedFiles:
   internal/cli/whoami.go:
     last_write_checksum: sha1:8f5ecd625c08390068268fd6a174a9b541315b63
   internal/client/client.go:
-    last_write_checksum: sha1:3a9bbfd8f0965bb6fdc0fdc1449ab84f03c03971
+    last_write_checksum: sha1:77cff925127e49ecc89757de7170ce5ae6300dc6
   internal/client/client_test.go:
     last_write_checksum: sha1:6e34b14aef184c0c61202f431b88717398e3f4ca
   internal/client/diagnostics.go:
@@ -250,7 +250,7 @@ trackedFiles:
   internal/flagutil/dispatch.go:
     last_write_checksum: sha1:09c97c1354f7e904e5070a2485e7ddea2e3ec254
   internal/flagutil/flags.go:
-    last_write_checksum: sha1:e0bcc3610675881019d2c223ef2af72a14bfacfa
+    last_write_checksum: sha1:517f994cb10d491c631fd802c22a57a03c8fb482
   internal/flagutil/metadata.go:
     last_write_checksum: sha1:6b5346045d47cdcdbb58e360b40f3000ff5d934c
   internal/flagutil/preset.go:
@@ -264,31 +264,31 @@ trackedFiles:
   internal/interactive/policy_test.go:
     last_write_checksum: sha1:770e41163c2746f200544c985e26c7be16aaedb9
   internal/output/agentmode.go:
-    last_write_checksum: sha1:cd38c0ae31c1dccf601a85d43b6651568c8d41a3
+    last_write_checksum: sha1:5c19eac15b8750087844d4a47c97ae5d997d473e
   internal/output/artifact.go:
-    last_write_checksum: sha1:4c62a21da9e4f25c1ca56b90f155f80adb3b334f
+    last_write_checksum: sha1:6f1f9f12fe4a10fb0fdc7cc47a9f8e8a92011bf4
   internal/output/artifact_test.go:
-    last_write_checksum: sha1:7a0faf6f30d19823cf832d5c7909fbb0f904489c
+    last_write_checksum: sha1:661edba4371c698c863d70f79f000f72df574d20
   internal/output/async.go:
-    last_write_checksum: sha1:7d8b2ac9cde78a7c9aa5e8a0ececd9ab808dcae6
+    last_write_checksum: sha1:0039f3fd843aa5bb01c09b17738344deed3868e5
   internal/output/binary.go:
     last_write_checksum: sha1:6fd77172cad1bd29dc9f157b931345f96a172223
   internal/output/classify.go:
-    last_write_checksum: sha1:b21e34c493f5e773cdffcf0e3670af2c6e8bbffa
+    last_write_checksum: sha1:cc4f38eeacdf495b1ae8b35a84a85f11a073cc5f
   internal/output/color.go:
     last_write_checksum: sha1:c6f41f9691f6209f480d153c15c3424d8ca5883d
   internal/output/errortable.go:
     last_write_checksum: sha1:ccc29887b4f88d007edf4c5606a7b97e5adafe2a
   internal/output/exitcodes.go:
-    last_write_checksum: sha1:313fa20ec561de744a818df99d4659ba715e0a86
+    last_write_checksum: sha1:2d7b297cdcaa356d3fd19e4ea639086cb312e715
   internal/output/jq.go:
     last_write_checksum: sha1:1ecac6747c1288a23dbd34efa42e39fb5d558487
   internal/output/outcome.go:
-    last_write_checksum: sha1:5b7a3ad24255889f7a5cdc53478c237e7f358b85
+    last_write_checksum: sha1:0ea32db0867358ff91cd5fe6d24de400d09b4fc3
   internal/output/output.go:
-    last_write_checksum: sha1:880e6cdb3fb0c576cec847ca439436ff76d03b4e
+    last_write_checksum: sha1:c58847e299f3cd3f2a3f9437d75500f96c5c089d
   internal/output/output_test.go:
-    last_write_checksum: sha1:84a8a6cf79bfa62ae9635f992bc7578a2bbbcce3
+    last_write_checksum: sha1:bb7c79120c23903133b08ab5b73cf3f352694e47
   internal/output/outputitems.go:
     last_write_checksum: sha1:d327eee8d9a395821fef201257e033bae50cda51
   internal/output/paginated.go:
@@ -298,7 +298,7 @@ trackedFiles:
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:2a61d494008a17f1db0b7b1c3ae0f93fe73e50ca
+    last_write_checksum: sha1:2f48d00e870d87a3b841ebe702205abb04a66041
   internal/output/streaming_test.go:
     last_write_checksum: sha1:ed4ffe1ebf27f5b32e69d0d2e4a377d47e1655c4
   internal/output/streamproject.go:
@@ -542,29 +542,29 @@ trackedFiles:
   internal/sdk/models/operations/validate.go:
     last_write_checksum: sha1:f47ee88aa6d2e430efe640ad5113beea9aa25e68
   internal/sdk/models/sdkerrors/badrequestresponseerror.go:
-    last_write_checksum: sha1:a99fe757d5bd418b73cafd90e5a1e252b731b9b2
+    last_write_checksum: sha1:24de2cf11844f750c2da28e17241c1d38ec073cf
   internal/sdk/models/sdkerrors/error.go:
-    last_write_checksum: sha1:3973a2b79661a96c636a1e857f3b77292a5f170f
+    last_write_checksum: sha1:89b152278094c5816a86090cbfa09e3b7f780c16
   internal/sdk/models/sdkerrors/errortype1.go:
     last_write_checksum: sha1:62ad7f2ed96d3a8ef23f80b2174f3711cd331d26
   internal/sdk/models/sdkerrors/errortype2.go:
-    last_write_checksum: sha1:a5dfcfa3751e740a05f1d76a99bbf716b2c4f925
+    last_write_checksum: sha1:b7ace6264432974b17375b2e95e19a0c07649780
   internal/sdk/models/sdkerrors/failedresponseerror.go:
     last_write_checksum: sha1:9f3a5f50740244b5976fde99cbb908ad289eda91
   internal/sdk/models/sdkerrors/geterrorinunion.go:
-    last_write_checksum: sha1:5ab1a7aa62fea58178fdae00fff5bc37c85b7539
+    last_write_checksum: sha1:62444e77cb829657183e16bb70e478f688e2e904
   internal/sdk/models/sdkerrors/getunionerrors.go:
-    last_write_checksum: sha1:3563a48bef7106ce0ac9e248fc902e49c3822670
+    last_write_checksum: sha1:091d5897ab97c24f4b226b633a78563cd6bcd18c
   internal/sdk/models/sdkerrors/requesttimeouterror.go:
-    last_write_checksum: sha1:5342a762baaf8c6374580a8d7034cb7ef885840c
+    last_write_checksum: sha1:2d75ee63e3044426e58a66136a4d1c7c9356b85a
   internal/sdk/models/sdkerrors/responsevalidationerror.go:
     last_write_checksum: sha1:77189808f8c0d0fc49a2e8cc77a8a4006e61682c
   internal/sdk/models/sdkerrors/sdkdefaulterror.go:
     last_write_checksum: sha1:437b3a3eacb54d8648a68f80b3cd38fa5019f006
   internal/sdk/models/sdkerrors/taggederror1.go:
-    last_write_checksum: sha1:71d6a55caa98a396e569cf1e0980ad9533a7b8fb
+    last_write_checksum: sha1:8373049a44262caa6528874565da69935f6fe87a
   internal/sdk/models/sdkerrors/taggederror2.go:
-    last_write_checksum: sha1:6c77f4ef4ef2b21d58b04d839164d3720b2cb7c2
+    last_write_checksum: sha1:98587f00be5f59cfede96c1b38817251800d2110
   internal/sdk/models/sdkerrors/test2responseerror.go:
     last_write_checksum: sha1:c4410b1558064bbd65a4dbf51390eb2327da156a
   internal/sdk/models/webhooks/paymentcreated.go:
@@ -608,7 +608,7 @@ trackedFiles:
   internal/sdk/sdkinternal/utils/oauth2_sessions.go:
     last_write_checksum: sha1:c4af99567451b6931fce12b06dca8300d07b79f1
   internal/sdk/sdkinternal/utils/pathparams.go:
-    last_write_checksum: sha1:b0d54a74c4404a8ce2124527c358ab7c062cde22
+    last_write_checksum: sha1:0da29d1587b29be2450b8a776c0aa4c493475c00
   internal/sdk/sdkinternal/utils/queryparams.go:
     last_write_checksum: sha1:abd61ab1be48a6080b875d4a77603aa2c369195f
   internal/sdk/sdkinternal/utils/requestbody.go:
@@ -670,7 +670,7 @@ trackedFiles:
   scripts/install.sh:
     last_write_checksum: sha1:ba255d220bc830375d4f2bc34a7ca01e0a0a8fe2
   tests/artifact_test.go:
-    last_write_checksum: sha1:5663e1c10976d4121783d2d54adf049e4903ca5c
+    last_write_checksum: sha1:80691e63c96f85539e12254654f82edd0511dc59
   tests/async_test.go:
     last_write_checksum: sha1:73100bf36012b46aed2b7d400bc199f459102031
   tests/cli_harness_test.go:
@@ -17504,3 +17504,112 @@ ast: |
       unions: true
       webhooks: true
 astversion: 0.3.0
+cliShorthands:
+  binaryAndStringUpload:
+    json:
+      flags:
+        binary: b
+        string: s
+  createNamespaceConflict:
+    json:
+      flags:
+        errors: e
+        id: i
+        models: m
+        name: "n"
+        request: r
+        species: s
+        utils: u
+  createSingleNamespaceFooPet:
+    json:
+      flags:
+        errors: e
+        id: i
+        models: m
+        name: "n"
+        request: r
+        species: s
+        utils: u
+  createUser:
+    json:
+      flags:
+        email: e
+        first-name: f
+        gender: g
+        id: i
+        last-name: l
+        postal-code: p
+  createWithUnion:
+    json:
+      flags:
+        name: "n"
+        shape: s
+  deleteUser:
+    json:
+      flags:
+        id: i
+  getAsset:
+    json:
+      flags:
+        id: i
+        stream: s
+  getFullyFlattenedRequest:
+    json:
+      flags:
+        emoji: e
+        gif: g
+        lang: l
+        max-length: m
+        name: "n"
+        private: p
+        reply: r
+  getPositionalDefault:
+    json:
+      flags:
+        id: i
+  getUnionErrors:
+    json:
+      flags:
+        page: p
+  getUser:
+    json:
+      flags:
+        id: i
+  listTest1:
+    json:
+      flags:
+        page: p
+  parenthesesInPathAllowed:
+    json:
+      flags:
+        id: i
+  postFile:
+    multipart:
+      flags:
+        upload: u
+  postFileWithEncoding:
+    multipart:
+      flags:
+        attachment: a
+        metadata: m
+  postTest2:
+    json:
+      flags:
+        type: t
+  putNamespaceConflict:
+    json:
+      flags:
+        allof: a
+        namespaced: "n"
+  renderAsset:
+    json:
+      flags:
+        prompt: p
+  testEndpoint:
+    json:
+      flags:
+        test-name: t
+  updateUser:
+    json:
+      flags:
+        id: i

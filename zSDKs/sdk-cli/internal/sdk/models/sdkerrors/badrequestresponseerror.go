@@ -27,6 +27,12 @@ type BadRequestResponseError struct {
 var _ error = &BadRequestResponseError{}
 
 func (e *BadRequestResponseError) Error() string {
+	if e != nil {
+		if e.Message != nil && *e.Message != "" {
+			return *e.Message
+		}
+	}
+
 	data, _ := json.Marshal(e)
 	return string(data)
 }

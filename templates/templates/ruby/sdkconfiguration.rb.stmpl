@@ -19,13 +19,13 @@ module {{ $moduleName }}
     {{- range .Local.Servers.Servers}}
     {{sanitizeHashKey .ID}}: '{{ .URL }}',
     {{- end}}
-  }.freeze{{if sorbetEnabled}}, T::Hash[T.any(String, Symbol), String]){{end}}
+  }.freeze{{if sorbetEnabled}}, T::Hash[T.any(::String, ::Symbol), ::String]){{end}}
   # Contains the list of servers available to the SDK
 {{- else if .Local.Servers}}
 
   SERVERS = {{if sorbetEnabled}}T.let({{end}}[{{- range .Local.Servers.Servers}}
     '{{ .URL }}', {{ templateComments .Comments 1 nil false}}{{end}}
-  ].freeze{{if sorbetEnabled}}, T::Array[String]){{end}}
+  ].freeze{{if sorbetEnabled}}, T::Array[::String]){{end}}
   # Contains the list of servers available to the SDK
 {{- end}}
 
@@ -41,7 +41,7 @@ module {{ $moduleName }}
     {{if sorbetEnabled}}sig { returns(T.nilable(::{{ $moduleName }}::Utils::RetryConfig)) }{{end}}
     attr_accessor :retry_config
 
-    {{if sorbetEnabled}}sig { returns(T.nilable(Float)) }{{end}}
+    {{if sorbetEnabled}}sig { returns(T.nilable(::Float)) }{{end}}
     attr_accessor :timeout
 
     {{if .Local.Security}}
@@ -49,47 +49,47 @@ module {{ $moduleName }}
     attr_accessor :security_source
 
     {{end}}
-    {{if sorbetEnabled}}sig { returns(T.nilable(String)) }{{end}}
+    {{if sorbetEnabled}}sig { returns(T.nilable(::String)) }{{end}}
     attr_accessor :server_url
 
     {{if $serverMap}}
-    {{if sorbetEnabled}}sig { returns(Symbol) }{{end}}
+    {{if sorbetEnabled}}sig { returns(::Symbol) }{{end}}
     attr_accessor :server
 
     {{else if .Local.Servers}}
-    {{if sorbetEnabled}}sig { returns(T.nilable(Integer)) }{{end}}
+    {{if sorbetEnabled}}sig { returns(T.nilable(::Integer)) }{{end}}
     attr_accessor :server_idx
 
     {{end}}
     {{- if $serverVariables}}
     {{-   if $serverMap}}
-    {{if sorbetEnabled}}sig { returns(T::Hash[Symbol, T::Hash[Symbol, String]]) }{{end}}
+    {{if sorbetEnabled}}sig { returns(T::Hash[::Symbol, T::Hash[::Symbol, ::String]]) }{{end}}
     attr_accessor :server_params
 
     {{    else }}
-    {{if sorbetEnabled}}sig { returns(T::Array[T::Hash[Symbol, String]]) }{{end}}
+    {{if sorbetEnabled}}sig { returns(T::Array[T::Hash[::Symbol, ::String]]) }{{end}}
     attr_accessor :server_params
 
     {{    end}}
     {{- end}}
     {{- if .Local.Globals}}
-    {{if sorbetEnabled}}sig { returns(T::Hash[Symbol, T::Hash[Symbol, T::Hash[Symbol, Object]]]) }{{end}}
+    {{if sorbetEnabled}}sig { returns(T::Hash[::Symbol, T::Hash[::Symbol, T::Hash[::Symbol, ::Object]]]) }{{end}}
     attr_accessor :globals
 
     {{end}}
-    {{if sorbetEnabled}}sig { returns(String) }{{end}}
+    {{if sorbetEnabled}}sig { returns(::String) }{{end}}
     attr_accessor :language
 
-    {{if sorbetEnabled}}sig { returns(String) }{{end}}
+    {{if sorbetEnabled}}sig { returns(::String) }{{end}}
     attr_accessor :openapi_doc_version
 
-    {{if sorbetEnabled}}sig { returns(String) }{{end}}
+    {{if sorbetEnabled}}sig { returns(::String) }{{end}}
     attr_accessor :sdk_version
 
-    {{if sorbetEnabled}}sig { returns(String) }{{end}}
+    {{if sorbetEnabled}}sig { returns(::String) }{{end}}
     attr_accessor :gen_version
 
-    {{if sorbetEnabled}}sig { returns(String) }{{end}}
+    {{if sorbetEnabled}}sig { returns(::String) }{{end}}
     attr_accessor :user_agent
 
     {{sanitizeSDKConfigConstructorSignatureSorbet .Local}}
@@ -102,10 +102,10 @@ module {{ $moduleName }}
 
       {{- if $serverMap}}
       @server = server.nil? ? {{templateConstName .Local.Servers.Default "Server"}} : server
-      raise StandardError, "Invalid server \"#{server}\"" if !SERVERS.key?(@server)
+      raise ::StandardError, "Invalid server \"#{server}\"" if !SERVERS.key?(@server)
       {{- else if .Local.Servers}}
       @server_idx = server_idx.nil? ? 0 : server_idx
-      raise StandardError, "Invalid server index #{server_idx}" if @server_idx.negative? || @server_idx >= SERVERS.length
+      raise ::StandardError, "Invalid server index #{server_idx}" if @server_idx.negative? || @server_idx >= SERVERS.length
       {{- end}}
 
       {{- if $serverVariables}}
@@ -137,7 +137,7 @@ module {{ $moduleName }}
       @user_agent = 'speakeasy-sdk/ruby {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{.Global.Config.PackageName}}'
     end
 
-    {{if sorbetEnabled}}sig { returns([String, T::Hash[Symbol, String]]) }{{end}}
+    {{if sorbetEnabled}}sig { returns([::String, T::Hash[::Symbol, ::String]]) }{{end}}
     def get_server_details
     {{- if .Local.Servers}}
       return [@server_url.delete_suffix('/'), {}] if !@server_url.nil?

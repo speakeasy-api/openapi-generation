@@ -6,6 +6,7 @@ const eventStreamReservedNames = new Set([
   "AsyncIterableIterator",
   "Symbol",
   "SseMessage",
+  "StreamIterator",
   "WrapSseOptions",
 ]);
 

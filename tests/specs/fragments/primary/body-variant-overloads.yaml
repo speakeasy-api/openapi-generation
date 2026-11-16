@@ -12,13 +12,12 @@ paths:
     post:
       operationId: bodyVariantOverloadsDiscriminated
       description: >-
-        Exercises pythonv2 `bodyVariantOverloads` for a discriminated oneOf-of-classes
-        request body. The generator must emit one `@overload` per variant carrying
-        the variant's required fields (including a `Literal["..."]` discriminator),
-        a merged-kwarg impl signature with all args defaulted to UNSET, and runtime
-        XOR guards for variant-exclusive fields. Independent of other targets.
+        Exercises a discriminated oneOf-of-classes request body on an operation
+        with path, query and header parameters. Targets that implement
+        `bodyVariantOverloads` must emit one overload per variant that keeps the
+        other parameters and sends the variant's discriminator value.
       tags:
-        - requestBodies
+        - unions
       parameters:
         - in: path
           name: variant_id
@@ -30,6 +29,13 @@ paths:
           required: false
           schema:
             type: boolean
+        - in: query
+          name: tags
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
         - in: header
           name: X-Trace-ID
           required: false
@@ -58,11 +64,11 @@ paths:
     post:
       operationId: bodyVariantOverloadsNonDiscriminated
       description: >-
-        Exercises the AssociatedTypes fallback path: oneOf-of-classes body without an
-        explicit discriminator. Variants are detected via `Type.AssociatedTypes` and
-        overload kwargs are emitted without `Literal[...]` discriminator narrowing.
+        Exercises a oneOf-of-classes request body without a discriminator. Targets
+        that implement `bodyVariantOverloads` must still emit one overload per
+        variant, without relying on a discriminator property to tell them apart.
       tags:
-        - requestBodies
+        - unions
       requestBody:
         required: true
         content:
@@ -86,10 +92,11 @@ paths:
     post:
       operationId: bodyVariantOverloadsSSEWithPath
       description: >-
-        Exercises composition between pythonv2 `bodyVariantOverloads`,
-        `x-speakeasy-sse-overload`, and positional path parameters.
+        Exercises a oneOf-of-classes request body on an operation with a path
+        parameter and `x-speakeasy-sse-overload`. Per-variant body overloads must
+        compose with the streaming overload and keep the path parameter.
       tags:
-        - requestBodies
+        - unions
       x-speakeasy-sse-overload: true
       parameters:
         - name: id
@@ -118,6 +125,296 @@ paths:
             text/event-stream:
               schema:
                 $ref: "#/components/schemas/BodyVariantStreamEvent"
+
+  /anything/body-variant-overloads/reserved-field-names:
+    post:
+      operationId: bodyVariantOverloadsReservedFieldNames
+      description: >-
+        Exercises a oneOf-of-classes request body whose variants declare properties
+        named like per-call method options (retries, timeout, server URL). Generated
+        method signatures must stay valid when body properties share names with
+        those options.
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservedFieldNamesVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/subset-variants:
+    post:
+      operationId: bodyVariantOverloadsSubsetVariants
+      description: >-
+        Exercises a oneOf-of-classes request body where one variant's properties are a
+        subset of another's, and a property name that is renamed in method
+        signatures. Every variant must stay accepted by the generated method
+        signatures.
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubsetVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/disjoint-field-types:
+    post:
+      operationId: bodyVariantOverloadsDisjointFieldTypes
+      description: >-
+        Exercises a oneOf-of-classes request body whose variants share the same
+        properties, including one renamed in method signatures, where a property
+        has a different scalar type in each variant. Every variant must stay
+        accepted by the generated method signatures.
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisjointFieldTypesBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/renamed-params/{item_id}:
+    post:
+      operationId: bodyVariantOverloadsRenamedParams
+      description: >-
+        Exercises a oneOf-of-classes request body on an operation with a required
+        query parameter and query and header parameters whose method argument names
+        differ from their serialized names. The request object alone must satisfy
+        the required parameter, and parameter arguments passed alongside it must
+        reach the HTTP request.
+      tags:
+        - unions
+      parameters:
+        - in: path
+          name: item_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: count
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: q
+          required: false
+          x-speakeasy-name-override: search
+          schema:
+            type: string
+        - in: header
+          name: X-Request-Ref
+          required: false
+          x-speakeasy-name-override: requestRef
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscriminatedVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/single-value-enum-discriminator:
+    post:
+      operationId: bodyVariantOverloadsSingleValueEnumDiscriminator
+      description: >-
+        Exercises a discriminated oneOf-of-classes request body whose discriminator
+        property is a single-value enum in each variant. Every generated overload
+        must remain reachable.
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SingleValueEnumDiscriminatorBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/optional:
+    post:
+      operationId: bodyVariantOverloadsOptional
+      description: >-
+        Same union body as the discriminated operation but optional.
+        Per-variant overloads must not be emitted for an optional request body.
+      tags:
+        - unions
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscriminatedVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/parameter-name-clash/{nonDiscriminatedVariantA}:
+    post:
+      operationId: bodyVariantOverloadsParameterNameClash
+      description: >-
+        Exercises a union request body whose member would be named like an
+        existing method parameter. The path parameter deliberately shares its
+        name with the NonDiscriminatedVariantA member, so targets that name
+        the per-variant overload parameter after the member must rename it to
+        avoid a collision.
+      tags:
+        - unions
+      parameters:
+        - in: path
+          name: nonDiscriminatedVariantA
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NonDiscriminatedVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/server-url:
+    post:
+      operationId: bodyVariantOverloadsServerUrl
+      description: >-
+        Exercises a union request body on an operation with its own servers.
+        Per-variant overloads must keep the server URL parameter and forward
+        it to the canonical method.
+      servers:
+        - url: http://localhost:35456
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscriminatedVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/open-enum:
+    post:
+      operationId: bodyVariantOverloadsOpenEnum
+      description: >-
+        Exercises a required request body whose schema is a oneOf of an open
+        enum and a number. A null open enum value passed to its per-variant
+        overload must be rejected with an error naming the variant parameter
+        rather than sent as an empty union.
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BodyVariantOpenEnumBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json:
+                    $ref: "#/components/schemas/BodyVariantOpenEnumBody"
+                required:
+                  - json
 
 components:
   schemas:
@@ -303,3 +600,152 @@ components:
           type: string
       required:
         - data
+
+    ReservedFieldNamesVariantBody:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/ReservedFieldNamesVariantA"
+        - $ref: "#/components/schemas/ReservedFieldNamesVariantB"
+
+    ReservedFieldNamesVariantA:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - alpha
+      properties:
+        alpha:
+          type: string
+        retries:
+          type: integer
+        timeout_ms:
+          type: integer
+
+    ReservedFieldNamesVariantB:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - beta
+      properties:
+        beta:
+          type: string
+        server_url:
+          type: string
+
+    SubsetVariantBody:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/SubsetVariantBase"
+        - $ref: "#/components/schemas/SubsetVariantExtended"
+
+    SubsetVariantBase:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+
+    SubsetVariantExtended:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        extra:
+          type: string
+
+    DisjointFieldTypesBody:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/DisjointFieldTypesString"
+        - $ref: "#/components/schemas/DisjointFieldTypesInteger"
+
+    DisjointFieldTypesString:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        value:
+          type: string
+
+    DisjointFieldTypesInteger:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        value:
+          type: integer
+
+    SingleValueEnumDiscriminatorBody:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/SingleValueEnumDiscriminatorA"
+        - $ref: "#/components/schemas/SingleValueEnumDiscriminatorB"
+      discriminator:
+        propertyName: kind
+        mapping:
+          a: "#/components/schemas/SingleValueEnumDiscriminatorA"
+          b: "#/components/schemas/SingleValueEnumDiscriminatorB"
+
+    SingleValueEnumDiscriminatorA:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - kind
+        - alpha
+      properties:
+        kind:
+          type: string
+          enum:
+            - a
+        alpha:
+          type: string
+
+    SingleValueEnumDiscriminatorB:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - kind
+        - beta
+      properties:
+        kind:
+          type: string
+          enum:
+            - b
+        beta:
+          type: string
+
+    BodyVariantOpenEnumBody:
+      x-speakeasy-include: true
+      description: A union of an open enum and a number.
+      oneOf:
+        - $ref: "#/components/schemas/BodyVariantOpenStatus"
+        - type: number
+
+    BodyVariantOpenStatus:
+      x-speakeasy-include: true
+      description: An open enum used as a request body union member.
+      type: string
+      enum:
+        - active
+        - inactive
+      x-speakeasy-unknown-values: allow

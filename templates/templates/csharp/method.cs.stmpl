@@ -564,3 +564,4 @@
       {{- end}}
         }
 {{- end }}
+{{- templateMethodOverloads .Local (sanitizeClassName .Local.OwningSDK.Type.Name) 2}}

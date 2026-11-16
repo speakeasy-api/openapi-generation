@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.11.37",
+  core: "3.11.38",
   getRequestBodies: "2.81.1",
   flattening: "2.81.1",
   globalSecurity: "2.81.11",
@@ -18,7 +18,7 @@ const supportedFeatures = {
   inputOutputModels: "2.83.0",
   ignores: "2.81.1",
   typeOverrides: "2.81.1",
-  docs: "0.5.5",
+  docs: "0.5.6",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
   globalSecurityFlattening: "0.1.0",
@@ -483,6 +483,16 @@ function isTestSkipped(test: string): boolean {
     "request-bodies-post-application-json-map-of-any-large-integers",
     "request-bodies-post-application-json-map-of-any-large-integers-jq",
     "intent-supplied-body-requires-declared-inputs",
+    "hooks-client-credentials-scopes-from-env",
+    "debug-env-var-false-keeps-logging-off",
+    "unions-body-variant-overloads-discriminated",
+    "unions-body-variant-overloads-non-body-arguments",
+    "unions-body-variant-overloads-non-discriminated",
+    "unions-body-variant-overloads-renamed-argument",
+    "unions-body-variant-overloads-request-body",
+    "unions-body-variant-overloads-nested-union",
+    "unions-body-variant-overloads-open-enum",
+    "request-bodies-base64-file-input-raw-bytes",
   ].includes(test);
 }
 

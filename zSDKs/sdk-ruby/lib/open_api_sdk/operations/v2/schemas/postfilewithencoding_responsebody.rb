@@ -32,7 +32,7 @@ module OpenApiSDK
 
           field(
             :metadata,
-            Crystalline::Nilable.new(Crystalline::Hash.new(Symbol, ::Object)),
+            Crystalline::Nilable.new(Crystalline::Hash.new(::Symbol, ::Object)),
             {'format_json': {'letter_case': ::OpenApiSDK::Utils.field_name("metadata")}}
           )
 
@@ -41,7 +41,7 @@ module OpenApiSDK
               file_name: ::String,
               size: ::Integer,
               content_type: T.nilable(::String),
-              metadata: T.nilable(T::Hash[Symbol, ::Object])
+              metadata: T.nilable(T::Hash[::Symbol, ::Object])
             )
               .void
           }

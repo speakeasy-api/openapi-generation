@@ -15,7 +15,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getNamespaceTypes")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -62,7 +62,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getNamespaceAnimal")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -84,7 +84,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getNamespaceVehicle")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -106,7 +106,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getNamespaceOrganization")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)

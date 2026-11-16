@@ -157,7 +157,7 @@ function getSubSDKJobs(subSDK: SDK): Job[] {
     createTemplateFileJob(
       "subsdk.rb.stmpl",
       `${getSourcePath(context.Global.Config.Module)}/${sanitizeFileName(
-        subSDK.Type.Name,
+        subSDKTypeName(subSDK.Type.Name),
       ).toLowerCase()}.rb`,
       subSDK,
     ),

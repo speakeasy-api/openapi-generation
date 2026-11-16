@@ -8,7 +8,7 @@ module OpenApiSDK
     # A not-so-long multi-line
     # error model description.
     #
-    class Error < StandardError
+    class Error < ::StandardError
       extend T::Sig
       include Crystalline::MetadataFields
 

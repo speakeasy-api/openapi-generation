@@ -37,7 +37,12 @@ public class RequestTimeoutError extends SDKBaseException {
             HttpResponse<?> rawResponse,
             @Nullable Data data,
             @Nullable Throwable deserializationException) {
-        super("API error occurred", code, body, rawResponse, null);
+        super(
+                Utils.valueOrElse(data == null ? null : data.message(), "API error occurred"),
+                code,
+                body,
+                rawResponse,
+                null);
         this.data = data;
         this.deserializationException = deserializationException;
     }

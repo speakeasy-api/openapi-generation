@@ -18,6 +18,7 @@ namespace {{ getSDKNamespace }}
     {{- range $idx, $op := .Local.Operations}}
         {{- templateComments (getMethodComments .) 2 "method" (ne $idx 0)}}
         {{- templateMethodDefinition $op $interfaceName 2 true}};
+        {{- templateMethodOverloads $op $interfaceName 2 true}}
     {{- end }}
     }
     {{- templateComments .Local.Comments 1 "class"}}

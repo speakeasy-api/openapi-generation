@@ -21,7 +21,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getUser-testWithStatusCodeOnly")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -35,7 +35,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getUser-testWithResponseBody")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -70,7 +70,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getUser-testWithResponseBodyFields")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -93,7 +93,7 @@ module OpenApiSDK
       )
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_URL", ""),
+        server_url: ::ENV.fetch("TEST_URL", ""),
         client: test_http_client,
         security: Components::Security.new(
           option6: Components::SecurityOption6.new(
@@ -119,7 +119,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("postFile")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -127,7 +127,7 @@ module OpenApiSDK
       req = Operations::V2::Schemas::PostFileRequest.new(
         upload: Components::File.new(
           file_name: "postfiletest.txt",
-          content: File.binread(".speakeasy/testfiles/postfiletest.txt")
+          content: ::File.binread(".speakeasy/testfiles/postfiletest.txt")
         )
       )
       res = s.post_file(request: req)
@@ -141,7 +141,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getPolymorphism")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -162,7 +162,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getRequestBodyFlattenedAway")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         lone_query_param: "<value>",
         client: test_http_client
       )
@@ -177,7 +177,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getUser-success")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -205,7 +205,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getBinaryDefaultResponse")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -268,7 +268,7 @@ module OpenApiSDK
       authenticate_outputs = authenticate
       refute_nil(authenticate_outputs)
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         security: Components::Security.new(
           user_pass_auth: Components::UserPassAuth.new(
             username: "<USERNAME>",
@@ -303,7 +303,7 @@ module OpenApiSDK
       refute_nil(create_res.user.postal_code)
       assert_equal("94110", create_res.user.postal_code)
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         security: Components::Security.new(
           user_pass_auth: Components::UserPassAuth.new(
             username: "<USERNAME>",
@@ -328,7 +328,7 @@ module OpenApiSDK
       refute_nil(get_res.user.postal_code)
       assert_equal("94110", get_res.user.postal_code)
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         security: Components::Security.new(
           user_pass_auth: Components::UserPassAuth.new(
             username: "<USERNAME>",
@@ -353,7 +353,7 @@ module OpenApiSDK
       refute_nil(update_res.user.postal_code)
       assert_equal("94107", update_res.user.postal_code)
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         security: Components::Security.new(
           user_pass_auth: Components::UserPassAuth.new(
             username: "<USERNAME>",
@@ -389,7 +389,7 @@ module OpenApiSDK
       refute_nil(update_again_res.user.postal_code)
       assert_equal("94110", update_again_res.user.postal_code)
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         security: Components::Security.new(
           user_pass_auth: Components::UserPassAuth.new(
             username: "<USERNAME>",
@@ -411,7 +411,7 @@ module OpenApiSDK
       setup_outputs = user_setup
       refute_nil(setup_outputs)
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -441,7 +441,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getNestedIntegerString")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -486,7 +486,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("createUser-request-only")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -512,7 +512,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("createUser-paired-example")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -539,7 +539,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("createUser-response-only")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -566,7 +566,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("testEnumFormats")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -594,7 +594,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getNamedPrimitiveUnion")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -610,7 +610,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getEmptyObjectError")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -631,7 +631,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("parenthesesInPathAllowed")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -657,7 +657,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getErrorOnlyExample")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -672,7 +672,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getDuplicateExportCollision")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -688,7 +688,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("createWithUnion")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)

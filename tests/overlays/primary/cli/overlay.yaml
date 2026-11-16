@@ -168,6 +168,30 @@ actions:
                 budget_reached: success
                 completed: success
                 failed: failure
+                needs_input: handoff
+          continuation:
+            bind:
+              - from: $.resumeToken
+                to: $.resumeToken
+              - from: $.id
+                to: $.previousId
+                optional: true
+                unlessRequest:
+                  path: $.retain
+                  equals: false
+            merge: $.steps
+            sum: [$.usage.inputUnits, $.usage.outputUnits]
+        continuationDispatch:
+          output:
+            outcome:
+              statePointer: $.status
+              states:
+                in_progress: pending
+                more_required: continue
+                budget_reached: success
+                completed: success
+                failed: failure
+                needs_input: handoff
           continuation:
             bind:
               - from: $.resumeToken
@@ -176,7 +200,6 @@ actions:
                 to: $.previousId
                 optional: true
             merge: $.steps
-            sum: [$.usage.inputUnits, $.usage.outputUnits]
       commands:
         compose:
           category: Create
@@ -197,6 +220,76 @@ actions:
             previous-id:
               to: $.previousId
               summary: ID of the response that stopped
+            retain:
+              to: $.retain
+              type: bool
+              summary: Retain the initial previous response ID
+        compose-choice:
+          routes:
+            alpha:
+              op: continuationDispatch#ContinuationAlphaRequest
+              selector: alpha
+            beta:
+              op: continuationDispatch#ContinuationBetaRequest
+              selector: beta
+          args:
+            prompt:
+              to: $.prompt
+              variadic: true
+          flags:
+            alpha:
+              to: $.alpha
+            beta:
+              to: $.beta
+        compose-job:
+          category: Create
+          summary: Start a composition and optionally poll it to completion
+          op: continuationCompose
+          flags:
+            prompt:
+              to: $.prompt
+              required: true
+              summary: Prompt text
+          async:
+            op: outcomeGetInteraction
+            id:
+              from: $.id
+              to: {in: path, name: id}
+            statePointer: $.status
+            states:
+              queued: pending
+              in_progress: pending
+              completed: success
+              incomplete: success
+              failed: failure
+              cancelled: failure
+            interval: 1ms
+            backoff: 1
+            maxInterval: 1ms
+            timeout: 10ms
+
+        compose-stream-job:
+          op: continuationStream
+          flags:
+            prompt:
+              to: $.prompt
+              required: true
+          async:
+            op: outcomeGetInteraction
+            id:
+              from: $.id
+              to: {in: path, name: id}
+            statePointer: $.status
+            states:
+              queued: pending
+              in_progress: pending
+              completed: success
+              incomplete: success
+              failed: failure
+              cancelled: failure
+            interval: 1ms
+            maxInterval: 1ms
+            timeout: 1s
         compose-stream:
           category: Create
           summary: Stream a widget composition across continued responses
@@ -219,7 +312,7 @@ actions:
             outcome:
               statePointer: $.status
               errorPointer: $.error
-              streamStatePointer: $.data.widget.status
+              streamStatePointer: [$.data.widget.status, $.data.status]
               streamErrorPointer: $.data.widget.error
               states:
                 in_progress: pending
@@ -227,6 +320,7 @@ actions:
                 budget_reached: success
                 completed: success
                 failed: failure
+                needs_input: handoff
           continuation:
             bind:
               - from: $.resumeToken
@@ -815,6 +909,33 @@ actions:
               application/json:
                 schema:
                   $ref: '#/components/schemas/continuationWidget'
+    /continuation/dispatch:
+      post:
+        operationId: continuationDispatch
+        tags: [continuation]
+        description: Each request-body union variant preserves its own fields when the same operation is called again with response resume values.
+        parameters:
+          - name: tag
+            in: query
+            schema:
+              type: string
+        servers:
+        - url: http://localhost:35456
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ContinuationAlphaRequest'
+                  - $ref: '#/components/schemas/ContinuationBetaRequest'
+        responses:
+          "200":
+            description: One response of the composition.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/continuationWidget'
     /continuation/compose/stream:
       post:
         operationId: continuationStream
@@ -892,6 +1013,32 @@ actions:
           type: string
         previousId:
           type: string
+        retain:
+          type: [boolean, "null"]
+    ContinuationAlphaRequest:
+      type: object
+      required: [prompt, alpha]
+      properties:
+        prompt:
+          type: string
+        alpha:
+          type: string
+        resumeToken:
+          type: string
+        previousId:
+          type: string
+    ContinuationBetaRequest:
+      type: object
+      required: [prompt, beta]
+      properties:
+        prompt:
+          type: string
+        beta:
+          type: string
+        resumeToken:
+          type: string
+        previousId:
+          type: string
     continuationWidget:
       type: object
       required: [status]
@@ -900,7 +1047,7 @@ actions:
           type: string
         status:
           type: string
-          enum: [in_progress, more_required, budget_reached, completed, failed]
+          enum: [in_progress, more_required, budget_reached, completed, failed, needs_input]
         resumeToken:
           type: string
         steps:
@@ -927,6 +1074,8 @@ actions:
           type: object
           properties:
             event_type:
+              type: string
+            status:
               type: string
             resumeToken:
               type: string
