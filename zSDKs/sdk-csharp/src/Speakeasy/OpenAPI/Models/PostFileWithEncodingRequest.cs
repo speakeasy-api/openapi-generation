@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class PostFileWithEncodingRequest
+    public partial class PostFileWithEncodingRequest
     {
         /// <summary>
         /// The file to upload (supports CSV, PNG, JPEG, or PDF).

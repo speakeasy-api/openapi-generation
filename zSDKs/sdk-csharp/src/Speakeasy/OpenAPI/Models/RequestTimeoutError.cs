@@ -14,7 +14,7 @@ namespace Speakeasy.OpenAPI
     using System;
     using System.Net.Http;
 
-    public class RequestTimeoutErrorPayload
+    public partial class RequestTimeoutErrorPayload
     {
         [JsonProperty("code", Required = Newtonsoft.Json.Required.DisallowNull)]
         public long? Code { get; set; }
@@ -29,7 +29,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts.
     /// </summary>
-    public class RequestTimeoutError : SDKBaseException
+    public partial class RequestTimeoutError : SDKBaseException
     {
         /// <summary>
         ///  The original data that was passed to this exception.

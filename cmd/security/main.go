@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -141,10 +142,11 @@ type IgnoreFile struct {
 }
 
 type IgnoreEntry struct {
-	ID      string `json:"id"`
-	Package string `json:"package,omitempty"`
-	Reason  string `json:"reason"`
-	Expires string `json:"expires,omitempty"`
+	ID       string   `json:"id"`
+	Package  string   `json:"package,omitempty"`
+	Versions []string `json:"versions,omitempty"`
+	Reason   string   `json:"reason"`
+	Expires  string   `json:"expires,omitempty"`
 }
 
 // Finding represents a vulnerability finding
@@ -232,7 +234,7 @@ func runSecurityScan(format string, osvThreshold, npmAuditThreshold int) error {
 
 		for _, vuln := range result.Vulns {
 			// Check if ignored
-			if isIgnored(vuln.ID, query.Package.Name, ignoreList) {
+			if isIgnored(vuln.ID, query.Package.Name, query.Version, ignoreList) {
 				ignoredCount++
 				continue
 			}
@@ -587,13 +589,16 @@ func loadIgnoreFile(path string) []IgnoreEntry {
 	return ignoreFile.Ignore
 }
 
-func isIgnored(vulnID, packageName string, ignoreList []IgnoreEntry) bool {
+func isIgnored(vulnID, packageName, version string, ignoreList []IgnoreEntry) bool {
 	for _, entry := range ignoreList {
 		if entry.ID != vulnID {
 			continue
 		}
 		// If package is specified, it must match
 		if entry.Package != "" && entry.Package != packageName {
+			continue
+		}
+		if len(entry.Versions) > 0 && !slices.Contains(entry.Versions, version) {
 			continue
 		}
 		// TODO: Check expiry date

@@ -14,7 +14,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Foo;
     using Speakeasy.OpenAPI.Utils;
 
-    public class GetNamespaceAnimalResponse
+    public partial class GetNamespaceAnimalResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

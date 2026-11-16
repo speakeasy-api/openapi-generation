@@ -15,7 +15,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("getSingleNamespaceBarPet")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)

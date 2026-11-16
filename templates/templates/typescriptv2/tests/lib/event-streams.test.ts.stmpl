@@ -1,4 +1,8 @@
 {{- if isFeatureUsed "serverEvents"}}
+import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import ts from "typescript";
 import { expect, test } from "vitest";
 import { {{eventStreamClassName}} } from "../../lib/event-streams.js";
 
@@ -86,4 +90,138 @@ test("parses a large event split across many small chunks in linear time", async
   expect(events[0]?.data).toBe(block.slice(0, -1));
   expect(elapsedMs).toBeLessThan(10_000);
 }, 30_000);
+
+test.each([
+  { sdkCount: 1, description: "one SDK" },
+  { sdkCount: 2, description: "two SDKs in the same program" },
+  { sdkCount: 5, description: "five SDKs in the same program" },
+])(
+  "type-checks where ReadableStream iteration is async-disposable: $description",
+  ({ sdkCount }) => {
+    const source = resolve(__dirname, "../../lib/event-streams.ts");
+    const dir = mkdtempSync(join(tmpdir(), "event-streams-"));
+    try {
+      const files: string[] = [];
+      for (let i = 0; i < sdkCount; i++) {
+        const sdk = join(dir, `sdk${i}.ts`);
+        copyFileSync(source, sdk);
+        const consumer = join(dir, `consumer${i}.ts`);
+        writeFileSync(
+          consumer,
+          `import { {{eventStreamClassName}} } from "./sdk${i}.js";
+declare const stream: {{eventStreamClassName}}<{ data: { n: number } }>;
+export async function consume() {
+  for await (const event of stream) {
+    const n: number = event.data.n;
+    // @ts-expect-error
+    const s: string = event.data.n;
+    void [n, s];
+  }
+}
+`,
+        );
+        files.push(sdk, consumer);
+      }
+      const program = ts.createProgram(files, {
+        noEmit: true,
+        strict: true,
+        noImplicitOverride: true,
+        skipLibCheck: false,
+        types: [],
+        target: ts.ScriptTarget.ESNext,
+        module: ts.ModuleKind.Node16,
+        moduleResolution: ts.ModuleResolutionKind.Node16,
+        lib: ["lib.esnext.d.ts", "lib.dom.d.ts", "lib.dom.asynciterable.d.ts"],
+      });
+      const diagnostics = ts
+        .getPreEmitDiagnostics(program)
+        .map((d) => ts.flattenDiagnosticMessageText(d.messageText, "\n"));
+      expect(diagnostics).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+  60_000,
+);
+
+async function withoutNativeStreamIteration(
+  fn: () => Promise<void>,
+): Promise<void> {
+  const proto = ReadableStream.prototype as any;
+  const native = Object.getOwnPropertyDescriptor(proto, Symbol.asyncIterator);
+  delete proto[Symbol.asyncIterator];
+  try {
+    await fn();
+  } finally {
+    if (native) Object.defineProperty(proto, Symbol.asyncIterator, native);
+  }
+}
+
+function dispose(iterator: object): Promise<void> {
+  const asyncDispose = (Symbol as any).asyncDispose;
+  return asyncDispose
+    ? (iterator as any)[asyncDispose]()
+    : (iterator as any).return();
+}
+
+test("fallback iterator cancels the stream and releases its lock when disposed", async () => {
+  await withoutNativeStreamIteration(async () => {
+    let cancelled: unknown;
+    const stream = new {{eventStreamClassName}}(
+      new ReadableStream<Uint8Array>({
+        pull: (controller) => controller.enqueue(bytes("data: x\n\n")),
+        cancel: (reason) => {
+          cancelled = reason;
+        },
+      }),
+      (m) => ({ done: false, value: { data: m.data } }),
+    );
+    const events = stream[Symbol.asyncIterator]();
+    expect((await events.next()).value).toEqual({ data: "x" });
+    await dispose(events);
+    expect(cancelled).toBe("done");
+    expect(stream.locked).toBe(false);
+  });
+});
+
+test("fallback iterator releases its lock and finishes cleanly after a failed read", async () => {
+  await withoutNativeStreamIteration(async () => {
+    const failure = new Error("upstream failed");
+    const stream = new {{eventStreamClassName}}(
+      new ReadableStream<Uint8Array>({
+        pull: (controller) => controller.error(failure),
+      }),
+      (m) => ({ done: false, value: { data: m.data } }),
+    );
+    const events = stream[Symbol.asyncIterator]();
+    await expect(events.next()).rejects.toBe(failure);
+    expect(stream.locked).toBe(false);
+    const finished = { done: true, value: undefined };
+    await expect((events as any).return()).resolves.toEqual(finished);
+    await expect((events as any).throw(failure)).resolves.toEqual(finished);
+    await expect(events.next()).resolves.toEqual(finished);
+    await dispose(events);
+  });
+});
+
+test("fallback iterator releases its lock when cancelling the stream fails", async () => {
+  await withoutNativeStreamIteration(async () => {
+    const failure = new Error("cancel failed");
+    const stream = new {{eventStreamClassName}}(
+      new ReadableStream<Uint8Array>({
+        pull: (controller) => controller.enqueue(bytes("data: x\n\n")),
+        cancel: () => Promise.reject(failure),
+      }),
+      (m) => ({ done: false, value: { data: m.data } }),
+    );
+    const events = stream[Symbol.asyncIterator]();
+    expect((await events.next()).value).toEqual({ data: "x" });
+    await expect(dispose(events)).rejects.toBe(failure);
+    expect(stream.locked).toBe(false);
+    const finished = { done: true, value: undefined };
+    await expect((events as any).return()).resolves.toEqual(finished);
+    await expect((events as any).throw(failure)).resolves.toEqual(finished);
+    await expect(events.next()).resolves.toEqual(finished);
+  });
+});
 {{- end}}

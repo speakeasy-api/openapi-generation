@@ -2349,6 +2349,8 @@ declare global {
     StatePointer?: string;
     StreamStateFrom?: string;
     StreamStatePointer?: string;
+    StreamStateFroms?: string[];
+    StreamStatePointers?: string[];
     States: Record<string, string>;
     ErrorFrom?: string;
     ErrorPointer?: string;
@@ -2424,6 +2426,7 @@ declare global {
     Flags: CLICommandInput[] | null;
     Presets: CLICommandPreset[] | null;
     Async?: CLICommandAsync | null;
+    Continuation?: CLICommandContinuation | null;
     Output: CLICommandOutput | null;
     Examples: CLICommandExample[] | null;
     Help?: CLICommandHelp | null;
@@ -2435,10 +2438,50 @@ declare global {
     }[];
   };
 
+  type CLICommandContinuationRequestCondition = {
+    Path: string;
+    Pointer: string;
+    Equals: string | number | boolean | null;
+  };
+
+  type CLICommandContinuationBinding = {
+    From?: string;
+    Pointer?: string;
+    StreamFrom?: string[];
+    StreamPointers?: string[];
+    To: string;
+    ToPointer: string;
+    ToPath: string[];
+    Optional?: boolean;
+    UnlessRequest?: CLICommandContinuationRequestCondition | null;
+    Flag?: string;
+  };
+
+  type CLICommandContinuation = {
+    Bind: CLICommandContinuationBinding[];
+    MergeFrom?: string[];
+    Merge?: string[];
+    SumFrom?: string[];
+    Sum?: string[];
+    MaxHops: number;
+    Default: boolean;
+    OperationID?: string;
+  };
+
+  type CLIOperationDeclaration = {
+    OperationID: string;
+    Output?: CLICommandOutput | null;
+    Flags?: CLICommandInput[] | null;
+    Continuation?: CLICommandContinuation | null;
+    BodyRequired?: boolean;
+    PreferShorthand?: string[] | null;
+  };
+
   type CLICommandManifest = {
     Version: number;
     Categories?: string[];
     Commands: CLICommand[];
+    Operations?: CLIOperationDeclaration[] | null;
   };
 
   type CLIErrorRule = {

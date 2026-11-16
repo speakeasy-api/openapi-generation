@@ -41,7 +41,7 @@ module OpenApiSDK
         @required_nullable_field = required_nullable_field
         @test2 = test2
         unless some_const == "someConstValue"
-          raise ArgumentError, "Invalid value for some_const"
+          raise ::ArgumentError, "Invalid value for some_const"
         end
 
         @some_const = "someConstValue"

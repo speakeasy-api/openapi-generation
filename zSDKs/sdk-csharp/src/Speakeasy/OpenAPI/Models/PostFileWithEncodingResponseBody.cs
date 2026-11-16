@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class PostFileWithEncodingResponseBody
+    public partial class PostFileWithEncodingResponseBody
     {
         [JsonProperty("fileName", Required = Newtonsoft.Json.Required.Always)]
         public string FileName { get; set; } = default!;

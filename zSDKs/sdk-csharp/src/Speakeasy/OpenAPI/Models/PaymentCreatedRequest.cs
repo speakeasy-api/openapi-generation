@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class PaymentCreatedRequest
+    public partial class PaymentCreatedRequest
     {
         /// <summary>
         /// Payment amount.

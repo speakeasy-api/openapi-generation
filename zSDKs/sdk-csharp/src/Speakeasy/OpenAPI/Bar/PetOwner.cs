@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI.Bar
     /// <summary>
     /// A pet owner in the bar namespace.
     /// </summary>
-    public class PetOwner
+    public partial class PetOwner
     {
         [JsonProperty("ownerId", Required = Newtonsoft.Json.Required.Always)]
         public long OwnerId { get; set; } = default!;

@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.31.8",
+  core: "3.31.12",
   flattening: "2.82.1",
   globalSecurity: "2.82.16",
   methodSecurity: "2.82.8",
@@ -35,7 +35,7 @@ const supportedFeatures = {
   downloadStreams: "0.1.1",
   additionalProperties: "0.1.4",
   constsAndDefaults: "0.1.14",
-  serverEvents: "0.2.4",
+  serverEvents: "0.2.5",
   serverEventsSentinels: "0.1.0",
   tests: "0.17.7",
   urlBasedPagination: "2.83.2",
@@ -430,6 +430,15 @@ function isTestSkipped(test: string): boolean {
     "any-typed-flag-large-integers",
     "request-bodies-post-application-json-map-of-any-large-integers",
     "request-bodies-post-application-json-map-of-any-large-integers-jq",
+    "intent-supplied-body-requires-declared-inputs",
+    "unions-body-variant-overloads-discriminated",
+    "unions-body-variant-overloads-non-body-arguments",
+    "unions-body-variant-overloads-non-discriminated",
+    "unions-body-variant-overloads-renamed-argument",
+    "unions-body-variant-overloads-request-body",
+    "unions-body-variant-overloads-nested-union",
+    "unions-body-variant-overloads-open-enum",
+    "request-bodies-base64-file-input-raw-bytes",
   ].includes(test);
 }
 

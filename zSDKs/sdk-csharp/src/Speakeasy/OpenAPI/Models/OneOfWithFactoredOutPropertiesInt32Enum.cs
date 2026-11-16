@@ -20,7 +20,7 @@ namespace Speakeasy.OpenAPI
     /// An int32 enum property.
     /// </summary>
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class OneOfWithFactoredOutPropertiesInt32Enum : IEquatable<OneOfWithFactoredOutPropertiesInt32Enum>, IOpenEnum<int>
+    public partial class OneOfWithFactoredOutPropertiesInt32Enum : IEquatable<OneOfWithFactoredOutPropertiesInt32Enum>, IOpenEnum<int>
     {
         public static readonly OneOfWithFactoredOutPropertiesInt32Enum FiftyFive = new OneOfWithFactoredOutPropertiesInt32Enum(55);
         public static readonly OneOfWithFactoredOutPropertiesInt32Enum SixtyNine = new OneOfWithFactoredOutPropertiesInt32Enum(69);

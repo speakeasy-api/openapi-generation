@@ -398,7 +398,7 @@ function templateTestEnvVars(test: Test): string {
 
   return (
     indentLines(
-      envVars.map((envVar) => `ENV["${envVar.Name}"] = "${envVar.Value}"`),
+      envVars.map((envVar) => `::ENV["${envVar.Name}"] = "${envVar.Value}"`),
       1,
     ) + "\n"
   );

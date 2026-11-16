@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class GetFullyFlattenedRequestRequest
+    public partial class GetFullyFlattenedRequestRequest
     {
         [SpeakeasyMetadata("queryParam:style=form,explode=true,name=lang")]
         public string Lang { get; set; } = default!;

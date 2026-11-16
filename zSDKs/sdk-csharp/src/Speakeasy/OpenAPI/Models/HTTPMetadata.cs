@@ -14,7 +14,7 @@ namespace Speakeasy.OpenAPI
     using System;
     using System.Net.Http;
 
-    public class HTTPMetadata
+    public partial class HTTPMetadata
     {
         /// <summary>
         /// Raw HTTP response; suitable for custom response parsing.

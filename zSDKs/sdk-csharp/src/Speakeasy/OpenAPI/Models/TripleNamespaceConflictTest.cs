@@ -18,7 +18,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A model that references Pet from foo, bar, and baz namespaces.
     /// </summary>
-    public class TripleNamespaceConflictTest
+    public partial class TripleNamespaceConflictTest
     {
         /// <summary>
         /// A pet in the foo namespace.

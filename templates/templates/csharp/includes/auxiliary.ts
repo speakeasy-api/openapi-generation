@@ -13,6 +13,13 @@ function templateAuxiliaryFiles(data: any, sourcePath: string = "auxiliary") {
       continue;
     }
 
+    if (
+      file.includes("/Utils/NotNullIfNotNullAttribute.cs") &&
+      !(isNetstandard2() && hasAnyNullableUnionImplicitConversion())
+    ) {
+      continue;
+    }
+
     let outFile = file.replace(`${sourcePath}/`, "");
 
     outFile = templateStringInput("auxPath:" + outFile, outFile, data);

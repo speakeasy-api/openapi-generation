@@ -20,7 +20,7 @@ namespace Speakeasy.OpenAPI
     /// An int32 enum property.
     /// </summary>
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class Int32Enum : IEquatable<Int32Enum>, IOpenEnum<int>
+    public partial class Int32Enum : IEquatable<Int32Enum>, IOpenEnum<int>
     {
         public static readonly Int32Enum FiftyFive = new Int32Enum(55);
         public static readonly Int32Enum SixtyNine = new Int32Enum(69);

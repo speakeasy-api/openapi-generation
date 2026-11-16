@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class GetUserResponse
+    public partial class GetUserResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

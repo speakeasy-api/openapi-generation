@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.16.5",
+  core: "3.16.7",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
   globalSecurity: "2.82.15",
@@ -21,7 +21,7 @@ const supportedFeatures = {
   inputOutputModels: "2.83.0",
   ignores: "2.81.1",
   typeOverrides: "2.81.1",
-  errors: "2.83.3",
+  errors: "2.83.5",
   unions: "2.87.14",
   multiLevelTagging: "2.87.3",
   bigint: "0.0.2",
@@ -277,8 +277,6 @@ function isTestSkipped(test: string): boolean {
     "errors-response-body-validation-enabled",
     "errors-schema-validation-disabled",
     "errors-schema-validation-enabled",
-    "errors-optional-nullable-error-message",
-    "errors-optional-nullable-error-message-nested",
     "retries-status-codes-override",
     "retries-status-codes-override-global",
     "retries-status-codes-override-default",
@@ -433,6 +431,17 @@ function isTestSkipped(test: string): boolean {
     "any-typed-flag-large-integers",
     "request-bodies-post-application-json-map-of-any-large-integers",
     "request-bodies-post-application-json-map-of-any-large-integers-jq",
+    "intent-supplied-body-requires-declared-inputs",
+    "hooks-client-credentials-scopes-from-env",
+    "debug-env-var-false-keeps-logging-off",
+    "unions-body-variant-overloads-discriminated",
+    "unions-body-variant-overloads-non-body-arguments",
+    "unions-body-variant-overloads-non-discriminated",
+    "unions-body-variant-overloads-renamed-argument",
+    "unions-body-variant-overloads-request-body",
+    "unions-body-variant-overloads-nested-union",
+    "unions-body-variant-overloads-open-enum",
+    "request-bodies-base64-file-input-raw-bytes",
   ].includes(test);
 }
 

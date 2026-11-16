@@ -870,7 +870,43 @@ Dry-run does not depend on agent environment detection. Successful previews use 
 
 **CLI-originated errors** (`ExecuteRoot` in `root.go.stmpl`, `CLIError` in `agentmode.go.stmpl`): every CLI error is classified, including compatibility-mode errors that main still prints. Flag/argument/JSON parsing failures, Cobra usage errors, invalid option values, and local input/config failures are typed as `CLI_VALIDATION` at their structural boundaries (`flagutil.WithCLIValidation`); an error carrying a `clierrors.ExitCoder` classifies from its code (`ExitAuth` → `CLI_AUTHENTICATION`, `ExitUsage` → `CLI_VALIDATION`). `AgentModeError(cmd, message, hints)` is `validation_error` / `CLI_VALIDATION`. Runtimes may attach `CLIReason()` and `CLIHints()`; command hints append after them. `output.InstallErrorHandling` composes final-tree Cobra flag/Args handlers and pre-validates required/flag-group contracts; the root gets `cobra.NoArgs` so cobra's root-only `legacyArgs` check never runs, and the `Args` wrapper turns a rejected positional on any command with subcommands into `output.UnknownSubcommandError` (one-line message, suggestions as hints). On parent commands that reject positionals (the root, generated and synthesized groups), the flag error handler validates the positionals it already has through the same `Args` path first, so a typo followed by the intended leaf's flags reports the command rather than the flag; leaves and parents that accept positionals keep the flag error. Because the root no longer relies on `root.Find` rejecting stray tokens, `installHelpTopicCheck` wraps the built-in `help` command so `cli help genreate` still prints `Unknown help topic` plus root usage (exit 0, as cobra did). `output.UsageHelpError` is the reusable exported helper for incomplete hand-written/generated commands: plain mode writes full help to stderr then `Error: ...`; agent mode, explicit JSON or `--jq`, and explicit TOON when `classifiedErrors` is enabled return one envelope with a command-specific `--help` hint. `ExecuteRoot` snapshots rendering flags before Cobra can reject an early command. Rendered diagnostics return one sentinel containing the classification, so `main.go` never prints a second copy.
 
-The closed reason namespace is `CLI_VALIDATION`, `CLI_CONNECTION`, `CLI_PROTOCOL`, `CLI_RUNTIME`, `CLI_UNAVAILABLE`, and `CLI_AUTHENTICATION`; it mirrors `CLIRuntimeHintReasons` in `internal/extensions/cli_commands.go`. Interactive prompt cancellation and TUI/explorer failures deliberately remain untyped and therefore exit as runtime failures.
+The closed reason namespace is `CLI_VALIDATION`, `CLI_CONNECTION`, `CLI_PROTOCOL`, `CLI_RUNTIME`, `CLI_UNAVAILABLE`, `CLI_AUTHENTICATION`, `CLI_ASYNC_FAILED`, `CLI_ASYNC_TIMEOUT`, `CLI_ASYNC_UNKNOWN_STATE`, `CLI_OUTCOME_FAILED`, and `CLI_CONTINUATION_LIMIT`; it mirrors `CLIRuntimeHintReasons` in `internal/extensions/cli_commands.go`. Interactive prompt cancellation and TUI/explorer failures deliberately remain untyped and therefore exit as runtime failures.
+
+### Continuation recipes
+
+Declare `continuation` and `output.outcome` on an operation entry to share them with
+non-async intents, including same-operation dispatch commands. Async intents may
+use the same create operation but do not inherit its continuation recipe or outcome.
+A single command cannot combine `async` and `continuation`.
+
+A binding can be disabled for a request-body value:
+
+```yaml
+continuation:
+  bind:
+    - from: $.resumeToken
+      to: $.resumeToken
+    - from: $.id
+      to: $.previousId
+      optional: true
+      unlessRequest:
+        path: $.retain
+        equals: false
+```
+
+`unlessRequest` compares an existing request-body value with a JSON scalar. Missing
+values do not match, and `null` only matches an explicit `equals: null`. Numeric
+conditions must be finite and within the JavaScript safe-integer range. A disabled
+binding neither changes the request nor appears in resume guidance.
+
+`output.outcome.streamStatePointer` accepts a singular JSONPath or a list. For each
+event, the first path containing a non-empty string supplies the state. All paths
+are validated against the stream's event schemas.
+
+Automatic continuation follows only states classified as `continue`. Terminal
+responses do not produce manual continuation hints. Errors after a continuation
+hop retain the last complete checkpoint's resume values when the new hop has not
+provided a complete checkpoint. Values from different hops are never combined.
 
 ### Exit Codes and Error Boundaries
 
@@ -943,7 +979,7 @@ Hint: more pages available. Use --all to fetch all results, or --cursor for manu
 
 The manual flag is included only for cursor pagination. Offset/limit pagination emits no hint; target generators that support next-URL pagination can use the same probe without a manual flag.
 
-**Hand-written tests**: `tests/primary/pagination_test.go.stmpl` covers `--all` with offset/limit, cursor, NDJSON, jq, pretty format, truthful hints, structured/agent silence, exact request caps, continuation cycles (including cursor coercion and empty-results termination), and operation-option propagation.
+**Hand-written tests**: `tests/primary/pagination_test.go.stmpl` covers `--all` with offset/limit, cursor, NDJSON, jq, pretty format, truthful hints, structured/agent silence, exact request caps, continuation cycles (including cursor coercion and empty-results termination), operation-option propagation, and `--all --include-headers` in every output format (whole pages with `_response_headers`, one headers section per page in pretty output, last-page headers after a table, and pages without a results field rendered like single responses).
 
 ### Streaming (SSE & JSONL)
 
@@ -1080,7 +1116,37 @@ x-speakeasy-cli-commands:
           summary: Stream events as they arrive
 ```
 
-`operations` is a strict map keyed by resolvable `operationId`; each value permits only `output.stream.select`, `output.stream.metadata`, and `flags`. Unknown/duplicate keys, nonexistent operations, non-streaming projections, and flag collisions are generation errors. Operation flags use the same `to`, `type`, `shorthand`, `summary`, `default`, `defaultFrom: schema`, and `suggestions` keys as intent flags, but cannot be `required`, variadic, or bind outside a single top-level body property. For a union request body the property must exist as the same scalar type in every variant. `defaultFrom: schema` requires the same actual default in every variant; the value appears in help while the generated SDK remains responsible for materializing that schema default on the wire.
+`operations` is a strict map keyed by resolvable `operationId`; each value permits only `output`, `flags`, `preferShorthand`, and `continuation`. Unknown/duplicate keys, nonexistent operations, non-streaming projections, and flag collisions are generation errors. Operation flags use the same `to`, `type`, `shorthand`, `summary`, `default`, `defaultFrom: schema`, and `suggestions` keys as intent flags, but cannot be `required`, variadic, or bind outside a single top-level body property. For a union request body the property must exist as the same scalar type in every variant. `defaultFrom: schema` requires the same actual default in every variant; the value appears in help while the generated SDK remains responsible for materializing that schema default on the wire.
+
+**Sticky auto-assigned shorthands** (`gen.lock` `cliShorthands`): a new top-level generated flag receives `-<first letter>` only while no other generated flag on the operation shares that letter; when several do, a single required path parameter among them wins, otherwise none gets it. Once assigned, a letter is recorded per operation in `gen.lock` and stays with its flag on later generations, so adding a field with the same initial does not take a shipped shorthand away. Entries are keyed by the spec `operationId`, then by the request serialization method (`json` for a JSON body or no body, `multipart`, `form`, ...). An operation split by request content type therefore records one entry per generated command, and each entry keeps its key when content types are added or removed, regardless of the `nameResolutionFeb2025` fix. An operation rendered as a single command whose method has no entry inherits the operation's only recorded entry, so a command keeps its letters when its request body changes serialization, for example when a bodyless command gains an optional multipart body. A split operation records an empty entry for a command without shorthands while another of its commands has some, so once the split ends the remaining command does not inherit a removed command's letters:
+
+```yaml
+cliShorthands:
+  CreatePet:
+    json:
+      flags:
+        names: n
+      retired:
+        t:
+          flag: tag
+    multipart:
+      flags:
+        file: f
+```
+
+`resolveOperationShorthands` (`includes/metadata.ts`) decides each operation's letters in this order: `preferShorthand` pins, letters recorded in the lock (a recorded letter also beats a new required path parameter), then the first-letter rule for the remaining flags over the letters still free. When a recorded flag disappears its letter moves to `retired`, so a later flag with the same initial does not silently inherit it. A retired letter stays reserved regardless of version bumps: it returns to its flag if the flag comes back, a pin can reclaim it, and deleting the letter's whole entry under `retired` in `gen.lock` (`t:` and its `flag:` line above) frees it for the first-letter rule on the next generation; an entry left without a `flag` is ignored the same way, as is a recorded `flags` or `retired` letter that is not a single ASCII letter or digit, or a `flags` or `retired` section that is not a map. Retired letters only ever cost a new flag its shorthand; reusing one is a deliberate choice because an old invocation would then silently set a different flag. For CLIs without an `x-speakeasy-cli-commands` manifest, editing the lock is the only way to free a letter. A recorded letter that becomes reserved (for example `-a` once the operation paginates) is dropped. Without a lock section the result equals the first-letter rule with the pins preferred, so the first generation after upgrading records the letters as resolved against the current spec without changing them; a pin on that run takes its letter without a warning, since no previous owner is recorded yet. A shorthand lost in that same run, because the spec change that introduces a colliding field lands together with the upgrade, is not recovered; pin it with `preferShorthand`. The lock records the template resolution before `.speakeasy/patches` apply, so a shorthand added by a patch file is not recorded and removing the patch drops it; replace such a patch with a `preferShorthand` pin in the same change, since the patch conflicts once the generator emits the letter itself. `operationShorthands` caches each operation's resolution per template job runtime (every job resolves an operation identically) and records it through the `recordCLIShorthands` callback; the generator replaces the lock section with what the main template run recorded, so removed operations drop out. `opcmd.go.stmpl` calls `recordOperationShorthands` for every rendered operation, so an operation left without flag metadata (no parameters, or a whole-body JSON request) still records its letters as retired. Snippet-only runs leave the section untouched.
+
+**Pinning shorthands** (`preferShorthand:`): `preferShorthand` lists generated flag names that take their first letter even when the lock or another flag holds it:
+
+```yaml
+x-speakeasy-cli-commands:
+  version: 1
+  operations:
+    CreatePet:
+      preferShorthand: [name] # keeps -n when --nickname is added
+```
+
+An operation entry may declare `preferShorthand` alone. Generators that predate `preferShorthand` reject it as an unknown operation key, so update the generator before adding a pin. Each entry must be a top-level kebab-case flag name generated for that operation (dotted nested flags never receive shorthands); for an operation split by request content type, at least one of its commands must generate the flag, and the pin applies to each command that does. A declaration matches the operation with that document `operationId` only; a generated content-type variant ID (such as `CreatePet_multipart` for the multipart command of `CreatePet`) never selects a command, even when another operation uses it as its `operationId`. Entries must be unique and start with different letters, and the reserved persistent letters (`-o`, `-q`, `-H`, `-d`, `-h`) and, on paginated operations, `-a` are rejected. A pin takes precedence over a required path parameter that shares its letter. A pin that takes a letter the lock records for another flag that still exists removes that flag's shorthand, so existing invocations of the letter then set the pinned flag; generation logs a warning naming the operation, the letter and the previous owner. `operationShorthands` is the one source for the runtime `FlagMeta` shorthands, `--usage` KDL, and declared-shorthand collision checks, so an operation flag, or an intent flag on a command that registers the pinned or recorded flag, declaring that letter fails generation. Intent commands with a body flag register only the non-body flags, so a body field's letter does not collide with their declared shorthands.
 
 Operation-declared names are checked against generated parameter/body/security flags, inherited/root flags, `--schema`, `--body`, the operation whole-body flag, pagination (`--all/-a`, `--max-pages`), and binary output (`--output-file`, `--output-b64`). Each registered flag carries `speakeasy:op-declared-input=<body-key>`. The shared operation run function merges only flags with that annotation on the invoking Cobra command, so an intent that reuses the run function and independently declares `--stream` is unaffected. A changed operation flag merges into `--body`, the union whole-body flag, or stdin and produces the same duplicate-source error if that JSON already contains the key; `@path` and `@-` body values are resolved before this merge for both operation and intent inputs. With no body, flags synthesize a minimal JSON object only when the OpenAPI request body is optional; a required request body keeps its existing CLI-side missing-body error.
 
@@ -1111,11 +1177,15 @@ output:
       terminalStatus: done
 ```
 
-When the pointer yields several blocks of the declared kind, the runtime writes the **last** one in document order. Selection is by kind, not payload: a trailing URI-only or data-less block is an error even if an earlier block had inline content.
+When the pointer yields several blocks of the declared kind, the runtime writes the **last** one in document order. Selection is by kind, not payload: a trailing URI-only block is downloaded, and a trailing data-less block is an error, even if an earlier block had inline content.
+
+A block with no inline data but a URI is downloaded (`downloadArtifact()` in `artifact.go.stmpl`). The API request's headers, credentials included, are reused only when the URI has the same origin (scheme, host and port) as the request that returned it, and are dropped on any redirect that leaves that origin. Only `https` URIs are fetched, plus plain `http` to loopback hosts; other schemes keep a "fetch it directly" error. Loopback hosts (`localhost` and `*.localhost`, with or without a trailing dot, `127.0.0.0/8`, `::1`) are only reachable when the API request itself went to one, so a remote API cannot make the CLI fetch from services on the user's machine. A download with a `Content-Type` is accepted only when it is the declared kind or generic binary (`application/octet-stream`, `binary/octet-stream`); a missing `Content-Type` is accepted too. Anything else is an error rather than a file, which catches the HTML sign-in page an expired signed URL returns. Downloads are capped at 1 GiB and get their own budget, body included, of the same length as the API call's timeout (`--timeout`, then config, then `cli.defaultTimeout`; `configuredTimeout()` in `output.go.stmpl`), and error messages show the URI without its query string, which can carry signed-URL tokens. A block without a MIME type takes it from the download's `Content-Type` when that matches the declared kind.
+
+`--raw-response` defaults successful responses and dry-run previews to JSON without changing error formatting. Errors follow the configured output format, `--jq` and agent mode, just as they do without `--raw-response`. Human artifact status notes include the declared response ID when present; stdout remains a single absolute file path, and machine modes keep the ID in the artifact envelope without a status note.
 
 Artifact intents register `--out` and `--raw-response`. When a missing required input triggers the interactive form, an unresolved `--out` is offered directly after required inputs and optional positionals as `Output file`, before the ordinary optional-fields confirmation. An argv-complete invocation does not open a form just for `--out`. Empty input uses the declared `defaultPath`; an existing directory or a path ending in a separator places that generated default name inside the directory. `--out` supplied on argv, `--no-interactive`, and agent mode do not prompt.
 
-An explicit `--out` file path is written exactly as given when it already ends in a recognized image, audio or video extension (`png`, `jpg`, `wav`, `mp4`, …), even if that extension does not match the returned MIME type. A mismatch is reported, not corrected: stderr receives one line such as `Note: photo.png contains image/jpeg content; its extension does not match`, and the result envelope carries `extension_mismatch: true` (the field is omitted when the extensions agree). Aliases such as `jpeg`/`jpg`, `tiff`/`tif` or `opus`/`ogg` agree, and a returned MIME type whose extension is not recognized never reports a mismatch. Raw PCM (`audio/pcm`, `audio/l16`, written as `.pcm`) and the WAV container (`.wav`, `.wave`) are distinct formats, so WAV content written to a `.pcm` path reports a mismatch. The returned MIME type's extension is its subtype with any `x-`, `vnd.` prefix and `+suffix` removed (`image/svg+xml` is `svg`), or the conventional extension for types that differ (`image/jpeg` is `jpg`, `video/x-msvideo` is `avi`). When the returned MIME type resolves to an extension, a path without a recognized media extension gets that extension appended silently, so `photo` becomes `photo.png` and a non-media suffix such as `render.v1` or `release-1.2` stays part of the name (`render.v1.png`); when it does not resolve to one, the path is written unchanged. Like the human-only `Wrote image to ...` status, the note is suppressed in machine modes (agent mode, `--jq`, non-pretty/table formats); there the envelope's `extension_mismatch` field carries the signal and success keeps stderr silent. `--out` is output routing only and never participates in request-body source/merge rules.
+An explicit `--out` file path is written exactly as given when it already ends in a recognized image, audio or video extension (`png`, `jpg`, `wav`, `mp4`, …), even if that extension does not match the returned MIME type. A mismatch is reported, not corrected: stderr receives one line such as `Note: photo.png contains "image/jpeg" content; its extension does not match`, and the result envelope carries `extension_mismatch: true` (the field is omitted when the extensions agree). Aliases such as `jpeg`/`jpg`, `tiff`/`tif` or `opus`/`ogg` agree, and a returned MIME type whose extension is not recognized never reports a mismatch. Raw PCM (`audio/pcm`, `audio/l16`, written as `.pcm`) and the WAV container (`.wav`, `.wave`) are distinct formats, so WAV content written to a `.pcm` path reports a mismatch. The returned MIME type's extension is its subtype with any `x-`, `vnd.` prefix and `+suffix` removed (`image/svg+xml` is `svg`), or the conventional extension for types that differ (`image/jpeg` is `jpg`, `video/x-msvideo` is `avi`). When the returned MIME type resolves to an extension, a path without a recognized media extension gets that extension appended silently, so `photo` becomes `photo.png` and a non-media suffix such as `render.v1` or `release-1.2` stays part of the name (`render.v1.png`); when it does not resolve to one, the path is written unchanged. Like the human-only `Wrote image to ...` status, the note is suppressed in machine modes (agent mode, `--jq`, non-pretty/table formats); there the envelope's `extension_mismatch` field carries the signal and success keeps stderr silent. `--out` is output routing only and never participates in request-body source/merge rules.
 
 ### Resuming async intents
 
@@ -1135,8 +1205,9 @@ silent stderr. Timeout/error hints also name the original intent with `--resume`
 and shell-quote the handle. Output paths are not retained in hints: pass `--out`
 again when resuming to select the destination.
 
-Artifact output supports inline base64 content. URI-only content retains the
-explicit unsupported-download error and does not create an artifact file.
+Artifact output supports inline base64 content and URI-only content, which is
+downloaded under the same origin rules as a normal call. The polled response
+keeps its request, so a same-origin URI receives the polling request's headers.
 `--raw-response` prints the terminal payload instead of writing an artifact.
 The `--resume` flag description in help and static/live `--usage` describes polling an existing operation by ID instead of creating one. Conflict errors explain incompatible inputs.
 
@@ -1330,7 +1401,11 @@ cli response-headers response-headers --status-code 200 --include-headers --outp
 
 **Error path**: `Error()` also supports `--include-headers` — it extracts headers from the error's `RawResponse` field and injects them into JSON error output or appends a `Response Headers:` section in pretty mode.
 
-**Hand-written tests**: `tests/primary/headers_additional_test.go.stmpl` — 12 tests covering: 5 functional tests matching auto-generated test IDs, 5 cross-cutting format tests (json, yaml, pretty, jq, no-flag regression), 1 core bug regression test (body extracted over headers), and 1 `--header` request injection test.
+**Table format**: `-o table` renders the table, then the `Response Headers:` section.
+
+**Pagination (`--all`)**: each page carries its own headers, so `--include-headers` prints whole pages rather than individual items: one page object with `_response_headers` per page in json, yaml, toon and jq modes, and each page followed by its `Response Headers:` section in pretty mode (`outputPageWithHeaders()` in `paginated.go.stmpl`). When `-o table` merges every page's items into one table, a single headers section follows it: `Response Headers (last page):` when more than one page was fetched, `Response Headers:` when there was only one.
+
+**Hand-written tests**: `tests/primary/headers_additional_test.go.stmpl` — 17 tests covering: 5 functional tests matching auto-generated test IDs, 7 cross-cutting format tests (json, yaml, toon, pretty, table, jq, no-flag regression), 1 core bug regression test (body extracted over headers), 1 large-integer precision test, 2 non-JSON raw body tests (plain and jq), and 1 `--header` request injection test.
 
 ### Configuration & Auth
 
@@ -1489,7 +1564,7 @@ cli users list --header "X-Request-ID: abc-123"
 cli users list --header "X-Request-ID: abc-123" --header "X-Trace-ID: xyz"
 ```
 
-**Implementation**: The `--header` flag is registered as a `StringArray` persistent flag on the root command (`root.go.stmpl`). Each operation's run function (`opcmd.go.stmpl`) reads the flag and converts headers to `operations.WithSetHeaders(headerMap)`. Headers coexist with other flags — global headers, security headers, and custom `--header` values are all sent together.
+**Implementation**: The `--header` flag is registered as a `StringArray` persistent flag on the root command (`root.go.stmpl`). Each operation's run function (`opcmd.go.stmpl`) reads the flag and converts headers to `operations.WithSetHeaders(headerMap)`. Headers coexist with other flags — global headers, security headers, and custom `--header` values are all sent together. Header names are matched case-insensitively; repeating a header (`-H "X-Foo: a" -H "X-Foo: b"`) sends every value in order, applied by an HTTP client wrapper in `client.NewClient` because `WithSetHeaders` carries one value per name. `PrepareCallOpts` tags the operation's request with the internal `flagutil.RepeatedHeadersMarker` header, and the wrapper adds the extra values only to tagged requests and strips the tag, so requests SDK hooks send through the same client (OAuth token calls) keep their own headers. Surrounding whitespace, including a trailing CR or LF, is trimmed from each name and value first, and the trimmed value is what gets sent. After trimming, names must be HTTP tokens and values must not contain control characters other than tab; anything else is a usage error, as is passing the reserved `X-Cli-Repeated-Headers` name yourself.
 
 ### JQ Transforms (`transformJq`)
 

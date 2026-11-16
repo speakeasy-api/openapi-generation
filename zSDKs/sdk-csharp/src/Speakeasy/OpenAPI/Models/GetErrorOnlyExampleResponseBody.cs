@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class GetErrorOnlyExampleResponseBody
+    public partial class GetErrorOnlyExampleResponseBody
     {
         [JsonProperty("id", Required = Newtonsoft.Json.Required.Always)]
         public string Id { get; set; } = default!;

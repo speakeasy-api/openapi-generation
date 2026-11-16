@@ -35,7 +35,7 @@ module OpenApiSDK
       }
       def initialize(type: "image", data: nil, mime_type: nil, uri: nil)
         unless type == "image"
-          raise ArgumentError, "Invalid value for type"
+          raise ::ArgumentError, "Invalid value for type"
         end
 
         @type = "image"

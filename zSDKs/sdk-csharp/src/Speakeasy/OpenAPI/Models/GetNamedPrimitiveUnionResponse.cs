@@ -13,7 +13,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI;
     using Speakeasy.OpenAPI.Utils;
 
-    public class GetNamedPrimitiveUnionResponse
+    public partial class GetNamedPrimitiveUnionResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class CreateWithUnionResponse
+    public partial class CreateWithUnionResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

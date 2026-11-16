@@ -12,20 +12,21 @@ module OpenApiSDK
     class ServerEvent
       extend T::Sig
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(T.nilable(::String)) }
       attr_accessor :id
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(T.nilable(::String)) }
       attr_accessor :event
 
       sig { returns(T.untyped) }
       attr_accessor :data
 
-      sig { returns(T.nilable(Integer)) }
+      sig { returns(T.nilable(::Integer)) }
       attr_accessor :retry
 
       sig {
-        params(id: T.nilable(String), event: T.nilable(String), data: T.untyped, retry_ms: T.nilable(Integer)).void
+        params(id: T.nilable(::String), event: T.nilable(::String), data: T.untyped, retry_ms: T.nilable(::Integer))
+          .void
       }
       def initialize(id: nil, event: nil, data: nil, retry_ms: nil)
         @id = id
@@ -34,7 +35,7 @@ module OpenApiSDK
         @retry = retry_ms
       end
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[::Symbol, T.untyped]) }
       def to_h
         h = {}
         h[:id] = @id unless @id.nil?
@@ -46,7 +47,7 @@ module OpenApiSDK
     end
 
     class EventStream
-      include Enumerable
+      include ::Enumerable
       extend T::Sig
 
       MESSAGE_BOUNDARIES = [
@@ -66,8 +67,8 @@ module OpenApiSDK
       sig {
         params(
           response: Faraday::Response,
-          decoder: T.proc.params(raw: String).returns(T.untyped),
-          sentinel: T.nilable(String),
+          decoder: T.proc.params(raw: ::String).returns(T.untyped),
+          sentinel: T.nilable(::String),
           sdk_ref: T.untyped,
           data_required: T::Boolean
         )
@@ -110,14 +111,14 @@ module OpenApiSDK
 
       sig { params(block: T.proc.params(event: T.untyped).void).void }
       def stream_events(&block)
-        buffer = T.let(String.new(encoding: Encoding::BINARY), String)
+        buffer = T.let(::String.new(encoding: ::Encoding::BINARY), ::String)
         position = 0
-        event_id = T.let(nil, T.nilable(String))
+        event_id = T.let(nil, T.nilable(::String))
         body = @response.env.body
-        body = StringIO.new(body) if body.is_a?(String)
+        body = ::StringIO.new(body) if body.is_a?(::String)
 
         read_chunks(body) do |chunk|
-          chunk = chunk.b unless chunk.encoding == Encoding::BINARY
+          chunk = chunk.b unless chunk.encoding == ::Encoding::BINARY
           if buffer.empty? && chunk.start_with?(UTF8_BOM.b)
             chunk = chunk[UTF8_BOM.b.length..]
           end
@@ -158,7 +159,7 @@ module OpenApiSDK
         raise stream_error unless stream_error.nil?
       end
 
-      sig { params(body: T.untyped, block: T.proc.params(chunk: String).void).void }
+      sig { params(body: T.untyped, block: T.proc.params(chunk: ::String).void).void }
       def read_chunks(body, &block)
         if body.respond_to?(:each)
           body.each(&block)
@@ -171,7 +172,7 @@ module OpenApiSDK
         end
       end
 
-      sig { params(buffer: String, pos: Integer).returns(T.nilable(String)) }
+      sig { params(buffer: ::String, pos: ::Integer).returns(T.nilable(::String)) }
       def detect_boundary(buffer, pos)
         char = buffer[pos]
         return nil unless ["\r", "\n"].include?(char)
@@ -185,14 +186,16 @@ module OpenApiSDK
         nil
       end
 
-      sig { params(raw: String, event_id: T.nilable(String)).returns([T.untyped, T::Boolean, T.nilable(String)]) }
+      sig {
+        params(raw: ::String, event_id: T.nilable(::String)).returns([T.untyped, T::Boolean, T.nilable(::String)])
+      }
       def parse_event(raw:, event_id:)
         block = raw.force_encoding("UTF-8")
         lines = block.split(/\r?\n|\r/)
         publish = T.let(false, T::Boolean)
-        current_event_id = T.let(event_id, T.nilable(String))
+        current_event_id = T.let(event_id, T.nilable(::String))
         event = ServerEvent.new
-        data = String.new
+        data = ::String.new
 
         lines.each do |line|
           next if line.empty?
@@ -243,15 +246,15 @@ module OpenApiSDK
         unless data.empty?
           data = data.chomp("\n")
           begin
-            event.data = JSON.parse(data)
-          rescue JSON::ParserError
+            event.data = ::JSON.parse(data)
+          rescue ::JSON::ParserError
             event.data = data
           end
         end
 
         out = nil
         if publish
-          out = @decoder.call(JSON.generate(event.to_h))
+          out = @decoder.call(::JSON.generate(event.to_h))
         end
 
         [out, false, current_event_id]

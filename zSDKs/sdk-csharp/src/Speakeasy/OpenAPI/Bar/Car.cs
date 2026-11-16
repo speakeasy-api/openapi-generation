@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI.Bar
     /// <summary>
     /// A car in the bar namespace.
     /// </summary>
-    public class Car
+    public partial class Car
     {
         [JsonProperty("wheels", Required = Newtonsoft.Json.Required.Always)]
         public long Wheels { get; } = 4;

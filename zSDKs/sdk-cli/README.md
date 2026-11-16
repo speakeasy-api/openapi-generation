@@ -796,11 +796,13 @@ retry_max_elapsed_time: 1m
 
 ### Timeout
 
-`timeout` and `--timeout` bound the whole operation, including retry sleeps:
+`timeout` and `--timeout` bound the API call, including retry sleeps:
 
 ```bash
 cli get-duplicate-export-collision --timeout 30s
 ```
+
+Commands that save media delivered by URI download it with a separate timeout of the same length, so the API call and the download each get the full budget.
 
 **Precedence**: `--no-retries` > `--retry-config` > individual flags > config file > API specification defaults.
 <!-- End Retries [retries] -->

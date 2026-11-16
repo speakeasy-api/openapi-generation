@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class SecurityOption2
+    public partial class SecurityOption2
     {
         [SpeakeasyMetadata("security:scheme=true,type=http,subType=bearer,composite=true,name=Authorization")]
         public string BearerAuth { get; set; } = default!;

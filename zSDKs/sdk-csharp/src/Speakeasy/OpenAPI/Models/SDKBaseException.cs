@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// Base Exception for API Errors.
     /// </summary>
-    public class SDKBaseException : Exception
+    public partial class SDKBaseException : Exception
     {
         /// <summary>
         /// Error Message

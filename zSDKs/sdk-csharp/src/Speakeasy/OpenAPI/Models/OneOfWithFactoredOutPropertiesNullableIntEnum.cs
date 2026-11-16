@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Linq;
 
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class OneOfWithFactoredOutPropertiesNullableIntEnum : IEquatable<OneOfWithFactoredOutPropertiesNullableIntEnum>, IOpenEnum<long>
+    public partial class OneOfWithFactoredOutPropertiesNullableIntEnum : IEquatable<OneOfWithFactoredOutPropertiesNullableIntEnum>, IOpenEnum<long>
     {
         public static readonly OneOfWithFactoredOutPropertiesNullableIntEnum First = new OneOfWithFactoredOutPropertiesNullableIntEnum(1);
         public static readonly OneOfWithFactoredOutPropertiesNullableIntEnum Second = new OneOfWithFactoredOutPropertiesNullableIntEnum(2);

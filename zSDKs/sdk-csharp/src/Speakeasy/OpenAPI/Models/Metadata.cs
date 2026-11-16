@@ -13,7 +13,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Utils;
     using System.Collections.Generic;
 
-    public class Metadata
+    public partial class Metadata
     {
         [JsonProperty("allergies", Required = Newtonsoft.Json.Required.DisallowNull)]
         public string? Allergies { get; set; }

@@ -40,3 +40,4 @@ csharp:
   httpClientPrefix: ""
   useNodatime: true
   targetFramework: dotnetVersion
+  bodyVariantOverloads: true

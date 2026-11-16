@@ -286,6 +286,33 @@ function getConfigFields(
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
+    unionImplicitConversions: {
+      Name: "unionImplicitConversions",
+      Required: false,
+      DefaultValue: false,
+      Description:
+        "Generate implicit conversion operators from each union member type (and members of nested unions) to the union type, so a member value can be assigned directly instead of calling the Create* factory. Members that would be ambiguous are skipped, so a spec change that makes a member ambiguous removes its conversion. Enabling the option, or adding a union member, can change which overload existing caller code binds to.",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
+    bodyVariantOverloads: {
+      Name: "bodyVariantOverloads",
+      Required: false,
+      DefaultValue: false,
+      Description:
+        "When an operation's required request body is a union and a method parameter, generate one method overload per union member that takes the member value and forwards to the main method through the matching Create* factory. Members of nested unions get no overload of their own. Members that would be ambiguous are skipped, as are optional request bodies and request bodies wrapped in a request object (operations that are not flattened or exceed maxMethodParams). Enabling the option, or adding a union member, can make existing calls ambiguous (CS0121): null or default passed as the request body, an argument that is not exactly a member type but converts to two of them (for example an int when the union has a BigInteger and another numeric member, or a literal 0 when it has an enum and an integral member), and a method group without a target type (CS8917).",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
+    partialTypes: {
+      Name: "partialTypes",
+      Required: false,
+      DefaultValue: false,
+      Description:
+        "Declare generated model, union, error, open enum and SDK classes and interfaces as partial, so they can be extended from separate source files that are not overwritten by regeneration.",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
     presenceAwareJsonSerialization: {
       Name: "presenceAwareJsonSerialization",
       Required: false,

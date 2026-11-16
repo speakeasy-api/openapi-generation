@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// An image record.
     /// </summary>
-    public class ImageRecord
+    public partial class ImageRecord
     {
         /// <summary>
         /// Record type discriminator.

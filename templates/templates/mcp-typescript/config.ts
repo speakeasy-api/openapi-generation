@@ -115,7 +115,7 @@ function getTemplateDependencies() {
     },
     zod: {
       name: "zod",
-      version: "^4.2.0",
+      version: "^4.6.6",
       cpe: "cpe:2.3:a:colinhacks:zod:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "runtime",
@@ -150,7 +150,7 @@ function getTemplateDependencies() {
     },
     "@gram-ai/functions": {
       name: "@gram-ai/functions",
-      version: "^0.12.1",
+      version: "^0.20.0",
       cpe: "cpe:2.3:a:gram:functions:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "runtime",

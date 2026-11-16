@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -257,16 +258,18 @@ type CLICommandOutput struct {
 // ErrorMessageField string is appended to the failure message. A
 // single-route intent without its own table inherits its operation entry's.
 type CLICommandOutcome struct {
-	StateFrom          string            `json:"stateFrom,omitempty" yaml:"stateFrom,omitempty"`
-	StatePointer       string            `json:"statePointer,omitempty" yaml:"statePointer,omitempty"`
-	StreamStateFrom    string            `json:"streamStateFrom,omitempty" yaml:"streamStateFrom,omitempty"`
-	StreamStatePointer string            `json:"streamStatePointer,omitempty" yaml:"streamStatePointer,omitempty"`
-	States             map[string]string `json:"states" yaml:"states"`
-	ErrorFrom          string            `json:"errorFrom,omitempty" yaml:"errorFrom,omitempty"`
-	ErrorPointer       string            `json:"errorPointer,omitempty" yaml:"errorPointer,omitempty"`
-	StreamErrorFrom    string            `json:"streamErrorFrom,omitempty" yaml:"streamErrorFrom,omitempty"`
-	StreamErrorPointer string            `json:"streamErrorPointer,omitempty" yaml:"streamErrorPointer,omitempty"`
-	ErrorMessageField  string            `json:"errorMessageField,omitempty" yaml:"errorMessageField,omitempty"`
+	StateFrom           string            `json:"stateFrom,omitempty" yaml:"stateFrom,omitempty"`
+	StatePointer        string            `json:"statePointer,omitempty" yaml:"statePointer,omitempty"`
+	StreamStateFroms    []string          `json:"streamStateFroms,omitempty" yaml:"streamStateFroms,omitempty"`
+	StreamStateFrom     string            `json:"streamStateFrom,omitempty" yaml:"streamStateFrom,omitempty"`
+	StreamStatePointers []string          `json:"streamStatePointers,omitempty" yaml:"streamStatePointers,omitempty"`
+	StreamStatePointer  string            `json:"streamStatePointer,omitempty" yaml:"streamStatePointer,omitempty"`
+	States              map[string]string `json:"states" yaml:"states"`
+	ErrorFrom           string            `json:"errorFrom,omitempty" yaml:"errorFrom,omitempty"`
+	ErrorPointer        string            `json:"errorPointer,omitempty" yaml:"errorPointer,omitempty"`
+	StreamErrorFrom     string            `json:"streamErrorFrom,omitempty" yaml:"streamErrorFrom,omitempty"`
+	StreamErrorPointer  string            `json:"streamErrorPointer,omitempty" yaml:"streamErrorPointer,omitempty"`
+	ErrorMessageField   string            `json:"errorMessageField,omitempty" yaml:"errorMessageField,omitempty"`
 }
 
 // CLIOperation augments the generated command for one operation. Unlike an
@@ -274,10 +277,57 @@ type CLICommandOutcome struct {
 // opt-in streamed projection and, when necessary, scalar flags that merge into
 // a body property shared by every request-body union member.
 type CLIOperation struct {
-	OperationID  string            `json:"operationId" yaml:"operationId"`
-	Output       *CLICommandOutput `json:"output,omitempty" yaml:"output,omitempty"`
-	Flags        []CLICommandInput `json:"flags,omitempty" yaml:"flags,omitempty"`
-	BodyRequired bool              `json:"bodyRequired,omitempty" yaml:"bodyRequired,omitempty"`
+	OperationID  string                  `json:"operationId" yaml:"operationId"`
+	Output       *CLICommandOutput       `json:"output,omitempty" yaml:"output,omitempty"`
+	Flags        []CLICommandInput       `json:"flags,omitempty" yaml:"flags,omitempty"`
+	Continuation *CLICommandContinuation `json:"continuation,omitempty" yaml:"continuation,omitempty"`
+	BodyRequired bool                    `json:"bodyRequired,omitempty" yaml:"bodyRequired,omitempty"`
+	// PreferShorthand names generated flags that keep their first-letter
+	// shorthand when another generated flag shares the same initial.
+	PreferShorthand []string `json:"preferShorthand,omitempty" yaml:"preferShorthand,omitempty"`
+}
+
+// CLICommandContinuationBinding copies one resume value from the response
+// that stopped into the next request. From addresses the value in a discrete
+// JSON response and StreamFrom in streamed events (the last present value
+// wins); To is the request-body path that receives it. An optional binding
+// is skipped when the value is absent, leaving the original request value.
+// Flag is the command's declared flag bound to the same body path, resolved
+// during linking for resume hints.
+type CLICommandContinuationBinding struct {
+	From           string                                  `json:"from,omitempty" yaml:"from,omitempty"`
+	Pointer        string                                  `json:"pointer,omitempty" yaml:"pointer,omitempty"`
+	StreamFrom     []string                                `json:"streamFrom,omitempty" yaml:"streamFrom,omitempty"`
+	StreamPointers []string                                `json:"streamPointers,omitempty" yaml:"streamPointers,omitempty"`
+	To             string                                  `json:"to" yaml:"to"`
+	ToPointer      string                                  `json:"toPointer" yaml:"toPointer"`
+	ToPath         []string                                `json:"toPath" yaml:"toPath"`
+	Optional       bool                                    `json:"optional,omitempty" yaml:"optional,omitempty"`
+	Flag           string                                  `json:"flag,omitempty" yaml:"flag,omitempty"`
+	UnlessRequest  *CLICommandContinuationRequestCondition `json:"unlessRequest,omitempty" yaml:"unlessRequest,omitempty"`
+}
+
+type CLICommandContinuationRequestCondition struct {
+	Path          string `json:"path" yaml:"path"`
+	Pointer       string `json:"pointer" yaml:"pointer"`
+	Equals        any    `json:"equals" yaml:"equals"`
+	equalsPresent bool
+}
+
+// CLICommandContinuation re-sends a command's request while the response's
+// output.outcome state classifies as continue, filling Bind values from the
+// response that stopped. Merge paths are arrays concatenated across hops and
+// Sum paths numbers summed across hops; every other field of a discrete
+// result comes from the last hop.
+type CLICommandContinuation struct {
+	Bind        []CLICommandContinuationBinding `json:"bind" yaml:"bind"`
+	MergeFrom   []string                        `json:"mergeFrom,omitempty" yaml:"mergeFrom,omitempty"`
+	Merge       []string                        `json:"merge,omitempty" yaml:"merge,omitempty"`
+	SumFrom     []string                        `json:"sumFrom,omitempty" yaml:"sumFrom,omitempty"`
+	Sum         []string                        `json:"sum,omitempty" yaml:"sum,omitempty"`
+	MaxHops     int                             `json:"maxHops" yaml:"maxHops"`
+	Default     bool                            `json:"default" yaml:"default"`
+	OperationID string                          `json:"operationId,omitempty" yaml:"operationId,omitempty"`
 }
 
 // CLICommandAsyncParameter identifies the poll-operation parameter that
@@ -382,6 +432,7 @@ type CLICommand struct {
 	Presets         []CLICommandPreset      `json:"presets" yaml:"presets"`
 	CatalogDefaults []CLICatalogDefault     `json:"catalogDefaults,omitempty" yaml:"catalogDefaults,omitempty"`
 	Async           *CLICommandAsync        `json:"async,omitempty" yaml:"async,omitempty"`
+	Continuation    *CLICommandContinuation `json:"continuation,omitempty" yaml:"continuation,omitempty"`
 	Output          *CLICommandOutput       `json:"output" yaml:"output"`
 	Examples        []CLICommandExample     `json:"examples" yaml:"examples"`
 	Help            *CLICommandHelp         `json:"help,omitempty" yaml:"help,omitempty"`
@@ -465,6 +516,9 @@ var cliReservedFlagNames = map[string]bool{
 	"resume":        true,
 	"poll-interval": true,
 	"poll-timeout":  true,
+	// Owned by continuation commands, reserved for the same reason.
+	"auto-continue":     true,
+	"max-continuations": true,
 }
 
 // cliReservedFlagShorthands are owned by the generated runtime's persistent
@@ -534,6 +588,7 @@ var CLIRuntimeHintReasons = []string{
 	"CLI_ASYNC_TIMEOUT",
 	"CLI_ASYNC_UNKNOWN_STATE",
 	"CLI_OUTCOME_FAILED",
+	"CLI_CONTINUATION_LIMIT",
 }
 
 // cliReservedCommandKeys are keys reserved for future capabilities. Each maps
@@ -549,7 +604,7 @@ var cliReservedCommandKeys = map[string]string{
 var cliCommandKeys = []string{
 	"category", "summary", "tagline", "description",
 	"op", "routes", "planned", "custom", "group", "source", "override",
-	"args", "flags", "preset", "hints", "examples", "help", "jq", "output", "async",
+	"args", "flags", "preset", "hints", "examples", "help", "jq", "output", "async", "continuation",
 }
 
 var cliOutputKeys = []string{"artifact", "stream", "outcome"}
@@ -560,17 +615,30 @@ var cliOutputStreamKeys = []string{"select", "metadata"}
 
 var cliOutputStreamMetadataKeys = []string{"select", "label", "complete", "when"}
 
-var cliOperationKeys = []string{"output", "flags"}
+var cliOperationKeys = []string{"output", "flags", "preferShorthand", "continuation"}
+
+var (
+	cliContinuationKeys        = []string{"bind", "merge", "sum", "maxHops", "default"}
+	cliContinuationBindingKeys = []string{"from", "streamFrom", "to", "optional", "unlessRequest"}
+	// cliOutcomeStateKind extends the async classifications with continue,
+	// which only a continuation recipe acts on; async polling has no resume
+	// value to send.
+	cliOutcomeStateKind = []string{"pending", "success", "failure", "handoff", "continue"}
+)
+
+const cliContinuationDefaultMaxHops = 32
 
 // These flags are conditionally registered by operation commands. Operation
 // declarations reserve them even when a particular operation does not use the
 // corresponding feature, so adding pagination or binary output later cannot
 // turn a valid manifest into a pflag registration panic.
 var cliOperationReservedFlagNames = map[string]string{
-	"all":         "pagination",
-	"max-pages":   "pagination",
-	"output-file": "binary response output",
-	"output-b64":  "binary response output",
+	"all":               "pagination",
+	"max-pages":         "pagination",
+	"output-file":       "binary response output",
+	"output-b64":        "binary response output",
+	"auto-continue":     "continuation",
+	"max-continuations": "continuation",
 }
 
 var cliInputKeys = []string{
@@ -858,14 +926,59 @@ func (d *cliManifestDecoder) decodeOperation(opID string, node *yaml.Node) (*CLI
 				return nil, err
 			}
 			op.Flags = flags
+		case "preferShorthand":
+			if op.PreferShorthand, err = decodePreferShorthand(opID, entry.Value); err != nil {
+				return nil, err
+			}
+		case "continuation":
+			if op.Continuation, err = d.decodeContinuation(fmt.Sprintf("operation %q", opID), entry.Value); err != nil {
+				return nil, err
+			}
 		default:
 			return nil, fmt.Errorf("line %d: operation %q has unknown key %q%s", entry.Key.Line, opID, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliOperationKeys))
 		}
 	}
-	if op.Output == nil && len(op.Flags) == 0 {
-		return nil, fmt.Errorf("line %d: operation %q must declare output or flags", node.Line, opID)
+	if op.Output == nil && len(op.Flags) == 0 && len(op.PreferShorthand) == 0 && op.Continuation == nil {
+		return nil, fmt.Errorf("line %d: operation %q must declare output, flags, preferShorthand, or continuation", node.Line, opID)
+	}
+	for _, preferred := range op.PreferShorthand {
+		for _, flag := range op.Flags {
+			if flag.Shorthand == preferred[:1] {
+				return nil, fmt.Errorf("operation %q flag %q shorthand -%s collides with preferShorthand %q", opID, flag.Name, flag.Shorthand, preferred)
+			}
+		}
 	}
 	return op, nil
+}
+
+func decodePreferShorthand(opID string, node *yaml.Node) ([]string, error) {
+	if node.Kind != yaml.SequenceNode || len(node.Content) == 0 {
+		return nil, fmt.Errorf("line %d: operation %q preferShorthand must be a non-empty list of generated flag names", node.Line, opID)
+	}
+	names := make([]string, 0, len(node.Content))
+	initials := map[string]string{}
+	for _, item := range node.Content {
+		if item.Kind != yaml.ScalarNode || item.Tag != "!!str" {
+			return nil, fmt.Errorf("line %d: operation %q preferShorthand entries must be flag name strings", item.Line, opID)
+		}
+		name := item.Value
+		if !cliInputNamePattern.MatchString(name) {
+			return nil, fmt.Errorf("line %d: operation %q preferShorthand %q must be a top-level kebab-case flag name", item.Line, opID, name)
+		}
+		if cliContains(names, name) {
+			return nil, fmt.Errorf("line %d: operation %q preferShorthand lists %q more than once", item.Line, opID, name)
+		}
+		initial := name[:1]
+		if owner, reserved := cliReservedFlagShorthands[initial]; reserved {
+			return nil, fmt.Errorf("line %d: operation %q preferShorthand %q cannot take -%s, which is reserved for --%s", item.Line, opID, name, initial, owner)
+		}
+		if previous, ok := initials[initial]; ok {
+			return nil, fmt.Errorf("line %d: operation %q preferShorthand %q and %q both start with %q; only one flag can own -%s", item.Line, opID, previous, name, initial, initial)
+		}
+		initials[initial] = name
+		names = append(names, name)
+	}
+	return names, nil
 }
 
 func checkOperationInputs(opID string, flags []CLICommandInput) error {
@@ -921,7 +1034,7 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 	var (
 		opNode, routesNode, plannedNode, customNode, groupNode, sourceNode *yaml.Node
 		argsNode, flagsNode, presetNode, hintsNode, exampNode, helpNode    *yaml.Node
-		outputNode, asyncNode, overrideNode                                *yaml.Node
+		outputNode, asyncNode, overrideNode, continuationNode              *yaml.Node
 	)
 
 	for _, entry := range entries {
@@ -988,6 +1101,8 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 			outputNode = entry.Value
 		case "async":
 			asyncNode = entry.Value
+		case "continuation":
+			continuationNode = entry.Value
 		default:
 			return nil, fmt.Errorf("line %d: command %q has unknown key %q%s", entry.Key.Line, key, keyName, cliDidYouMean(keyName, cliCommandKeys))
 		}
@@ -1022,12 +1137,25 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 			return nil, fmt.Errorf("command %q declares both async and output.outcome; async.states already classifies the terminal poll state", key)
 		}
 	}
+	if continuationNode != nil {
+		if cmd.Continuation, err = d.decodeContinuation(fmt.Sprintf("command %q", key), continuationNode); err != nil {
+			return nil, err
+		}
+		if cmd.Async != nil {
+			return nil, fmt.Errorf("command %q declares both async and continuation; a continuation re-sends the command's own request and cannot follow a poll", key)
+		}
+	}
 
 	if err := d.decodeSource(cmd, key, node, opNode, routesNode, plannedNode, customNode, groupNode, sourceNode); err != nil {
 		return nil, err
 	}
 	if overrideNode != nil && routesNode == nil {
 		return nil, fmt.Errorf("line %d: command %q: override is only valid with a routes: dispatch map", overrideNode.Line, key)
+	}
+	if continuationNode != nil && cmd.Source.Type == CLICommandSourceOperation {
+		if _, ok := cliSingleOperationID(cmd); !ok {
+			return nil, fmt.Errorf("line %d: command %q: continuation requires all dispatch routes to use the same operation", continuationNode.Line, key)
+		}
 	}
 
 	// Group tags categorize top-level command groups (help categories are
@@ -1054,6 +1182,9 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 		}
 		if asyncNode != nil {
 			illegal = append(illegal, "async")
+		}
+		if continuationNode != nil {
+			illegal = append(illegal, "continuation")
 		}
 		if cmd.Source.Type == CLICommandSourceGroup && exampNode != nil {
 			illegal = append(illegal, "examples")
@@ -1436,7 +1567,11 @@ func (d *cliManifestDecoder) decodeOutcome(owner string, node *yaml.Node) (*CLIC
 		case "statePointer":
 			outcome.StateFrom, outcome.StatePointer, _, err = cliDecodeAsyncPointer(entry.Value, "output.outcome.statePointer")
 		case "streamStatePointer":
-			outcome.StreamStateFrom, outcome.StreamStatePointer, _, err = cliDecodeAsyncPointer(entry.Value, "output.outcome.streamStatePointer")
+			outcome.StreamStateFroms, outcome.StreamStatePointers, err = cliDecodeContinuationPaths(entry.Value, "output.outcome.streamStatePointer", false)
+			if err == nil && len(outcome.StreamStateFroms) == 1 {
+				outcome.StreamStateFrom = outcome.StreamStateFroms[0]
+				outcome.StreamStatePointer = outcome.StreamStatePointers[0]
+			}
 		case "states":
 			err = d.decodeOutcomeStates(owner, entry.Value, outcome.States)
 		case "errorPointer":
@@ -1452,7 +1587,7 @@ func (d *cliManifestDecoder) decodeOutcome(owner string, node *yaml.Node) (*CLIC
 			return nil, fmt.Errorf("line %d: %s: %w", entry.Value.Line, owner, err)
 		}
 	}
-	if outcome.StatePointer == "" && outcome.StreamStatePointer == "" {
+	if outcome.StatePointer == "" && outcome.StreamStatePointer == "" && len(outcome.StreamStatePointers) == 0 {
 		return nil, fmt.Errorf("line %d: %s output.outcome requires statePointer (the state in the JSON response) or streamStatePointer (the state inside streamed events)", node.Line, owner)
 	}
 	if len(outcome.States) == 0 {
@@ -1468,7 +1603,7 @@ func (d *cliManifestDecoder) decodeOutcome(owner string, node *yaml.Node) (*CLIC
 	if outcome.ErrorPointer != "" && outcome.StatePointer == "" {
 		return nil, fmt.Errorf("line %d: %s output.outcome.errorPointer requires statePointer; use streamErrorPointer for streamed events", node.Line, owner)
 	}
-	if outcome.StreamErrorPointer != "" && outcome.StreamStatePointer == "" {
+	if outcome.StreamErrorPointer != "" && outcome.StreamStatePointer == "" && len(outcome.StreamStatePointers) == 0 {
 		return nil, fmt.Errorf("line %d: %s output.outcome.streamErrorPointer requires streamStatePointer", node.Line, owner)
 	}
 	if outcome.ErrorMessageField != "" && outcome.ErrorPointer == "" && outcome.StreamErrorPointer == "" {
@@ -1494,12 +1629,192 @@ func (d *cliManifestDecoder) decodeOutcomeStates(owner string, node *yaml.Node, 
 		if err != nil {
 			return err
 		}
-		if !cliContains(cliAsyncStateKind, class) {
-			return fmt.Errorf("line %d: %s output.outcome.states[%q] has unsupported classification %q (expected %s)", entry.Value.Line, owner, state, class, cliCandidateList(cliAsyncStateKind))
+		if !cliContains(cliOutcomeStateKind, class) {
+			return fmt.Errorf("line %d: %s output.outcome.states[%q] has unsupported classification %q (expected %s)", entry.Value.Line, owner, state, class, cliCandidateList(cliOutcomeStateKind))
 		}
 		states[state] = class
 	}
 	return nil
+}
+
+// decodeContinuation decodes a continuation recipe. Pointer resolvability,
+// the request-body targets, and the required output.outcome continue state
+// are checked during linking.
+func (d *cliManifestDecoder) decodeContinuation(owner string, node *yaml.Node) (*CLICommandContinuation, error) {
+	entries, err := cliMapEntries(node, owner+" continuation")
+	if err != nil {
+		return nil, err
+	}
+	recipe := &CLICommandContinuation{MaxHops: cliContinuationDefaultMaxHops, Default: true}
+	var bindNode *yaml.Node
+	for _, entry := range entries {
+		switch entry.Key.Value {
+		case "bind":
+			bindNode = entry.Value
+		case "merge":
+			recipe.MergeFrom, recipe.Merge, err = cliDecodeContinuationPaths(entry.Value, "continuation.merge", true)
+		case "sum":
+			recipe.SumFrom, recipe.Sum, err = cliDecodeContinuationPaths(entry.Value, "continuation.sum", true)
+		case "maxHops":
+			if entry.Value.Kind != yaml.ScalarNode || entry.Value.Tag != "!!int" {
+				err = stderrors.New("continuation.maxHops must be an integer of at least 1")
+				break
+			}
+			recipe.MaxHops, err = strconv.Atoi(entry.Value.Value)
+			if err == nil && recipe.MaxHops < 1 {
+				err = fmt.Errorf("continuation.maxHops must be at least 1, got %d", recipe.MaxHops)
+			}
+		case "default":
+			recipe.Default, err = cliScalarBool(entry.Value, "continuation.default")
+		default:
+			return nil, fmt.Errorf("line %d: %s continuation has unknown key %q%s", entry.Key.Line, owner, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliContinuationKeys))
+		}
+		if err != nil {
+			return nil, fmt.Errorf("line %d: %s: %w", entry.Value.Line, owner, err)
+		}
+	}
+	if bindNode == nil || bindNode.Kind != yaml.SequenceNode || len(bindNode.Content) == 0 {
+		return nil, fmt.Errorf("line %d: %s continuation requires bind (a non-empty list of {from, to} resume values copied into the next request)", node.Line, owner)
+	}
+	targets := map[string]bool{}
+	required := false
+	for _, item := range bindNode.Content {
+		binding, err := d.decodeContinuationBinding(owner, item)
+		if err != nil {
+			return nil, err
+		}
+		if targets[binding.ToPointer] {
+			return nil, fmt.Errorf("line %d: %s continuation.bind writes %s more than once", item.Line, owner, binding.To)
+		}
+		targets[binding.ToPointer] = true
+		required = required || !binding.Optional
+		recipe.Bind = append(recipe.Bind, *binding)
+	}
+	if !required {
+		return nil, fmt.Errorf("line %d: %s continuation.bind must include at least one binding that is not optional; the next request needs a resume value", bindNode.Line, owner)
+	}
+	return recipe, nil
+}
+
+func (d *cliManifestDecoder) decodeContinuationRequestCondition(owner string, node *yaml.Node) (*CLICommandContinuationRequestCondition, error) {
+	entries, err := cliMapEntries(node, owner+" continuation.bind.unlessRequest")
+	if err != nil {
+		return nil, err
+	}
+	condition := &CLICommandContinuationRequestCondition{}
+	for _, entry := range entries {
+		switch entry.Key.Value {
+		case "path":
+			condition.Path, condition.Pointer, _, err = cliDecodeAsyncPointer(entry.Value, "continuation.bind.unlessRequest.path")
+		case "equals":
+			if !cliYAMLScalar(entry.Value) {
+				err = stderrors.New("continuation.bind.unlessRequest.equals must be a scalar")
+			} else {
+				err = entry.Value.Decode(&condition.Equals)
+				condition.equalsPresent = err == nil
+			}
+		default:
+			return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest has unknown key %q", entry.Key.Line, owner, entry.Key.Value)
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	if condition.Path == "" {
+		return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest requires path", node.Line, owner)
+	}
+	if !condition.equalsPresent {
+		return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest requires equals", node.Line, owner)
+	}
+	var numeric float64
+	switch value := condition.Equals.(type) {
+	case int:
+		numeric = float64(value)
+	case int64:
+		numeric = float64(value)
+	case uint64:
+		numeric = float64(value)
+	case float64:
+		numeric = value
+	}
+	if math.IsNaN(numeric) || math.IsInf(numeric, 0) || math.Abs(numeric) > 9007199254740991 {
+		return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest.equals numbers must be finite and between -9007199254740991 and 9007199254740991", node.Line, owner)
+	}
+	return condition, nil
+}
+
+func cliYAMLScalar(node *yaml.Node) bool {
+	return node != nil && node.Kind == yaml.ScalarNode && slices.Contains([]string{"!!str", "!!int", "!!float", "!!bool", "!!null"}, node.Tag)
+}
+
+func (d *cliManifestDecoder) decodeContinuationBinding(owner string, node *yaml.Node) (*CLICommandContinuationBinding, error) {
+	entries, err := cliMapEntries(node, owner+" continuation.bind entry")
+	if err != nil {
+		return nil, err
+	}
+	binding := &CLICommandContinuationBinding{}
+	for _, entry := range entries {
+		switch entry.Key.Value {
+		case "from":
+			binding.From, binding.Pointer, _, err = cliDecodeAsyncPointer(entry.Value, "continuation.bind.from")
+		case "streamFrom":
+			binding.StreamFrom, binding.StreamPointers, err = cliDecodeContinuationPaths(entry.Value, "continuation.bind.streamFrom", false)
+		case "to":
+			var segments []CLICommandAsyncPathSegment
+			binding.To, binding.ToPointer, segments, err = cliDecodeAsyncPointer(entry.Value, "continuation.bind.to")
+			for _, segment := range segments {
+				if segment.IsIndex {
+					err = fmt.Errorf("continuation.bind.to %s must name object properties only", binding.To)
+					break
+				}
+				binding.ToPath = append(binding.ToPath, segment.Field)
+			}
+		case "optional":
+			binding.Optional, err = cliScalarBool(entry.Value, "continuation.bind.optional")
+		case "unlessRequest":
+			binding.UnlessRequest, err = d.decodeContinuationRequestCondition(owner, entry.Value)
+		default:
+			return nil, fmt.Errorf("line %d: %s continuation.bind has unknown key %q%s", entry.Key.Line, owner, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliContinuationBindingKeys))
+		}
+		if err != nil {
+			return nil, fmt.Errorf("line %d: %s: %w", entry.Value.Line, owner, err)
+		}
+	}
+	if binding.To == "" {
+		return nil, fmt.Errorf("line %d: %s continuation.bind entry requires to (the request-body path that receives the value)", node.Line, owner)
+	}
+	if binding.From == "" && len(binding.StreamFrom) == 0 {
+		return nil, fmt.Errorf("line %d: %s continuation.bind entry for %s requires from (JSON response) or streamFrom (streamed events)", node.Line, owner, binding.To)
+	}
+	return binding, nil
+}
+
+// cliDecodeContinuationPaths accepts one singular JSONPath or a list of them
+// and returns the authored paths with their RFC 6901 lowerings.
+func cliDecodeContinuationPaths(node *yaml.Node, what string, propertiesOnly bool) ([]string, []string, error) {
+	items := []*yaml.Node{node}
+	if node.Kind == yaml.SequenceNode {
+		if len(node.Content) == 0 {
+			return nil, nil, fmt.Errorf("%s must list at least one path", what)
+		}
+		items = node.Content
+	}
+	var authored, pointers []string
+	for _, item := range items {
+		from, pointer, segments, err := cliDecodeAsyncPointer(item, what)
+		if err != nil {
+			return nil, nil, err
+		}
+		if propertiesOnly && slices.ContainsFunc(segments, func(segment CLICommandAsyncPathSegment) bool { return segment.IsIndex }) {
+			return nil, nil, fmt.Errorf("%s %s must name object properties only", what, from)
+		}
+		if cliContains(pointers, pointer) {
+			return nil, nil, fmt.Errorf("%s lists %s more than once", what, from)
+		}
+		authored = append(authored, from)
+		pointers = append(pointers, pointer)
+	}
+	return authored, pointers, nil
 }
 
 // decodeArtifact decodes and validates an output.artifact declaration. The

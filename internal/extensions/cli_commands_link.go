@@ -134,7 +134,364 @@ func (d *cliManifestDecoder) linkManifest(manifest *CLICommandManifest) error {
 		}
 	}
 	inheritOperationOutcomes(manifest)
+	inheritOperationContinuations(manifest)
+	return d.linkContinuations(manifest)
+}
+
+func inheritOperationContinuations(manifest *CLICommandManifest) {
+	recipes := map[string]*CLICommandContinuation{}
+	for i := range manifest.Operations {
+		if op := &manifest.Operations[i]; op.Continuation != nil {
+			recipes[op.OperationID] = op.Continuation
+		}
+	}
+	if len(recipes) == 0 {
+		return
+	}
+	for i := range manifest.Commands {
+		cmd := &manifest.Commands[i]
+		opID, ok := cliSingleOperationID(cmd)
+		if cmd.Source.Type != CLICommandSourceOperation || !ok || cmd.Async != nil || cmd.Continuation != nil {
+			continue
+		}
+		recipe, ok := recipes[opID]
+		if !ok {
+			continue
+		}
+		copied := *recipe
+		copied.Bind = append([]CLICommandContinuationBinding(nil), recipe.Bind...)
+		cmd.Continuation = &copied
+	}
+}
+
+func cliSingleOperationID(cmd *CLICommand) (string, bool) {
+	if len(cmd.Source.Routes) == 0 {
+		return "", false
+	}
+	opID := cmd.Source.Routes[0].OperationID
+	for _, route := range cmd.Source.Routes[1:] {
+		if route.OperationID != opID {
+			return "", false
+		}
+	}
+	return opID, true
+}
+
+func (d *cliManifestDecoder) linkContinuations(manifest *CLICommandManifest) error {
+	for i := range manifest.Operations {
+		op := &manifest.Operations[i]
+		if op.Continuation == nil {
+			continue
+		}
+		var outcome *CLICommandOutcome
+		if op.Output != nil {
+			outcome = op.Output.Outcome
+		}
+		if err := d.linkContinuation(fmt.Sprintf("operation %q", op.OperationID), op.Continuation, op.OperationID, outcome, op.Flags); err != nil {
+			return err
+		}
+	}
+	for i := range manifest.Commands {
+		cmd := &manifest.Commands[i]
+		var outcome *CLICommandOutcome
+		if cmd.Output != nil {
+			outcome = cmd.Output.Outcome
+		}
+		owner := fmt.Sprintf("command %q", strings.Join(cmd.Path, " "))
+		if cmd.Continuation == nil || cmd.Source.Type != CLICommandSourceOperation {
+			if err := rejectUnusedContinueStates(owner, outcome, "add continuation (on the command or its operation entry)"); err != nil {
+				return err
+			}
+			continue
+		}
+		opID, _ := cliSingleOperationID(cmd)
+		if err := d.linkContinuation(owner, cmd.Continuation, opID, outcome, cmd.Flags); err != nil {
+			return err
+		}
+	}
+	for i := range manifest.Operations {
+		op := &manifest.Operations[i]
+		if op.Continuation != nil || op.Output == nil {
+			continue
+		}
+		if err := rejectUnusedContinueStates(fmt.Sprintf("operation %q", op.OperationID), op.Output.Outcome, "an operation entry's outcome also applies to the generated operation command, so a recipe on an intent does not cover it; move continuation to the operation entry (non-async intents using that operation inherit it), move output.outcome to the intent,"); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// rejectUnusedContinueStates refuses a continue classification that no
+// continuation recipe acts on: the command would otherwise exit 0 on a
+// response that says it is incomplete.
+func rejectUnusedContinueStates(owner string, outcome *CLICommandOutcome, remedy string) error {
+	if outcome == nil {
+		return nil
+	}
+	var states []string
+	for state, class := range outcome.States {
+		if class == "continue" {
+			states = append(states, state)
+		}
+	}
+	if len(states) == 0 {
+		return nil
+	}
+	sort.Strings(states)
+	return fmt.Errorf("%s classifies output.outcome state %q as continue but declares no continuation recipe; %s or classify the state as pending, success, or failure", owner, states[0], remedy)
+}
+
+func (d *cliManifestDecoder) linkContinuation(owner string, recipe *CLICommandContinuation, opID string, outcome *CLICommandOutcome, flags []CLICommandInput) error {
+	opInfo, ok := d.schemaIndex.operations[opID]
+	if !ok {
+		return fmt.Errorf("%s continuation: operation %q does not exist in the document%s", owner, opID, cliDidYouMean(opID, d.schemaIndex.opIDs))
+	}
+	recipe.OperationID = opID
+
+	if outcome == nil {
+		return fmt.Errorf("%s declares continuation but no output.outcome; declare a states table with at least one continue state on the command or its operation entry", owner)
+	}
+	hasContinue := false
+	for _, class := range outcome.States {
+		hasContinue = hasContinue || class == "continue"
+	}
+	if !hasContinue {
+		return fmt.Errorf("%s continuation requires output.outcome.states to classify at least one state as continue", owner)
+	}
+	hasJSON, hasStream := len(opInfo.jsonResponses) > 0, opInfo.streamMediaSeen
+	if !hasJSON && !hasStream {
+		return fmt.Errorf("%s continuation: operation %q has no application/json or streaming 2xx response to read resume values from", owner, opID)
+	}
+	if hasJSON && outcome.StatePointer == "" {
+		return fmt.Errorf("%s continuation: operation %q returns application/json, so output.outcome must declare statePointer", owner, opID)
+	}
+	if hasStream && outcome.StreamStatePointer == "" && len(outcome.StreamStatePointers) == 0 {
+		return fmt.Errorf("%s continuation: operation %q streams its response, so output.outcome must declare streamStatePointer", owner, opID)
+	}
+	if opInfo.bodySchema == nil {
+		return fmt.Errorf("%s continuation: operation %q has no application/json request body to carry resume values", owner, opID)
+	}
+
+	for i := range recipe.Bind {
+		binding := &recipe.Bind[i]
+		if binding.UnlessRequest != nil {
+			if err := d.linkContinuationRequestCondition(owner, opID, binding.UnlessRequest, opInfo.bodySchema); err != nil {
+				return err
+			}
+		}
+		if binding.From != "" {
+			if !hasJSON {
+				return fmt.Errorf("%s continuation.bind.from %s: operation %q has no application/json 2xx response; use streamFrom for streamed events", owner, binding.From, opID)
+			}
+			for _, response := range opInfo.jsonResponses {
+				if _, err := d.linkAsyncResponsePointer(binding.From, response.schema, false); err != nil {
+					return fmt.Errorf("%s continuation.bind.from %s in operation %q response %s: %w", owner, binding.From, opID, response.code, err)
+				}
+			}
+		} else if hasJSON && !binding.Optional {
+			return fmt.Errorf("%s continuation.bind entry for %s requires from: operation %q returns application/json", owner, binding.To, opID)
+		}
+		if len(binding.StreamFrom) > 0 {
+			if !hasStream {
+				return fmt.Errorf("%s continuation.bind.streamFrom: operation %q has no streaming 2xx response", owner, opID)
+			}
+			for _, path := range binding.StreamFrom {
+				if err := d.linkStreamSelection(owner, "continuation.bind.streamFrom", path, opInfo); err != nil {
+					return err
+				}
+			}
+		} else if hasStream && !binding.Optional {
+			return fmt.Errorf("%s continuation.bind entry for %s requires streamFrom: operation %q streams its response", owner, binding.To, opID)
+		}
+		if err := d.linkContinuationTarget(owner, opID, binding, opInfo.bodySchema); err != nil {
+			return err
+		}
+		binding.Flag = ""
+		for _, flag := range flags {
+			if flag.Bind != nil && flag.Bind.In == "body" && flag.Bind.Pointer == binding.ToPointer {
+				binding.Flag = flag.Name
+				break
+			}
+		}
+	}
+
+	if (len(recipe.Merge) > 0 || len(recipe.Sum) > 0) && !hasJSON {
+		return fmt.Errorf("%s continuation.merge and continuation.sum apply to application/json responses, and operation %q has none", owner, opID)
+	}
+	for _, path := range recipe.MergeFrom {
+		if err := d.linkContinuationResultPath(owner, "continuation.merge", path, opID, opInfo, func(kind string) bool { return kind == "array" }, "an array"); err != nil {
+			return err
+		}
+	}
+	for _, path := range recipe.SumFrom {
+		if err := d.linkContinuationResultPath(owner, "continuation.sum", path, opID, opInfo, func(kind string) bool { return kind == "int" || kind == "float" }, "a number"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *cliManifestDecoder) linkContinuationRequestCondition(owner, opID string, condition *CLICommandContinuationRequestCondition, bodySchema any) error {
+	segments, err := cliParseSingularPath(condition.Path)
+	if err != nil {
+		return err
+	}
+	variants := d.continuationTargetVariants(bodySchema)
+	for index, variantSchema := range variants {
+		current := []any{variantSchema}
+		for _, segment := range segments {
+			next := []any{}
+			for _, schema := range current {
+				resolved, err := d.resolveObjectSchema(schema, nil)
+				if err != nil {
+					return fmt.Errorf("%s continuation.bind.unlessRequest.path %s in request body variant %d of operation %q: %w", owner, condition.Path, index+1, opID, err)
+				}
+				if segment.IsIndex {
+					return fmt.Errorf("%s continuation.bind.unlessRequest.path %s must name object properties only", owner, condition.Path)
+				}
+				property, exists := resolved.properties[segment.Name]
+				if !exists {
+					return fmt.Errorf("%s continuation.bind.unlessRequest.path %s is absent from request body variant %d of operation %q", owner, condition.Path, index+1, opID)
+				}
+				next = append(next, d.continuationTargetVariants(property)...)
+			}
+			current = next
+		}
+		if len(current) == 0 {
+			return fmt.Errorf("%s continuation.bind.unlessRequest.path %s does not resolve in request body variant %d of operation %q", owner, condition.Path, index+1, opID)
+		}
+		for _, schema := range current {
+			if raw, ok := schema.(map[string]any); ok {
+				stripped := cliWithoutNullType(raw)
+				if stripped == nil {
+					continue
+				}
+				schema = stripped
+			}
+			facts, err := d.propertyFacts(schema, nil)
+			if err != nil {
+				return fmt.Errorf("%s continuation.bind.unlessRequest.path %s in operation %q: %w", owner, condition.Path, opID, err)
+			}
+			if len(facts.kinds) != 1 || !cliIsScalarKind(facts.kinds[0]) {
+				return fmt.Errorf("%s continuation.bind.unlessRequest.path %s must select a scalar property in every request body variant of operation %q", owner, condition.Path, opID)
+			}
+		}
+	}
+	return nil
+}
+
+func (d *cliManifestDecoder) linkContinuationResultPath(owner, field, path, opID string, opInfo *cliOperationInfo, accept func(string) bool, expected string) error {
+	for _, response := range opInfo.jsonResponses {
+		views, err := d.walkResponsePath(path, response.schema)
+		if err != nil {
+			return fmt.Errorf("%s %s %s in operation %q response %s: %w", owner, field, path, opID, response.code, err)
+		}
+		facts, err := d.responseLeafFacts(views)
+		if err != nil {
+			return fmt.Errorf("%s %s %s in operation %q response %s: %w", owner, field, path, opID, response.code, err)
+		}
+		for _, propertyFacts := range facts {
+			if len(propertyFacts.kinds) != 1 || !accept(propertyFacts.kinds[0]) {
+				return fmt.Errorf("%s %s %s in operation %q response %s must select %s in every response variant", owner, field, path, opID, response.code, expected)
+			}
+		}
+	}
+	return nil
+}
+
+// linkContinuationTarget requires the bound request-body path to be a
+// writable string property in every request-body variant, so a resume value
+// always lands in a field the API accepts.
+func (d *cliManifestDecoder) linkContinuationTarget(owner, opID string, binding *CLICommandContinuationBinding, bodySchema any) error {
+	for i, raw := range d.continuationTargetVariants(bodySchema) {
+		if err := d.linkContinuationTargetPath(owner, opID, binding, raw, 0, i+1); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *cliManifestDecoder) linkContinuationTargetPath(owner, opID string, binding *CLICommandContinuationBinding, schema any, depth, bodyVariant int) error {
+	name := binding.ToPath[depth]
+	for _, raw := range d.continuationTargetVariants(schema) {
+		variant, err := d.resolveObjectSchema(raw, nil)
+		if err != nil {
+			return fmt.Errorf("%s continuation.bind.to %s: request body variant %d of operation %q: %w", owner, binding.To, bodyVariant, opID, err)
+		}
+		prop, exists := variant.properties[name]
+		if !exists {
+			return fmt.Errorf("%s continuation.bind.to %s: property %q is absent from request body variant %s of operation %q%s", owner, binding.To, name, cliSchemaLabel(variant), opID, cliDidYouMean(name, variant.propOrder))
+		}
+		if depth < len(binding.ToPath)-1 {
+			if err := d.linkContinuationTargetPath(owner, opID, binding, prop, depth+1, bodyVariant); err != nil {
+				return err
+			}
+			continue
+		}
+		facts, err := d.propertyFacts(prop, nil)
+		if err != nil {
+			return fmt.Errorf("%s continuation.bind.to %s in request body variant %s of operation %q: %w", owner, binding.To, cliSchemaLabel(variant), opID, err)
+		}
+		readOnly := facts.readOnly
+		if leaf := d.continuationTargetLeaf(prop); leaf != nil {
+			facts, err = d.propertyFacts(leaf, nil)
+			if err != nil {
+				return fmt.Errorf("%s continuation.bind.to %s in request body variant %s of operation %q: %w", owner, binding.To, cliSchemaLabel(variant), opID, err)
+			}
+			readOnly = readOnly || facts.readOnly
+		}
+		if readOnly {
+			return fmt.Errorf("%s continuation.bind.to %s names readOnly property %q in request body variant %s of operation %q", owner, binding.To, name, cliSchemaLabel(variant), opID)
+		}
+		if len(facts.kinds) != 1 || facts.kinds[0] != "string" {
+			return fmt.Errorf("%s continuation.bind.to %s must name a string property in request body variant %s of operation %q", owner, binding.To, cliSchemaLabel(variant), opID)
+		}
+	}
+	return nil
+}
+
+// continuationTargetLeaf drops null from a target's type list or union, so a
+// nullable string accepts a resume value; it returns nil when nothing changes.
+func (d *cliManifestDecoder) continuationTargetLeaf(prop any) any {
+	leaf := prop
+	if variants := d.continuationTargetVariants(prop); len(variants) == 1 {
+		leaf = variants[0]
+	}
+	if leafMap, ok := leaf.(map[string]any); ok {
+		if stripped := cliWithoutNullType(leafMap); stripped != nil {
+			leaf = stripped
+		}
+	}
+	if reflect.DeepEqual(leaf, prop) {
+		return nil
+	}
+	return leaf
+}
+
+// continuationTargetVariants expands an object union into its members, each
+// conjoined with the keywords the union declares beside oneOf/anyOf. A
+// null-only member is skipped: there is no object to write into.
+func (d *cliManifestDecoder) continuationTargetVariants(schema any) []any {
+	schemaMap, _ := schema.(map[string]any)
+	unionMap, _ := d.unionBodySchema(schemaMap)
+	members := cliUnionMembers(unionMap)
+	if len(members) == 0 {
+		return []any{schema}
+	}
+	shared := cliUnionSharedSchema(unionMap)
+	variants := make([]any, 0, len(members))
+	for _, member := range members {
+		memberMap, _ := member.(map[string]any)
+		if types := cliSchemaTypes(memberMap); len(types) == 1 && types[0] == "null" {
+			continue
+		}
+		if shared != nil {
+			variants = append(variants, cliConjoinSchemas(memberMap, shared))
+		} else {
+			variants = append(variants, member)
+		}
+	}
+	return variants
 }
 
 // inheritOperationOutcomes gives a single-route intent without its own
@@ -153,13 +510,14 @@ func inheritOperationOutcomes(manifest *CLICommandManifest) {
 	}
 	for i := range manifest.Commands {
 		cmd := &manifest.Commands[i]
-		if cmd.Source.Type != CLICommandSourceOperation || len(cmd.Source.Routes) != 1 || cmd.Async != nil {
+		opID, ok := cliSingleOperationID(cmd)
+		if cmd.Source.Type != CLICommandSourceOperation || !ok || cmd.Async != nil {
 			continue
 		}
 		if cmd.Output != nil && cmd.Output.Outcome != nil {
 			continue
 		}
-		outcome, ok := outcomes[cmd.Source.Routes[0].OperationID]
+		outcome, ok := outcomes[opID]
 		if !ok {
 			continue
 		}
@@ -1143,15 +1501,22 @@ func (d *cliManifestDecoder) linkOutcome(owner string, outcome *CLICommandOutcom
 			}
 		}
 	}
-	if outcome.StreamStatePointer != "" {
+	if len(outcome.StreamStatePointers) > 0 {
 		if !opInfo.streamMediaSeen {
 			return fmt.Errorf("%s declares output.outcome.streamStatePointer, but operation %q has no streaming (text/event-stream or JSONL) success response", owner, opID)
 		}
-		walker, err := d.walkStreamSelection(owner, "output.outcome.streamStatePointer", outcome.StreamStateFrom, opInfo)
-		if err != nil {
-			return err
+		combined := &cliStreamPathWalker{stateEnum: map[string]bool{}}
+		for _, path := range outcome.StreamStateFroms {
+			walker, err := d.walkStreamSelection(owner, "output.outcome.streamStatePointer", path, opInfo)
+			if err != nil {
+				return err
+			}
+			combined.resolved += walker.resolved
+			combined.stateOpen = combined.stateOpen || walker.stateOpen
+			combined.stateNoEnum = combined.stateNoEnum || walker.stateNoEnum
+			maps.Copy(combined.stateEnum, walker.stateEnum)
 		}
-		if err := d.linkOutcomeStreamStates(owner, outcome, opID, walker); err != nil {
+		if err := d.linkOutcomeStreamStates(owner, outcome, opID, strings.Join(outcome.StreamStateFroms, ", "), combined); err != nil {
 			return err
 		}
 		if outcome.StreamErrorPointer != "" {
@@ -1193,27 +1558,27 @@ func (d *cliManifestDecoder) linkOutcomeErrorPointer(path string, responseSchema
 // pointer selects. A stream-only table must match that enum exactly; when
 // statePointer already pinned the table to the JSON enum, the stream enum may
 // be a subset of it, but every member must still be classified.
-func (d *cliManifestDecoder) linkOutcomeStreamStates(owner string, outcome *CLICommandOutcome, opID string, walker *cliStreamPathWalker) error {
+func (d *cliManifestDecoder) linkOutcomeStreamStates(owner string, outcome *CLICommandOutcome, opID, path string, walker *cliStreamPathWalker) error {
 	if walker.stateOpen {
-		return fmt.Errorf("%s output.outcome.streamStatePointer %s in operation %q is an open enum; every possible state must be classifiable at generation time", owner, outcome.StreamStateFrom, opID)
+		return fmt.Errorf("%s output.outcome.streamStatePointer %s in operation %q is an open enum; every possible state must be classifiable at generation time", owner, path, opID)
 	}
 	if walker.resolved == 0 {
 		return nil
 	}
 	if walker.stateNoEnum || len(walker.stateEnum) == 0 {
-		d.warnf("%s output.outcome.streamStatePointer %s in operation %q does not select a closed string enum in every event shape; states cannot be verified at generation time, and a state missing from the table keeps exit 0 at runtime", owner, outcome.StreamStateFrom, opID)
+		d.warnf("%s output.outcome.streamStatePointer %s in operation %q does not select a closed string enum in every event shape; states cannot be verified at generation time, and a state missing from the table keeps exit 0 at runtime", owner, path, opID)
 		return nil
 	}
 	if outcome.StatePointer == "" {
 		for _, state := range slices.Sorted(maps.Keys(outcome.States)) {
 			if !walker.stateEnum[state] {
-				return fmt.Errorf("%s output.outcome.states classifies %q, which is not an enum member at %s in operation %q%s", owner, state, outcome.StreamStateFrom, opID, cliDidYouMean(state, cliSortedKeys(walker.stateEnum)))
+				return fmt.Errorf("%s output.outcome.states classifies %q, which is not an enum member at %s in operation %q%s", owner, state, path, opID, cliDidYouMean(state, cliSortedKeys(walker.stateEnum)))
 			}
 		}
 	}
 	for _, state := range cliSortedKeys(walker.stateEnum) {
 		if _, classified := outcome.States[state]; !classified {
-			return fmt.Errorf("%s output.outcome.states does not classify enum member %q from %s in operation %q; classify every member as pending, success, failure, or handoff", owner, state, outcome.StreamStateFrom, opID)
+			return fmt.Errorf("%s output.outcome.states does not classify enum member %q from %s in operation %q; classify every member as pending, success, failure, or handoff", owner, state, path, opID)
 		}
 	}
 	return nil
@@ -3732,6 +4097,23 @@ func (d *cliManifestDecoder) resolveObjectSchema(schema any, seen []string) (*cl
 		out.unionMembers = members
 	}
 	return out, nil
+}
+
+// cliUnionSharedSchema returns the keywords declared beside a union's
+// oneOf/anyOf, which apply to every member; nil when there are none.
+func cliUnionSharedSchema(unionMap map[string]any) map[string]any {
+	shared := map[string]any{}
+	for key, value := range unionMap {
+		switch key {
+		case "oneOf", "anyOf", "discriminator", "description", "title", "example", "examples":
+			continue
+		}
+		shared[key] = value
+	}
+	if len(shared) == 0 {
+		return nil
+	}
+	return shared
 }
 
 func cliConjoinSchemas(a, b map[string]any) map[string]any {

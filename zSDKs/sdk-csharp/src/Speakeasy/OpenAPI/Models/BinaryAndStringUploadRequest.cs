@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class BinaryAndStringUploadRequest
+    public partial class BinaryAndStringUploadRequest
     {
         [JsonProperty("binary", Required = Newtonsoft.Json.Required.DisallowNull)]
         public byte[]? Binary { get; set; }

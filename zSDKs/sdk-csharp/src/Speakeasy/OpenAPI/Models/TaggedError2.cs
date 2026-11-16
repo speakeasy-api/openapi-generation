@@ -14,7 +14,7 @@ namespace Speakeasy.OpenAPI
     using System;
     using System.Net.Http;
 
-    public class TaggedError2Payload
+    public partial class TaggedError2Payload
     {
         [JsonProperty("tag", Required = Newtonsoft.Json.Required.Always)]
         public string Tag { get; set; } = "tag2";
@@ -26,7 +26,7 @@ namespace Speakeasy.OpenAPI
         public HTTPMetadata HttpMeta { get; set; } = new();
     }
 
-    public class TaggedError2 : SDKBaseException
+    public partial class TaggedError2 : SDKBaseException
     {
         /// <summary>
         ///  The original data that was passed to this exception.

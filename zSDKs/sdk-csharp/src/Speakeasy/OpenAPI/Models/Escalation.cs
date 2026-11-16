@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// Escalation configuration with string-encoded integer expiration.
     /// </summary>
-    public class Escalation
+    public partial class Escalation
     {
         [JsonProperty("enabled", Required = Newtonsoft.Json.Required.Always)]
         public bool Enabled { get; set; } = default!;

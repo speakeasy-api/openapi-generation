@@ -20,7 +20,7 @@ namespace Speakeasy.OpenAPI.Foo
     /// Species of a pet in the foo namespace.
     /// </summary>
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class PetSpecies : IEquatable<PetSpecies>, IOpenEnum<string>
+    public partial class PetSpecies : IEquatable<PetSpecies>, IOpenEnum<string>
     {
         public static readonly PetSpecies Dog = new PetSpecies("dog");
         public static readonly PetSpecies Cat = new PetSpecies("cat");

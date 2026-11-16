@@ -77,6 +77,9 @@ func (g *Generator) getBaseTemplateConfigs(target types.Target, cfg *configurati
 	templateCfg["InstallationURL"] = lockFile.Management.InstallationURL
 	templateCfg["RepoSubDirectory"] = lockFile.Management.RepoSubDirectory
 	templateCfg["RepoURL"] = lockFile.Management.RepoURL
+	if target.Target == "cli" {
+		templateCfg["CLIShorthands"] = lockFile.AdditionalProperties[cliShorthandsLockKey]
+	}
 
 	if moduleName, ok := templateCfg["ModuleName"]; !ok || moduleName == "" {
 		templateCfg["ModuleName"] = templateCfg["PackageName"]

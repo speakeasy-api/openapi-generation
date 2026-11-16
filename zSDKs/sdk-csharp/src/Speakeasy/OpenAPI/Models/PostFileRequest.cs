@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class PostFileRequest
+    public partial class PostFileRequest
     {
         /// <summary>
         /// A file.

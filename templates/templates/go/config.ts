@@ -512,7 +512,7 @@ function getLintConfiguration(): LintConfiguration {
           command: "go",
           args: [
             "run",
-            "honnef.co/go/tools/cmd/staticcheck@v0.8.1",
+            "honnef.co/go/tools/cmd/staticcheck@v0.8.2",
             "-checks=inherit,-SA1019,-SA5008",
             "./...",
           ],

@@ -115,6 +115,10 @@ function templateModelImports(model: CSharpModel): string {
     imports = getTypeImports(imports, associated, "", false);
   }
 
+  for (const conversion of getUnionImplicitConversions(model.Type)) {
+    imports = getTypeImports(imports, conversion.Member, "", false);
+  }
+
   if (model.Type.Comments?.Deprecated) {
     imports = addImport(imports, "System", false);
   }
@@ -307,6 +311,10 @@ function templateSDKImports(sdk: SDK, main: boolean): string {
       }
 
       imports = getTypeImports(imports, op.Request.Field.Type, "", false);
+
+      for (const c of bodyVariantOverloadTargets(op).conversions) {
+        imports = getTypeImports(imports, c.Member, "", false);
+      }
 
       imports = addImport(imports, "System.Net.Http.Headers", false);
     }

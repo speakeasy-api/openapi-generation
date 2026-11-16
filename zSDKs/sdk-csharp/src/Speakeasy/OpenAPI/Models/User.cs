@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     using System.Collections.Generic;
     using System.Linq;
 
-    public class User
+    public partial class User
     {
         [JsonProperty("id", Required = Newtonsoft.Json.Required.Always)]
         public string Id { get; set; } = default!;

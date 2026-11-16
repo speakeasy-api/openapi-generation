@@ -11,13 +11,13 @@ module {{sanitizeModuleName .Global.Config.Module}}
       {{if sorbetEnabled}}sig { returns(SDKConfiguration) }{{end}}
       attr_accessor :config
 
-      {{if sorbetEnabled}}sig { returns(String) }{{end}}
+      {{if sorbetEnabled}}sig { returns(::String) }{{end}}
       attr_accessor :base_url
 
-      {{if sorbetEnabled}}sig { returns(T.nilable(T::Array[String])) }{{end}}
+      {{if sorbetEnabled}}sig { returns(T.nilable(T::Array[::String])) }{{end}}
       attr_accessor :oauth2_scopes
 
-      {{if sorbetEnabled}}sig { returns(String) }{{end}}
+      {{if sorbetEnabled}}sig { returns(::String) }{{end}}
       attr_accessor :operation_id
 
       {{if sorbetEnabled}}sig { returns(T.nilable(T.proc.returns(T.untyped))) }{{end}}
@@ -26,17 +26,17 @@ module {{sanitizeModuleName .Global.Config.Module}}
       {{if sorbetEnabled}}sig do
         params(
           config: SDKConfiguration,
-          base_url: String,
-          oauth2_scopes: T.nilable(T::Array[String]),
-          operation_id: String,
+          base_url: ::String,
+          oauth2_scopes: T.nilable(T::Array[::String]),
+          operation_id: ::String,
           security_source: T.nilable(T.proc.returns(T.untyped))
         ).void
       end{{end}}
       def initialize(config:, base_url:, oauth2_scopes:, operation_id:, security_source:)
         @config = {{sorbetLet "config" "SDKConfiguration"}}
-        @base_url = {{sorbetLet "base_url" "String"}}
-        @oauth2_scopes = {{sorbetLet "oauth2_scopes" "T.nilable(T::Array[String])"}}
-        @operation_id = {{sorbetLet "operation_id" "String"}}
+        @base_url = {{sorbetLet "base_url" "::String"}}
+        @oauth2_scopes = {{sorbetLet "oauth2_scopes" "T.nilable(T::Array[::String])"}}
+        @operation_id = {{sorbetLet "operation_id" "::String"}}
         @security_source = {{sorbetLet "security_source" "T.nilable(T.proc.returns(T.untyped))"}}
       end
     end
@@ -105,7 +105,7 @@ module {{sanitizeModuleName .Global.Config.Module}}
 
       {{if sorbetEnabled}}sig { overridable.params(config: SDKConfiguration).returns(SDKConfiguration) }{{end}}
       def sdk_init(config:)
-        Kernel.raise NotImplementedError.new
+        ::Kernel.raise ::NotImplementedError.new
       end
     end
 
@@ -121,7 +121,7 @@ module {{sanitizeModuleName .Global.Config.Module}}
         ).returns(Faraday::Request)
       end{{end}}
       def before_request(hook_ctx:, request:)
-        Kernel.raise NotImplementedError.new
+        ::Kernel.raise ::NotImplementedError.new
       end
     end
 
@@ -137,7 +137,7 @@ module {{sanitizeModuleName .Global.Config.Module}}
         ).returns(Faraday::Response)
       end{{end}}
       def after_success(hook_ctx:, response:)
-        Kernel.raise NotImplementedError.new
+        ::Kernel.raise ::NotImplementedError.new
       end
     end
 
@@ -148,13 +148,13 @@ module {{sanitizeModuleName .Global.Config.Module}}
 
       {{if sorbetEnabled}}sig do
         overridable.params(
-          error: T.nilable(StandardError),
+          error: T.nilable(::StandardError),
           hook_ctx: AfterErrorHookContext,
           response: T.nilable(Faraday::Response)
         ).returns(T.nilable(Faraday::Response))
       end{{end}}
       def after_error(error:, hook_ctx:, response:)
-        Kernel.raise NotImplementedError.new
+        ::Kernel.raise ::NotImplementedError.new
       end
     end
 

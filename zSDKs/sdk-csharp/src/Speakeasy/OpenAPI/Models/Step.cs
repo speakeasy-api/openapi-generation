@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class StepType
+    public partial class StepType
     {
         private StepType(string value)
         {
@@ -85,7 +85,7 @@ namespace Speakeasy.OpenAPI
     }
 
     [JsonConverter(typeof(Step.StepConverter))]
-    public class Step : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class Step : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public Step(StepType type)
         {
@@ -132,6 +132,20 @@ namespace Speakeasy.OpenAPI
             res.AssetOutputStep = output;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Step"/>. Equivalent to <c>CreateNote(value)</c>.
+        /// A null value converts to a null reference.
+        /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static implicit operator Step?(AssetNoteStep? value) => value is null ? null : CreateNote(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Step"/>. Equivalent to <c>CreateOutput(value)</c>.
+        /// A null value converts to a null reference.
+        /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static implicit operator Step?(AssetOutputStep? value) => value is null ? null : CreateOutput(value);
 
         public class StepConverter : JsonConverter
         {

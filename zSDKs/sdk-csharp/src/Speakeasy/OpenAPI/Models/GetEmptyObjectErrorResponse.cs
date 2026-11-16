@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class GetEmptyObjectErrorResponse
+    public partial class GetEmptyObjectErrorResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

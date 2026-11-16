@@ -4,6 +4,7 @@ package openapi
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 // RequestTimeoutError - A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts
@@ -16,6 +17,15 @@ type RequestTimeoutError struct {
 var _ error = &RequestTimeoutError{}
 
 func (e *RequestTimeoutError) Error() string {
+	if e != nil {
+		if e.Message != nil && *e.Message != "" {
+			if e.Code != nil {
+				return fmt.Sprintf("%v: %s", *e.Code, *e.Message)
+			}
+			return *e.Message
+		}
+	}
+
 	data, _ := json.Marshal(e)
 	return string(data)
 }

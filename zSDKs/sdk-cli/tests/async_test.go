@@ -47,7 +47,10 @@ type asyncStub struct {
 	createCalls  int
 	pollCalls    int
 	firstPoll    time.Time
+	assetHeaders http.Header
 }
+
+const asyncTestAssetPath = "/async-test-asset"
 
 func newAsyncStubWithStatus(t *testing.T, createStatus, pollStatus int, createBody string, pollBodies ...string) *asyncStub {
 	t.Helper()
@@ -58,6 +61,12 @@ func newAsyncStubWithStatus(t *testing.T, createStatus, pollStatus int, createBo
 	stub.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		stub.mu.Lock()
 		defer stub.mu.Unlock()
+		if r.URL.Path == asyncTestAssetPath {
+			stub.assetHeaders = r.Header.Clone()
+			w.Header().Set("Content-Type", "application/octet-stream")
+			_, _ = w.Write([]byte("async-artifact-bytes"))
+			return
+		}
 		body := stub.createBody
 		contentType := stub.createType
 		status := stub.createStatus
@@ -631,7 +640,35 @@ func TestAsyncResume_TerminalErrorsAndHandoff(t *testing.T) {
 		})
 	}
 }
-func TestAsyncResume_URIIsExplicitlyUnsupported(t *testing.T) {
+func TestAsync_URIIsDownloadedWithRequestHeaders(t *testing.T) {
+	for name, run := range map[string]func(*testing.T, *CLITestHarness, string, ...string) error{
+		"resume":          runAsyncResume,
+		"create and wait": runAsyncIntent,
+	} {
+		t.Run(name, func(t *testing.T) {
+			stub := newAsyncStub(t, asyncCreateTestBody)
+			stub.mu.Lock()
+			stub.pollBodies = []string{asyncURIPollBody(t, stub.server.URL+asyncTestAssetPath)}
+			stub.mu.Unlock()
+			withAsyncWorkingDir(t)
+			h := NewCLITestHarness(t)
+			require.NoError(t, run(t, h, stub.server.URL, "--header", "X-Artifact-Probe: secret"), h.GetStderr())
+
+			written, err := os.ReadFile(strings.TrimSpace(h.GetStdout()))
+			require.NoError(t, err)
+			assert.Equal(t, "async-artifact-bytes", string(written))
+			stub.mu.Lock()
+			defer stub.mu.Unlock()
+			require.NotNil(t, stub.assetHeaders, "the URI was not fetched")
+			assert.Equal(t, "secret", stub.assetHeaders.Get("X-Artifact-Probe"), "the polling request's headers must reach the API origin")
+		})
+	}
+}
+
+// asyncURIPollBody is the terminal poll response with its artifact block
+// delivered as uri instead of inline data.
+func asyncURIPollBody(t *testing.T, uri string) string {
+	t.Helper()
 	var payload interface{}
 	require.NoError(t, json.Unmarshal([]byte(asyncSuccessTestBody), &payload))
 	var cfg map[string]interface{}
@@ -648,7 +685,7 @@ func TestAsyncResume_URIIsExplicitlyUnsupported(t *testing.T) {
 		case map[string]interface{}:
 			if value[field("typeField", "type")] == cfg["kind"] {
 				delete(value, field("dataField", "data"))
-				value[field("uriField", "uri")] = "https://example.invalid/artifact"
+				value[field("uriField", "uri")] = uri
 			}
 			for _, child := range value {
 				visit(child)
@@ -662,15 +699,7 @@ func TestAsyncResume_URIIsExplicitlyUnsupported(t *testing.T) {
 	visit(payload)
 	body, err := json.Marshal(payload)
 	require.NoError(t, err)
-	stub := newAsyncStub(t, asyncCreateTestBody, string(body))
-	dir := withAsyncWorkingDir(t)
-	h := NewCLITestHarness(t)
-	err = runAsyncResume(t, h, stub.server.URL)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "delivered by URI")
-	files, err := os.ReadDir(dir)
-	require.NoError(t, err)
-	assert.Empty(t, files)
+	return string(body)
 }
 func TestAsyncPoll_RawSchemaMismatchAndSSE(t *testing.T) {
 	for _, mode := range []string{"json", "jq", "sse"} {

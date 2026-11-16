@@ -11,7 +11,7 @@ namespace {{getScopeNamespace "errors" true}}
     /// <summary>
     /// Default API Exception.
     /// </summary>
-    public class {{$className}} : {{$baseErrorName}}
+    public {{templatePartialModifier}}class {{$className}} : {{$baseErrorName}}
     {
         /// <summary>
         /// Default API exception.

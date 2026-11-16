@@ -22,7 +22,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A model that references enums and unions from different namespaces.
     /// </summary>
-    public class NamespaceTypesTest
+    public partial class NamespaceTypesTest
     {
         /// <summary>
         /// Species of a pet in the foo namespace.

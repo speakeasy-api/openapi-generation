@@ -32,8 +32,8 @@ function getSubSDKAutoloads(sdk: SDK, indentation: number): RubyAutoloads {
 
   let autoloads: RubyAutoloads = [];
   autoloads.push({
-    module: sanitizeClassName(sdk.Type.Name),
-    path: `${importPath}/${sanitizeFileName(sdk.Type.Name)}`,
+    module: sanitizeClassName(subSDKTypeName(sdk.Type.Name)),
+    path: `${importPath}/${sanitizeFileName(subSDKTypeName(sdk.Type.Name))}`,
   });
   for (const subSDK of sdk.SubSDKs) {
     autoloads = [...autoloads, ...getSubSDKAutoloads(subSDK, indentation + 1)];

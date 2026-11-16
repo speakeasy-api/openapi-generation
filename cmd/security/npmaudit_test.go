@@ -26,7 +26,7 @@ func newAcc(threshold int, ignore []IgnoreEntry) *npmAuditAccumulator {
 
 func TestParseNPMAudit_FixtureFields(t *testing.T) {
 	acc := newAcc(severityRanks["low"], nil)
-	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", acc); err != nil {
+	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", nil, acc); err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 
@@ -58,7 +58,7 @@ func TestParseNPMAudit_ViaStringSkipped(t *testing.T) {
 	// express-rate-limit has via: ["ip-address"] (string ref), should not surface
 	// a finding on its own — only the actual ip-address advisory should.
 	acc := newAcc(severityRanks["low"], nil)
-	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", acc); err != nil {
+	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", nil, acc); err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 	for k := range acc.findings {
@@ -72,7 +72,7 @@ func TestParseNPMAudit_ThresholdFilter(t *testing.T) {
 	// hono fixture has 6 advisory objects, 1 of severity "low".
 	// Threshold = moderate must filter out the low one but keep the moderates.
 	acc := newAcc(severityRanks["moderate"], nil)
-	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", acc); err != nil {
+	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", nil, acc); err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 	if _, present := acc.findings["GHSA-hm8q-7f3q-5f36|hono"]; present {
@@ -93,10 +93,10 @@ func TestParseNPMAudit_ThresholdFilter(t *testing.T) {
 
 func TestParseNPMAudit_CrossTemplateDedup(t *testing.T) {
 	acc := newAcc(severityRanks["low"], nil)
-	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", acc); err != nil {
+	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", nil, acc); err != nil {
 		t.Fatalf("parse 1: %v", err)
 	}
-	if err := parseNPMAudit(loadFixture(t, "npm-audit-synthetic-other.json"), "sdk-typescriptv2", acc); err != nil {
+	if err := parseNPMAudit(loadFixture(t, "npm-audit-synthetic-other.json"), "sdk-typescriptv2", nil, acc); err != nil {
 		t.Fatalf("parse 2: %v", err)
 	}
 
@@ -129,7 +129,7 @@ func TestParseNPMAudit_CrossTemplateDedup(t *testing.T) {
 
 func TestParseNPMAudit_IgnoreList(t *testing.T) {
 	acc := newAcc(severityRanks["low"], []IgnoreEntry{{ID: "GHSA-q3j6-qgpj-74h6"}})
-	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", acc); err != nil {
+	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", nil, acc); err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 	if _, present := acc.findings["GHSA-q3j6-qgpj-74h6|fast-uri"]; present {
@@ -137,6 +137,31 @@ func TestParseNPMAudit_IgnoreList(t *testing.T) {
 	}
 	if acc.ignored == 0 {
 		t.Errorf("ignored counter not incremented")
+	}
+}
+
+func TestParseNPMAudit_VersionScopedIgnore(t *testing.T) {
+	ignore := []IgnoreEntry{{ID: "GHSA-q3j6-qgpj-74h6", Package: "fast-uri", Versions: []string{"4.1.2"}}}
+	installed := map[string]string{"node_modules/fast-uri": "4.1.2"}
+
+	acc := newAcc(severityRanks["low"], ignore)
+	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", installed, acc); err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if _, present := acc.findings["GHSA-q3j6-qgpj-74h6|fast-uri"]; present {
+		t.Errorf("finding for ignored installed version still present")
+	}
+
+	acc = newAcc(severityRanks["low"], ignore)
+	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", map[string]string{"node_modules/fast-uri": "4.0.0"}, acc); err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	f := acc.findings["GHSA-q3j6-qgpj-74h6|fast-uri"]
+	if f == nil {
+		t.Fatalf("finding for non-ignored installed version missing")
+	}
+	if f.Version != "4.0.0" {
+		t.Errorf("finding version = %q, want 4.0.0", f.Version)
 	}
 }
 
@@ -174,7 +199,7 @@ func TestFormatFixAvailable(t *testing.T) {
 
 func TestParseNPMAudit_MalformedJSON(t *testing.T) {
 	acc := newAcc(severityRanks["low"], nil)
-	err := parseNPMAudit([]byte("{not-json"), "x", acc)
+	err := parseNPMAudit([]byte("{not-json"), "x", nil, acc)
 	if err == nil {
 		t.Fatal("expected error on malformed JSON")
 	}
@@ -205,7 +230,7 @@ func TestParseNPMAudit_UnknownSeverityFiltered(t *testing.T) {
 	}`)
 
 	acc := newAcc(severityRanks["low"], nil)
-	if err := parseNPMAudit(raw, "x", acc); err != nil {
+	if err := parseNPMAudit(raw, "x", nil, acc); err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 	if len(acc.findings) != 0 {
@@ -214,7 +239,7 @@ func TestParseNPMAudit_UnknownSeverityFiltered(t *testing.T) {
 
 	// With threshold 0 (no filter), should surface.
 	acc = newAcc(0, nil)
-	if err := parseNPMAudit(raw, "x", acc); err != nil {
+	if err := parseNPMAudit(raw, "x", nil, acc); err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 	if len(acc.findings) != 1 {
@@ -224,7 +249,7 @@ func TestParseNPMAudit_UnknownSeverityFiltered(t *testing.T) {
 
 func TestParseNPMAudit_DescriptionFromTitle(t *testing.T) {
 	acc := newAcc(severityRanks["low"], nil)
-	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", acc); err != nil {
+	if err := parseNPMAudit(loadFixture(t, "npm-audit-mcp-typescript.json"), "mcp-typescript", nil, acc); err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 	f := acc.findings["GHSA-q3j6-qgpj-74h6|fast-uri"]

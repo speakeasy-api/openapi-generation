@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class MyApiKey
+    public partial class MyApiKey
     {
         [SpeakeasyMetadata("security:scheme=true,type=apiKey,subType=header,name=api_key")]
         public string MyApiKeyValue { get; set; } = default!;

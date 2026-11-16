@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class Test2Response
+    public partial class Test2Response
     {
         [JsonProperty("test2", Required = Newtonsoft.Json.Required.Default, NullValueHandling = NullValueHandling.Include)]
         public OptionalNullable<string?> Test2 { get; set; }

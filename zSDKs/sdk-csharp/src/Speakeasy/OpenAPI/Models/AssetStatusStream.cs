@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class AssetStatusStream
+    public partial class AssetStatusStream
     {
         /// <summary>
         /// The result of a render request.

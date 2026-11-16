@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A step in the policy.
     /// </summary>
-    public class PolicyStep
+    public partial class PolicyStep
     {
         [JsonProperty("stepId", Required = Newtonsoft.Json.Required.Always)]
         public string StepId { get; set; } = default!;

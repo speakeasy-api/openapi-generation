@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// An object with allOf and factored out properties.
     /// </summary>
-    public class AllOfWithFactoredOutProperties
+    public partial class AllOfWithFactoredOutProperties
     {
         /// <summary>
         /// An overriding property.

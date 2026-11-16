@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class GetUnionErrorsRequest
+    public partial class GetUnionErrorsRequest
     {
         [SpeakeasyMetadata("queryParam:style=form,explode=true,name=page")]
         public long Page { get; set; } = default!;

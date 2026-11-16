@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI.Foo
     /// <summary>
     /// Inline address object should end up in foo namespace.
     /// </summary>
-    public class Address
+    public partial class Address
     {
         [JsonProperty("street", Required = Newtonsoft.Json.Required.Always)]
         public string Street { get; set; } = default!;

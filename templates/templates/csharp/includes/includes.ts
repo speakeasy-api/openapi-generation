@@ -26,6 +26,7 @@ require("./modelusage.ts");
 require("./serverusage.ts");
 require("./enums.ts");
 require("./open-unions.ts");
+require("./unions.ts");
 require("./utils.ts");
 require("./compat.ts");
 require("./pagination.ts");

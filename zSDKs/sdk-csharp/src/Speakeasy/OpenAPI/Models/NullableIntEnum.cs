@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Linq;
 
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class NullableIntEnum : IEquatable<NullableIntEnum>, IOpenEnum<long>
+    public partial class NullableIntEnum : IEquatable<NullableIntEnum>, IOpenEnum<long>
     {
         public static readonly NullableIntEnum First = new NullableIntEnum(1);
         public static readonly NullableIntEnum Second = new NullableIntEnum(2);

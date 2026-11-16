@@ -18,7 +18,7 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public interface ITail
+    public partial interface ITail
     {
         /// <summary>
         /// An operation at the group's deepest level.
@@ -34,7 +34,7 @@ namespace Speakeasy.OpenAPI
         public Task<NestedGroupOpResponse> NestedGroupOpAsync(CancellationToken? cancellationToken = null);
     }
 
-    public class Tail : ITail
+    public partial class Tail : ITail
     {
         /// <summary>
         /// SDK Configuration.

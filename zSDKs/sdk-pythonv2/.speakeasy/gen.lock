@@ -17,7 +17,7 @@ features:
     bigint: 1.0.0
     configurableModuleName: 0.2.0
     constsAndDefaults: 1.0.8
-    core: 6.1.13
+    core: 6.1.15
     customCodeRegions: 0.1.2
     customSecuritySchemes: 0.1.0
     decimal: 1.0.0
@@ -59,7 +59,7 @@ features:
     serverIDs: 3.0.0
     stringNumberFormats: 1.0.0
     tests: 1.19.10
-    unions: 3.1.15
+    unions: 3.1.16
     uploadStreams: 1.0.4
     webhooks: 2.0.0
 trackedFiles:
@@ -744,7 +744,7 @@ trackedFiles:
   src/speakeasy/new_openapi/types/__init__.py:
     last_write_checksum: sha1:166eb50af851c4200ed67fe47c64b1d58b99ed72
   src/speakeasy/new_openapi/types/base64fileinput.py:
-    last_write_checksum: sha1:1522687ae3398374c35710cad993a6e82b5ab99d
+    last_write_checksum: sha1:94a99b9b1b7ab6d3fd8fb2e52385a50b4a2ff333
   src/speakeasy/new_openapi/types/basemodel.py:
     last_write_checksum: sha1:99c644208e340c4974b94bbe6d52019c80fedb97
   src/speakeasy/new_openapi/types_.py:
@@ -752,7 +752,7 @@ trackedFiles:
   src/speakeasy/new_openapi/utils/__init__.py:
     last_write_checksum: sha1:b9cb5851a618ff388d0c56127f6a7c595aa51978
   src/speakeasy/new_openapi/utils/annotations.py:
-    last_write_checksum: sha1:a4824ad65f730303e4e1e3ec1febf87b4eb46dbc
+    last_write_checksum: sha1:2dd01678125b08184a96e28bb4f3692381bf04cc
   src/speakeasy/new_openapi/utils/datetimes.py:
     last_write_checksum: sha1:8d08dfebf00458efa19e0c19455eddcc9f14b8ca
   src/speakeasy/new_openapi/utils/dynamic_imports.py:
@@ -766,7 +766,7 @@ trackedFiles:
   src/speakeasy/new_openapi/utils/headers.py:
     last_write_checksum: sha1:7c6df233ee006332b566a8afa9ce9a245941d935
   src/speakeasy/new_openapi/utils/logger.py:
-    last_write_checksum: sha1:9bc9d4ed4be2716b533eff592a95665b67fb2c6b
+    last_write_checksum: sha1:e6f4dfeb800af9a54bd14e21a754d79fd7430a8e
   src/speakeasy/new_openapi/utils/metadata.py:
     last_write_checksum: sha1:e703e5cbb5255144aacf86898d1420529afaaff8
   src/speakeasy/new_openapi/utils/queryparams.py:

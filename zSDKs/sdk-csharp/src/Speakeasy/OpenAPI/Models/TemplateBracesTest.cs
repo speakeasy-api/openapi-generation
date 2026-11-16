@@ -19,7 +19,7 @@ namespace Speakeasy.OpenAPI
     /// and 'single quotes' and "double quotes".<br/>
     /// and  \'escaped single quotes\' and \"escaped double quotes\".
     /// </summary>
-    public class TemplateBracesTest
+    public partial class TemplateBracesTest
     {
         /// <summary>
         /// A string with {{ double braces }} and { single braces }<br/>

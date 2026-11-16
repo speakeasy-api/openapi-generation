@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class AnyType
+    public partial class AnyType
     {
         private AnyType(string value)
         {
@@ -85,7 +85,7 @@ namespace Speakeasy.OpenAPI
     }
 
     [JsonConverter(typeof(Any.AnyConverter))]
-    public class Any : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class Any : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public Any(AnyType type)
         {
@@ -133,6 +133,20 @@ namespace Speakeasy.OpenAPI
             res.Str = str;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Any"/>. Equivalent to <c>CreateSimpleObject(value)</c>.
+        /// A null value converts to a null reference.
+        /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static implicit operator Any?(SimpleObject? value) => value is null ? null : CreateSimpleObject(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Any"/>. Equivalent to <c>CreateStr(value)</c>.
+        /// A null value converts to a null reference.
+        /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static implicit operator Any?(string? value) => value is null ? null : CreateStr(value);
 
         public class AnyConverter : JsonConverter
         {

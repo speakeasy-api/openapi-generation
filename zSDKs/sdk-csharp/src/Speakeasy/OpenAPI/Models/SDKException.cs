@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// Default API Exception.
     /// </summary>
-    public class SDKException : SDKBaseException
+    public partial class SDKException : SDKBaseException
     {
         /// <summary>
         /// Default API exception.

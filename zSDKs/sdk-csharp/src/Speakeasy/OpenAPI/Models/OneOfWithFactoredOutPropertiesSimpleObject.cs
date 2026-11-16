@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class OneOfWithFactoredOutPropertiesSimpleObject
+    public partial class OneOfWithFactoredOutPropertiesSimpleObject
     {
         /// <summary>
         /// A string property.

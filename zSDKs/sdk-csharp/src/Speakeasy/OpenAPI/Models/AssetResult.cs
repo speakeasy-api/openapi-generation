@@ -19,7 +19,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// The result of a render request.
     /// </summary>
-    public class AssetResult
+    public partial class AssetResult
     {
         [JsonProperty("id", Required = Newtonsoft.Json.Required.DisallowNull)]
         public string? Id { get; set; }

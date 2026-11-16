@@ -13,7 +13,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Bar;
     using Speakeasy.OpenAPI.Utils;
 
-    public class CreateNamespaceConflictResponse
+    public partial class CreateNamespaceConflictResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

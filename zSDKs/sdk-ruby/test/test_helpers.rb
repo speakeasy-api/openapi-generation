@@ -32,7 +32,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("authenticate")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         security: Components::Security.new(
           option4: Components::SecurityOption4.new(
             app_id: "app-speakeasy-123",
@@ -50,7 +50,7 @@ module OpenApiSDK
       refute_nil(login_res.object.token)
       refute_empty(login_res.object.token)
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         security: Components::Security.new(
           user_pass_auth: Components::UserPassAuth.new(
             username: "<USERNAME>",
@@ -95,7 +95,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("userSetup")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)
@@ -151,7 +151,7 @@ module OpenApiSDK
       test_http_client = create_test_http_client("userTeardown")
 
       s = ::OpenApiSDK::SDK.new(
-        server_url: ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
+        server_url: ::ENV.fetch("TEST_SERVER_URL", "http://localhost:18080"),
         client: test_http_client
       )
       refute_nil(s)

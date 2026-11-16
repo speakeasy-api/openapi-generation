@@ -27,7 +27,7 @@ module OpenApiSDK
         def initialize(engine_type:, wheels: 4)
           @engine_type = engine_type
           unless wheels == 4
-            raise ArgumentError, "Invalid value for wheels"
+            raise ::ArgumentError, "Invalid value for wheels"
           end
 
           @wheels = 4

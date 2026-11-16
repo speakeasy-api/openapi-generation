@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class VariantRecordType
+    public partial class VariantRecordType
     {
         private VariantRecordType(string value)
         {
@@ -79,7 +79,7 @@ namespace Speakeasy.OpenAPI
     /// A discriminated union with $-prefixed keys and x-speakeasy-discriminator overrides.
     /// </summary>
     [JsonConverter(typeof(VariantRecord.VariantRecordConverter))]
-    public class VariantRecord
+    public partial class VariantRecord
     {
         public VariantRecord(VariantRecordType type)
         {
@@ -115,6 +115,22 @@ namespace Speakeasy.OpenAPI
             res.ImageRecord = dollarImage;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="VariantRecord"/>. Equivalent to <c>CreateDollarText(value)</c>.
+        /// Like the factory, this sets the discriminator property on the passed instance.
+        /// A null value converts to a null reference.
+        /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static implicit operator VariantRecord?(TextRecord? value) => value is null ? null : CreateDollarText(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="VariantRecord"/>. Equivalent to <c>CreateDollarImage(value)</c>.
+        /// Like the factory, this sets the discriminator property on the passed instance.
+        /// A null value converts to a null reference.
+        /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static implicit operator VariantRecord?(ImageRecord? value) => value is null ? null : CreateDollarImage(value);
 
         public class VariantRecordConverter : JsonConverter
         {

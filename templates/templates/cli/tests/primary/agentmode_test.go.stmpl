@@ -566,7 +566,7 @@ func TestPreRequestDiscriminatedRootUnionMessages(t *testing.T) {
 		resetAgentMode(t)
 		h := NewCLITestHarness(t)
 		err := h.RunRaw([]string{
-			"--agent-mode", "request-bodies", "body-variant-overloads-discriminated", "-v", "1",
+			"--agent-mode", "unions", "body-variant-overloads-discriminated", "-v", "1",
 		})
 		assertPreRequestValidationEnvelope(t, h, err, "the request body is missing or selects no variant", "")
 		envelope := agentEnvelope(t, h.GetStderr())
@@ -578,7 +578,7 @@ func TestPreRequestDiscriminatedRootUnionMessages(t *testing.T) {
 		resetAgentMode(t)
 		h := NewCLITestHarness(t)
 		err := h.RunRaw([]string{
-			"--agent-mode", "request-bodies", "body-variant-overloads-discriminated", "-v", "1",
+			"--agent-mode", "unions", "body-variant-overloads-discriminated", "-v", "1",
 			"--discriminated-variant-body.model.model", "m",
 		})
 		assertPreRequestValidationEnvelope(t, h, err, "missing required flag: --discriminated-variant-body.model.input", "")
@@ -592,7 +592,7 @@ func TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody(t *testin
 	withSilentStdinPipe(t)
 	h := NewCLITestHarness(t)
 	err := h.RunRaw([]string{
-		"--agent-mode", "request-bodies", "body-variant-overloads-discriminated", "-v", "1",
+		"--agent-mode", "unions", "body-variant-overloads-discriminated", "-v", "1",
 	})
 	assertPreRequestValidationEnvelope(t, h, err, "the request body is missing or selects no variant", "")
 	assert.NotContains(t, h.GetStderr(), "stdin body did not reach EOF")

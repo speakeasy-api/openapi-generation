@@ -26,7 +26,7 @@ interface IntentBodyEntry {
   Summary?: string;
   Type?: string; // string | int | float | bool (string when absent)
   Variadic?: boolean; // positional consumes the remaining tokens
-  Required?: boolean; // enforced when the body is built from inputs
+  Required?: boolean; // the bound body key must be present in the final body
   PresetCovered?: boolean; // a preset already satisfies the bound pointer
   DefaultValue?: any; // displayed default (preset, declared, or schema)
   HasDefault?: boolean;
@@ -139,6 +139,9 @@ interface IntentCmdCtx {
   AsyncFailureHint: string;
   StreamMetadataJSON: string;
   OutcomeJSON: string; // terminal-state table carried via cobra annotation ("" = none)
+  ContinuationJSON: string; // continuation recipe carried via cobra annotation ("" = none)
+  ContinuationDefault: boolean;
+  ContinuationMaxHops: number;
   StreamSelect: string; // RFC 6901 pointer of output.stream.select ("" = none)
   StreamToggle: { Name: string; Key: string } | null;
   StreamKind: string; // "sse" | "jsonl" | "" — how the backing operation streams
@@ -205,6 +208,9 @@ interface CLIOperationCtx {
   OperationID: string;
   StreamMetadataJSON: string;
   OutcomeJSON: string;
+  ContinuationJSON: string;
+  ContinuationDefault: boolean;
+  ContinuationMaxHops: number;
   StreamSelect: string;
   Flags: CLIOperationFlagCtx[];
   BodyFlags: string[];
@@ -1000,8 +1006,8 @@ function collectIntentManifest(): IntentManifestCtx {
         new Set([bodyFlag].filter((name) => name !== "")),
       );
     }
-    // A supplied whole body satisfies declared input requirements;
-    // interactive prompting reads it as a body source.
+    // Interactive prompting treats a supplied whole body as the source of
+    // declared inputs.
     for (const flag of flags) {
       flag.SatisfiedBy = Array.from(
         new Set([bodyFlag].filter((name) => name !== "")),
@@ -1360,6 +1366,9 @@ function collectIntentManifest(): IntentManifestCtx {
       StreamSelect: cmd.Output?.Stream?.Pointer || "",
       StreamMetadataJSON: streamMetadataJSON(cmd.Output?.Stream?.Metadata),
       OutcomeJSON: outcomeJSON(cmd.Output?.Outcome),
+      ContinuationJSON: continuationJSON(cmd.Continuation, found.op),
+      ContinuationDefault: cmd.Continuation?.Default ?? false,
+      ContinuationMaxHops: cmd.Continuation?.MaxHops ?? 0,
       StreamToggle:
         !dispatch && intentStreamKind(found.op).kind
           ? intentDefaultOnStreamToggle(flags, presetJSON)
@@ -1413,6 +1422,9 @@ function outcomeJSON(outcome: CLICommandOutcome | null | undefined): string {
     ...(outcome.StreamStatePointer
       ? { streamStatePointer: outcome.StreamStatePointer }
       : {}),
+    ...(outcome.StreamStatePointers?.length && !outcome.StreamStatePointer
+      ? { streamStatePointers: outcome.StreamStatePointers }
+      : {}),
     states,
     ...(outcome.ErrorPointer ? { errorPointer: outcome.ErrorPointer } : {}),
     ...(outcome.StreamErrorPointer
@@ -1423,6 +1435,72 @@ function outcomeJSON(outcome: CLICommandOutcome | null | undefined): string {
       : {}),
   });
 }
+
+// continuationJSON serializes a continuation recipe for the runtime. The
+// linker cannot see pagination, so the paginated-operation conflict is
+// rejected here.
+function continuationJSON(
+  recipe: CLICommandContinuation | null | undefined,
+  op: Operation,
+): string {
+  if (!recipe) {
+    return "";
+  }
+  if (hasPagination(op)) {
+    throw new Error(
+      `x-speakeasy-cli-commands: operation "${op.OriginalID}" is paginated; continuation cannot be combined with pagination in v1`,
+    );
+  }
+  return JSON.stringify({
+    bind: recipe.Bind.map((binding) => ({
+      ...(binding.Pointer ? { pointer: binding.Pointer } : {}),
+      ...(binding.StreamPointers?.length
+        ? { streamPointers: binding.StreamPointers }
+        : {}),
+      to: binding.To,
+      toPath: binding.ToPath,
+      ...(binding.Optional ? { optional: true } : {}),
+      ...(binding.UnlessRequest
+        ? {
+            unlessRequest: {
+              pointer: binding.UnlessRequest.Pointer,
+              equals: binding.UnlessRequest.Equals,
+            },
+          }
+        : {}),
+      ...(binding.Flag ? { flag: binding.Flag } : {}),
+    })),
+    ...(recipe.Merge?.length ? { merge: recipe.Merge } : {}),
+    ...(recipe.Sum?.length ? { sum: recipe.Sum } : {}),
+    maxHops: recipe.MaxHops,
+  });
+}
+
+function hasCliContinuations(): boolean {
+  const manifest = context.Global.AST.CLICommands as any;
+  return Boolean(
+    manifest?.Commands?.some((c: any) => c.Continuation) ||
+      manifest?.Operations?.some((o: any) => o.Continuation),
+  );
+}
+registerTemplateFunc("hasCliContinuations", hasCliContinuations);
+
+// Whether any command or operation entry runs a continuation over op, so the
+// operation's run function needs the hop driver.
+function operationHasContinuation(op: Operation): boolean {
+  const manifest = context.Global.AST.CLICommands as any;
+  const matches = (id: string | undefined) =>
+    id === op.OriginalID || id === op.GetID();
+  return Boolean(
+    manifest?.Commands?.some(
+      (c: any) => c.Continuation && matches(c.Continuation.OperationID),
+    ) ||
+      manifest?.Operations?.some(
+        (o: any) => o.Continuation && matches(o.OperationID),
+      ),
+  );
+}
+registerTemplateFunc("operationHasContinuation", operationHasContinuation);
 
 function streamMetadataJSON(
   fields: CLICommandStreamMetadata[] | null | undefined,
@@ -1486,17 +1564,49 @@ function collectOperationFlagMeta(op: Operation): { flagName: string }[] {
   return flags;
 }
 
+// Declarations are linked to document operationIds only, so a generated
+// content-type variant ID such as CreatePet_multipart must not match: it can
+// equal another operation's operationId.
+function cliOperationMatchesDeclaration(
+  op: Operation,
+  operationID: string,
+): boolean {
+  return operationID === op.OriginalID;
+}
+
 function cliOperationDeclaration(op: Operation): any | null {
   const operations = (context.Global.AST.CLICommands as any)?.Operations || [];
   for (const declared of operations) {
-    if (
-      declared.OperationID === op.OriginalID ||
-      declared.OperationID === op.GetID()
-    ) {
+    if (cliOperationMatchesDeclaration(op, declared.OperationID)) {
       return declared;
     }
   }
   return null;
+}
+
+// cliDeclaredOperations returns every operation a declaration matches:
+// request content-type variants share an OriginalID but render as separate
+// commands with their own flags.
+function cliDeclaredOperations(operationID: string): Operation[] {
+  const operations: Operation[] = [];
+  const walk = (sdk: SDK) => {
+    for (const op of sdk.Operations || []) {
+      if (cliOperationMatchesDeclaration(op, operationID)) operations.push(op);
+    }
+    for (const sub of sdk.SubSDKs || []) walk(sub);
+  };
+  walk(context.Global.AST.MainSDK);
+  return operations;
+}
+
+function declaredOperationMetadataFlagNames(operationID: string): Set<string> {
+  const names = new Set<string>();
+  for (const op of cliDeclaredOperations(operationID)) {
+    for (const name of Array.from(operationMetadataFlagNames(op))) {
+      names.add(name);
+    }
+  }
+  return names;
 }
 
 function operationBodyFlagSurfaces(op: Operation): string[] {
@@ -1560,6 +1670,22 @@ function operationGeneratedFlagNames(op: Operation): Set<string> {
 }
 
 function validateCLIOperationFlagNames(op: Operation, declared: any): void {
+  const metadataFlags = declaredOperationMetadataFlagNames(
+    declared.OperationID,
+  );
+  for (const flagName of declared.PreferShorthand || []) {
+    if (!metadataFlags.has(flagName)) {
+      throw new Error(
+        `x-speakeasy-cli-commands: operation "${declared.OperationID}" preferShorthand "${flagName}" does not match any generated flag on that operation`,
+      );
+    }
+    if (hasPagination(op) && flagName.startsWith("a")) {
+      throw new Error(
+        `x-speakeasy-cli-commands: operation "${declared.OperationID}" preferShorthand "${flagName}" cannot take -a, ` +
+          `which is reserved for the generated pagination flag --all on that operation`,
+      );
+    }
+  }
   const generated = operationGeneratedFlagNames(op);
   for (const flag of declared.Flags || []) {
     if (generated.has(flag.Name)) {
@@ -1588,13 +1714,13 @@ function validateCLIOperationFlagNames(op: Operation, declared: any): void {
 
 function validateCLIOperationDeclarations(manifest: any): void {
   for (const declared of manifest.Operations || []) {
-    const found = findIntentOperation(declared.OperationID);
-    if (!found) {
+    const operations = cliDeclaredOperations(declared.OperationID);
+    if (operations.length === 0) {
       throw new Error(
         `x-speakeasy-cli-commands: operation "${declared.OperationID}" is not part of the generated CLI surface`,
       );
     }
-    validateCLIOperationFlagNames(found.op, declared);
+    for (const op of operations) validateCLIOperationFlagNames(op, declared);
   }
 }
 
@@ -1635,6 +1761,9 @@ function getCLIOperationCtx(op: Operation): CLIOperationCtx | null {
     StreamSelect: declared.Output?.Stream?.Pointer || "",
     StreamMetadataJSON: streamMetadataJSON(declared.Output?.Stream?.Metadata),
     OutcomeJSON: outcomeJSON(declared.Output?.Outcome),
+    ContinuationJSON: continuationJSON(declared.Continuation, op),
+    ContinuationDefault: declared.Continuation?.Default ?? false,
+    ContinuationMaxHops: declared.Continuation?.MaxHops ?? 0,
     Flags: flags,
     BodyFlags: bodyFlags,
     CanonicalBodyFlag: bodyFlags[bodyFlags.length - 1] || "",

@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A policy object with steps.
     /// </summary>
-    public class MCPPolicy
+    public partial class MCPPolicy
     {
         [JsonProperty("policyId", Required = Newtonsoft.Json.Required.Always)]
         public string PolicyId { get; set; } = default!;

@@ -13,7 +13,7 @@ features:
     additionalProperties: 0.1.5
     constsAndDefaults: 0.3.2
     contentMediaTypeApplicationJSON: 0.1.1
-    core: 3.50.4
+    core: 3.50.7
     customCodeRegions: 0.1.1
     customSecuritySchemes: 0.1.2
     deepObjectParams: 0.1.0
@@ -676,7 +676,7 @@ trackedFiles:
   examples/resources/testing_x_wrapped_attribute/resource.tf:
     last_write_checksum: sha1:40d7f3658495fad3dc9e3e2ac5856266268b58b6
   go.mod:
-    last_write_checksum: sha1:63913c24e4c7ff051e77c66626af279020bc4fb6
+    last_write_checksum: sha1:e424ba8d92cab6490ac7c3c713f6baa844fc875b
   internal/planmodifiers/boolplanmodifier/suppress_diff.go:
     last_write_checksum: sha1:3454bf0a277768b5d23ed4f7752666f9752effbb
   internal/planmodifiers/boolplanmodifier/use_config_value.go:
@@ -2410,7 +2410,7 @@ trackedFiles:
   internal/sdk/internal/utils/oauth2_sessions.go:
     last_write_checksum: sha1:c4af99567451b6931fce12b06dca8300d07b79f1
   internal/sdk/internal/utils/pathparams.go:
-    last_write_checksum: sha1:55b50b5e3588991733a706b16867f1977829625e
+    last_write_checksum: sha1:cfacc586df069aac5a741bf2325fd21f0fd2d0f7
   internal/sdk/internal/utils/queryparams.go:
     last_write_checksum: sha1:635a0e08ad5430a0a8e2e95b9ad7e469a3d63f6c
   internal/sdk/internal/utils/requestbody.go:

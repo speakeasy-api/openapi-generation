@@ -8,12 +8,12 @@ require 'stringio'
 module {{sanitizeModuleName .Global.Config.Module}}
   module Utils
     class JsonLStream
-      include Enumerable
+      include ::Enumerable
       {{sorbetTSig}}
 
       MESSAGE_BOUNDARIES = ["}\n", "}\r\n"].freeze
 
-      {{if sorbetEnabled}}sig { params(response: Faraday::Response, decoder: T.proc.params(raw: String).returns(T.untyped), sdk_ref: T.untyped).void }{{end}}
+      {{if sorbetEnabled}}sig { params(response: Faraday::Response, decoder: T.proc.params(raw: ::String).returns(T.untyped), sdk_ref: T.untyped).void }{{end}}
       def initialize(response, decoder, sdk_ref: nil)
         @response = response
         @decoder = decoder
@@ -49,13 +49,13 @@ module {{sanitizeModuleName .Global.Config.Module}}
 
       {{if sorbetEnabled}}sig { params(block: T.proc.params(event: T.untyped).void).void }{{end}}
       def stream_jsonl_events(&block)
-        buffer = {{sorbetLet "String.new(encoding: Encoding::BINARY)" "String"}}
+        buffer = {{sorbetLet "::String.new(encoding: ::Encoding::BINARY)" "::String"}}
         position = 0
         body = @response.env.body
-        body = StringIO.new(body) if body.is_a?(String)
+        body = ::StringIO.new(body) if body.is_a?(::String)
 
         read_chunks(body) do |chunk|
-          chunk = chunk.b unless chunk.encoding == Encoding::BINARY
+          chunk = chunk.b unless chunk.encoding == ::Encoding::BINARY
           buffer << chunk
 
           i = position
@@ -93,7 +93,7 @@ module {{sanitizeModuleName .Global.Config.Module}}
         raise stream_error unless stream_error.nil?
       end
 
-      {{if sorbetEnabled}}sig { params(body: T.untyped, block: T.proc.params(chunk: String).void).void }{{end}}
+      {{if sorbetEnabled}}sig { params(body: T.untyped, block: T.proc.params(chunk: ::String).void).void }{{end}}
       def read_chunks(body, &block)
         if body.respond_to?(:each)
           body.each(&block)
@@ -106,7 +106,7 @@ module {{sanitizeModuleName .Global.Config.Module}}
         end
       end
 
-      {{if sorbetEnabled}}sig { params(buffer: String, pos: Integer).returns(T.nilable(String)) }{{end}}
+      {{if sorbetEnabled}}sig { params(buffer: ::String, pos: ::Integer).returns(T.nilable(::String)) }{{end}}
       def detect_boundary(buffer, pos)
         return nil unless buffer[pos] == '}'
 

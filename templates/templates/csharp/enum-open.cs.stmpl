@@ -10,7 +10,7 @@
     {{- templateComments .Local.Comments 1 "class" false}}
     {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class {{ $className }} : IEquatable<{{ $className }}>, IOpenEnum<{{ $enumType }}>
+    public {{templatePartialModifier}}class {{ $className }} : IEquatable<{{ $className }}>, IOpenEnum<{{ $enumType }}>
     {
         {{- templateOpenEnumKnownValues .Local | indentPresent 8}}
 

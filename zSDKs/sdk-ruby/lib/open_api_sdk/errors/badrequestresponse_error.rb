@@ -6,7 +6,7 @@
 module OpenApiSDK
   module Errors
     # Bad Request
-    class BadRequestResponseError < StandardError
+    class BadRequestResponseError < ::StandardError
       extend T::Sig
       include Crystalline::MetadataFields
 

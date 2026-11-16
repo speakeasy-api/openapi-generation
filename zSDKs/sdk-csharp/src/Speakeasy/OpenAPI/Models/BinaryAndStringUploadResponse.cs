@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class BinaryAndStringUploadResponse
+    public partial class BinaryAndStringUploadResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

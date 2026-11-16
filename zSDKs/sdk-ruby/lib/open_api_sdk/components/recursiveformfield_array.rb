@@ -55,7 +55,7 @@ module OpenApiSDK
         @label = label
         @item_type = item_type
         unless type == "array"
-          raise ArgumentError, "Invalid value for type"
+          raise ::ArgumentError, "Invalid value for type"
         end
 
         @type = "array"

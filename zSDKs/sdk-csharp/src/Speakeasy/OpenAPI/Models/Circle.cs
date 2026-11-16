@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A circle shape.
     /// </summary>
-    public class Circle
+    public partial class Circle
     {
         /// <summary>
         /// Shape type discriminator.

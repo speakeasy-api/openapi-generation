@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Linq;
 
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class Icon : IEquatable<Icon>, IOpenEnum<string>
+    public partial class Icon : IEquatable<Icon>, IOpenEnum<string>
     {
         public static readonly Icon Tick = new Icon("tick");
         public static readonly Icon ThumbsUp = new Icon("thumbs-up");

@@ -21,7 +21,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A subSDK in which all operations are deprecated.
     /// </summary>
-    public interface IObsolete
+    public partial interface IObsolete
     {
         /// <summary>
         /// Deprecated Operation.
@@ -42,7 +42,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A subSDK in which all operations are deprecated.
     /// </summary>
-    public class Obsolete : IObsolete
+    public partial class Obsolete : IObsolete
     {
         /// <summary>
         /// List of server URLs available for the deprecated1 operation.

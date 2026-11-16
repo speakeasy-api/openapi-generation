@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class ClientErrorType
+    public partial class ClientErrorType
     {
         private ClientErrorType(string value)
         {
@@ -88,7 +88,7 @@ namespace Speakeasy.OpenAPI
     /// Something went wrong.
     /// </summary>
     [JsonConverter(typeof(ClientError.ClientErrorConverter))]
-    public class ClientError : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class ClientError : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public ClientError(ClientErrorType type)
         {

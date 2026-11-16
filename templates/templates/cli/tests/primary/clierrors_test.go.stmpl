@@ -39,6 +39,9 @@ func TestCLIErrorAgentModeMatrix(t *testing.T) {
 		wantMsg string
 	}{
 		{name: "malformed --body JSON", args: []string{"--agent-mode", "request-bodies", "request-body-post-flag-defaults-body-merge", "--body", "{"}, wantMsg: "failed to parse --body"},
+		{name: "parent path segment", args: []string{"--agent-mode", "--dry-run", "parameters", "path-encoding", "--param1", "..", "--param2", "valid"}, wantMsg: `path parameter "param1" contains a dot segment`},
+		{name: "current path segment", args: []string{"--agent-mode", "--dry-run", "parameters", "path-encoding", "--param1", ".", "--param2", "valid"}, wantMsg: `path parameter "param1" contains a dot segment`},
+		{name: "reserved parent path segment", args: []string{"--agent-mode", "--dry-run", "parameters", "path-encoding", "--param1", "valid", "--param2", "a/../b"}, wantMsg: `path parameter "param2" contains a dot segment`},
 		{name: "unknown flag", args: []string{"--agent-mode", "errors", "status-get-error", "--no-such-flag"}, wantMsg: "unknown flag"},
 		{name: "unknown command", args: []string{"--agent-mode", "no-such-command"}, wantMsg: "unknown command"},
 		{name: "unknown command, flag after the failing token", args: []string{"no-such-command", "--agent-mode"}, wantMsg: "unknown command"},

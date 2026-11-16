@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A task object with nested policy.
     /// </summary>
-    public class ReviewTask
+    public partial class ReviewTask
     {
         [JsonProperty("id", Required = Newtonsoft.Json.Required.Always)]
         public string Id { get; set; } = default!;

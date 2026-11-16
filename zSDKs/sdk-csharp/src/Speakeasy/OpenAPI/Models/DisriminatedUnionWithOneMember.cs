@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class DisriminatedUnionWithOneMemberType
+    public partial class DisriminatedUnionWithOneMemberType
     {
         private DisriminatedUnionWithOneMemberType(string value)
         {
@@ -67,7 +67,7 @@ namespace Speakeasy.OpenAPI
     }
 
     [JsonConverter(typeof(DisriminatedUnionWithOneMember.DisriminatedUnionWithOneMemberConverter))]
-    public class DisriminatedUnionWithOneMember
+    public partial class DisriminatedUnionWithOneMember
     {
         public DisriminatedUnionWithOneMember(DisriminatedUnionWithOneMemberType type)
         {
@@ -89,6 +89,14 @@ namespace Speakeasy.OpenAPI
             res.ExhaustiveObject = type1;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="DisriminatedUnionWithOneMember"/>. Equivalent to <c>CreateType1(value)</c>.
+        /// Like the factory, this sets the discriminator property on the passed instance.
+        /// A null value converts to a null reference.
+        /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static implicit operator DisriminatedUnionWithOneMember?(ExhaustiveObject? value) => value is null ? null : CreateType1(value);
 
         public class DisriminatedUnionWithOneMemberConverter : JsonConverter
         {

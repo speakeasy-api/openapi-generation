@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A text record.
     /// </summary>
-    public class TextRecord
+    public partial class TextRecord
     {
         /// <summary>
         /// Record type discriminator.

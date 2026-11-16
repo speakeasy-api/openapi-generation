@@ -26,14 +26,20 @@
       "reason": "qs.stringify DoS on null/undefined comma-format array entries with encodeValuesOnly - not reachable as qs is a transitive dep of express/body-parser, which only call qs.parse, never the vulnerable stringify path"
     },
     {
-      "id": "GHSA-frvp-7c67-39w9",
-      "package": "@hono/node-server",
-      "reason": "Path traversal in serve-static on Windows - not reachable as the generated MCP server never uses serveStatic from @hono/node-server. Fix requires a 1.x -> 2.x major bump of the runtime server adapter; revisit when upgrading the hono stack"
-    },
-    {
       "id": "GHSA-g7r4-m6w7-qqqr",
       "package": "esbuild",
-      "reason": "Arbitrary file read via esbuild dev server on Windows - not reachable as esbuild is only invoked for build-time bundling, never in --serve mode. Fix (0.28.1) is outside the ^0.27.0 range required by @gram-ai/functions and wrangler, so it cannot be overridden without violating parent constraints"
+      "reason": "Arbitrary file read via esbuild dev server on Windows - not reachable as esbuild is only invoked for build-time bundling, never in --serve mode. Fix (0.28.1) is outside the ^0.27.0 range required by wrangler, so it cannot be overridden without violating parent constraints"
+    },
+    {
+      "id": "GHSA-mrhx-c7xc-m3w5",
+      "package": "zod",
+      "versions": ["3.25.0", "3.25.28", "3.25.65"],
+      "reason": "Zod array validation memory exhaustion - no patched 3.x release exists and generated TypeScript SDKs keep zod 3 support for compatibility. The zod 4 arm of each range is raised to the patched 4.6.6; the ignore is scoped to the zod 3 lower bounds only"
+    },
+    {
+      "id": "GHSA-22qq-2fwx-7p67",
+      "package": "pylint",
+      "reason": "Pylint stats-cache pickle deserialization - pylint is a development-only lint dependency of generated Python SDKs and never runs against untrusted input in the SDK itself. The fix (4.0.9) is a major bump whose new checks fail generated code; revisit when generated output is made pylint 4 clean"
     },
     {
       "id": "GO-2026-5932",

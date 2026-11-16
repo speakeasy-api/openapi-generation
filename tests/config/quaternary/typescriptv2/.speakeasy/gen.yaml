@@ -13,6 +13,7 @@ typescript:
   inferUnionDiscriminators: true
   version: 0.0.1
   author: Speakeasy
+  envVarPrefix: QUATERNARY
   clientServerStatusCodesAsErrors: true
   flattenGlobalSecurity: true
   compileCommand: ["pnpm", "install"]

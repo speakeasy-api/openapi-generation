@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class GetDuplicateExportCollisionResponseBody
+    public partial class GetDuplicateExportCollisionResponseBody
     {
         [JsonProperty("result", Required = Newtonsoft.Json.Required.DisallowNull)]
         public string? Result { get; set; }

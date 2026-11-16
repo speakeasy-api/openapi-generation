@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A number field.
     /// </summary>
-    public class RecursiveFormFieldNumber
+    public partial class RecursiveFormFieldNumber
     {
         [JsonProperty("type", Required = Newtonsoft.Json.Required.Always)]
         public string Type { get; } = "number";

@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Linq;
 
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class Enum : IEquatable<Enum>, IOpenEnum<string>
+    public partial class Enum : IEquatable<Enum>, IOpenEnum<string>
     {
         public static readonly Enum First = new Enum("First");
         public static readonly Enum Second = new Enum("Second");

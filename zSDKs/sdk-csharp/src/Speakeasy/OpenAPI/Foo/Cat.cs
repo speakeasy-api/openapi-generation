@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI.Foo
     /// <summary>
     /// A cat in the foo namespace.
     /// </summary>
-    public class Cat
+    public partial class Cat
     {
         [JsonProperty("animalType", Required = Newtonsoft.Json.Required.Always)]
         public CatAnimalType AnimalType { get; set; } = default!;

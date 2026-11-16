@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class GetEmptyObjectErrorResponseBody
+    public partial class GetEmptyObjectErrorResponseBody
     {
         [JsonProperty("success", Required = Newtonsoft.Json.Required.Always)]
         public bool Success { get; set; } = default!;

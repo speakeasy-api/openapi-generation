@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class GetNamespaceConflictResponse
+    public partial class GetNamespaceConflictResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

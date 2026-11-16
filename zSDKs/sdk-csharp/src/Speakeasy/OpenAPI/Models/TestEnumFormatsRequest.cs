@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class TestEnumFormatsRequest
+    public partial class TestEnumFormatsRequest
     {
         /// <summary>
         /// String enum with x-speakeasy-enums as array (full coverage).

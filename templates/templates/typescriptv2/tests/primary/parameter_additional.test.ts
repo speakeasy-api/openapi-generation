@@ -1,7 +1,10 @@
 import { createDeepObject, createSimpleObject } from "./primary_helpers.js";
 import { expect, test } from "vitest";
 
+import { SDKCore } from "../core.js";
+import { parametersPathEncoding } from "../funcs/parametersPathEncoding.js";
 import { SDK } from "../index.js";
+import { InvalidRequestError } from "../sdk/models/errors/httpclienterrors.js";
 import {
   recordTest,
   HTTPBIN_URL,
@@ -203,6 +206,31 @@ test("Test Path Encoding Structural Characters", async () => {
       "/abc%20123%3A%2F%3F%23%5B%5D%40!%24%26'()*%2B%2C%3B%3D" +
       "/abc%20123:/?",
   );
+});
+
+test("Test Path Dot Segment Rejection", async () => {
+  const log: RequestLogEntry[] = [];
+  const httpClient = newRequestRecorderClient(log);
+
+  const result = await parametersPathEncoding(
+    new SDKCore({ serverURL: HTTPBIN_URL, httpClient }),
+    "..",
+    "value",
+  );
+  expect(result.ok).toBe(false);
+  if (!result.ok) {
+    expect(result.error).toBeInstanceOf(InvalidRequestError);
+    expect(result.error.message).toBe(
+      "Parameter 'param1' must not form a '.' or '..' path segment",
+    );
+  }
+
+  const sdk = new SDK({ serverURL: HTTPBIN_URL, httpClient });
+  await expect(sdk.parameters.pathEncoding("value", "a/../b")).rejects.toThrow(
+    InvalidRequestError,
+  );
+
+  expect(log).toHaveLength(0);
 });
 
 test("Test Query Encoding", async () => {

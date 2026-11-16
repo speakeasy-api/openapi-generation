@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class Deprecated1Response
+    public partial class Deprecated1Response
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

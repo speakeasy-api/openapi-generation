@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class ParenthesesInPathAllowedResponse
+    public partial class ParenthesesInPathAllowedResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

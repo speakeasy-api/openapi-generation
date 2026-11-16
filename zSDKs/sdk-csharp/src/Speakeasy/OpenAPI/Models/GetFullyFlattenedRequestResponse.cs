@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class GetFullyFlattenedRequestResponse
+    public partial class GetFullyFlattenedRequestResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

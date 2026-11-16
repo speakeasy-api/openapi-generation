@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class Boole
+    public partial class Boole
     {
         [JsonProperty("bool", Required = Newtonsoft.Json.Required.DisallowNull)]
         public bool? Bool { get; set; }

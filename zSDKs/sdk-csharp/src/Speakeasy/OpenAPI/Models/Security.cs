@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class Security
+    public partial class Security
     {
         [SpeakeasyMetadata("security:option=true")]
         public UserPassAuth? UserPassAuth { get; set; }

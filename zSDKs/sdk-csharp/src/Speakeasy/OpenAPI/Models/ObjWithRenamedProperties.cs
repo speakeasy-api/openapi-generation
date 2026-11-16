@@ -13,7 +13,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Baz;
     using Speakeasy.OpenAPI.Utils;
 
-    public class ObjWithRenamedProperties
+    public partial class ObjWithRenamedProperties
     {
         [JsonProperty("direct", Required = Newtonsoft.Json.Required.DisallowNull)]
         public Boole? Direct { get; set; }

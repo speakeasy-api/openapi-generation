@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Linq;
 
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class Gender : IEquatable<Gender>, IOpenEnum<string>
+    public partial class Gender : IEquatable<Gender>, IOpenEnum<string>
     {
         public static readonly Gender Male = new Gender("male");
         public static readonly Gender Female = new Gender("female");

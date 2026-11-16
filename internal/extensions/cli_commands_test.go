@@ -2201,6 +2201,7 @@ commands:
       CLI_ASYNC_TIMEOUT: async timeout
       CLI_ASYNC_UNKNOWN_STATE: async unknown state
       CLI_OUTCOME_FAILED: outcome failed
+      CLI_CONTINUATION_LIMIT: continuation limit
 `)
 	require.NoError(t, err)
 	require.Len(t, manifest.Commands, 1)
@@ -3681,10 +3682,13 @@ operations:
   CreateTask:
     flags:
       stream: {to: $.stream, defaultFrom: schema}
+    preferShorthand: [prompt]
+  CreateNote:
+    preferShorthand: [title, body-text]
 	`)
 	require.NoError(t, err)
 	assert.Empty(t, warnings)
-	require.Len(t, manifest.Operations, 2)
+	require.Len(t, manifest.Operations, 3)
 
 	streamTask := manifest.Operations[0]
 	assert.Equal(t, "StreamTask", streamTask.OperationID)
@@ -3695,10 +3699,19 @@ operations:
 	assert.Equal(t, "bool", streamTask.Flags[0].Type)
 	assert.Equal(t, true, streamTask.Flags[0].Default)
 
+	assert.Empty(t, streamTask.PreferShorthand)
+
 	createTask := manifest.Operations[1]
 	assert.True(t, createTask.BodyRequired)
 	require.Len(t, createTask.Flags, 1)
 	assert.Equal(t, true, createTask.Flags[0].Default)
+	assert.Equal(t, []string{"prompt"}, createTask.PreferShorthand)
+
+	createNote := manifest.Operations[2]
+	assert.Equal(t, "CreateNote", createNote.OperationID)
+	assert.Nil(t, createNote.Output)
+	assert.Empty(t, createNote.Flags)
+	assert.Equal(t, []string{"title", "body-text"}, createNote.PreferShorthand)
 }
 
 func TestCLICommands_OperationDeclarationsAreStrict(t *testing.T) {
@@ -3764,6 +3777,61 @@ operations:
     flags:
       engine: {to: $.engine}
 `, `property is absent from request body variant`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask: {}
+`, `operation "CreateTask" must declare output, flags, preferShorthand, or continuation`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: []
+`, `operation "CreateTask" preferShorthand must be a non-empty list of generated flag names`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: prompt
+`, `operation "CreateTask" preferShorthand must be a non-empty list of generated flag names`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [nested.flag]
+`, `operation "CreateTask" preferShorthand "nested.flag" must be a top-level kebab-case flag name`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [Prompt]
+`, `operation "CreateTask" preferShorthand "Prompt" must be a top-level kebab-case flag name`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [prompt, prompt]
+`, `operation "CreateTask" preferShorthand lists "prompt" more than once`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [output-mode]
+`, `operation "CreateTask" preferShorthand "output-mode" cannot take -o, which is reserved for --output-format`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [prompt, priority]
+`, `operation "CreateTask" preferShorthand "prompt" and "priority" both start with "p"`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateTask:
+    preferShorthand: [stream]
+    flags:
+      sync: {to: $.stream, shorthand: s}
+`, `operation "CreateTask" flag "sync" shorthand -s collides with preferShorthand "stream"`)
 }
 
 // --- Variant selectors (partial-body preset merge) -------------------------
@@ -5479,6 +5547,8 @@ func TestCLICommands_OutcomeDecodeAndLink(t *testing.T) {
 	assert.Empty(t, follow.StatePointer)
 	assert.Equal(t, "$.data.reason", follow.StreamStateFrom)
 	assert.Equal(t, "/data/reason", follow.StreamStatePointer)
+	assert.Equal(t, []string{"$.data.reason"}, follow.StreamStateFroms)
+	assert.Equal(t, []string{"/data/reason"}, follow.StreamStatePointers)
 	assert.Equal(t, "/data/error", follow.StreamErrorPointer)
 	assert.Equal(t, "message", follow.ErrorMessageField)
 	assert.Equal(t, "/data/delta/text", manifest.Commands[1].Output.Stream.Pointer)
@@ -5508,6 +5578,17 @@ func TestCLICommands_AsyncNullableState(t *testing.T) {
 	require.Len(t, manifest.Commands, 1)
 	require.NotNil(t, manifest.Commands[0].Async)
 	assert.Equal(t, "/status", manifest.Commands[0].Async.StatePointer)
+}
+
+func TestCLICommands_OutcomeStreamStatePointerList(t *testing.T) {
+	manifest := strings.Replace(validOutcomeManifest, "streamStatePointer: $.data.reason", "streamStatePointer: [$.data.reason]", 1)
+	decoded, _, err := decodeCLITest(t, manifest)
+	require.NoError(t, err)
+	outcome := decoded.Commands[1].Output.Outcome
+	assert.Equal(t, []string{"$.data.reason"}, outcome.StreamStateFroms)
+	assert.Equal(t, []string{"/data/reason"}, outcome.StreamStatePointers)
+	assert.Equal(t, "$.data.reason", outcome.StreamStateFrom)
+	assert.Equal(t, "/data/reason", outcome.StreamStatePointer)
 }
 
 func TestCLICommands_OutcomeErrors(t *testing.T) {
@@ -5726,6 +5807,543 @@ func TestCLICommands_OutcomeStreamStateAllOfIntersectsEnums(t *testing.T) {
 			assert.Contains(t, err.Error(), `output.outcome.states classifies "canceled", which is not an enum member at $.data.reason in operation "StreamTask" (did you mean "cancelled"?)`)
 		})
 	}
+}
+
+const cliContinuationTestSpec = `openapi: 3.1.0
+info:
+  title: Widget Service
+  version: 1.0.0
+paths:
+  /widgets/compose:
+    post:
+      operationId: ComposeWidget
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComposeRequest'
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Widget'
+  /widgets/compose/stream:
+    post:
+      operationId: StreamWidget
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComposeRequest'
+      responses:
+        "200":
+          description: events
+          content:
+            text/event-stream:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/WidgetEvent'
+  /widgets/{id}:
+    get:
+      operationId: GetWidget
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Widget'
+components:
+  schemas:
+    ComposeRequest:
+      type: object
+      properties:
+        prompt:
+          type: string
+        resumeToken:
+          type: string
+        previousId:
+          type: string
+        budget:
+          type: integer
+        options:
+          type: object
+          properties:
+            cursor:
+              type: string
+      required: [prompt]
+    WidgetStatus:
+      type: string
+      enum: [in_progress, more_required, budget_reached, completed, failed]
+    Widget:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          $ref: '#/components/schemas/WidgetStatus'
+        resumeToken:
+          type: string
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+        usage:
+          type: object
+          properties:
+            inputUnits:
+              type: integer
+            outputUnits:
+              type: integer
+    WidgetEvent:
+      type: object
+      properties:
+        event_type:
+          type: string
+        resumeToken:
+          type: string
+        delta:
+          type: object
+          properties:
+            text:
+              type: string
+        widget:
+          $ref: '#/components/schemas/Widget'
+`
+
+const validContinuationManifest = `
+version: 1
+commands:
+  compose:
+    op: ComposeWidget
+    args:
+      prompt: {to: $.prompt, variadic: true}
+    flags:
+      resume-token: {to: $.resumeToken}
+      previous-id: {to: $.previousId}
+  watch:
+    op: StreamWidget
+    args:
+      prompt: {to: $.prompt, variadic: true}
+    output:
+      stream:
+        select: $.data.delta.text
+      outcome:
+        streamStatePointer: $.data.widget.status
+        states: {in_progress: pending, more_required: continue, budget_reached: success, completed: success, failed: failure}
+    continuation:
+      bind:
+        - streamFrom: [$.data.resumeToken, $.data.widget.resumeToken]
+          to: $.resumeToken
+        - streamFrom: $.data.widget.id
+          to: $.previousId
+          optional: true
+      maxHops: 4
+      default: false
+operations:
+  ComposeWidget:
+    output:
+      outcome:
+        statePointer: $.status
+        states: {in_progress: pending, more_required: continue, budget_reached: success, completed: success, failed: failure}
+    continuation:
+      bind:
+        - from: $.resumeToken
+          to: $.resumeToken
+        - from: $.id
+          to: $.previousId
+          optional: true
+      merge: $.steps
+      sum: [$.usage.inputUnits, $.usage.outputUnits]
+`
+
+func TestCLICommands_ContinuationDecodeAndLink(t *testing.T) {
+	manifest, warnings, err := decodeCLIWithSpec(t, cliContinuationTestSpec, validContinuationManifest)
+	require.NoError(t, err)
+	assert.Empty(t, warnings)
+	require.Len(t, manifest.Operations, 1)
+	require.Len(t, manifest.Commands, 2)
+
+	op := manifest.Operations[0].Continuation
+	require.NotNil(t, op)
+	assert.Equal(t, "ComposeWidget", op.OperationID)
+	assert.Equal(t, 32, op.MaxHops)
+	assert.True(t, op.Default)
+	assert.Equal(t, []string{"/steps"}, op.Merge)
+	assert.Equal(t, []string{"/usage/inputUnits", "/usage/outputUnits"}, op.Sum)
+	require.Len(t, op.Bind, 2)
+	assert.Equal(t, CLICommandContinuationBinding{From: "$.resumeToken", Pointer: "/resumeToken", To: "$.resumeToken", ToPointer: "/resumeToken", ToPath: []string{"resumeToken"}}, op.Bind[0])
+	assert.True(t, op.Bind[1].Optional)
+	assert.Empty(t, op.Bind[1].Flag, "the operation entry declares no flags")
+
+	compose := manifest.Commands[0].Continuation
+	require.NotNil(t, compose, "a single-route intent inherits its operation entry's recipe")
+	assert.Equal(t, "resume-token", compose.Bind[0].Flag)
+	assert.Equal(t, "previous-id", compose.Bind[1].Flag)
+	assert.NotSame(t, &op.Bind[0], &compose.Bind[0])
+
+	watch := manifest.Commands[1].Continuation
+	require.NotNil(t, watch)
+	assert.Equal(t, 4, watch.MaxHops)
+	assert.False(t, watch.Default)
+	assert.Equal(t, []string{"/data/resumeToken", "/data/widget/resumeToken"}, watch.Bind[0].StreamPointers)
+	assert.Equal(t, []string{"/data/widget/id"}, watch.Bind[1].StreamPointers)
+}
+
+func TestCLICommands_ContinuationOnSameOperationDispatch(t *testing.T) {
+	spec := strings.Replace(cliContinuationTestSpec,
+		"    ComposeRequest:\n      type: object\n      properties:\n        prompt:\n          type: string\n        resumeToken:\n          type: string\n        previousId:\n          type: string\n        budget:\n          type: integer\n        options:\n          type: object\n          properties:\n            cursor:\n              type: string\n      required: [prompt]\n",
+		"    ComposeRequest:\n      oneOf:\n        - $ref: '#/components/schemas/ComposeAlpha'\n        - $ref: '#/components/schemas/ComposeBeta'\n    ComposeAlpha:\n      type: object\n      required: [alpha, prompt]\n      properties:\n        alpha: {type: string}\n        prompt: {type: string}\n        resumeToken: {type: string}\n        previousId: {type: string}\n    ComposeBeta:\n      type: object\n      required: [beta, prompt]\n      properties:\n        beta: {type: string}\n        prompt: {type: string}\n        resumeToken: {type: string}\n        previousId: {type: string}\n", 1)
+	require.NotEqual(t, cliContinuationTestSpec, spec)
+	manifest := `
+version: 1
+commands:
+  compose:
+    routes:
+      alpha:
+        op: ComposeWidget#ComposeAlpha
+        selector: alpha
+      beta:
+        op: ComposeWidget#ComposeBeta
+        selector: beta
+    args:
+      prompt: {to: $.prompt, variadic: true}
+    flags:
+      alpha: {to: $.alpha}
+      beta: {to: $.beta}
+operations:
+  ComposeWidget:
+    output:
+      outcome:
+        statePointer: $.status
+        states: {in_progress: pending, more_required: continue, budget_reached: success, completed: success, failed: failure}
+    continuation:
+      bind:
+        - from: $.resumeToken
+          to: $.resumeToken
+`
+	decoded, _, err := decodeCLIWithSpec(t, spec, manifest)
+	require.NoError(t, err)
+	require.Len(t, decoded.Commands, 1)
+	cmd := decoded.Commands[0]
+	require.Len(t, cmd.Source.Routes, 2)
+	require.NotNil(t, cmd.Output)
+	require.NotNil(t, cmd.Output.Outcome)
+	require.NotNil(t, cmd.Continuation)
+	assert.Equal(t, "ComposeWidget", cmd.Continuation.OperationID)
+}
+
+func TestCLICommands_OutcomeStreamStatePointersCombineEnums(t *testing.T) {
+	spec := strings.Replace(cliContinuationTestSpec, "        event_type:\n          type: string\n", "        event_type:\n          type: string\n        phase:\n          type: string\n          enum: [queued]\n", 1)
+	require.NotEqual(t, cliContinuationTestSpec, spec)
+	manifest := strings.Replace(validContinuationManifest, "streamStatePointer: $.data.widget.status", "streamStatePointer: [$.data.phase, $.data.widget.status]", 1)
+	manifest = strings.Replace(manifest, "        states: {in_progress: pending", "        states: {queued: pending, in_progress: pending", 1)
+	_, _, err := decodeCLIWithSpec(t, spec, manifest)
+	require.NoError(t, err)
+	_, _, err = decodeCLIWithSpec(t, spec, strings.Replace(manifest, "queued: pending, ", "", 1))
+	require.ErrorContains(t, err, `does not classify enum member "queued"`)
+	_, _, err = decodeCLIWithSpec(t, spec, strings.Replace(manifest, "queued: pending, ", "typo: pending, queued: pending, ", 1))
+	require.ErrorContains(t, err, `classifies "typo", which is not an enum member`)
+}
+
+func TestCLICommands_ContinuationUnlessRequest(t *testing.T) {
+	spec := strings.Replace(cliContinuationTestSpec, "        prompt:\n          type: string\n", "        prompt:\n          type: string\n        stream:\n          type: boolean\n", 1)
+	require.NotEqual(t, cliContinuationTestSpec, spec)
+	manifest := strings.Replace(validContinuationManifest,
+		"        - from: $.resumeToken\n          to: $.resumeToken\n",
+		"        - from: $.resumeToken\n          to: $.resumeToken\n          unlessRequest: {path: $.stream, equals: false}\n", 1)
+	decoded, _, err := decodeCLIWithSpec(t, spec, manifest)
+	require.NoError(t, err)
+	condition := decoded.Operations[0].Continuation.Bind[0].UnlessRequest
+	require.NotNil(t, condition)
+	assert.Equal(t, "$.stream", condition.Path)
+	assert.Equal(t, "/stream", condition.Pointer)
+	assert.Equal(t, false, condition.Equals)
+	assert.True(t, condition.equalsPresent)
+
+	for _, property := range []string{"type: [boolean, \"null\"]", "anyOf: [{type: boolean}, {type: \"null\"}]"} {
+		nullable := strings.Replace(spec, "type: boolean", property, 1)
+		_, _, err := decodeCLIWithSpec(t, nullable, manifest)
+		require.NoError(t, err)
+	}
+	_, _, err = decodeCLIWithSpec(t, spec, strings.Replace(manifest, "equals: false", "equals: null", 1))
+	require.NoError(t, err)
+
+	for _, number := range []string{"9007199254740993", "-9007199254740993", ".inf", ".nan"} {
+		_, _, err := decodeCLIWithSpec(t, spec, strings.Replace(manifest, "equals: false", "equals: "+number, 1))
+		require.ErrorContains(t, err, "numbers must be finite")
+	}
+
+	missingEquals := strings.Replace(manifest, ", equals: false", "", 1)
+	_, _, err = decodeCLIWithSpec(t, spec, missingEquals)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "requires equals")
+
+	missingPath := strings.Replace(manifest, "path: $.stream", "path: $.unknown", 1)
+	_, _, err = decodeCLIWithSpec(t, spec, missingPath)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `continuation.bind.unlessRequest.path $.unknown is absent from request body variant 1 of operation "ComposeWidget"`)
+}
+
+func TestCLICommands_ContinuationAsyncCreateDoesNotBlockOperationRecipe(t *testing.T) {
+	manifest := strings.Replace(validContinuationManifest, "  watch:\n",
+		"  start:\n    op: ComposeWidget\n    async:\n      op: GetWidget\n      id: {from: $.id, to: {in: path, name: id}}\n      statePointer: $.status\n      states: {in_progress: pending, more_required: pending, budget_reached: success, completed: success, failed: failure}\n      interval: 1s\n      maxInterval: 1s\n      timeout: 1m\n  watch:\n", 1)
+	decoded, _, err := decodeCLIWithSpec(t, cliContinuationTestSpec, manifest)
+	require.NoError(t, err)
+	start := decoded.Commands[1]
+	require.NotNil(t, start.Async)
+	assert.Nil(t, start.Continuation)
+	assert.Nil(t, start.Output)
+}
+
+func TestCLICommands_ContinuationNestedTarget(t *testing.T) {
+	manifest, _, err := decodeCLIWithSpec(t, cliContinuationTestSpec, strings.Replace(validContinuationManifest, "        - from: $.resumeToken\n          to: $.resumeToken\n", "        - from: $.resumeToken\n          to: $.options.cursor\n", 1))
+	require.NoError(t, err)
+	assert.Equal(t, []string{"options", "cursor"}, manifest.Operations[0].Continuation.Bind[0].ToPath)
+	assert.Equal(t, "/options/cursor", manifest.Operations[0].Continuation.Bind[0].ToPointer)
+}
+
+func TestCLICommands_ContinuationErrors(t *testing.T) {
+	base := validContinuationManifest
+	opOutcome := "    output:\n      outcome:\n        statePointer: $.status\n        states: {in_progress: pending, more_required: continue, budget_reached: success, completed: success, failed: failure}\n"
+	for _, tc := range []struct {
+		name     string
+		manifest string
+		want     string
+	}{
+		{"unknown key", strings.Replace(base, "      maxHops: 4\n", "      maxHops: 4\n      hops: 2\n", 1), `continuation has unknown key "hops"`},
+		{"unknown bind key", strings.Replace(base, "          to: $.previousId\n          optional: true\n      maxHops", "          to: $.previousId\n          required: false\n      maxHops", 1), `continuation.bind has unknown key "required"`},
+		{"missing bind", strings.Replace(base, "      bind:\n        - from: $.resumeToken\n          to: $.resumeToken\n        - from: $.id\n          to: $.previousId\n          optional: true\n", "", 1), "continuation requires bind"},
+		{"only optional", strings.Replace(base, "        - from: $.resumeToken\n          to: $.resumeToken\n", "        - from: $.resumeToken\n          to: $.resumeToken\n          optional: true\n", 1), "at least one binding that is not optional"},
+		{"duplicate target", strings.Replace(base, "          to: $.previousId\n          optional: true\n      merge", "          to: $.resumeToken\n          optional: true\n      merge", 1), "writes $.resumeToken more than once"},
+		{"missing to", strings.Replace(base, "        - from: $.resumeToken\n          to: $.resumeToken\n", "        - from: $.resumeToken\n", 1), "requires to (the request-body path"},
+		{"missing from", strings.Replace(base, "        - from: $.resumeToken\n          to: $.resumeToken\n", "        - to: $.resumeToken\n", 1), "requires from (JSON response) or streamFrom"},
+		{"indexed to", strings.Replace(base, "          to: $.resumeToken\n        - from: $.id", "          to: $.options[0]\n        - from: $.id", 1), "must name object properties only"},
+		{"zero hops", strings.Replace(base, "maxHops: 4", "maxHops: 0", 1), "continuation.maxHops must be at least 1"},
+		{"hops not an int", strings.Replace(base, "maxHops: 4", "maxHops: many", 1), "continuation.maxHops must be an integer"},
+		{"no outcome", strings.Replace(base, opOutcome, "", 1), "declares continuation but no output.outcome"},
+		{"no continue state", strings.Replace(base, "states: {in_progress: pending, more_required: continue, budget_reached: success, completed: success, failed: failure}\n    continuation", "states: {in_progress: pending, more_required: success, budget_reached: success, completed: success, failed: failure}\n    continuation", 1), "classify at least one state as continue"},
+		{"from not a string", strings.Replace(base, "        - from: $.resumeToken\n", "        - from: $.steps\n", 1), "selected value must be a string"},
+		{"from on stream op", strings.Replace(base, "        - streamFrom: [$.data.resumeToken, $.data.widget.resumeToken]\n", "        - from: $.resumeToken\n", 1), "has no application/json 2xx response; use streamFrom"},
+		{"streamFrom misses", strings.Replace(base, "streamFrom: $.data.widget.id", "streamFrom: $.data.widget.ident", 1), "does not resolve in any event shape"},
+		{"to absent", strings.Replace(base, "        - from: $.resumeToken\n          to: $.resumeToken\n", "        - from: $.resumeToken\n          to: $.resumeTokn\n", 1), `property "resumeTokn" is absent from request body variant`},
+		{"to not a string", strings.Replace(base, "        - from: $.resumeToken\n          to: $.resumeToken\n", "        - from: $.resumeToken\n          to: $.budget\n", 1), "must name a string property"},
+		{"merge not an array", strings.Replace(base, "merge: $.steps", "merge: $.id", 1), "continuation.merge $.id in operation \"ComposeWidget\" response 200 must select an array"},
+		{"sum not a number", strings.Replace(base, "sum: [$.usage.inputUnits, $.usage.outputUnits]", "sum: [$.id]", 1), "must select a number"},
+		{"indexed merge", strings.Replace(base, "merge: $.steps", "merge: $.steps[0].parts", 1), "continuation.merge $.steps[0].parts must name object properties only"},
+		{"indexed sum", strings.Replace(base, "sum: [$.usage.inputUnits, $.usage.outputUnits]", "sum: [$.usage.inputUnits, \"$.steps[0].units\"]", 1), "continuation.sum $.steps[0].units must name object properties only"},
+		{"merge on stream op", strings.Replace(base, "      maxHops: 4\n", "      maxHops: 4\n      merge: $.data.widget.steps\n", 1), "apply to application/json responses"},
+		{"bad classification", strings.Replace(base, "more_required: continue, budget_reached: success, completed: success, failed: failure}\n    continuation", "more_required: resume, budget_reached: success, completed: success, failed: failure}\n    continuation", 1), `has unsupported classification "resume"`},
+		{"reserved flag", strings.Replace(base, "      previous-id: {to: $.previousId}\n", "      previous-id: {to: $.previousId}\n      auto-continue: {to: $.prompt}\n", 1), "auto-continue"},
+		{"async and continuation", strings.Replace(base, "  watch:\n    op: StreamWidget\n", "  watch:\n    op: StreamWidget\n    async:\n      op: GetWidget\n      id: {from: $.id, to: {in: path, name: id}}\n      statePointer: $.status\n      states: {completed: success}\n", 1), "declares both async and output.stream"},
+		{"planned command", "version: 1\ncommands:\n  later:\n    planned: later\n    continuation:\n      bind: [{from: $.id, to: $.previousId}]\n", "planned command and cannot declare continuation"},
+		{"command continue state without recipe", strings.Replace(base, "    continuation:\n      bind:\n        - streamFrom: [$.data.resumeToken, $.data.widget.resumeToken]\n          to: $.resumeToken\n        - streamFrom: $.data.widget.id\n          to: $.previousId\n          optional: true\n      maxHops: 4\n      default: false\n", "", 1), `command "watch" classifies output.outcome state "more_required" as continue but declares no continuation recipe`},
+		{"operation continue state without recipe", "version: 1\noperations:\n  GetWidget:\n    output:\n      outcome:\n        statePointer: $.status\n        states: {in_progress: pending, more_required: continue, budget_reached: success, completed: success, failed: failure}\n", `operation "GetWidget" classifies output.outcome state "more_required" as continue but declares no continuation recipe`},
+		{"operation continue state with recipe only on the intent", "version: 1\ncommands:\n  compose:\n    op: ComposeWidget\n    args:\n      prompt: {to: $.prompt, variadic: true}\n    flags:\n      resume-token: {to: $.resumeToken}\n    continuation:\n      bind:\n        - from: $.resumeToken\n          to: $.resumeToken\noperations:\n  ComposeWidget:\n" + opOutcome, `operation "ComposeWidget" classifies output.outcome state "more_required" as continue but declares no continuation recipe; an operation entry's outcome also applies to the generated operation command`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := decodeCLIWithSpec(t, cliContinuationTestSpec, tc.manifest)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.want)
+		})
+	}
+}
+
+func TestCLICommands_ContinuationTargetSharedByUnionMembers(t *testing.T) {
+	spec := strings.Replace(cliContinuationTestSpec, `    ComposeRequest:
+      type: object
+      properties:
+        prompt:
+          type: string
+        resumeToken:
+          type: string
+        previousId:
+          type: string
+        budget:
+          type: integer
+        options:
+          type: object
+          properties:
+            cursor:
+              type: string
+      required: [prompt]
+`, `    ComposeRequest:
+      type: object
+      properties:
+        resumeToken:
+          type: string
+      oneOf:
+        - $ref: '#/components/schemas/ComposeText'
+        - $ref: '#/components/schemas/ComposeImage'
+    ComposeText:
+      type: object
+      properties:
+        prompt:
+          type: string
+    ComposeImage:
+      type: object
+      properties:
+        image:
+          type: string
+`, 1)
+	require.NotEqual(t, cliContinuationTestSpec, spec)
+	manifest, _, err := decodeCLIWithSpec(t, spec, `
+version: 1
+operations:
+  ComposeWidget:
+    output:
+      outcome:
+        statePointer: $.status
+        states: {in_progress: pending, more_required: continue, budget_reached: success, completed: success, failed: failure}
+    continuation:
+      bind:
+        - from: $.resumeToken
+          to: $.resumeToken
+`)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"resumeToken"}, manifest.Operations[0].Continuation.Bind[0].ToPath)
+}
+
+func TestCLICommands_ContinuationTargetSchemas(t *testing.T) {
+	manifest := `
+version: 1
+operations:
+  ComposeWidget:
+    output:
+      outcome:
+        statePointer: $.status
+        states: {in_progress: pending, more_required: continue, budget_reached: success, completed: success, failed: failure}
+    continuation:
+      bind:
+        - from: $.resumeToken
+          to: $.options.cursor
+`
+	for _, tc := range []struct {
+		name    string
+		options string
+		wantErr string
+	}{
+		{"nullable type list", `
+        options:
+          type: object
+          properties:
+            cursor:
+              type: [string, "null"]
+`, ""},
+		{"nullable anyOf", `
+        options:
+          type: object
+          properties:
+            cursor:
+              anyOf:
+                - type: string
+                - type: "null"
+`, ""},
+		{"readOnly arm of a nullable union", `
+        options:
+          type: object
+          properties:
+            cursor:
+              anyOf:
+                - type: string
+                  readOnly: true
+                - type: "null"
+`, `names readOnly property "cursor"`},
+		{"string or integer union", `
+        options:
+          type: object
+          properties:
+            cursor:
+              anyOf:
+                - type: string
+                - type: integer
+`, "must name a string property"},
+		{"nested object union", `
+        options:
+          oneOf:
+            - type: object
+              properties:
+                cursor: {type: string}
+                mode: {type: string, const: fast}
+            - type: object
+              properties:
+                cursor: {type: string}
+                depth: {type: integer}
+            - type: "null"
+`, ""},
+		{"nested union member without the target", `
+        options:
+          oneOf:
+            - type: object
+              properties:
+                cursor: {type: string}
+            - type: object
+              properties:
+                depth: {type: integer}
+`, `property "cursor" is absent from request body variant`},
+		{"nested union member with a non-string target", `
+        options:
+          oneOf:
+            - type: object
+              properties:
+                cursor: {type: string}
+            - type: object
+              properties:
+                cursor: {type: integer}
+`, "must name a string property"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			spec := strings.Replace(cliContinuationTestSpec, `
+        options:
+          type: object
+          properties:
+            cursor:
+              type: string
+`, tc.options, 1)
+			require.NotEqual(t, cliContinuationTestSpec, spec)
+			decoded, _, err := decodeCLIWithSpec(t, spec, manifest)
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, []string{"options", "cursor"}, decoded.Operations[0].Continuation.Bind[0].ToPath)
+		})
+	}
+}
+
+func TestCLICommands_ContinuationAsyncStatesRejectContinue(t *testing.T) {
+	_, _, err := decodeCLIWithSpec(t, cliContinuationTestSpec, `
+version: 1
+commands:
+  start:
+    op: ComposeWidget
+    async:
+      op: GetWidget
+      id: {from: $.id, to: {in: path, name: id}}
+      statePointer: $.status
+      states: {in_progress: pending, more_required: continue, budget_reached: success, completed: success, failed: failure}
+      interval: 1s
+      maxInterval: 1s
+      timeout: 1m
+`)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `async.states["more_required"] has unsupported classification "continue"`)
 }
 
 func TestCLICommands_FlagImplies(t *testing.T) {

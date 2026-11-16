@@ -864,6 +864,11 @@ function isReferenceType(typeDef: TypeDef): boolean {
 registerTemplateFunc("isReferenceType", isReferenceType);
 
 // @ts-ignore
+function isValueType(typeDef: TypeDef): boolean {
+  return !canTypeBeNull(typeDef) && !typeDef.Enum?.Open;
+}
+
+// @ts-ignore
 function sanitizePackageId(name: string): string {
   if (!context.Global.Config.DisableNamespacePascalCasingApr2024) {
     return name

@@ -692,7 +692,7 @@ function templateFileToByteArrayValue(
     filePath = `.speakeasy/testfiles/${filePath}`;
   }
 
-  return `File.binread('${filePath}')`;
+  return `${rubyConstantRef("File", additionalContext)}.binread('${filePath}')`;
 }
 
 // @ts-ignore
@@ -706,5 +706,5 @@ function templateFileToStringValue(
     filePath = `.speakeasy/testfiles/${filePath}`;
   }
 
-  return `File.read("${filePath}")`;
+  return `${rubyConstantRef("File", additionalContext)}.read("${filePath}")`;
 }
