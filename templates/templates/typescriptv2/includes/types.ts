@@ -83,6 +83,12 @@ function callImportTypesFunc(func: () => string): string {
 
 registerTemplateFunc("callImportTypesFunc", callImportTypesFunc);
 
+type PatternConstraint = {
+  pattern: string;
+  message?: string;
+  maxLength?: number;
+};
+
 function toOutbound(options: {
   usageLocation: string;
   typeDef: TypeDef;
@@ -91,6 +97,7 @@ function toOutbound(options: {
   defaultValue?: unknown;
   visited: Set<string>;
   optional: boolean;
+  patternConstraint?: PatternConstraint;
 }): ResolvedTypes {
   const {
     usageLocation,
@@ -100,6 +107,7 @@ function toOutbound(options: {
     defaultValue,
     visited,
     optional,
+    patternConstraint,
   } = options;
 
   const rootModel = rootTypeDef.ResolvedModel;
@@ -429,6 +437,30 @@ function toOutbound(options: {
       }
 
       let zod = z.string();
+      if (patternConstraint) {
+        const { pattern, message, maxLength } = patternConstraint;
+        const literal = (s: string) =>
+          JSON.stringify(s).replaceAll("{{", `{{"{{"}}`);
+        const errorMessage = message || `Value must match pattern ${pattern}`;
+        if (maxLength !== undefined) {
+          zod = z.refine(
+            zod,
+            `withinMaxLength$(${maxLength})`,
+            `{ message: ${literal(
+              `Value must be at most ${maxLength} characters long`,
+            )} }`,
+          );
+        }
+        const patternArgs =
+          maxLength === undefined
+            ? literal(pattern)
+            : `${literal(pattern)}, ${maxLength}`;
+        zod = z.refine(
+          zod,
+          `matchesPattern$(${patternArgs})`,
+          `{ message: ${literal(errorMessage)} }`,
+        );
+      }
       if (defaultValue != null) {
         const dv = quote(String(defaultValue)).replaceAll("{{", `{{"{{"}}`);
         zod = z.default(zod, dv);
@@ -440,7 +472,23 @@ function toOutbound(options: {
         outputType: "string",
         importOutputTypes: () => "",
         zod,
-        importZodTypes: () => addZodPackageImport(),
+        importZodTypes: () => {
+          if (patternConstraint) {
+            addInternalImport(
+              "primitives",
+              "matchesPattern as matchesPattern$",
+              usageLocation,
+            );
+            if (patternConstraint.maxLength !== undefined) {
+              addInternalImport(
+                "primitives",
+                "withinMaxLength as withinMaxLength$",
+                usageLocation,
+              );
+            }
+          }
+          return addZodPackageImport();
+        },
       };
     }
     case "date": {
@@ -1000,6 +1048,7 @@ function resolveOutbound(options: {
   visited?: Set<string>;
   constValue?: AnyValue;
   defaultValue?: AnyValue;
+  patternConstraint?: PatternConstraint;
 }): ResolvedTypes {
   const {
     usageLocation,
@@ -1011,6 +1060,7 @@ function resolveOutbound(options: {
     visited,
     constValue,
     defaultValue,
+    patternConstraint,
   } = options;
 
   if (usageLocation == null) {
@@ -1043,6 +1093,7 @@ function resolveOutbound(options: {
     defaultValue: defaultValue?.Value,
     visited: visited || new Set(),
     optional,
+    patternConstraint,
   });
 
   if (streamable) {
@@ -1118,6 +1169,65 @@ function resolveOutbound(options: {
 }
 
 registerTemplateFunc("resolveOutbound", resolveOutbound);
+
+const patternConstrainedParamTypes = new Set([
+  "pathParam",
+  "queryParam",
+  "header",
+]);
+
+// Object parameter properties also carry a param annotation, and their model
+// can be shared with request bodies, so only the operation's own request model
+// is constrained.
+function requestParamPatternConstraint(
+  field: FieldDef,
+  rootTypeDef: TypeDef,
+): PatternConstraint | undefined {
+  if (
+    isNoZod() ||
+    field.Type.Type.toString() !== "string" ||
+    !rootTypeDef.IsRequest()
+  ) {
+    return undefined;
+  }
+  const ann = field.Annotations.Get("param");
+  if (
+    ann == null ||
+    !isParamAnnotation(ann) ||
+    !patternConstrainedParamTypes.has(ann.ParamType)
+  ) {
+    return undefined;
+  }
+  const pattern = portableStringPattern(field.Type);
+  if (!pattern) {
+    return undefined;
+  }
+  // Pointer-valued in the AST: coerce through Number and skip when unset.
+  const rawMaxLength = field.Type.Validations?.MaxLength;
+  const maxLengthValue = rawMaxLength == null ? NaN : Number(rawMaxLength);
+  const maxLength =
+    Number.isInteger(maxLengthValue) && maxLengthValue >= 0
+      ? maxLengthValue
+      : undefined;
+  // zod v3 runs refinements on defaults, so a default that violates its own
+  // constraints would fail every call that omits the parameter.
+  const defaultValue = field.Default?.Value;
+  if (defaultValue != null) {
+    const value = String(defaultValue);
+    if (
+      (maxLength !== undefined && [...value].length > maxLength) ||
+      !new RegExp(pattern, "u").test(value)
+    ) {
+      return undefined;
+    }
+  }
+  const message = field.Type.Extensions?.PatternErrorMessage;
+  return {
+    pattern,
+    message: message ? String(message) : undefined,
+    maxLength,
+  };
+}
 
 function toInbound(options: {
   usageLocation: string;
