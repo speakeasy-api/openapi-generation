@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.961.2] - 2026-11-16
+### :bug: Bug Fixes
+- [`ed9b064`](https://github.com/speakeasy-api/openapi-generation/commit/ed9b064a6e4960a85358c290bc75f4d82d5420d4) - **go**: fall back on empty error messages and prefix inferred messages with the error code ([#215](https://github.com/speakeasy-api/openapi-generation/pull/215)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.961.1] - 2026-11-12
 ### :bug: Bug Fixes
 - [`3aebe65`](https://github.com/speakeasy-api/openapi-generation/commit/3aebe651c0c9646c98949da762f267ad91969162) - **go,cli,mockserver,terraform**: bump staticcheck to v0.8.2 for Go 1.27.2 ([#214](https://github.com/speakeasy-api/openapi-generation/pull/214)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
@@ -21007,3 +21012,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.960.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.8...v2.960.9
 [v2.961.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.9...v2.961.0
 [v2.961.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.961.0...v2.961.1
+[v2.961.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.961.1...v2.961.2
