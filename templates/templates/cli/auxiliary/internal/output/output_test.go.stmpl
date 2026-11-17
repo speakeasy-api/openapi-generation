@@ -2,15 +2,19 @@ package output
 
 import (
 	"bytes"
-	{{- if or hasCliAsyncIntents anyOperationHasPagination}}
+	{{- if or hasCliAsyncIntents anyOperationHasPagination (and hasCliContinuations hasCliArtifacts)}}
 	"context"
 	{{- end}}
 	"encoding/json"
 	"errors"
 	"fmt"
-	{{- if or hasCliAsyncIntents anyOperationHasPagination}}
+	{{- if or hasCliAsyncIntents anyOperationHasPagination hasCliContinuations}}
 	"io"
 	"net/http"
+	{{- end}}
+	{{- if and hasCliContinuations hasCliArtifacts}}
+	"net/http/httptest"
+	"path/filepath"
 	{{- end}}
 	"reflect"
 	"strings"
@@ -1524,6 +1528,144 @@ func TestContinuationOptionalOnlyHopFallsBack(t *testing.T) {
 		t.Fatal("the last checkpoint must stay resumable")
 	}
 }
+
+func TestContinuationRepeatedTokenDropKeepsIssuingOwner(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		frame map[string]interface{}
+	}{
+		{"echoed token without an id", map[string]interface{}{"data": map[string]interface{}{"status": "in_progress", "token": "t1"}}},
+		{"echoed token with a new id", map[string]interface{}{"data": map[string]interface{}{"status": "in_progress", "token": "t1", "id": "i2"}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request := map[string]interface{}{"prompt": "hi"}
+			run := &continuationRun{
+				cfg: &continuationConfig{Bind: []continuationBinding{
+					{StreamPointers: []string{"/data/token"}, To: "$.token", ToPath: []string{"token"}},
+					{StreamPointers: []string{"/data/id"}, To: "$.previous", ToPath: []string{"previous"}, Optional: true},
+				}},
+				outcome:    &outcomeConfig{StreamStatePointers: []string{"/data/status"}, States: map[string]string{"in_progress": "pending", "more": "continue"}},
+				request:    &request,
+				auto:       true,
+				limit:      3,
+				hops:       1,
+				values:     map[string]string{},
+				sentValues: map[string]string{},
+			}
+			run.capture(map[string]interface{}{"data": map[string]interface{}{"status": "more", "token": "t1", "id": "i1"}}, true)
+			if more, err := run.advance(); !more || err != nil {
+				t.Fatalf("advance = %v, %v", more, err)
+			}
+			run.hops = 2
+			run.beginHop()
+			run.capture(tc.frame, true)
+
+			var wrapped *continuationError
+			if !errors.As(run.wrap(errors.New("stream dropped")), &wrapped) {
+				t.Fatal("expected a continuation error")
+			}
+			want := map[string]interface{}{"$.token": "t1", "$.previous": "i1"}
+			if got := wrapped.MachineErrorFields()["continuation"]; !reflect.DeepEqual(got, want) {
+				t.Fatalf("continuation = %#v, want %#v", got, want)
+			}
+		})
+	}
+}
+
+func TestMergedContinuationResultKeepsResponseMetadata(t *testing.T) {
+	apiRequest, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8080/v1/widgets", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	apiRequest.Header.Set("Authorization", "Bearer secret")
+	lastResponse := &http.Response{
+		Status:     "201 Created",
+		StatusCode: http.StatusCreated,
+		Proto:      "HTTP/1.1",
+		Header:     http.Header{"X-Request-Id": []string{"r1"}},
+		Body:       io.NopCloser(strings.NewReader(`{"id":"i1"}`)),
+		Request:    apiRequest,
+	}
+	last := &continuationResultEnvelope{HTTPMeta: continuationHTTPMeta{Response: lastResponse}}
+	merged := map[string]interface{}{"id": "i1", "ids": []interface{}{"i1"}}
+
+	got := extractHTTPResponse(mergedContinuationResult(last, merged))
+	if got == nil || got == lastResponse {
+		t.Fatalf("expected a fresh response, got %#v", got)
+	}
+	if got.Request != apiRequest || got.StatusCode != http.StatusCreated || got.Status != "201 Created" || got.Proto != "HTTP/1.1" {
+		t.Fatalf("response metadata was dropped: %#v", got)
+	}
+	if got.Header.Get("X-Request-Id") != "r1" {
+		t.Fatalf("headers = %#v", got.Header)
+	}
+	got.Header.Set("X-Request-Id", "changed")
+	if lastResponse.Header.Get("X-Request-Id") != "r1" {
+		t.Fatal("the merged response must not share headers with the last hop")
+	}
+	body, err := io.ReadAll(got.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(body) != `{"id":"i1","ids":["i1"]}` || got.ContentLength != int64(len(body)) {
+		t.Fatalf("body = %s, content length %d", body, got.ContentLength)
+	}
+}
+{{- if hasCliArtifacts}}
+
+func TestContinuationResultCombinedArtifactDownloadsFromAPIOrigin(t *testing.T) {
+	ResetAgentMode()
+	ResetPreparsedRendering()
+	var authorization string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authorization = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "image/png")
+		_, _ = w.Write([]byte("png"))
+	}))
+	t.Cleanup(server.Close)
+
+	recipe, _ := json.Marshal(continuationConfig{
+		Bind:    []continuationBinding{ {Pointer: "/token", To: "$.token", ToPath: []string{"token"}}},
+		Collect: []continuationCollect{ {To: "/ids", From: []string{"/id"}}},
+	})
+	outcome, _ := json.Marshal(outcomeConfig{StatePointer: "/status", States: map[string]string{"completed": "success", "more": "continue"}})
+	artifact, _ := json.Marshal(artifactConfig{Pointer: []artifactSegment{ {Field: "outputs"}, {Wild: true}}, Kind: "image", DefaultPath: "asset.png"})
+	var stdout, stderr bytes.Buffer
+	cmd := &cobra.Command{Use: "image", Annotations: map[string]string{
+		continuationAnnotation: string(recipe),
+		outcomeAnnotation:      string(outcome),
+		artifactAnnotation:     string(artifact),
+	}}
+	cmd.SetContext(context.Background())
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.Flags().Bool("auto-continue", true, "")
+	cmd.Flags().String("out", filepath.Join(t.TempDir(), "asset.png"), "")
+	cmd.Flags().String("output-format", "pretty", "")
+
+	request := map[string]interface{}{"prompt": "hi"}
+	hop := func() (interface{}, error) {
+		apiRequest, err := http.NewRequest(http.MethodPost, server.URL+"/v1/widgets", nil)
+		if err != nil {
+			return nil, err
+		}
+		apiRequest.Header.Set("Authorization", "Bearer secret")
+		raw := `{"status":"completed","id":"i1","outputs":[{"type":"image","uri":"` + server.URL + `/asset.png"}]}`
+		return &continuationResultEnvelope{HTTPMeta: continuationHTTPMeta{Response: &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body:       io.NopCloser(strings.NewReader(raw)),
+			Request:    apiRequest,
+		}}}, nil
+	}
+	if err := ContinuationResult(cmd, &request, hop); err != nil {
+		t.Fatalf("ContinuationResult: %v (stderr %q)", err, stderr.String())
+	}
+	if authorization != "Bearer secret" {
+		t.Fatalf("the same-origin download must carry the API credentials, got %q", authorization)
+	}
+}
+{{- end}}
 
 func TestContinuationResumeHintNamesOmittedFields(t *testing.T) {
 	newRun := func(body map[string]interface{}) *continuationRun {
