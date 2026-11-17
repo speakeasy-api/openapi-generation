@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.964.0] - 2026-11-17
+### :bee: New Features
+- [`ed4e013`](https://github.com/speakeasy-api/openapi-generation/commit/ed4e013347bc8c8b12d80f21fdeaf0b4c9c34555) - **cli**: add continuation primitives for omitted fields, request-shape skips, stalled tokens, and combined results ([#218](https://github.com/speakeasy-api/openapi-generation/pull/218)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.963.0] - 2026-11-17
 ### :bee: New Features
 - [`dc4cf10`](https://github.com/speakeasy-api/openapi-generation/commit/dc4cf1011bbe36bb7c6ae731db2bec140a02fa44) - **typescript**: defer schema construction and add lazy Node entry point ([#210](https://github.com/speakeasy-api/openapi-generation/pull/210)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21031,3 +21036,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.961.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.961.2...v2.961.3
 [v2.962.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.961.3...v2.962.0
 [v2.963.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.962.0...v2.963.0
+[v2.964.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.963.0...v2.964.0
