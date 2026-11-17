@@ -390,7 +390,7 @@ func (r *continuationRun) resumeValues() map[string]string {
 	if r.outcome.States[r.state] == "success" || r.outcome.States[r.state] == "handoff" {
 		return nil
 	}
-	if r.outcome.States[r.state] == "failure" || !r.hasCompleteRequiredBindings(r.values) {
+	if r.outcome.States[r.state] == "failure" || len(r.values) == 0 || !r.hasCompleteRequiredBindings(r.values) {
 		if r.fallbackValid {
 			return r.fallback
 		}
