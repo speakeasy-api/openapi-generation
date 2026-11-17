@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.964.3] - 2026-11-17
+### :bug: Bug Fixes
+- [`b02a2d1`](https://github.com/speakeasy-api/openapi-generation/commit/b02a2d192cd24f550cd53eeeafcd2b530a750bf1) - **typescript**: compile MCP server when the document defines no servers ([#216](https://github.com/speakeasy-api/openapi-generation/pull/216)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.964.2] - 2026-11-17
 ### :bug: Bug Fixes
 - [`12a3f8e`](https://github.com/speakeasy-api/openapi-generation/commit/12a3f8efbc0a626638928c68fb897c06541791e1) - **cli**: quote the installer's temporary directory in the EXIT trap ([#217](https://github.com/speakeasy-api/openapi-generation/pull/217)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -21049,3 +21054,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.964.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.963.0...v2.964.0
 [v2.964.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.964.0...v2.964.1
 [v2.964.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.964.1...v2.964.2
+[v2.964.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.964.2...v2.964.3
