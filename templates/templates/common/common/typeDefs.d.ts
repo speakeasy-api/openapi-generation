@@ -2435,7 +2435,45 @@ declare global {
   type CLICommandContinuationRequestCondition = {
     Path: string;
     Pointer: string;
+    Operator: "equals" | "exists";
     Equals: string | number | boolean | null;
+    Exists?: boolean;
+  };
+
+  type CLICommandContinuationOmit = {
+    Path: string;
+    Pointer: string;
+    PathSegments: string[];
+    UnlessRequest?: CLICommandContinuationRequestCondition | null;
+  };
+
+  type CLICommandContinuationMergeDrop = {
+    Path: string;
+    Pointer: string;
+    Field: string;
+    Equals: string | number | boolean | null;
+  };
+
+  type CLICommandContinuationKeepFirst = {
+    Path: string;
+    Pointer: string;
+    Fallback?: string;
+    FallbackPointer?: string;
+  };
+
+  type CLICommandContinuationCollect = {
+    To: string;
+    ToPointer: string;
+    From: string[];
+    FromPointers: string[];
+    Unique: boolean;
+  };
+
+  type CLICommandContinuationSumBy = {
+    Path: string;
+    Pointer: string;
+    Key: string;
+    Value: string;
   };
 
   type CLICommandContinuationBinding = {
@@ -2448,15 +2486,22 @@ declare global {
     ToPath: string[];
     Optional?: boolean;
     UnlessRequest?: CLICommandContinuationRequestCondition | null;
+    StreamAuthoritativeWhen?: CLICommandContinuationRequestCondition | null;
     Flag?: string;
   };
 
   type CLICommandContinuation = {
     Bind: CLICommandContinuationBinding[];
+    Omit?: CLICommandContinuationOmit[] | null;
+    UnlessRequest?: CLICommandContinuationRequestCondition[] | null;
     MergeFrom?: string[];
     Merge?: string[];
+    MergeDropLeadingWhere?: CLICommandContinuationMergeDrop[] | null;
     SumFrom?: string[];
     Sum?: string[];
+    KeepFirst?: CLICommandContinuationKeepFirst[] | null;
+    Collect?: CLICommandContinuationCollect[] | null;
+    SumBy?: CLICommandContinuationSumBy[] | null;
     MaxHops: number;
     Default: boolean;
     OperationID?: string;

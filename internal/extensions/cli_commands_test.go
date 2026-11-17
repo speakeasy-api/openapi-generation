@@ -6096,7 +6096,251 @@ func TestCLICommands_ContinuationUnlessRequest(t *testing.T) {
 	missingPath := strings.Replace(manifest, "path: $.stream", "path: $.unknown", 1)
 	_, _, err = decodeCLIWithSpec(t, spec, missingPath)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `continuation.bind.unlessRequest.path $.unknown is absent from request body variant 1 of operation "ComposeWidget"`)
+	assert.Contains(t, err.Error(), `continuation.bind.unlessRequest.path $.unknown is absent from every request body variant of operation "ComposeWidget"`)
+}
+
+const cliTaskTestSpec = `openapi: 3.1.0
+info:
+  title: Task Service
+  version: 1.0.0
+paths:
+  /tasks:
+    post:
+      operationId: StartTask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/EngineTask'
+                - $ref: '#/components/schemas/RunnerTask'
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/TaskEvent'
+components:
+  schemas:
+    EngineTask:
+      type: object
+      required: [engine]
+      properties:
+        engine: {type: string}
+        prompt: {type: string}
+        persist: {type: boolean}
+        detached: {type: boolean}
+        previous_id: {type: string}
+        resume_token: {type: string}
+    RunnerTask:
+      type: object
+      required: [runner, prompt]
+      properties:
+        runner: {type: string}
+        runner_options:
+          type: object
+          properties:
+            depth: {type: integer}
+        prompt: {type: string}
+        persist: {type: boolean}
+        detached: {type: boolean}
+        previous_id: {type: string}
+        resume_token: {type: string}
+    Task:
+      type: object
+      required: [id, status]
+      properties:
+        id: {type: string}
+        status:
+          type: string
+          enum: [in_progress, needs_more, completed, failed]
+        resume_token: {type: string}
+        previous_id: {type: string}
+        run_ids:
+          type: array
+          items: {type: string}
+        started_at: {type: string}
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              type: {type: string}
+              text: {type: string}
+        usage:
+          type: object
+          properties:
+            units: {type: integer}
+            first_units: {type: integer}
+            units_by_kind:
+              type: array
+              items:
+                type: object
+                properties:
+                  kind: {type: string}
+                  count: {type: integer}
+    TaskEvent:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            event_type: {type: string}
+            resume_token: {type: string}
+            task:
+              $ref: '#/components/schemas/Task'
+`
+
+const validTaskManifest = `
+version: 1
+operations:
+  StartTask:
+    output:
+      outcome:
+        statePointer: $.status
+        streamStatePointer: $.data.task.status
+        states: {in_progress: pending, needs_more: continue, completed: success, failed: failure}
+    continuation:
+      unlessRequest:
+        - {path: $.detached, equals: true}
+        - {path: $.runner, exists: true}
+      bind:
+        - from: $.resume_token
+          streamFrom: [$.data.resume_token, $.data.task.resume_token]
+          streamAuthoritativeWhen: {path: $.data.event_type, equals: task.done}
+          to: $.resume_token
+        - from: $.id
+          streamFrom: $.data.task.id
+          to: $.previous_id
+          optional: true
+          unlessRequest: {path: $.persist, equals: false}
+      omit:
+        - path: $.prompt
+          unlessRequest: {path: $.persist, equals: false}
+      merge:
+        - path: $.steps
+          dropLeadingWhere: {field: type, equals: prompt_echo}
+      keepFirst:
+        - $.previous_id
+        - $.started_at
+        - path: $.usage.first_units
+          fallback: $.usage.units
+      collect:
+        - to: $.run_ids
+          from: [$.run_ids, $.id]
+      sum: [$.usage.units]
+      sumBy:
+        - {path: $.usage.units_by_kind, key: kind, value: count}
+`
+
+func TestCLICommands_ContinuationTaskPrimitives(t *testing.T) {
+	manifest, _, err := decodeCLIWithSpec(t, cliTaskTestSpec, validTaskManifest)
+	require.NoError(t, err)
+	recipe := manifest.Operations[0].Continuation
+	require.NotNil(t, recipe)
+
+	require.Len(t, recipe.UnlessRequest, 2)
+	assert.Equal(t, "equals", recipe.UnlessRequest[0].Operator)
+	assert.Equal(t, true, recipe.UnlessRequest[0].Equals)
+	assert.Equal(t, "exists", recipe.UnlessRequest[1].Operator)
+	assert.True(t, recipe.UnlessRequest[1].Exists)
+	assert.Equal(t, "/runner", recipe.UnlessRequest[1].Pointer)
+
+	authoritative := recipe.Bind[0].StreamAuthoritativeWhen
+	require.NotNil(t, authoritative)
+	assert.Equal(t, "/data/event_type", authoritative.Pointer)
+	assert.Equal(t, "task.done", authoritative.Equals)
+
+	require.Len(t, recipe.Omit, 1)
+	assert.Equal(t, CLICommandContinuationOmit{
+		Path: "$.prompt", Pointer: "/prompt", PathSegments: []string{"prompt"},
+		UnlessRequest: &CLICommandContinuationRequestCondition{Path: "$.persist", Pointer: "/persist", Operator: "equals", Equals: false, equalsPresent: true},
+	}, recipe.Omit[0])
+
+	assert.Equal(t, []string{"/steps"}, recipe.Merge)
+	require.Len(t, recipe.MergeDropLeadingWhere, 1)
+	assert.Equal(t, "/steps", recipe.MergeDropLeadingWhere[0].Pointer)
+	assert.Equal(t, "type", recipe.MergeDropLeadingWhere[0].Field)
+	assert.Equal(t, "prompt_echo", recipe.MergeDropLeadingWhere[0].Equals)
+
+	assert.Equal(t, []CLICommandContinuationKeepFirst{
+		{Path: "$.previous_id", Pointer: "/previous_id"},
+		{Path: "$.started_at", Pointer: "/started_at"},
+		{Path: "$.usage.first_units", Pointer: "/usage/first_units", Fallback: "$.usage.units", FallbackPointer: "/usage/units"},
+	}, recipe.KeepFirst)
+	assert.Equal(t, []CLICommandContinuationCollect{{
+		To: "$.run_ids", ToPointer: "/run_ids",
+		From: []string{"$.run_ids", "$.id"}, FromPointers: []string{"/run_ids", "/id"}, Unique: true,
+	}}, recipe.Collect)
+	assert.Equal(t, []CLICommandContinuationSumBy{{Path: "$.usage.units_by_kind", Pointer: "/usage/units_by_kind", Key: "kind", Value: "count"}}, recipe.SumBy)
+
+	omitReachesRunner := strings.Replace(validTaskManifest, "      unlessRequest:\n        - {path: $.detached, equals: true}\n        - {path: $.runner, exists: true}\n", "      unlessRequest: {path: $.detached, equals: true}\n", 1)
+	_, _, err = decodeCLIWithSpec(t, cliTaskTestSpec, omitReachesRunner)
+	require.ErrorContains(t, err, `continuation.omit $.prompt names property "prompt", which request body variant RunnerTask of operation "StartTask" requires`)
+
+	nullableRunner := strings.Replace(cliTaskTestSpec, "        runner: {type: string}\n", "        runner: {type: [string, \"null\"]}\n", 1)
+	require.NotEqual(t, cliTaskTestSpec, nullableRunner)
+	_, _, err = decodeCLIWithSpec(t, nullableRunner, validTaskManifest)
+	require.ErrorContains(t, err, `continuation.omit $.prompt names property "prompt", which request body variant RunnerTask`)
+
+	unique := strings.Replace(validTaskManifest, "          from: [$.run_ids, $.id]\n", "          from: [$.run_ids, $.id]\n          unique: false\n", 1)
+	decoded, _, err := decodeCLIWithSpec(t, cliTaskTestSpec, unique)
+	require.NoError(t, err)
+	assert.False(t, decoded.Operations[0].Continuation.Collect[0].Unique)
+
+	exists := strings.Replace(validTaskManifest, "{path: $.detached, equals: true}", "{path: $.runner_options, exists: false}", 1)
+	_, _, err = decodeCLIWithSpec(t, cliTaskTestSpec, exists)
+	require.NoError(t, err, "exists accepts a non-scalar property")
+}
+
+func TestCLICommands_ContinuationTaskErrors(t *testing.T) {
+	base := validTaskManifest
+	for _, tc := range []struct {
+		name     string
+		manifest string
+		want     string
+	}{
+		{"omit collides with bind", strings.Replace(base, "        - path: $.prompt\n", "        - path: $.resume_token\n", 1), "continuation.omit $.resume_token is also a continuation.bind target"},
+		{"omit array index", strings.Replace(base, "        - path: $.prompt\n", "        - path: $.prompt[0]\n", 1), "continuation.omit.path $.prompt[0] must name object properties only"},
+		{"omit duplicate", strings.Replace(base, "      omit:\n", "      omit:\n        - $.prompt\n", 1), "continuation.omit lists $.prompt more than once"},
+		{"omit unknown", strings.Replace(base, "        - path: $.prompt\n", "        - path: $.nope\n", 1), "continuation.omit $.nope is absent from every request body variant"},
+		{"omit unknown key", strings.Replace(base, "        - path: $.prompt\n", "        - path: $.prompt\n          when: always\n", 1), `continuation.omit has unknown key "when"`},
+		{"condition unknown in every variant", strings.Replace(base, "{path: $.runner, exists: true}", "{path: $.nope, exists: true}", 1), "continuation.unlessRequest.path $.nope is absent from every request body variant"},
+		{"condition equals and exists", strings.Replace(base, "{path: $.runner, exists: true}", "{path: $.runner, exists: true, equals: x}", 1), "declares both equals and exists"},
+		{"condition without operator", strings.Replace(base, "{path: $.runner, exists: true}", "{path: $.runner}", 1), "continuation.unlessRequest requires equals or exists"},
+		{"condition exists not a bool", strings.Replace(base, "{path: $.runner, exists: true}", "{path: $.runner, exists: maybe}", 1), "continuation.unlessRequest.exists"},
+		{"condition equals on an object", strings.Replace(base, "{path: $.detached, equals: true}", "{path: $.runner_options, equals: 1}", 1), "continuation.unlessRequest.path $.runner_options must select a scalar property"},
+		{"empty condition list", strings.Replace(base, "      unlessRequest:\n        - {path: $.detached, equals: true}\n        - {path: $.runner, exists: true}\n", "      unlessRequest: []\n", 1), "continuation.unlessRequest must list at least one entry"},
+		{"drop field unknown", strings.Replace(base, "{field: type, equals: prompt_echo}", "{field: role, equals: prompt_echo}", 1), `continuation.merge.dropLeadingWhere.field "role" is not a property of any item of $.steps`},
+		{"drop without equals", strings.Replace(base, "{field: type, equals: prompt_echo}", "{field: type}", 1), "continuation.merge.dropLeadingWhere requires field and equals"},
+		{"drop on array of strings", strings.Replace(strings.Replace(base, "        - path: $.steps\n", "        - path: $.run_ids\n", 1), "        - to: $.run_ids\n          from: [$.run_ids, $.id]\n", "        - to: $.ids\n          from: [$.id]\n", 1), "must select an array of objects"},
+		{"merge overlaps collect", strings.Replace(base, "        - path: $.steps\n", "        - path: $.run_ids\n", 1), "continuation lists $.run_ids in both merge and collect"},
+		{"merge overlaps keepFirst", strings.Replace(base, "        - $.started_at\n", "        - $.steps\n", 1), "continuation lists $.steps in both merge and keepFirst"},
+		{"keepFirst unknown", strings.Replace(base, "        - $.started_at\n", "        - $.startedat\n", 1), `continuation.keepFirst $.startedat is absent from operation "StartTask" response 200`},
+		{"keepFirst fallback unknown", strings.Replace(base, "fallback: $.usage.units", "fallback: $.usage.total", 1), "continuation.keepFirst.fallback $.usage.total is absent"},
+		{"keepFirst self fallback", strings.Replace(base, "fallback: $.usage.units", "fallback: $.usage.first_units", 1), "names itself as its fallback"},
+		{"collect to not strings", strings.Replace(base, "        - to: $.run_ids\n", "        - to: $.id\n", 1), "continuation.collect.to $.id in operation \"StartTask\" response 200 must select an array of strings"},
+		{"collect from not a string", strings.Replace(base, "from: [$.run_ids, $.id]", "from: [$.usage]", 1), "continuation.collect.from $.usage in operation \"StartTask\" response 200 must select a string or an array of strings"},
+		{"collect without from", strings.Replace(base, "          from: [$.run_ids, $.id]\n", "", 1), "continuation.collect entry requires to"},
+		{"sumBy value not numeric", strings.Replace(base, "key: kind, value: count", "key: count, value: kind", 1), `continuation.sumBy $.usage.units_by_kind value "kind" in operation "StartTask" must select a number`},
+		{"sumBy key unknown", strings.Replace(base, "key: kind", "key: mode", 1), `key "mode" is not a property of every item`},
+		{"sumBy same key and value", strings.Replace(base, "key: kind, value: count", "key: count, value: count", 1), `uses "count" as both key and value`},
+		{"sumBy not an array", strings.Replace(base, "{path: $.usage.units_by_kind,", "{path: $.usage,", 1), "continuation.sumBy $.usage in operation \"StartTask\" response 200 must select an array"},
+		{"authoritative exists", strings.Replace(base, "streamAuthoritativeWhen: {path: $.data.event_type, equals: task.done}", "streamAuthoritativeWhen: {path: $.data.event_type, exists: true}", 1), "continuation.bind.streamAuthoritativeWhen accepts equals only"},
+		{"authoritative non-string", strings.Replace(base, "equals: task.done", "equals: 1", 1), "continuation.bind.streamAuthoritativeWhen.equals must be a string"},
+		{"authoritative unknown path", strings.Replace(base, "{path: $.data.event_type,", "{path: $.data.event,", 1), "continuation.bind.streamAuthoritativeWhen.path $.data.event does not resolve in any event shape"},
+		{"authoritative without streamFrom", strings.Replace(base, "        - from: $.id\n          streamFrom: $.data.task.id\n", "        - from: $.id\n          streamAuthoritativeWhen: {path: $.data.event_type, equals: done}\n", 1), "declares streamAuthoritativeWhen without streamFrom"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := decodeCLIWithSpec(t, cliTaskTestSpec, tc.manifest)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.want)
+		})
+	}
 }
 
 func TestCLICommands_ContinuationAsyncCreateDoesNotBlockOperationRecipe(t *testing.T) {

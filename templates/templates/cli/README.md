@@ -897,7 +897,59 @@ continuation:
 `unlessRequest` compares an existing request-body value with a JSON scalar. Missing
 values do not match, and `null` only matches an explicit `equals: null`. Numeric
 conditions must be finite and within the JavaScript safe-integer range. A disabled
-binding neither changes the request nor appears in resume guidance.
+binding neither changes the request nor appears in resume guidance. A condition can
+instead test presence with `exists: true|false` (a `null` value counts as absent);
+exactly one of `equals` and `exists` is required. A condition path only needs to
+exist in one request-body union member, so it can test a field that distinguishes
+members. `equals` must compare a scalar wherever the path is declared.
+
+The full recipe surface, all keys optional except `bind`:
+
+```yaml
+continuation:
+  unlessRequest:            # one condition or a list; any match turns continuation off
+    - {path: $.detached, equals: true}
+    - {path: $.runner, exists: true}
+  bind:
+    - from: $.resume_token
+      streamFrom: [$.data.resume_token, $.data.task.resume_token]
+      streamAuthoritativeWhen: {path: $.data.event_type, equals: task.done}
+      to: $.resume_token
+  omit:                     # removed from every request after the first
+    - path: $.prompt
+      unlessRequest: {path: $.persist, equals: false}
+  merge:                    # arrays concatenated across hops
+    - path: $.steps
+      dropLeadingWhere: {field: type, equals: prompt_echo}
+  keepFirst:                # taken from the first hop; deleted when it lacks them
+    - $.previous_id
+    - path: $.usage.first_units
+      fallback: $.usage.units
+  collect:                  # strings from every hop, in order, deduplicated unless unique: false
+    - to: $.run_ids
+      from: [$.run_ids, $.id]
+  sum: [$.usage.units]
+  sumBy:                    # keyed counter objects; value summed per key
+    - {path: $.usage.units_by_kind, key: kind, value: count}
+```
+
+- A recipe-level `unlessRequest` match sends the request once and renders the
+  response or stream exactly as the server sent it.
+- `omit` paths must be optional in every request-body member the omit can reach. A
+  member is out of reach when a recipe or omit `unlessRequest` `exists: true`
+  condition names a property that member requires. Omitted fields are absent on the
+  wire, never `null`.
+- `streamAuthoritativeWhen` (string `equals` only) marks events that report the
+  binding's final value. A matching event without a value clears the value captured
+  from earlier events, so a terminal event that still asks to continue without a
+  token fails with `CLI_PROTOCOL` instead of resuming from a stale checkpoint.
+- A `continue` response whose required resume values equal the ones its request was
+  sent with stops the loop with exit 0 rather than repeating until the hop limit.
+- `dropLeadingWhere` applies to hops after the first. `merge`, `sum`, `keepFirst`,
+  `collect`, and `sumBy` each own a distinct result path. The combined result is
+  produced for multi-hop runs, and for single-hop auto-continued runs when `collect`
+  or a `keepFirst` `fallback` is declared. `--auto-continue=false` and skipped runs
+  always print the raw response.
 
 `output.outcome.streamStatePointer` accepts a singular JSONPath or a list. For each
 event, the first path containing a non-empty string supplies the state. All paths
