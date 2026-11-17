@@ -6,7 +6,7 @@ import { SDKCore } from "../core.js";
 import { encodeFormQuery, encodeSimple } from "../lib/encodings.js";
 import { compactMap } from "../lib/primitives.js";
 import { safeParse } from "../lib/schemas.js";
-import { RequestOptions } from "../lib/sdks.js";
+import { encodePath, RequestOptions } from "../lib/sdks.js";
 import { extractSecurity, resolveGlobalSecurity } from "../lib/security.js";
 import { pathToFunc } from "../lib/url.js";
 import { APIError } from "../models/errors/apierror.js";
@@ -99,9 +99,11 @@ async function $do(
       charEncoding: "percent",
     }),
   };
-  const path$ = pathToFunc("/test1/{page}")(
-    pathParams$,
-  );
+  const pathResult$ = encodePath("/test1/{page}", pathParams$);
+  if (!pathResult$.ok) {
+    return [pathResult$, { status: "invalid" }];
+  }
+  const path$ = pathResult$.value;
   const query$ = encodeFormQuery({
     "queryParam1": payload$.queryParam1 ?? client$._options.queryParam1,
     "queryParam2": payload$.queryParam2,

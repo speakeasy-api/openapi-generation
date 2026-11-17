@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "0.13.19",
+  core: "0.13.20",
   acceptHeaders: "0.1.0",
   additionalProperties: "0.1.1",
   bigint: "0.1.0",

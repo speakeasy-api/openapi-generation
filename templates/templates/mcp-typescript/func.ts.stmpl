@@ -236,13 +236,16 @@ async function $do(
     {{      sanitizeKey $spec.name}}: {{ genSingleParamEncoder $spec.fieldDef $spec.accessor }},
     {{-   end }}
   };
-  {{- end}}
+  {{- addInternalImport "sdks" "encodePath" "funcs" }}
+  const pathResult$ = encodePath("{{ $op.Path }}", pathParams$);
+  if (!pathResult$.ok) {
+    return [pathResult$, { status: "invalid" }];
+  }
+  const path$ = pathResult$.value;
+  {{- else }}
   {{- addInternalImport "url" "pathToFunc" "funcs" }}
-  const path$ = pathToFunc("{{ $op.Path }}")(
-    {{- if $hasPathParams }}
-    pathParams$,
-    {{- end }}
-  );
+  const path$ = pathToFunc("{{ $op.Path }}")();
+  {{- end}}
 
   {{- if $hasQueryParams }}
   const query$ = {{genQueryParamEncoder $requestParams.query}};
@@ -669,13 +672,16 @@ async function $do(
     {{      sanitizeKey $spec.name}}: {{ genSingleParamEncoder $spec.fieldDef $spec.accessor }},
     {{-   end }}
   };
-  {{- end}}
+  {{- addInternalImport "sdks" "encodePath" "funcs" }}
+  const pathResult$ = encodePath("{{ $op.Path }}", pathParams$);
+  if (!pathResult$.ok) {
+    return [pathResult$, { status: "invalid" }];
+  }
+  const path$ = pathResult$.value;
+  {{- else }}
   {{- addInternalImport "url" "pathToFunc" "funcs" }}
-  const path$ = pathToFunc("{{ $op.Path }}")(
-    {{- if $hasPathParams }}
-    pathParams$,
-    {{- end }}
-  );
+  const path$ = pathToFunc("{{ $op.Path }}")();
+  {{- end}}
 
   {{- if $hasQueryParams }}
   const query$ = {{genQueryParamEncoder $requestParams.query}};

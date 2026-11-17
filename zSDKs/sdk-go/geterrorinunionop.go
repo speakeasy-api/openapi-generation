@@ -143,10 +143,16 @@ func (u GetErrorInUnionInternalServerError) MarshalJSON() ([]byte, error) {
 func (u GetErrorInUnionInternalServerError) Error() string {
 	switch u.Type {
 	case GetErrorInUnionInternalServerErrorTypeErrorsError:
+		if u.ErrorsError.Error_ == "" {
+			return "unknown error"
+		}
+
 		return u.ErrorsError.Error_
 	case GetErrorInUnionInternalServerErrorTypeTaggedError1:
 		if u.TaggedError1 != nil {
-			return u.TaggedError1.Message
+			if u.TaggedError1.Message != "" {
+				return u.TaggedError1.Message
+			}
 		}
 
 		data, _ := json.Marshal(u.TaggedError1)

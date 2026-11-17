@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.962.0] - 2026-11-16
+### :bee: New Features
+- [`8510d66`](https://github.com/speakeasy-api/openapi-generation/commit/8510d667350c559b2a097a8622c3f4efe8611b7e) - **typescript**: validate request parameters against schema patterns ([#212](https://github.com/speakeasy-api/openapi-generation/pull/212)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.961.3] - 2026-11-16
+### :bug: Bug Fixes
+- [`39488b5`](https://github.com/speakeasy-api/openapi-generation/commit/39488b515c510c0e59d6795e25609ab4f15224bc) - **typescript,mcp**: reject path parameters that form dot segments ([#211](https://github.com/speakeasy-api/openapi-generation/pull/211)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.961.2] - 2026-11-16
+### :bug: Bug Fixes
+- [`ed9b064`](https://github.com/speakeasy-api/openapi-generation/commit/ed9b064a6e4960a85358c290bc75f4d82d5420d4) - **go**: fall back on empty error messages and prefix inferred messages with the error code ([#215](https://github.com/speakeasy-api/openapi-generation/pull/215)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.961.1] - 2026-11-12
+### :bug: Bug Fixes
+- [`3aebe65`](https://github.com/speakeasy-api/openapi-generation/commit/3aebe651c0c9646c98949da762f267ad91969162) - **go,cli,mockserver,terraform**: bump staticcheck to v0.8.2 for Go 1.27.2 ([#214](https://github.com/speakeasy-api/openapi-generation/pull/214)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
 ## [v2.961.0] - 2026-11-11
 ### :bee: New Features
 - [`8076008`](https://github.com/speakeasy-api/openapi-generation/commit/807600886d68d647d11c59b7df7f31859ded920f) - **cli**: keep auto-assigned flag shorthands stable across regenerations ([#208](https://github.com/speakeasy-api/openapi-generation/pull/208)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21001,3 +21021,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.960.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.7...v2.960.8
 [v2.960.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.8...v2.960.9
 [v2.961.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.960.9...v2.961.0
+[v2.961.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.961.0...v2.961.1
+[v2.961.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.961.1...v2.961.2
+[v2.961.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.961.2...v2.961.3
+[v2.962.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.961.3...v2.962.0

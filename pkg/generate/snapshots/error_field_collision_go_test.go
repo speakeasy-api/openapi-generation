@@ -281,7 +281,9 @@ func (u GatewayTimeout) Error() string {
 	switch u.Type {
 	case GatewayTimeoutTypeError:
 		if u.ErrorInfo != nil {
-			return u.ErrorInfo.Message
+			if u.ErrorInfo.Message != "" {
+				return u.ErrorInfo.Message
+			}
 		}
 
 		data, _ := json.Marshal(u.ErrorInfo)
@@ -430,7 +432,9 @@ func (u ServiceUnavailable) Error() string {
 	switch u.Type {
 	case ServiceUnavailableTypeAlpha:
 		if u.AlphaError != nil {
-			return u.AlphaError.Message
+			if u.AlphaError.Message != "" {
+				return u.AlphaError.Message
+			}
 		}
 
 		data, _ := json.Marshal(u.AlphaError)
@@ -459,7 +463,7 @@ var _ error = &BadGatewayError{}
 
 func (e *BadGatewayError) Error() string {
 	if e != nil {
-		if e.Error_.Message != nil {
+		if e.Error_.Message != nil && *e.Error_.Message != "" {
 			return *e.Error_.Message
 		}
 	}
@@ -478,7 +482,7 @@ var _ error = &InternalServerError{}
 
 func (e *InternalServerError) Error() string {
 	if e != nil {
-		if e.ErrorInfo.Message != nil {
+		if e.ErrorInfo.Message != nil && *e.ErrorInfo.Message != "" {
 			return *e.ErrorInfo.Message
 		}
 	}

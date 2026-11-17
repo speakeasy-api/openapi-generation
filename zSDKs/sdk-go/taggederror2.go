@@ -42,7 +42,9 @@ var _ error = &TaggedError2{}
 
 func (e *TaggedError2) Error() string {
 	if e != nil {
-		return e.Error_.Message
+		if e.Error_.Message != "" {
+			return e.Error_.Message
+		}
 	}
 
 	data, _ := json.Marshal(e)

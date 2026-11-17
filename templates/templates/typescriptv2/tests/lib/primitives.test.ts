@@ -1,5 +1,40 @@
 import { test, expect } from "vitest";
-import { abortSignalAny } from "../../lib/primitives.js";
+import {
+  abortSignalAny,
+  matchesPattern,
+  withinMaxLength,
+} from "../../lib/primitives.js";
+
+test("matchesPattern tests values against the pattern", () => {
+  const matches = matchesPattern("^[a-z0-9-]+$");
+
+  expect(matches("abc-1")).toBe(true);
+  expect(matches("..")).toBe(false);
+  expect(matches("ABC")).toBe(false);
+});
+
+test("matchesPattern uses Unicode mode", () => {
+  expect(matchesPattern("^.$")("😀")).toBe(true);
+});
+
+test("withinMaxLength counts code points", () => {
+  const within = withinMaxLength(2);
+
+  expect(within("ab")).toBe(true);
+  expect(within("😀😀")).toBe(true);
+  expect(within("abc")).toBe(false);
+  expect(withinMaxLength(0)("")).toBe(true);
+});
+
+test("matchesPattern skips the pattern for values over maxLength", () => {
+  // Exponential backtracking on a non-matching suffix without the bound.
+  const matches = matchesPattern("^(a+)+$", 8);
+
+  expect(matches("aaaa")).toBe(true);
+  expect(matches("aaab")).toBe(false);
+
+  expect(matches(`${"a".repeat(64)}b`)).toBe(true);
+});
 
 test("abortSignalAny with one signal", () => {
   const sig = new AbortController().signal;
