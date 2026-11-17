@@ -75,6 +75,7 @@ test("Node entry point defers operation loading and shares runtime modules", asy
 });
 
 test("Node and standard entry points export the same keys", async () => {
+  state.failImport = false;
   const rootEntry = await import("../index.js");
   const nodeEntry = await import("../node.js");
   expect(Object.keys(nodeEntry).sort()).toEqual(Object.keys(rootEntry).sort());
