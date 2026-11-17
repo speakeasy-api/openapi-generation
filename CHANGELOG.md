@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.964.1] - 2026-11-17
+### :bug: Bug Fixes
+- [`56b2a5b`](https://github.com/speakeasy-api/openapi-generation/commit/56b2a5bb01cd9e8a9c15e09dac7a3472a48d2c6a) - **cli**: keep response metadata and issuing-hop bindings in continuation results ([#219](https://github.com/speakeasy-api/openapi-generation/pull/219)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.964.0] - 2026-11-17
 ### :bee: New Features
 - [`ed4e013`](https://github.com/speakeasy-api/openapi-generation/commit/ed4e013347bc8c8b12d80f21fdeaf0b4c9c34555) - **cli**: add continuation primitives for omitted fields, request-shape skips, stalled tokens, and combined results ([#218](https://github.com/speakeasy-api/openapi-generation/pull/218)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21037,3 +21042,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.962.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.961.3...v2.962.0
 [v2.963.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.962.0...v2.963.0
 [v2.964.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.963.0...v2.964.0
+[v2.964.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.964.0...v2.964.1
