@@ -959,7 +959,7 @@ Automatic continuation follows only states classified as `continue`. Terminal
 responses do not produce manual continuation hints. Errors after a continuation
 hop retain the last complete checkpoint's resume values when the new hop has not
 provided a complete checkpoint. Values from different hops are never combined. A
-stream that ends in an error event discards the values captured during that hop,
+stream that ends in an error event discards the state and values captured during that hop,
 so its error reports the previous hop's checkpoint, or none on the first hop.
 
 ### Exit Codes and Error Boundaries

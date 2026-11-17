@@ -1103,6 +1103,7 @@ func (s *streamContinuation) observe(frame map[string]interface{}) {
 // abort discards the values captured in a stream the server ended with an
 // error event, so a resume points at the last hop that completed.
 func (s *streamContinuation) abort() {
+	s.run.state = ""
 	s.run.values = map[string]string{}
 }
 

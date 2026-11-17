@@ -1479,6 +1479,14 @@ func TestStreamContinuationAbortDiscardsHopValues(t *testing.T) {
 	if fields := run.resumeFields(); !reflect.DeepEqual(fields, want) {
 		t.Fatalf("resume = %#v, want the last completed hop %#v", fields, want)
 	}
+
+	run.outcome.States["done"] = "success"
+	run.beginHop()
+	run.capture(map[string]interface{}{"data": map[string]interface{}{"status": "done", "id": "r2"}}, true)
+	hops.abort()
+	if fields := run.resumeFields(); !reflect.DeepEqual(fields, want) {
+		t.Fatalf("an error after a success frame keeps the last checkpoint: got %#v, want %#v", fields, want)
+	}
 }
 {{- end}}
 
