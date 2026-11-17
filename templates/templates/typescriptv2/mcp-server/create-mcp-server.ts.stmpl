@@ -1,6 +1,7 @@
 {{- $globalSDK := .Global.AST.MainSDK -}}
 {{- $globalSecurity := $globalSDK.Security }}
 {{- $serverMap := (and $globalSDK.Servers $globalSDK.Servers.ServerMap) -}}
+{{- $hasServers := (and $globalSDK.Servers $globalSDK.Servers.HasAbsoluteURL) -}}
 {{ if .Local.Factory }}createMCPServerFactory{{ else }}createMCPServer{{ end }}({
   logger,
   allowedTools: flags.tool,
@@ -21,7 +22,7 @@
   {{-   end}}
   {{- end}}{{/* if ne $globalSDK.Globals nil */}}
   serverURL: flags["server-url"],
-  {{- if $globalSDK.Servers}}
+  {{- if $hasServers}}
   {{-   if $serverMap}}
   server: flags.server,
   {{-   else}}

@@ -93,7 +93,7 @@ export const startCommand = buildCommand({
         {{- end}}
         parse: (value) => new URL(value).toString(),
       },
-      {{- if $globalSDK.Servers}}{{if $serverMap}}
+      {{- if $hasServers}}{{if $serverMap}}
       {{- addImport "../../../lib/config.js" "ServerList" }}
       server: {
         kind: "enum",
