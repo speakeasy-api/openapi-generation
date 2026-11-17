@@ -56,13 +56,31 @@ export function lazySchema<T extends object>(factory: () => T): T {
         return false;
       }
       const defined = Reflect.getOwnPropertyDescriptor(getSchema(), property)!;
-      if (!defined.configurable) {
+      if (!defined.configurable || !Reflect.isExtensible(target)) {
         return Reflect.defineProperty(target, property, defined);
       }
       return true;
     },
     deleteProperty(_target, property) {
-      return Reflect.deleteProperty(getSchema(), property);
+      if (!Reflect.deleteProperty(getSchema(), property)) {
+        return false;
+      }
+      return Reflect.deleteProperty(target, property);
+    },
+    preventExtensions() {
+      const concrete = getSchema();
+      if (!Reflect.preventExtensions(concrete)) {
+        return false;
+      }
+      Reflect.setPrototypeOf(target, Reflect.getPrototypeOf(concrete));
+      for (const property of Reflect.ownKeys(concrete)) {
+        Reflect.defineProperty(
+          target,
+          property,
+          Reflect.getOwnPropertyDescriptor(concrete, property)!,
+        );
+      }
+      return Reflect.preventExtensions(target);
     },
     set(_target, property, value) {
       return Reflect.set(getSchema(), property, value, getSchema());

@@ -141,6 +141,67 @@ test("lazySchema preserves recursive schema references", () => {
   });
 });
 
+test("lazySchema supports freezing schemas before first use", () => {
+  let constructions = 0;
+  const concrete = z.string();
+  const schema = lazySchema(() => {
+    constructions++;
+    return concrete;
+  });
+
+  expect(constructions).toBe(0);
+  expect(Object.freeze(schema)).toBe(schema);
+  expect(constructions).toBe(1);
+  expect(Object.isFrozen(schema)).toBe(true);
+  expect(Object.isFrozen(concrete)).toBe(true);
+  expect(Object.getPrototypeOf(schema)).toBe(Object.getPrototypeOf(concrete));
+  expect(Reflect.ownKeys(schema)).toEqual(Reflect.ownKeys(concrete));
+  expect({{if isZodV4}}z.parse(schema, "value"){{else}}schema.parse("value"){{end}}).toBe("value");
+  expect(Object.freeze(schema)).toBe(schema);
+  expect(constructions).toBe(1);
+});
+
+test("lazySchema keeps non-extensible property definitions and deletions in sync", () => {
+  const key = Symbol("value");
+  const concrete = { value: 1, [key]: 2 };
+  const schema = lazySchema(() => concrete);
+
+  expect(Object.preventExtensions(schema)).toBe(schema);
+  expect(Object.isExtensible(schema)).toBe(false);
+  expect(Object.isExtensible(concrete)).toBe(false);
+  expect(Object.getPrototypeOf(schema)).toBe(Object.getPrototypeOf(concrete));
+  expect(Reflect.ownKeys(schema)).toEqual(Reflect.ownKeys(concrete));
+  expect(Reflect.set(schema, "extra", 3)).toBe(false);
+  expect(Reflect.defineProperty(schema, "extra", { value: 3 })).toBe(false);
+  Object.defineProperty(schema, "value", { value: 4, writable: false });
+  expect(schema.value).toBe(4);
+  expect(concrete.value).toBe(4);
+  expect(Reflect.set(schema, "value", 5)).toBe(false);
+  expect(Reflect.deleteProperty(schema, key)).toBe(true);
+  expect(Reflect.ownKeys(schema)).toEqual(["value"]);
+  expect(Reflect.ownKeys(concrete)).toEqual(["value"]);
+  expect(Object.freeze(schema)).toBe(schema);
+  expect(Object.isFrozen(schema)).toBe(true);
+});
+
+test("lazySchema supports sealing without making writable properties readonly", () => {
+  const concrete = { value: 1 };
+  const schema = lazySchema(() => concrete);
+
+  expect(Object.seal(schema)).toBe(schema);
+  expect(Object.isSealed(schema)).toBe(true);
+  expect(Object.isSealed(concrete)).toBe(true);
+  schema.value = 2;
+  expect(concrete.value).toBe(2);
+  expect(schema.value).toBe(2);
+  expect(Reflect.deleteProperty(schema, "value")).toBe(false);
+  expect(Object.freeze(schema)).toBe(schema);
+  expect(schema.value).toBe(2);
+  expect(Object.getOwnPropertyDescriptor(schema, "value")).toEqual(
+    Object.getOwnPropertyDescriptor(concrete, "value"),
+  );
+});
+
 test("lazySchema preserves enum APIs and prototype reflection", () => {
   const concrete = z.enum(["first", "second"]);
   const schema = lazySchema(() => concrete);

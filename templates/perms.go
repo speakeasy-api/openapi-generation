@@ -2258,6 +2258,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/typescriptv2/devcontainers":                                                                         0o20000000755,
 	"templates/typescriptv2/devcontainers/config.stmpl":                                                            0o644,
 	"templates/typescriptv2/devcontainers/setup.stmpl":                                                             0o644,
+	"templates/typescriptv2/entry-point.ts.stmpl":                                                                  0o644,
 	"templates/typescriptv2/enum.ts.stmpl":                                                                         0o644,
 	"templates/typescriptv2/error.ts.stmpl":                                                                        0o644,
 	"templates/typescriptv2/examples":                                                                              0o20000000755,

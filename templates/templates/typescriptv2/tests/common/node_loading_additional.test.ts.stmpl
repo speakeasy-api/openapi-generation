@@ -73,4 +73,10 @@ test("Node entry point defers operation loading and shares runtime modules", asy
   expect(NodeAPIPromise).toBe(APIPromise);
   {{- end }}
 });
+
+test("Node and standard entry points export the same keys", async () => {
+  const rootEntry = await import("../index.js");
+  const nodeEntry = await import("../node.js");
+  expect(Object.keys(nodeEntry).sort()).toEqual(Object.keys(rootEntry).sort());
+}, 30000);
 {{- end }}
