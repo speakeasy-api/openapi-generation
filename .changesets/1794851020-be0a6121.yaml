@@ -1,0 +1,10 @@
+id: 1794851020-be0a6121
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: the generated install.sh now quotes the temporary download directory in its EXIT trap, so cleanup removes only that directory and never runs path text as shell code
+author: AshGodfrey
+date: "2026-11-16"
