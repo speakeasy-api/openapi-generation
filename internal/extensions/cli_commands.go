@@ -2093,6 +2093,9 @@ func (d *cliManifestDecoder) decodeContinuationCollect(owner string, node *yaml.
 		if collect.To == "" || len(collect.From) == 0 {
 			return nil, stderrors.New("continuation.collect entry requires to (the combined-result array) and from (the paths read from every response)")
 		}
+		if slices.ContainsFunc(collects, func(other CLICommandContinuationCollect) bool { return other.ToPointer == collect.ToPointer }) {
+			return nil, fmt.Errorf("continuation.collect lists %s more than once", collect.To)
+		}
 		collects = append(collects, collect)
 	}
 	return collects, nil
@@ -2130,6 +2133,9 @@ func (d *cliManifestDecoder) decodeContinuationSumBy(owner string, node *yaml.No
 		}
 		if sum.Key == sum.Value {
 			return nil, fmt.Errorf("continuation.sumBy %s uses %q as both key and value", sum.Path, sum.Key)
+		}
+		if slices.ContainsFunc(sums, func(other CLICommandContinuationSumBy) bool { return other.Pointer == sum.Pointer }) {
+			return nil, fmt.Errorf("continuation.sumBy lists %s more than once", sum.Path)
 		}
 		sums = append(sums, sum)
 	}

@@ -6327,6 +6327,8 @@ func TestCLICommands_ContinuationTaskErrors(t *testing.T) {
 		{"keepFirst self fallback", strings.Replace(base, "fallback: $.usage.units", "fallback: $.usage.first_units", 1), "names itself as its fallback"},
 		{"collect to not strings", strings.Replace(base, "        - to: $.run_ids\n", "        - to: $.id\n", 1), "continuation.collect.to $.id in operation \"StartTask\" response 200 must select an array of strings"},
 		{"collect from not a string", strings.Replace(base, "from: [$.run_ids, $.id]", "from: [$.usage]", 1), "continuation.collect.from $.usage in operation \"StartTask\" response 200 must select a string or an array of strings"},
+		{"collect duplicate", strings.Replace(base, "      collect:\n", "      collect:\n        - {to: $.run_ids, from: [$.id]}\n", 1), "continuation.collect lists $.run_ids more than once"},
+		{"sumBy duplicate", strings.Replace(base, "      sumBy:\n", "      sumBy:\n        - {path: $.usage.units_by_kind, key: kind, value: count}\n", 1), "continuation.sumBy lists $.usage.units_by_kind more than once"},
 		{"collect without from", strings.Replace(base, "          from: [$.run_ids, $.id]\n", "", 1), "continuation.collect entry requires to"},
 		{"sumBy value not numeric", strings.Replace(base, "key: kind, value: count", "key: count, value: kind", 1), `continuation.sumBy $.usage.units_by_kind value "kind" in operation "StartTask" must select a number`},
 		{"sumBy key unknown", strings.Replace(base, "key: kind", "key: mode", 1), `key "mode" is not a property of every item`},

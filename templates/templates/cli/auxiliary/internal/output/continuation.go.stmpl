@@ -48,6 +48,7 @@ func (c *continuationRequestCondition) matches(root interface{}) bool {
 }
 
 type continuationOmit struct {
+	Name          string                        `json:"name"`
 	Path          []string                      `json:"path"`
 	UnlessRequest *continuationRequestCondition `json:"unlessRequest"`
 }
@@ -435,7 +436,17 @@ func (r *continuationRun) resumeHint() string {
 	if len(paths) > 0 {
 		parts = append(parts, "set "+strings.Join(paths, ", ")+" in the request body")
 	}
-	return "To continue, " + strings.Join(parts, " and ")
+	hint := "To continue, " + strings.Join(parts, " and ")
+	var omitted []string
+	for _, omit := range r.cfg.Omit {
+		if r.omitEnabled(omit) && omit.Name != "" {
+			omitted = append(omitted, omit.Name)
+		}
+	}
+	if len(omitted) > 0 {
+		hint += ", leaving " + strings.Join(omitted, ", ") + " out of the request body"
+	}
+	return hint
 }
 
 func (r *continuationRun) wrap(err error) error {
@@ -667,7 +678,7 @@ func mergeContinuationPayloads(cfg *continuationConfig, payloads []interface{}) 
 			}
 		}
 		switch {
-		case ok:
+		case ok && value != nil:
 			parent := continuationParentPointer(kept.Pointer)
 			_, firstHasParent := continuationObjectAt(first, parent)
 			_, mergedHasParent := continuationObjectAt(merged, parent)
@@ -1010,6 +1021,9 @@ func updateContinuationBody(request interface{}, sets []continuationBodySet, omi
 }
 
 func deleteContinuationBodyPath(body map[string]interface{}, path []string) {
+	if len(path) == 0 {
+		return
+	}
 	current := body
 	for _, key := range path[:len(path)-1] {
 		child, ok := current[key].(map[string]interface{})
@@ -1084,6 +1098,12 @@ func (s *streamContinuation) observe(frame map[string]interface{}) {
 	if frame != nil {
 		s.run.capture(frame, true)
 	}
+}
+
+// abort discards the values captured in a stream the server ended with an
+// error event, so a resume points at the last hop that completed.
+func (s *streamContinuation) abort() {
+	s.run.values = map[string]string{}
 }
 
 func (s *streamContinuation) wrap(err error) error { return s.run.wrap(err) }

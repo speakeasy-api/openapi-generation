@@ -938,7 +938,7 @@ continuation:
 - `omit` paths must be optional in every request-body member the omit can reach. A
   member is out of reach when a recipe or omit `unlessRequest` `exists: true`
   condition names a property that member requires. Omitted fields are absent on the
-  wire, never `null`.
+  wire, never `null`. Manual resume hints name the omitted paths to leave out.
 - `streamAuthoritativeWhen` (string `equals` only) marks events that report the
   binding's final value. A matching event without a value clears the value captured
   from earlier events, so a terminal event that still asks to continue without a
@@ -958,7 +958,9 @@ are validated against the stream's event schemas.
 Automatic continuation follows only states classified as `continue`. Terminal
 responses do not produce manual continuation hints. Errors after a continuation
 hop retain the last complete checkpoint's resume values when the new hop has not
-provided a complete checkpoint. Values from different hops are never combined.
+provided a complete checkpoint. Values from different hops are never combined. A
+stream that ends in an error event discards the values captured during that hop,
+so its error reports the previous hop's checkpoint, or none on the first hop.
 
 ### Exit Codes and Error Boundaries
 

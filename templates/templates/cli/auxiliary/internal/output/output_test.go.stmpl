@@ -1231,6 +1231,14 @@ func TestMergeContinuationPayloads(t *testing.T) {
 			want:     `{"id":"i1","run_ids":["i1"],"usage":{"first_units":5,"units":5}}`,
 		},
 		{
+			name: "an explicit first-hop null counts as absent",
+			payloads: []string{
+				`{"id":"i1","previous_id":null,"usage":{"first_units":null}}`,
+				`{"id":"i2","previous_id":"i1","usage":{"first_units":4}}`,
+			},
+			want: `{"id":"i2","run_ids":["i1","i2"],"usage":{}}`,
+		},
+		{
 			name:     "a response without usage gains no usage",
 			payloads: []string{`{"id":"i1"}`, `{"id":"i2"}`},
 			want:     `{"id":"i2","run_ids":["i1","i2"]}`,
@@ -1419,6 +1427,79 @@ func TestContinuationAuthoritativeStreamFrame(t *testing.T) {
 	run.capture(map[string]interface{}{"data": map[string]interface{}{"event_type": "completed", "task": map[string]interface{}{"token": "final"}}}, true)
 	if run.values["$.token"] != "final" {
 		t.Fatalf("token = %#v", run.values)
+	}
+}
+
+{{- if anyOperationHasStreaming}}
+
+func TestStreamContinuationAbortDiscardsHopValues(t *testing.T) {
+	newRun := func() *continuationRun {
+		request := map[string]interface{}{"prompt": "hi"}
+		return &continuationRun{
+			cfg: &continuationConfig{Bind: []continuationBinding{
+				{StreamPointers: []string{"/data/token"}, To: "$.token", ToPath: []string{"token"}},
+				{StreamPointers: []string{"/data/id"}, To: "$.previous", ToPath: []string{"previous"}, Optional: true},
+			}},
+			outcome:    &outcomeConfig{StreamStatePointers: []string{"/data/status"}, States: map[string]string{"in_progress": "pending", "more": "continue"}},
+			request:    &request,
+			auto:       true,
+			limit:      3,
+			values:     map[string]string{},
+			sentValues: map[string]string{},
+		}
+	}
+	progress := func(token, id string) map[string]interface{} {
+		return map[string]interface{}{"data": map[string]interface{}{"status": "in_progress", "token": token, "id": id}}
+	}
+
+	run := newRun()
+	run.hops = 1
+	run.capture(progress("mid1", "r1"), true)
+	hops := &streamContinuation{run: run}
+	hops.abort()
+	if fields := run.resumeFields(); fields != nil {
+		t.Fatalf("a first stream that ended in an error event has no resume point, got %#v", fields)
+	}
+	if hint := run.resumeHint(); hint != "" {
+		t.Fatalf("hint = %q", hint)
+	}
+
+	run = newRun()
+	run.hops = 1
+	run.capture(map[string]interface{}{"data": map[string]interface{}{"status": "more", "token": "t1", "id": "r1"}}, true)
+	if more, err := run.advance(); !more || err != nil {
+		t.Fatalf("advance = %v, %v", more, err)
+	}
+	run.hops = 2
+	run.beginHop()
+	run.capture(progress("mid2", "r2"), true)
+	hops = &streamContinuation{run: run}
+	hops.abort()
+	want := map[string]interface{}{"$.token": "t1", "$.previous": "r1"}
+	if fields := run.resumeFields(); !reflect.DeepEqual(fields, want) {
+		t.Fatalf("resume = %#v, want the last completed hop %#v", fields, want)
+	}
+}
+{{- end}}
+
+func TestContinuationResumeHintNamesOmittedFields(t *testing.T) {
+	newRun := func(body map[string]interface{}) *continuationRun {
+		return &continuationRun{
+			cfg: &continuationConfig{
+				Bind: []continuationBinding{ {Pointer: "/token", To: "$.token", ToPath: []string{"token"}, Flag: "token"}},
+				Omit: []continuationOmit{ {Name: "$.prompt", Path: []string{"prompt"}, UnlessRequest: &continuationRequestCondition{Pointer: "/persist", Equals: false}}},
+			},
+			outcome:  &outcomeConfig{StatePointer: "/status", States: map[string]string{"more": "continue"}},
+			original: body,
+			values:   map[string]string{"$.token": "t1"},
+			state:    "more",
+		}
+	}
+	if got := newRun(map[string]interface{}{"prompt": "hi"}).resumeHint(); got != `To continue, re-run the same command with --token "t1", leaving $.prompt out of the request body` {
+		t.Fatalf("hint = %q", got)
+	}
+	if got := newRun(map[string]interface{}{"prompt": "hi", "persist": false}).resumeHint(); got != `To continue, re-run the same command with --token "t1"` {
+		t.Fatalf("hint = %q", got)
 	}
 }
 

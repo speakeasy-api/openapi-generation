@@ -1477,6 +1477,7 @@ function continuationJSON(
     ...(recipe.Omit?.length
       ? {
           omit: recipe.Omit.map((omit) => ({
+            name: omit.Path,
             path: omit.PathSegments,
             ...(omit.UnlessRequest
               ? { unlessRequest: condition(omit.UnlessRequest) }
