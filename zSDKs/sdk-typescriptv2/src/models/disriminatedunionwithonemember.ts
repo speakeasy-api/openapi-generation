@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import {
   ExhaustiveObject,
@@ -19,7 +19,7 @@ export type DisriminatedUnionWithOneMember = ExhaustiveObject;
 export const DisriminatedUnionWithOneMember$inboundSchema: z.ZodMiniType<
   DisriminatedUnionWithOneMember,
   unknown
-> = ExhaustiveObject$inboundSchema;
+> = /* @__PURE__ */ lazySchema$(() => ExhaustiveObject$inboundSchema);
 /** @internal */
 export type DisriminatedUnionWithOneMember$Outbound = ExhaustiveObject$Outbound;
 
@@ -27,7 +27,7 @@ export type DisriminatedUnionWithOneMember$Outbound = ExhaustiveObject$Outbound;
 export const DisriminatedUnionWithOneMember$outboundSchema: z.ZodMiniType<
   DisriminatedUnionWithOneMember$Outbound,
   DisriminatedUnionWithOneMember
-> = ExhaustiveObject$outboundSchema;
+> = /* @__PURE__ */ lazySchema$(() => ExhaustiveObject$outboundSchema);
 
 export function disriminatedUnionWithOneMemberToJSON(
   disriminatedUnionWithOneMember: DisriminatedUnionWithOneMember,

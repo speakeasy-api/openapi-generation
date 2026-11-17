@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { smartUnion } from "../types/smartUnion.js";
 import { ErrorsError, ErrorsError$inboundSchema } from "./errorserror.js";
@@ -19,7 +19,9 @@ export type GetErrorInUnionInternalServerError = ErrorsError | TaggedError1;
 export const GetErrorInUnionInternalServerError$inboundSchema: z.ZodMiniType<
   GetErrorInUnionInternalServerError,
   unknown
-> = smartUnion([ErrorsError$inboundSchema, TaggedError1$inboundSchema]);
+> = /* @__PURE__ */ lazySchema$(() =>
+  smartUnion([ErrorsError$inboundSchema, TaggedError1$inboundSchema])
+);
 
 export function getErrorInUnionInternalServerErrorFromJSON(
   jsonString: string,

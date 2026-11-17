@@ -213,7 +213,7 @@ func TestSnapTsModelNamespaceSanitization(t *testing.T) {
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../../lib/schemas.js";
 import { Result as SafeParseResult } from "../../types/fp.js";
 import * as types from "../../types/primitives.js";
 import { SDKValidationError } from "../errors/sdk-validation-error.js";
@@ -223,9 +223,12 @@ export type Widget = {
 };
 
 /** @internal */
-export const Widget$inboundSchema: z.ZodMiniType<Widget, unknown> = z.object({
-  name: types.optional(types.string()),
-});
+export const Widget$inboundSchema: z.ZodMiniType<Widget, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      name: types.optional(types.string()),
+    })
+  );
 
 export function widgetFromJSON(
   jsonString: string,

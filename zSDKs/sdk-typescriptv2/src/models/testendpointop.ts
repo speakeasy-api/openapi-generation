@@ -4,6 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type TestEndpointRequestBody = {
   test: string;
@@ -23,9 +24,11 @@ export type TestEndpointRequestBody$Outbound = {
 export const TestEndpointRequestBody$outboundSchema: z.ZodMiniType<
   TestEndpointRequestBody$Outbound,
   TestEndpointRequestBody
-> = z.object({
-  test: z.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    test: z.string(),
+  })
+);
 
 export function testEndpointRequestBodyToJSON(
   testEndpointRequestBody: TestEndpointRequestBody,
@@ -45,16 +48,18 @@ export type TestEndpointRequest$Outbound = {
 export const TestEndpointRequest$outboundSchema: z.ZodMiniType<
   TestEndpointRequest$Outbound,
   TestEndpointRequest
-> = z.pipe(
-  z.object({
-    testName: z.string(),
-    requestBody: z.lazy(() => TestEndpointRequestBody$outboundSchema),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      requestBody: "RequestBody",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      testName: z.string(),
+      requestBody: z.lazy(() => TestEndpointRequestBody$outboundSchema),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        requestBody: "RequestBody",
+      });
+    }),
+  )
 );
 
 export function testEndpointRequestToJSON(

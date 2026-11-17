@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import { SDKBaseError } from "./sdkbaseerror.js";
 
 /**
@@ -35,17 +36,19 @@ export class FailedResponseError extends SDKBaseError {
 export const FailedResponseError$inboundSchema: z.ZodMiniType<
   FailedResponseError,
   unknown
-> = z.pipe(
-  z.object({
-    request$: z.custom<Request>(x => x instanceof Request),
-    response$: z.custom<Response>(x => x instanceof Response),
-    body$: z.string(),
-  }),
-  z.transform((v) => {
-    return new FailedResponseError({}, {
-      request: v.request$,
-      response: v.response$,
-      body: v.body$,
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      request$: z.custom<Request>(x => x instanceof Request),
+      response$: z.custom<Response>(x => x instanceof Response),
+      body$: z.string(),
+    }),
+    z.transform((v) => {
+      return new FailedResponseError({}, {
+        request: v.request$,
+        response: v.response$,
+        body: v.body$,
+      });
+    }),
+  )
 );

@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import * as types from "../types/primitives.js";
 import { SDKBaseError } from "./sdkbaseerror.js";
 
@@ -51,24 +52,26 @@ export class ErrorType1 extends SDKBaseError {
 }
 
 /** @internal */
-export const ErrorType1$inboundSchema: z.ZodMiniType<ErrorType1, unknown> = z
-  .pipe(
-    z.object({
-      code: z._default(
-        types.literal("rate_limit_exceeded"),
-        "rate_limit_exceeded",
-      ),
-      error: types.string(),
-      message: types.number(),
-      request$: z.custom<Request>(x => x instanceof Request),
-      response$: z.custom<Response>(x => x instanceof Response),
-      body$: z.string(),
-    }),
-    z.transform((v) => {
-      return new ErrorType1(v, {
-        request: v.request$,
-        response: v.response$,
-        body: v.body$,
-      });
-    }),
+export const ErrorType1$inboundSchema: z.ZodMiniType<ErrorType1, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.pipe(
+      z.object({
+        code: z._default(
+          types.literal("rate_limit_exceeded"),
+          "rate_limit_exceeded",
+        ),
+        error: types.string(),
+        message: types.number(),
+        request$: z.custom<Request>(x => x instanceof Request),
+        response$: z.custom<Response>(x => x instanceof Response),
+        body$: z.string(),
+      }),
+      z.transform((v) => {
+        return new ErrorType1(v, {
+          request: v.request$,
+          response: v.response$,
+          body: v.body$,
+        });
+      }),
+    )
   );

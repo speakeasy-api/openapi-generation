@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import { Shape, Shape$Outbound, Shape$outboundSchema } from "./shape.js";
 
 /**
@@ -34,11 +35,13 @@ export type ShapeRequest$Outbound = {
 export const ShapeRequest$outboundSchema: z.ZodMiniType<
   ShapeRequest$Outbound,
   ShapeRequest
-> = z.object({
-  name: z.string(),
-  shape: Shape$outboundSchema,
-  description: z.optional(z.string()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    name: z.string(),
+    shape: Shape$outboundSchema,
+    description: z.optional(z.string()),
+  })
+);
 
 export function shapeRequestToJSON(shapeRequest: ShapeRequest): string {
   return JSON.stringify(ShapeRequest$outboundSchema.parse(shapeRequest));

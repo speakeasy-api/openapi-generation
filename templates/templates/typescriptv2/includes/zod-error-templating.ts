@@ -228,7 +228,7 @@ function templateErrorInboundSchemaDeclaration(
   hasFields: boolean,
   emptyType: boolean,
 ): string {
-  const schemaImpl = templateZodErrorInboundSchema(
+  const schema = templateZodErrorInboundSchema(
     typeName,
     fields,
     rootTypeDef,
@@ -238,13 +238,14 @@ function templateErrorInboundSchemaDeclaration(
     hasFields,
     emptyType,
   );
+  addInternalImport("schemas", "lazySchema as lazySchema$", usageLocation);
 
   const lines = [
     "/** @internal */",
     `export const ${zodName}inboundSchema: ${z.ZodType(
       typeName,
       "unknown",
-    )} = ${schemaImpl}`,
+    )} = /* @__PURE__ */ lazySchema$(() => ${schema})`,
   ];
 
   return lines.join("\n");
@@ -261,7 +262,7 @@ function templateErrorOutboundSchemaDeclaration(
   additionalPropsOutbound: ResolvedTypes | false,
   hasFields: boolean,
 ): string {
-  const schemaImpl = templateZodErrorOutboundSchema(
+  const schema = templateZodErrorOutboundSchema(
     typeName,
     fields,
     rootTypeDef,
@@ -270,6 +271,7 @@ function templateErrorOutboundSchemaDeclaration(
     additionalPropsOutbound,
     hasFields,
   );
+  addInternalImport("schemas", "lazySchema as lazySchema$", usageLocation);
 
   const outboundTypeName = `${zodName}Outbound`;
   const lines = [
@@ -277,7 +279,7 @@ function templateErrorOutboundSchemaDeclaration(
     `export const ${zodName}outboundSchema: ${z.ZodType(
       outboundTypeName,
       typeName,
-    )} = ${schemaImpl}`,
+    )} = /* @__PURE__ */ lazySchema$(() => ${schema})`,
   ];
 
   return lines.join("\n");

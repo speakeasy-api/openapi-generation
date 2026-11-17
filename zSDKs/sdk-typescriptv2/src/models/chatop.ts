@@ -4,7 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { Stream } from "../lib/event-streams.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { smartUnion } from "../types/smartUnion.js";
@@ -51,19 +51,21 @@ export type ChatRequest$Outbound =
 export const ChatRequest$outboundSchema: z.ZodMiniType<
   ChatRequest$Outbound,
   ChatRequest
-> = smartUnion([
-  ChatAgentRequest$outboundSchema,
-  ChatModelRequest$outboundSchema,
-]);
+> = /* @__PURE__ */ lazySchema$(() =>
+  smartUnion([ChatAgentRequest$outboundSchema, ChatModelRequest$outboundSchema])
+);
 
 export function chatRequestToJSON(chatRequest: ChatRequest): string {
   return JSON.stringify(ChatRequest$outboundSchema.parse(chatRequest));
 }
 
 /** @internal */
-export const Data$inboundSchema: z.ZodMiniType<Data, unknown> = z.object({
-  content: types.optional(types.string()),
-});
+export const Data$inboundSchema: z.ZodMiniType<Data, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      content: types.optional(types.string()),
+    })
+  );
 
 export function dataFromJSON(
   jsonString: string,
@@ -76,28 +78,30 @@ export function dataFromJSON(
 }
 
 /** @internal */
-export const ChatStream$inboundSchema: z.ZodMiniType<ChatStream, unknown> = z
-  .object({
-    data: z.pipe(
-      z.pipe(
-        z.unknown(),
-        z.transform((v, ctx) => {
-          if (typeof v !== "string") return v;
-          try {
-            return JSON.parse(v);
-          } catch (err) {
-            ctx.issues.push({
-              input: v,
-              code: "custom",
-              message: `malformed json: ${err}`,
-            });
-            return z.NEVER;
-          }
-        }),
+export const ChatStream$inboundSchema: z.ZodMiniType<ChatStream, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      data: z.pipe(
+        z.pipe(
+          z.unknown(),
+          z.transform((v, ctx) => {
+            if (typeof v !== "string") return v;
+            try {
+              return JSON.parse(v);
+            } catch (err) {
+              ctx.issues.push({
+                input: v,
+                code: "custom",
+                message: `malformed json: ${err}`,
+              });
+              return z.NEVER;
+            }
+          }),
+        ),
+        z.lazy(() => Data$inboundSchema),
       ),
-      z.lazy(() => Data$inboundSchema),
-    ),
-  });
+    })
+  );
 
 export function chatStreamFromJSON(
   jsonString: string,
@@ -113,9 +117,11 @@ export function chatStreamFromJSON(
 export const ChatResponseBody$inboundSchema: z.ZodMiniType<
   ChatResponseBody,
   unknown
-> = z.object({
-  data: types.optional(types.string()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    data: types.optional(types.string()),
+  })
+);
 
 export function chatResponseBodyFromJSON(
   jsonString: string,
@@ -129,24 +135,26 @@ export function chatResponseBodyFromJSON(
 
 /** @internal */
 export const ChatResponse$inboundSchema: z.ZodMiniType<ChatResponse, unknown> =
-  smartUnion([
-    z.lazy(() => ChatResponseBody$inboundSchema),
-    z.pipe(
-      z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
-      z.transform(stream => {
-        return new Stream(stream, rawEvent => {
-          if (rawEvent.data === "[DONE]") {
-            return { done: true, value: undefined };
-          }
-          return {
-            done: false,
-            value: z.parse(z.lazy(() => ChatStream$inboundSchema), rawEvent)
-              ?.data,
-          };
-        });
-      }),
-    ),
-  ]);
+  /* @__PURE__ */ lazySchema$(() =>
+    smartUnion([
+      z.lazy(() => ChatResponseBody$inboundSchema),
+      z.pipe(
+        z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
+        z.transform(stream => {
+          return new Stream(stream, rawEvent => {
+            if (rawEvent.data === "[DONE]") {
+              return { done: true, value: undefined };
+            }
+            return {
+              done: false,
+              value: z.parse(z.lazy(() => ChatStream$inboundSchema), rawEvent)
+                ?.data,
+            };
+          });
+        }),
+      ),
+    ])
+  );
 
 export function chatResponseFromJSON(
   jsonString: string,

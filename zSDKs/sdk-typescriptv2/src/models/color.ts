@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import * as openEnums from "../types/enums.js";
 import { OpenEnum } from "../types/enums.js";
 
@@ -24,8 +25,8 @@ export const Color = {
 export type Color = OpenEnum<typeof Color>;
 
 /** @internal */
-export const Color$inboundSchema: z.ZodMiniType<Color, unknown> = openEnums
-  .inboundSchema(Color);
+export const Color$inboundSchema: z.ZodMiniType<Color, unknown> =
+  /* @__PURE__ */ lazySchema$(() => openEnums.inboundSchema(Color));
 /** @internal */
-export const Color$outboundSchema: z.ZodMiniType<string, Color> = openEnums
-  .outboundSchema(Color);
+export const Color$outboundSchema: z.ZodMiniType<string, Color> =
+  /* @__PURE__ */ lazySchema$(() => openEnums.outboundSchema(Color));

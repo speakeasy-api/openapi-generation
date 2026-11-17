@@ -4,6 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export enum Emoji {
   /**
@@ -41,7 +42,8 @@ export type GetFullyFlattenedRequestRequest = {
 };
 
 /** @internal */
-export const Emoji$outboundSchema: z.ZodMiniEnum<typeof Emoji> = z.enum(Emoji);
+export const Emoji$outboundSchema: z.ZodMiniEnum<typeof Emoji> =
+  /* @__PURE__ */ lazySchema$(() => z.enum(Emoji));
 
 /** @internal */
 export type GetFullyFlattenedRequestRequestBody$Outbound = {
@@ -56,13 +58,15 @@ export type GetFullyFlattenedRequestRequestBody$Outbound = {
 export const GetFullyFlattenedRequestRequestBody$outboundSchema: z.ZodMiniType<
   GetFullyFlattenedRequestRequestBody$Outbound,
   GetFullyFlattenedRequestRequestBody
-> = z.object({
-  name: z.string(),
-  emoji: z.optional(Emoji$outboundSchema),
-  gif: z.optional(z.string()),
-  reply: z.optional(z.boolean()),
-  private: z.optional(z.boolean()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    name: z.string(),
+    emoji: z.optional(Emoji$outboundSchema),
+    gif: z.optional(z.string()),
+    reply: z.optional(z.boolean()),
+    private: z.optional(z.boolean()),
+  })
+);
 
 export function getFullyFlattenedRequestRequestBodyToJSON(
   getFullyFlattenedRequestRequestBody: GetFullyFlattenedRequestRequestBody,
@@ -85,20 +89,22 @@ export type GetFullyFlattenedRequestRequest$Outbound = {
 export const GetFullyFlattenedRequestRequest$outboundSchema: z.ZodMiniType<
   GetFullyFlattenedRequestRequest$Outbound,
   GetFullyFlattenedRequestRequest
-> = z.pipe(
-  z.object({
-    lang: z.string(),
-    maxLength: z.optional(z.int()),
-    requestBody: z.lazy(() =>
-      GetFullyFlattenedRequestRequestBody$outboundSchema
-    ),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      maxLength: "max_length",
-      requestBody: "RequestBody",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      lang: z.string(),
+      maxLength: z.optional(z.int()),
+      requestBody: z.lazy(() =>
+        GetFullyFlattenedRequestRequestBody$outboundSchema
+      ),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        maxLength: "max_length",
+        requestBody: "RequestBody",
+      });
+    }),
+  )
 );
 
 export function getFullyFlattenedRequestRequestToJSON(

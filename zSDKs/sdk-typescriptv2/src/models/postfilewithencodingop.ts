@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { blobLikeSchema } from "../types/blobs.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
@@ -71,15 +71,17 @@ export type PostFileWithEncodingFile$Outbound = {
 export const PostFileWithEncodingFile$outboundSchema: z.ZodMiniType<
   PostFileWithEncodingFile$Outbound,
   PostFileWithEncodingFile
-> = z.object({
-  fileName: z.string(),
-  content: z.union([
-    z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
-    z.custom<Blob>(x => x instanceof Blob),
-    z.custom<ArrayBuffer>(x => x instanceof ArrayBuffer),
-    z.custom<Uint8Array>(x => x instanceof Uint8Array),
-  ]),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    fileName: z.string(),
+    content: z.union([
+      z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
+      z.custom<Blob>(x => x instanceof Blob),
+      z.custom<ArrayBuffer>(x => x instanceof ArrayBuffer),
+      z.custom<Uint8Array>(x => x instanceof Uint8Array),
+    ]),
+  })
+);
 
 export function postFileWithEncodingFileToJSON(
   postFileWithEncodingFile: PostFileWithEncodingFile,
@@ -99,15 +101,17 @@ export type Attachment$Outbound = {
 export const Attachment$outboundSchema: z.ZodMiniType<
   Attachment$Outbound,
   Attachment
-> = z.object({
-  fileName: z.string(),
-  content: z.union([
-    z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
-    z.custom<Blob>(x => x instanceof Blob),
-    z.custom<ArrayBuffer>(x => x instanceof ArrayBuffer),
-    z.custom<Uint8Array>(x => x instanceof Uint8Array),
-  ]),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    fileName: z.string(),
+    content: z.union([
+      z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
+      z.custom<Blob>(x => x instanceof Blob),
+      z.custom<ArrayBuffer>(x => x instanceof ArrayBuffer),
+      z.custom<Uint8Array>(x => x instanceof Uint8Array),
+    ]),
+  })
+);
 
 export function attachmentToJSON(attachment: Attachment): string {
   return JSON.stringify(Attachment$outboundSchema.parse(attachment));
@@ -124,11 +128,13 @@ export type PostFileWithEncodingMetadata$Outbound = {
 export const PostFileWithEncodingMetadata$outboundSchema: z.ZodMiniType<
   PostFileWithEncodingMetadata$Outbound,
   PostFileWithEncodingMetadata
-> = z.object({
-  title: z.optional(z.string()),
-  description: z.optional(z.string()),
-  tags: z.optional(z.array(z.string())),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    title: z.optional(z.string()),
+    description: z.optional(z.string()),
+    tags: z.optional(z.array(z.string())),
+  })
+);
 
 export function postFileWithEncodingMetadataToJSON(
   postFileWithEncodingMetadata: PostFileWithEncodingMetadata,
@@ -153,20 +159,22 @@ export type PostFileWithEncodingRequest$Outbound = {
 export const PostFileWithEncodingRequest$outboundSchema: z.ZodMiniType<
   PostFileWithEncodingRequest$Outbound,
   PostFileWithEncodingRequest
-> = z.object({
-  file: z.union([
-    z.lazy(() => PostFileWithEncodingFile$outboundSchema),
-    blobLikeSchema,
-  ]),
-  attachment: z.optional(
-    z.union([z.lazy(() => Attachment$outboundSchema), blobLikeSchema]),
-  ),
-  fileName: z.optional(z.string()),
-  filePurpose: z.optional(z.string()),
-  metadata: z.optional(
-    z.lazy(() => PostFileWithEncodingMetadata$outboundSchema),
-  ),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    file: z.union([
+      z.lazy(() => PostFileWithEncodingFile$outboundSchema),
+      blobLikeSchema,
+    ]),
+    attachment: z.optional(
+      z.union([z.lazy(() => Attachment$outboundSchema), blobLikeSchema]),
+    ),
+    fileName: z.optional(z.string()),
+    filePurpose: z.optional(z.string()),
+    metadata: z.optional(
+      z.lazy(() => PostFileWithEncodingMetadata$outboundSchema),
+    ),
+  })
+);
 
 export function postFileWithEncodingRequestToJSON(
   postFileWithEncodingRequest: PostFileWithEncodingRequest,
@@ -182,12 +190,14 @@ export function postFileWithEncodingRequestToJSON(
 export const PostFileWithEncodingResponse$inboundSchema: z.ZodMiniType<
   PostFileWithEncodingResponse,
   unknown
-> = z.object({
-  fileName: types.string(),
-  size: types.number(),
-  contentType: types.optional(types.string()),
-  metadata: types.optional(z.record(z.string(), z.any())),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    fileName: types.string(),
+    size: types.number(),
+    contentType: types.optional(types.string()),
+    metadata: types.optional(z.record(z.string(), z.any())),
+  })
+);
 
 export function postFileWithEncodingResponseFromJSON(
   jsonString: string,

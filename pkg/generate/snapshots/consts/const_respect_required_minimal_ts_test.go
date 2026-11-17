@@ -79,6 +79,7 @@ components:
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type ConstModel = {
   requiredConst: "required-const-value";
@@ -107,28 +108,30 @@ export type ConstModel$Outbound = {
 export const ConstModel$outboundSchema: z.ZodMiniType<
   ConstModel$Outbound,
   ConstModel
-> = z.object({
-  requiredConst: z.literal("required-const-value"),
-  requiredConstDefault: z._default(
-    z.literal("required-const-default-value"),
-    "required-const-default-value" as const,
-  ),
-  optionalConst: z.optional(z.literal("optional-const-value")),
-  optionalConstDefault: z._default(
-    z.literal("optional-const-default-value"),
-    "optional-const-default-value" as const,
-  ),
-  optionalString: z.optional(z.string()),
-  optionalDefaultString: z._default(
-    z.string(),
-    "optional-default-string-default-value",
-  ),
-  requiredString: z.string(),
-  requiredStringDefault: z._default(
-    z.string(),
-    "required-string-default-value",
-  ),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    requiredConst: z.literal("required-const-value"),
+    requiredConstDefault: z._default(
+      z.literal("required-const-default-value"),
+      "required-const-default-value" as const,
+    ),
+    optionalConst: z.optional(z.literal("optional-const-value")),
+    optionalConstDefault: z._default(
+      z.literal("optional-const-default-value"),
+      "optional-const-default-value" as const,
+    ),
+    optionalString: z.optional(z.string()),
+    optionalDefaultString: z._default(
+      z.string(),
+      "optional-default-string-default-value",
+    ),
+    requiredString: z.string(),
+    requiredStringDefault: z._default(
+      z.string(),
+      "required-string-default-value",
+    ),
+  })
+);
 
 export function constModelToJSON(constModel: ConstModel): string {
   return JSON.stringify(ConstModel$outboundSchema.parse(constModel));

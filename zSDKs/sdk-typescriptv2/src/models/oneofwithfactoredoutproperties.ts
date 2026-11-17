@@ -4,7 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Decimal as Decimal$ } from "../types/decimal.js";
 import * as openEnums from "../types/enums.js";
 import { OpenEnum } from "../types/enums.js";
@@ -197,12 +197,13 @@ export type OneOfWithFactoredOutProperties =
 
 /** @internal */
 export const OneOfWithFactoredOutPropertiesSimpleObject$inboundSchema:
-  z.ZodMiniType<OneOfWithFactoredOutPropertiesSimpleObject, unknown> = z.object(
-    {
-      str: types.string(),
-      anExtraProperty: types.optional(types.string()),
-    },
-  );
+  z.ZodMiniType<OneOfWithFactoredOutPropertiesSimpleObject, unknown> =
+    /* @__PURE__ */ lazySchema$(() =>
+      z.object({
+        str: types.string(),
+        anExtraProperty: types.optional(types.string()),
+      })
+    );
 
 export function oneOfWithFactoredOutPropertiesSimpleObjectFromJSON(
   jsonString: string,
@@ -224,18 +225,24 @@ export function oneOfWithFactoredOutPropertiesSimpleObjectFromJSON(
 export const OneOfWithFactoredOutPropertiesIntEnum$inboundSchema: z.ZodMiniType<
   OneOfWithFactoredOutPropertiesIntEnumOpen,
   unknown
-> = openEnums.inboundSchemaInt(OneOfWithFactoredOutPropertiesIntEnum);
+> = /* @__PURE__ */ lazySchema$(() =>
+  openEnums.inboundSchemaInt(OneOfWithFactoredOutPropertiesIntEnum)
+);
 
 /** @internal */
 export const OneOfWithFactoredOutPropertiesInt32Enum$inboundSchema:
   z.ZodMiniType<OneOfWithFactoredOutPropertiesInt32EnumOpen, unknown> =
-    openEnums.inboundSchemaInt(OneOfWithFactoredOutPropertiesInt32Enum);
+    /* @__PURE__ */ lazySchema$(() =>
+      openEnums.inboundSchemaInt(OneOfWithFactoredOutPropertiesInt32Enum)
+    );
 
 /** @internal */
 export const OneOfWithFactoredOutPropertiesAny$inboundSchema: z.ZodMiniType<
   OneOfWithFactoredOutPropertiesAny,
   unknown
-> = smartUnion([SimpleObject$inboundSchema, types.string()]);
+> = /* @__PURE__ */ lazySchema$(() =>
+  smartUnion([SimpleObject$inboundSchema, types.string()])
+);
 
 export function oneOfWithFactoredOutPropertiesAnyFromJSON(
   jsonString: string,
@@ -250,82 +257,95 @@ export function oneOfWithFactoredOutPropertiesAnyFromJSON(
 /** @internal */
 export const OneOfWithFactoredOutPropertiesNullableIntEnum$inboundSchema:
   z.ZodMiniType<OneOfWithFactoredOutPropertiesNullableIntEnumOpen, unknown> =
-    openEnums.inboundSchemaInt(OneOfWithFactoredOutPropertiesNullableIntEnum);
+    /* @__PURE__ */ lazySchema$(() =>
+      openEnums.inboundSchemaInt(OneOfWithFactoredOutPropertiesNullableIntEnum)
+    );
 
 /** @internal */
 export const OneOfWithFactoredOutPropertiesNullableStringEnum$inboundSchema:
   z.ZodMiniType<OneOfWithFactoredOutPropertiesNullableStringEnumOpen, unknown> =
-    openEnums.inboundSchema(OneOfWithFactoredOutPropertiesNullableStringEnum);
+    /* @__PURE__ */ lazySchema$(() =>
+      openEnums.inboundSchema(OneOfWithFactoredOutPropertiesNullableStringEnum)
+    );
 
 /** @internal */
 export const OneOfWithFactoredOutPropertiesIcon$inboundSchema: z.ZodMiniType<
   OneOfWithFactoredOutPropertiesIconOpen,
   unknown
-> = openEnums.inboundSchema(OneOfWithFactoredOutPropertiesIcon);
+> = /* @__PURE__ */ lazySchema$(() =>
+  openEnums.inboundSchema(OneOfWithFactoredOutPropertiesIcon)
+);
 
 /** @internal */
 export const OneOfWithFactoredOutPropertiesHeroWidth$inboundSchema:
   z.ZodMiniType<OneOfWithFactoredOutPropertiesHeroWidthOpen, unknown> =
-    openEnums.inboundSchemaInt(OneOfWithFactoredOutPropertiesHeroWidth);
+    /* @__PURE__ */ lazySchema$(() =>
+      openEnums.inboundSchemaInt(OneOfWithFactoredOutPropertiesHeroWidth)
+    );
 
 /** @internal */
 export const OneOfWithFactoredOutPropertiesExhaustiveObject$inboundSchema:
-  z.ZodMiniType<OneOfWithFactoredOutPropertiesExhaustiveObject, unknown> = z
-    .pipe(
-      z.object({
-        str: types.string(),
-        bool: types.boolean(),
-        int: types.number(),
-        int32: types.number(),
-        num: types.number(),
-        float32: types.number(),
-        enumProp: z._default(Enum$inboundSchema, Enum.First),
-        date: types.date(),
-        dateTime: types.date(),
-        anything: z.any(),
-        strOpt: types.optional(types.string()),
-        boolOpt: types.optional(types.boolean()),
-        intOptNull: types.optional(types.number()),
-        numOptNull: types.optional(types.number()),
-        intEnum: z._default(
-          OneOfWithFactoredOutPropertiesIntEnum$inboundSchema,
-          OneOfWithFactoredOutPropertiesIntEnum.Second,
-        ),
-        int32Enum: OneOfWithFactoredOutPropertiesInt32Enum$inboundSchema,
-        bigint: types.number(),
-        bigintStr: z._default(types.bigint(), 12345678901234567890n),
-        decimal: types.optional(
-          z.pipe(z.literal(3.141592653589), z.transform(v => new Decimal$(v))),
-        ),
-        decimalStr: z.pipe(z.string(), z.transform(v => new Decimal$(v))),
-        obj: SimpleObject$inboundSchema,
-        map: z.record(z.string(), SimpleObject$inboundSchema),
-        arr: z.array(SimpleObject$inboundSchema),
-        any: smartUnion([SimpleObject$inboundSchema, types.string()]),
-        type: z._default(types.string(), "0"),
-        "some.property.with.dots": types.optional(types.string()),
-        nullableIntEnum: z.nullable(
-          z._default(
-            OneOfWithFactoredOutPropertiesNullableIntEnum$inboundSchema,
-            OneOfWithFactoredOutPropertiesNullableIntEnum.Second,
+  z.ZodMiniType<OneOfWithFactoredOutPropertiesExhaustiveObject, unknown> =
+    /* @__PURE__ */ lazySchema$(() =>
+      z.pipe(
+        z.object({
+          str: types.string(),
+          bool: types.boolean(),
+          int: types.number(),
+          int32: types.number(),
+          num: types.number(),
+          float32: types.number(),
+          enumProp: z._default(Enum$inboundSchema, Enum.First),
+          date: types.date(),
+          dateTime: types.date(),
+          anything: z.any(),
+          strOpt: types.optional(types.string()),
+          boolOpt: types.optional(types.boolean()),
+          intOptNull: types.optional(types.number()),
+          numOptNull: types.optional(types.number()),
+          intEnum: z._default(
+            OneOfWithFactoredOutPropertiesIntEnum$inboundSchema,
+            OneOfWithFactoredOutPropertiesIntEnum.Second,
           ),
-        ),
-        nullableStringEnum: types.nullable(
-          OneOfWithFactoredOutPropertiesNullableStringEnum$inboundSchema,
-        ),
-        color: z._default(Color$inboundSchema, "blue"),
-        icon: OneOfWithFactoredOutPropertiesIcon$inboundSchema,
-        heroWidth: types.optional(
-          OneOfWithFactoredOutPropertiesHeroWidth$inboundSchema,
-        ),
-        anExtraProperty: types.optional(types.string()),
-      }),
-      z.transform((v) => {
-        return remap$(v, {
-          "int": "integer",
-          "some.property.with.dots": "somePropertyWithDots",
-        });
-      }),
+          int32Enum: OneOfWithFactoredOutPropertiesInt32Enum$inboundSchema,
+          bigint: types.number(),
+          bigintStr: z._default(types.bigint(), 12345678901234567890n),
+          decimal: types.optional(
+            z.pipe(
+              z.literal(3.141592653589),
+              z.transform(v => new Decimal$(v)),
+            ),
+          ),
+          decimalStr: z.pipe(z.string(), z.transform(v => new Decimal$(v))),
+          obj: SimpleObject$inboundSchema,
+          map: z.record(z.string(), SimpleObject$inboundSchema),
+          arr: z.array(SimpleObject$inboundSchema),
+          any: smartUnion([SimpleObject$inboundSchema, types.string()]),
+          type: z._default(types.string(), "0"),
+          "some.property.with.dots": types.optional(types.string()),
+          nullableIntEnum: z.nullable(
+            z._default(
+              OneOfWithFactoredOutPropertiesNullableIntEnum$inboundSchema,
+              OneOfWithFactoredOutPropertiesNullableIntEnum.Second,
+            ),
+          ),
+          nullableStringEnum: types.nullable(
+            OneOfWithFactoredOutPropertiesNullableStringEnum$inboundSchema,
+          ),
+          color: z._default(Color$inboundSchema, "blue"),
+          icon: OneOfWithFactoredOutPropertiesIcon$inboundSchema,
+          heroWidth: types.optional(
+            OneOfWithFactoredOutPropertiesHeroWidth$inboundSchema,
+          ),
+          anExtraProperty: types.optional(types.string()),
+        }),
+        z.transform((v) => {
+          return remap$(v, {
+            "int": "integer",
+            "some.property.with.dots": "somePropertyWithDots",
+          });
+        }),
+      )
     );
 
 export function oneOfWithFactoredOutPropertiesExhaustiveObjectFromJSON(
@@ -348,10 +368,12 @@ export function oneOfWithFactoredOutPropertiesExhaustiveObjectFromJSON(
 export const OneOfWithFactoredOutProperties$inboundSchema: z.ZodMiniType<
   OneOfWithFactoredOutProperties,
   unknown
-> = smartUnion([
-  z.lazy(() => OneOfWithFactoredOutPropertiesExhaustiveObject$inboundSchema),
-  z.lazy(() => OneOfWithFactoredOutPropertiesSimpleObject$inboundSchema),
-]);
+> = /* @__PURE__ */ lazySchema$(() =>
+  smartUnion([
+    z.lazy(() => OneOfWithFactoredOutPropertiesExhaustiveObject$inboundSchema),
+    z.lazy(() => OneOfWithFactoredOutPropertiesSimpleObject$inboundSchema),
+  ])
+);
 
 export function oneOfWithFactoredOutPropertiesFromJSON(
   jsonString: string,

@@ -5,6 +5,7 @@
 import * as z from "zod/v4-mini";
 import * as baz from "../baz/index.js";
 import { remap as remap$ } from "../lib/primitives.js";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import { Aloof, Aloof$Outbound, Aloof$outboundSchema } from "./aloof.js";
 import { Boole, Boole$Outbound, Boole$outboundSchema } from "./boole.js";
 
@@ -27,18 +28,20 @@ export type ObjWithRenamedProperties$Outbound = {
 export const ObjWithRenamedProperties$outboundSchema: z.ZodMiniType<
   ObjWithRenamedProperties$Outbound,
   ObjWithRenamedProperties
-> = z.pipe(
-  z.object({
-    direct: z.optional(Boole$outboundSchema),
-    namespaced: z.optional(baz.Namespaced$outboundSchema),
-    overridden: z.optional(Boole$outboundSchema),
-    allof: z.optional(Aloof$outboundSchema),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      overridden: "shadow",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      direct: z.optional(Boole$outboundSchema),
+      namespaced: z.optional(baz.Namespaced$outboundSchema),
+      overridden: z.optional(Boole$outboundSchema),
+      allof: z.optional(Aloof$outboundSchema),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        overridden: "shadow",
+      });
+    }),
+  )
 );
 
 export function objWithRenamedPropertiesToJSON(

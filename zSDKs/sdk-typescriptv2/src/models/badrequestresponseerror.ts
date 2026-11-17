@@ -4,7 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { smartUnion } from "../types/smartUnion.js";
@@ -89,9 +89,8 @@ export class BadRequestResponseError extends SDKBaseError {
 }
 
 /** @internal */
-export const Detail$inboundSchema: z.ZodMiniType<Detail, unknown> = z.object(
-  {},
-);
+export const Detail$inboundSchema: z.ZodMiniType<Detail, unknown> =
+  /* @__PURE__ */ lazySchema$(() => z.object({}));
 
 export function detailFromJSON(
   jsonString: string,
@@ -105,7 +104,9 @@ export function detailFromJSON(
 
 /** @internal */
 export const DetailUnion$inboundSchema: z.ZodMiniType<DetailUnion, unknown> =
-  smartUnion([types.string(), z.lazy(() => Detail$inboundSchema)]);
+  /* @__PURE__ */ lazySchema$(() =>
+    smartUnion([types.string(), z.lazy(() => Detail$inboundSchema)])
+  );
 
 export function detailUnionFromJSON(
   jsonString: string,
@@ -121,30 +122,32 @@ export function detailUnionFromJSON(
 export const BadRequestResponseError$inboundSchema: z.ZodMiniType<
   BadRequestResponseError,
   unknown
-> = z.pipe(
-  z.object({
-    status_code: types.optional(types.number()),
-    error: types.optional(types.string()),
-    type_name: types.optional(types.string()),
-    message: types.optional(types.string()),
-    detail: types.optional(
-      smartUnion([types.string(), z.lazy(() => Detail$inboundSchema)]),
-    ),
-    ref: types.optional(types.string()),
-    request$: z.custom<Request>(x => x instanceof Request),
-    response$: z.custom<Response>(x => x instanceof Response),
-    body$: z.string(),
-  }),
-  z.transform((v) => {
-    const remapped = remap$(v, {
-      "status_code": "statusCode",
-      "type_name": "typeName",
-    });
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      status_code: types.optional(types.number()),
+      error: types.optional(types.string()),
+      type_name: types.optional(types.string()),
+      message: types.optional(types.string()),
+      detail: types.optional(
+        smartUnion([types.string(), z.lazy(() => Detail$inboundSchema)]),
+      ),
+      ref: types.optional(types.string()),
+      request$: z.custom<Request>(x => x instanceof Request),
+      response$: z.custom<Response>(x => x instanceof Response),
+      body$: z.string(),
+    }),
+    z.transform((v) => {
+      const remapped = remap$(v, {
+        "status_code": "statusCode",
+        "type_name": "typeName",
+      });
 
-    return new BadRequestResponseError(remapped, {
-      request: v.request$,
-      response: v.response$,
-      body: v.body$,
-    });
-  }),
+      return new BadRequestResponseError(remapped, {
+        request: v.request$,
+        response: v.response$,
+        body: v.body$,
+      });
+    }),
+  )
 );

@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type GetRequestBodyFlattenedAwayGlobals = {
   loneQueryParam?: string | undefined;
@@ -17,7 +18,7 @@ export type GetRequestBodyFlattenedAwayRequest$Outbound = {};
 export const GetRequestBodyFlattenedAwayRequest$outboundSchema: z.ZodMiniType<
   GetRequestBodyFlattenedAwayRequest$Outbound,
   GetRequestBodyFlattenedAwayRequest
-> = z.object({});
+> = /* @__PURE__ */ lazySchema$(() => z.object({}));
 
 export function getRequestBodyFlattenedAwayRequestToJSON(
   getRequestBodyFlattenedAwayRequest: GetRequestBodyFlattenedAwayRequest,

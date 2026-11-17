@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { SDKValidationError } from "../models/sdkvalidationerror.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
@@ -49,11 +49,13 @@ export type Organization = {
 };
 
 /** @internal */
-export const Location$inboundSchema: z.ZodMiniType<Location, unknown> = z
-  .object({
-    latitude: types.number(),
-    longitude: types.number(),
-  });
+export const Location$inboundSchema: z.ZodMiniType<Location, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      latitude: types.number(),
+      longitude: types.number(),
+    })
+  );
 
 export function locationFromJSON(
   jsonString: string,
@@ -66,11 +68,14 @@ export function locationFromJSON(
 }
 
 /** @internal */
-export const Address$inboundSchema: z.ZodMiniType<Address, unknown> = z.object({
-  street: types.string(),
-  city: types.string(),
-  location: types.optional(z.lazy(() => Location$inboundSchema)),
-});
+export const Address$inboundSchema: z.ZodMiniType<Address, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      street: types.string(),
+      city: types.string(),
+      location: types.optional(z.lazy(() => Location$inboundSchema)),
+    })
+  );
 
 export function addressFromJSON(
   jsonString: string,
@@ -83,11 +88,13 @@ export function addressFromJSON(
 }
 
 /** @internal */
-export const Department$inboundSchema: z.ZodMiniType<Department, unknown> = z
-  .object({
-    deptName: types.string(),
-    headCount: types.number(),
-  });
+export const Department$inboundSchema: z.ZodMiniType<Department, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      deptName: types.string(),
+      headCount: types.number(),
+    })
+  );
 
 export function departmentFromJSON(
   jsonString: string,
@@ -101,13 +108,15 @@ export function departmentFromJSON(
 
 /** @internal */
 export const Organization$inboundSchema: z.ZodMiniType<Organization, unknown> =
-  z.object({
-    name: types.string(),
-    address: z.lazy(() => Address$inboundSchema),
-    departments: types.optional(
-      z.array(z.lazy(() => Department$inboundSchema)),
-    ),
-  });
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      name: types.string(),
+      address: z.lazy(() => Address$inboundSchema),
+      departments: types.optional(
+        z.array(z.lazy(() => Department$inboundSchema)),
+      ),
+    })
+  );
 
 export function organizationFromJSON(
   jsonString: string,

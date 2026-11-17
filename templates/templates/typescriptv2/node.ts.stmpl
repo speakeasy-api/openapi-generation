@@ -1,0 +1,1 @@
+{{templateString "entry-point.ts.stmpl" (dict "SDKImportPath" "./sdk/sdk.lazy.js")}}

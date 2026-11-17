@@ -4,6 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import * as b64$ from "../lib/base64.js";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type BinaryAndStringUploadRequest = {
   binary?: Uint8Array | string | undefined;
@@ -20,10 +21,12 @@ export type BinaryAndStringUploadRequest$Outbound = {
 export const BinaryAndStringUploadRequest$outboundSchema: z.ZodMiniType<
   BinaryAndStringUploadRequest$Outbound,
   BinaryAndStringUploadRequest
-> = z.object({
-  binary: z.optional(b64$.zodOutbound),
-  string: z.optional(z.string()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    binary: z.optional(b64$.zodOutbound),
+    string: z.optional(z.string()),
+  })
+);
 
 export function binaryAndStringUploadRequestToJSON(
   binaryAndStringUploadRequest: BinaryAndStringUploadRequest,

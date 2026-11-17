@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { ReviewTask, ReviewTask$inboundSchema } from "./reviewtask.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -20,9 +20,11 @@ export type TaskResponse = {
 
 /** @internal */
 export const TaskResponse$inboundSchema: z.ZodMiniType<TaskResponse, unknown> =
-  z.object({
-    task: ReviewTask$inboundSchema,
-  });
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      task: ReviewTask$inboundSchema,
+    })
+  );
 
 export function taskResponseFromJSON(
   jsonString: string,

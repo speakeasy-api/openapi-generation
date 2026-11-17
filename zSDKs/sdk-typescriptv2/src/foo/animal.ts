@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { SDKValidationError } from "../models/sdkvalidationerror.js";
 import * as discriminatedUnionTypes from "../types/discriminatedUnion.js";
 import { discriminatedUnion } from "../types/discriminatedUnion.js";
@@ -18,10 +18,12 @@ export type Animal = Dog | Cat | discriminatedUnionTypes.Unknown<"animalType">;
 
 /** @internal */
 export const Animal$inboundSchema: z.ZodMiniType<Animal, unknown> =
-  discriminatedUnion("animalType", {
-    dog: Dog$inboundSchema,
-    cat: Cat$inboundSchema,
-  });
+  /* @__PURE__ */ lazySchema$(() =>
+    discriminatedUnion("animalType", {
+      dog: Dog$inboundSchema,
+      cat: Cat$inboundSchema,
+    })
+  );
 
 export function animalFromJSON(
   jsonString: string,

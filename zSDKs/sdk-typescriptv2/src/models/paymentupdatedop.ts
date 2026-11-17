@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -23,7 +23,7 @@ export type PaymentUpdatedRequest = {
 /** @internal */
 export const PaymentUpdatedType$inboundSchema: z.ZodMiniEnum<
   typeof PaymentUpdatedType
-> = z.enum(PaymentUpdatedType);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(PaymentUpdatedType));
 /** @internal */
 export const PaymentUpdatedType$outboundSchema: z.ZodMiniEnum<
   typeof PaymentUpdatedType
@@ -33,10 +33,12 @@ export const PaymentUpdatedType$outboundSchema: z.ZodMiniEnum<
 export const PaymentUpdatedRequest$inboundSchema: z.ZodMiniType<
   PaymentUpdatedRequest,
   unknown
-> = z.object({
-  amount: types.string(),
-  type: PaymentUpdatedType$inboundSchema,
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    amount: types.string(),
+    type: PaymentUpdatedType$inboundSchema,
+  })
+);
 /** @internal */
 export type PaymentUpdatedRequest$Outbound = {
   amount: string;
@@ -47,10 +49,12 @@ export type PaymentUpdatedRequest$Outbound = {
 export const PaymentUpdatedRequest$outboundSchema: z.ZodMiniType<
   PaymentUpdatedRequest$Outbound,
   PaymentUpdatedRequest
-> = z.object({
-  amount: z.string(),
-  type: PaymentUpdatedType$outboundSchema,
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    amount: z.string(),
+    type: PaymentUpdatedType$outboundSchema,
+  })
+);
 
 export function paymentUpdatedRequestToJSON(
   paymentUpdatedRequest: PaymentUpdatedRequest,

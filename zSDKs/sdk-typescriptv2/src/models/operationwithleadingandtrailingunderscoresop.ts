@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type OperationWithLeadingAndTrailingUnderscoresRequest = {
   /**
@@ -21,9 +22,11 @@ export const OperationWithLeadingAndTrailingUnderscoresRequest$outboundSchema:
   z.ZodMiniType<
     OperationWithLeadingAndTrailingUnderscoresRequest$Outbound,
     OperationWithLeadingAndTrailingUnderscoresRequest
-  > = z.object({
-    qp1: z.string(),
-  });
+  > = /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      qp1: z.string(),
+    })
+  );
 
 export function operationWithLeadingAndTrailingUnderscoresRequestToJSON(
   operationWithLeadingAndTrailingUnderscoresRequest:

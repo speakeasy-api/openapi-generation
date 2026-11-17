@@ -4,6 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import { blobLikeSchema } from "../types/blobs.js";
 import { FileT, FileT$Outbound, FileT$outboundSchema } from "./file.js";
 
@@ -23,15 +24,17 @@ export type PostFileRequest$Outbound = {
 export const PostFileRequest$outboundSchema: z.ZodMiniType<
   PostFileRequest$Outbound,
   PostFileRequest
-> = z.pipe(
-  z.object({
-    upload: z.union([FileT$outboundSchema, blobLikeSchema]),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      upload: "file",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      upload: z.union([FileT$outboundSchema, blobLikeSchema]),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        upload: "file",
+      });
+    }),
+  )
 );
 
 export function postFileRequestToJSON(

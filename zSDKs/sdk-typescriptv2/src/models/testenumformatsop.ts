@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -94,27 +94,27 @@ export type TestEnumFormatsResponse = {
 /** @internal */
 export const StringArrayFormat$outboundSchema: z.ZodMiniEnum<
   typeof StringArrayFormat
-> = z.enum(StringArrayFormat);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(StringArrayFormat));
 
 /** @internal */
 export const StringMapFormat$outboundSchema: z.ZodMiniEnum<
   typeof StringMapFormat
-> = z.enum(StringMapFormat);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(StringMapFormat));
 
 /** @internal */
 export const StringPartialMapFormat$outboundSchema: z.ZodMiniEnum<
   typeof StringPartialMapFormat
-> = z.enum(StringPartialMapFormat);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(StringPartialMapFormat));
 
 /** @internal */
 export const IntegerMapFormat$outboundSchema: z.ZodMiniEnum<
   typeof IntegerMapFormat
-> = z.enum(IntegerMapFormat);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(IntegerMapFormat));
 
 /** @internal */
 export const IntegerPartialMapFormat$outboundSchema: z.ZodMiniEnum<
   typeof IntegerPartialMapFormat
-> = z.enum(IntegerPartialMapFormat);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(IntegerPartialMapFormat));
 
 /** @internal */
 export type TestEnumFormatsRequest$Outbound = {
@@ -129,13 +129,15 @@ export type TestEnumFormatsRequest$Outbound = {
 export const TestEnumFormatsRequest$outboundSchema: z.ZodMiniType<
   TestEnumFormatsRequest$Outbound,
   TestEnumFormatsRequest
-> = z.object({
-  stringArrayFormat: StringArrayFormat$outboundSchema,
-  stringMapFormat: StringMapFormat$outboundSchema,
-  stringPartialMapFormat: StringPartialMapFormat$outboundSchema,
-  integerMapFormat: IntegerMapFormat$outboundSchema,
-  integerPartialMapFormat: IntegerPartialMapFormat$outboundSchema,
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    stringArrayFormat: StringArrayFormat$outboundSchema,
+    stringMapFormat: StringMapFormat$outboundSchema,
+    stringPartialMapFormat: StringPartialMapFormat$outboundSchema,
+    integerMapFormat: IntegerMapFormat$outboundSchema,
+    integerPartialMapFormat: IntegerPartialMapFormat$outboundSchema,
+  })
+);
 
 export function testEnumFormatsRequestToJSON(
   testEnumFormatsRequest: TestEnumFormatsRequest,
@@ -149,9 +151,11 @@ export function testEnumFormatsRequestToJSON(
 export const TestEnumFormatsResponse$inboundSchema: z.ZodMiniType<
   TestEnumFormatsResponse,
   unknown
-> = z.object({
-  message: types.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    message: types.string(),
+  })
+);
 
 export function testEnumFormatsResponseFromJSON(
   jsonString: string,

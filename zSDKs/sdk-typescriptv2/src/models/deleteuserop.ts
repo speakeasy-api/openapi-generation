@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type DeleteUserRequest = {
   id: string;
@@ -17,9 +18,11 @@ export type DeleteUserRequest$Outbound = {
 export const DeleteUserRequest$outboundSchema: z.ZodMiniType<
   DeleteUserRequest$Outbound,
   DeleteUserRequest
-> = z.object({
-  id: z.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    id: z.string(),
+  })
+);
 
 export function deleteUserRequestToJSON(
   deleteUserRequest: DeleteUserRequest,

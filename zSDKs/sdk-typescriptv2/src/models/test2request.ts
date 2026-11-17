@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import {
   ExhaustiveObject,
   ExhaustiveObject$Outbound,
@@ -23,7 +24,8 @@ export type Test2Request = {
 };
 
 /** @internal */
-export const Type$outboundSchema: z.ZodMiniEnum<typeof Type> = z.enum(Type);
+export const Type$outboundSchema: z.ZodMiniEnum<typeof Type> =
+  /* @__PURE__ */ lazySchema$(() => z.enum(Type));
 
 /** @internal */
 export type Test2Request$Outbound = {
@@ -35,10 +37,12 @@ export type Test2Request$Outbound = {
 export const Test2Request$outboundSchema: z.ZodMiniType<
   Test2Request$Outbound,
   Test2Request
-> = z.object({
-  obj: ExhaustiveObject$outboundSchema,
-  type: z.optional(Type$outboundSchema),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    obj: ExhaustiveObject$outboundSchema,
+    type: z.optional(Type$outboundSchema),
+  })
+);
 
 export function test2RequestToJSON(test2Request: Test2Request): string {
   return JSON.stringify(Test2Request$outboundSchema.parse(test2Request));

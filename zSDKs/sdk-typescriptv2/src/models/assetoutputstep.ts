@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import * as discriminatedUnionTypes from "../types/discriminatedUnion.js";
 import { discriminatedUnion } from "../types/discriminatedUnion.js";
 import { Result as SafeParseResult } from "../types/fp.js";
@@ -34,10 +34,12 @@ export type AssetOutputStep = {
 
 /** @internal */
 export const Content$inboundSchema: z.ZodMiniType<Content, unknown> =
-  discriminatedUnion("type", {
-    text: AssetTextBlock$inboundSchema,
-    image: AssetImageBlock$inboundSchema,
-  });
+  /* @__PURE__ */ lazySchema$(() =>
+    discriminatedUnion("type", {
+      text: AssetTextBlock$inboundSchema,
+      image: AssetImageBlock$inboundSchema,
+    })
+  );
 
 export function contentFromJSON(
   jsonString: string,
@@ -53,17 +55,19 @@ export function contentFromJSON(
 export const AssetOutputStep$inboundSchema: z.ZodMiniType<
   AssetOutputStep,
   unknown
-> = z.object({
-  type: types.literal("output"),
-  content: types.optional(
-    z.array(
-      discriminatedUnion("type", {
-        text: AssetTextBlock$inboundSchema,
-        image: AssetImageBlock$inboundSchema,
-      }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    type: types.literal("output"),
+    content: types.optional(
+      z.array(
+        discriminatedUnion("type", {
+          text: AssetTextBlock$inboundSchema,
+          image: AssetImageBlock$inboundSchema,
+        }),
+      ),
     ),
-  ),
-});
+  })
+);
 
 export function assetOutputStepFromJSON(
   jsonString: string,
