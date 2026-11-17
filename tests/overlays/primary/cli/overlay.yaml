@@ -200,6 +200,80 @@ actions:
                 to: $.previousId
                 optional: true
             merge: $.steps
+        continuationRun:
+          output:
+            outcome:
+              statePointer: $.status
+              states:
+                in_progress: pending
+                needs_more: continue
+                completed: success
+                failed: failure
+          continuation:
+            unlessRequest:
+              - path: $.detached
+                equals: true
+              - path: $.runner
+                exists: true
+            bind:
+              - from: $.resume_token
+                to: $.resume_token
+              - from: $.id
+                to: $.previous_id
+                optional: true
+                unlessRequest:
+                  path: $.persist
+                  equals: false
+            omit:
+              - path: $.prompt
+                unlessRequest:
+                  path: $.persist
+                  equals: false
+            merge:
+              - path: $.steps
+                dropLeadingWhere:
+                  field: type
+                  equals: prompt_echo
+            keepFirst:
+              - $.previous_id
+              - $.started_at
+              - path: $.usage.first_units
+                fallback: $.usage.units
+            collect:
+              - to: $.run_ids
+                from: [$.run_ids, $.id]
+            sum: [$.usage.units]
+            sumBy:
+              - path: $.usage.units_by_kind
+                key: kind
+                value: count
+        continuationRunStream:
+          output:
+            outcome:
+              streamStatePointer: $.data.task.status
+              states:
+                in_progress: pending
+                needs_more: continue
+                completed: success
+                failed: failure
+          continuation:
+            unlessRequest:
+              path: $.detached
+              equals: true
+            bind:
+              - streamFrom: [$.data.resume_token, $.data.task.resume_token]
+                streamAuthoritativeWhen:
+                  path: $.data.event_type
+                  equals: task.done
+                to: $.resume_token
+              - streamFrom: $.data.task.id
+                to: $.previous_id
+                optional: true
+            omit:
+              - path: $.prompt
+                unlessRequest:
+                  path: $.runner
+                  exists: true
       commands:
         compose:
           category: Create
@@ -960,6 +1034,47 @@ actions:
               application/json:
                 schema:
                   $ref: '#/components/schemas/continuationWidget'
+    /continuation/run:
+      post:
+        operationId: continuationRun
+        tags: [continuation]
+        description: Long-running task that the client continues. Detached and runner requests are continued server-side and returned as sent, persisted tasks resend only the resume values, and the combined result keeps first-response fields, collects every response ID, and sums keyed usage counters.
+        servers:
+        - url: http://localhost:35456
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/continuationTaskRequest'
+        responses:
+          "200":
+            description: One response of the task.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/continuationTask'
+    /continuation/run/stream:
+      post:
+        operationId: continuationRunStream
+        tags: [continuation]
+        description: Streamed long-running task whose completion event is authoritative for the resume token, so a token from an earlier progress event is not reused when the completion event omits it.
+        servers:
+        - url: http://localhost:35456
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/continuationTaskRequest'
+        responses:
+          "200":
+            description: Streamed task events.
+            content:
+              text/event-stream:
+                x-speakeasy-sse-sentinel: "[DONE]"
+                schema:
+                  $ref: '#/components/schemas/continuationTaskEvent'
 - target: $.components.schemas
   update:
     outcomeInteraction:
@@ -1066,6 +1181,104 @@ actions:
               type: integer
         error:
           $ref: '#/components/schemas/outcomeError'
+    continuationTaskRequest:
+      oneOf:
+        - $ref: '#/components/schemas/continuationEngineTask'
+        - $ref: '#/components/schemas/continuationRunnerTask'
+    continuationEngineTask:
+      type: object
+      required: [engine]
+      properties:
+        engine:
+          type: string
+        prompt:
+          type: string
+        persist:
+          type: boolean
+        detached:
+          type: boolean
+        previous_id:
+          type: string
+        resume_token:
+          type: string
+    continuationRunnerTask:
+      type: object
+      required: [runner, prompt]
+      properties:
+        runner:
+          type: string
+        prompt:
+          type: string
+        persist:
+          type: boolean
+        detached:
+          type: boolean
+        previous_id:
+          type: string
+        resume_token:
+          type: string
+    continuationTask:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [in_progress, needs_more, completed, failed]
+        resume_token:
+          type: string
+        previous_id:
+          type: string
+        run_ids:
+          type: array
+          items:
+            type: string
+        started_at:
+          type: string
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              text:
+                type: string
+        usage:
+          type: object
+          properties:
+            units:
+              type: integer
+            first_units:
+              type: integer
+            units_by_kind:
+              type: array
+              items:
+                type: object
+                properties:
+                  kind:
+                    type: string
+                  count:
+                    type: integer
+    continuationTaskEvent:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            event_type:
+              type: string
+            resume_token:
+              type: string
+            delta:
+              type: object
+              properties:
+                text:
+                  type: string
+            task:
+              $ref: '#/components/schemas/continuationTask'
     continuationStreamEvent:
       type: object
       required: [data]

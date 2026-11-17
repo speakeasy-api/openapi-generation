@@ -1184,6 +1184,8 @@ func TestPaginationAllIncludeHeadersTableWithoutResultsField(t *testing.T) {
 		cursor := r.URL.Query().Get("cursor")
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("X-Page", cursor)
+		// A nil Date stops net/http adding one, so outputs compare byte for byte.
+		w.Header()["Date"] = nil
 		results := []int64{}
 		if cursor == "-1" {
 			results = []int64{0}

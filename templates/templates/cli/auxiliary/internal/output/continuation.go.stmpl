@@ -22,25 +22,71 @@ import (
 const continuationAnnotation = "speakeasy_continuation"
 
 type continuationBinding struct {
-	Pointer        string                        `json:"pointer"`
-	StreamPointers []string                      `json:"streamPointers"`
-	To             string                        `json:"to"`
-	ToPath         []string                      `json:"toPath"`
-	Optional       bool                          `json:"optional"`
-	Flag           string                        `json:"flag"`
-	UnlessRequest  *continuationRequestCondition `json:"unlessRequest"`
+	Pointer                 string                        `json:"pointer"`
+	StreamPointers          []string                      `json:"streamPointers"`
+	To                      string                        `json:"to"`
+	ToPath                  []string                      `json:"toPath"`
+	Optional                bool                          `json:"optional"`
+	Flag                    string                        `json:"flag"`
+	UnlessRequest           *continuationRequestCondition `json:"unlessRequest"`
+	StreamAuthoritativeWhen *continuationRequestCondition `json:"streamAuthoritativeWhen"`
 }
 
+// continuationRequestCondition with Exists set treats a null value as absent.
 type continuationRequestCondition struct {
 	Pointer string      `json:"pointer"`
 	Equals  interface{} `json:"equals"`
+	Exists  *bool       `json:"exists"`
+}
+
+func (c *continuationRequestCondition) matches(root interface{}) bool {
+	value, ok := outcomePointer(root, c.Pointer)
+	if c.Exists != nil {
+		return (ok && value != nil) == *c.Exists
+	}
+	return ok && continuationValuesEqual(value, c.Equals)
+}
+
+type continuationOmit struct {
+	Name          string                        `json:"name"`
+	Path          []string                      `json:"path"`
+	UnlessRequest *continuationRequestCondition `json:"unlessRequest"`
+}
+
+type continuationMergeDrop struct {
+	Pointer string      `json:"pointer"`
+	Field   string      `json:"field"`
+	Equals  interface{} `json:"equals"`
+}
+
+type continuationKeepFirst struct {
+	Pointer  string `json:"pointer"`
+	Fallback string `json:"fallback"`
+}
+
+type continuationCollect struct {
+	To     string   `json:"to"`
+	From   []string `json:"from"`
+	Unique bool     `json:"unique"`
+}
+
+type continuationSumBy struct {
+	Pointer string `json:"pointer"`
+	Key     string `json:"key"`
+	Value   string `json:"value"`
 }
 
 type continuationConfig struct {
-	Bind    []continuationBinding `json:"bind"`
-	Merge   []string              `json:"merge"`
-	Sum     []string              `json:"sum"`
-	MaxHops int                   `json:"maxHops"`
+	Bind                  []continuationBinding          `json:"bind"`
+	Omit                  []continuationOmit             `json:"omit"`
+	UnlessRequest         []continuationRequestCondition `json:"unlessRequest"`
+	Merge                 []string                       `json:"merge"`
+	MergeDropLeadingWhere []continuationMergeDrop        `json:"mergeDropLeadingWhere"`
+	Sum                   []string                       `json:"sum"`
+	KeepFirst             []continuationKeepFirst        `json:"keepFirst"`
+	Collect               []continuationCollect          `json:"collect"`
+	SumBy                 []continuationSumBy            `json:"sumBy"`
+	MaxHops               int                            `json:"maxHops"`
 }
 
 // ContinuationHop sends the command's request once more. The request the
@@ -77,18 +123,35 @@ type continuationRun struct {
 	hop           ContinuationHop
 	auto          bool
 	limit         int
+	skipped       bool
 
 	hops          int
 	state         string
 	values        map[string]string
+	sentValues    map[string]string
 	fallback      map[string]string
 	fallbackValid bool
 	limited       bool
+	stalled       bool
 	missing       []string
 }
 
 func newContinuationRun(cmd *cobra.Command, request interface{}, hop ContinuationHop) (*continuationRun, error) {
-	run := &continuationRun{cmd: cmd, cfg: activeContinuation(cmd), outcome: activeOutcome(cmd), request: request, original: continuationRequestPayload(request), hop: hop, values: map[string]string{}}
+	run := &continuationRun{cmd: cmd, cfg: activeContinuation(cmd), outcome: activeOutcome(cmd), request: request, original: continuationRequestPayload(request), hop: hop, values: map[string]string{}, sentValues: map[string]string{}}
+	for i := range run.cfg.UnlessRequest {
+		if run.cfg.UnlessRequest[i].matches(run.original) {
+			run.skipped = true
+			break
+		}
+	}
+	for _, binding := range run.cfg.Bind {
+		if binding.Optional || !run.bindingEnabled(binding) {
+			continue
+		}
+		if value := continuationPathString(run.original, binding.ToPath); value != "" {
+			run.sentValues[binding.To] = value
+		}
+	}
 	run.auto, _ = flagutil.GetBoolFlag(cmd, "auto-continue")
 	run.limit = run.cfg.MaxHops
 	if flagutil.FlagChanged(cmd, "max-continuations") {
@@ -110,12 +173,24 @@ func (r *continuationRun) beginHop() {
 }
 
 func (r *continuationRun) bindingEnabled(binding continuationBinding) bool {
-	condition := binding.UnlessRequest
-	if condition == nil {
-		return true
+	return binding.UnlessRequest == nil || !binding.UnlessRequest.matches(r.original)
+}
+
+func (r *continuationRun) omitEnabled(omit continuationOmit) bool {
+	return len(omit.Path) > 0 && (omit.UnlessRequest == nil || !omit.UnlessRequest.matches(r.original))
+}
+
+func continuationPathString(root interface{}, path []string) string {
+	current := root
+	for _, key := range path {
+		object, ok := current.(map[string]interface{})
+		if !ok {
+			return ""
+		}
+		current = object[key]
 	}
-	value, ok := outcomePointer(r.original, condition.Pointer)
-	return !ok || !continuationValuesEqual(value, condition.Equals)
+	text, _ := current.(string)
+	return text
 }
 
 func continuationValuesEqual(left, right interface{}) bool {
@@ -158,15 +233,22 @@ func (r *continuationRun) capture(payload interface{}, stream bool) {
 		if stream {
 			pointers = binding.StreamPointers
 		}
+		found := ""
 		for _, pointer := range pointers {
 			if pointer == "" {
 				continue
 			}
 			if value, ok := outcomePointer(payload, pointer); ok {
 				if text, isString := value.(string); isString && text != "" {
-					r.values[binding.To] = text
+					found = text
 				}
 			}
+		}
+		switch {
+		case found != "":
+			r.values[binding.To] = found
+		case stream && binding.StreamAuthoritativeWhen != nil && binding.StreamAuthoritativeWhen.matches(payload):
+			delete(r.values, binding.To)
 		}
 	}
 	pointers := []string{r.outcome.StatePointer}
@@ -208,23 +290,54 @@ func (r *continuationRun) advance() (bool, error) {
 	if len(r.missing) > 0 || !r.auto {
 		return false, nil
 	}
+	if r.repeated() {
+		r.stalled = true
+		return false, nil
+	}
 	if r.hops >= r.limit {
 		r.limited = true
 		return false, nil
 	}
+	var sets []continuationBodySet
 	for _, binding := range r.cfg.Bind {
 		if !r.bindingEnabled(binding) {
 			continue
 		}
-		value, ok := r.values[binding.To]
-		if !ok {
-			continue
-		}
-		if err := setContinuationBodyValue(r.request, binding.ToPath, value); err != nil {
-			return false, r.wrap(WithCLIReason(fmt.Errorf("cannot set %s on the next request: %w", binding.To, err), ReasonCLIRuntime))
+		if value, ok := r.values[binding.To]; ok {
+			sets = append(sets, continuationBodySet{to: binding.To, path: binding.ToPath, value: value})
 		}
 	}
+	var omits [][]string
+	for _, omit := range r.cfg.Omit {
+		if r.omitEnabled(omit) {
+			omits = append(omits, omit.Path)
+		}
+	}
+	if err := updateContinuationBody(r.request, sets, omits); err != nil {
+		return false, r.wrap(WithCLIReason(fmt.Errorf("cannot prepare the next request: %w", err), ReasonCLIRuntime))
+	}
+	if r.sentValues == nil {
+		r.sentValues = map[string]string{}
+	}
+	for _, set := range sets {
+		r.sentValues[set.to] = set.value
+	}
 	return true, nil
+}
+
+func (r *continuationRun) repeated() bool {
+	compared := false
+	for _, binding := range r.cfg.Bind {
+		if binding.Optional || !r.bindingEnabled(binding) {
+			continue
+		}
+		sent := r.sentValues[binding.To]
+		if sent == "" || r.values[binding.To] != sent {
+			return false
+		}
+		compared = true
+	}
+	return compared
 }
 
 func (r *continuationRun) send() (interface{}, error) {
@@ -277,7 +390,7 @@ func (r *continuationRun) resumeValues() map[string]string {
 	if r.outcome.States[r.state] == "success" || r.outcome.States[r.state] == "handoff" {
 		return nil
 	}
-	if r.outcome.States[r.state] == "failure" || !r.hasCompleteRequiredBindings(r.values) {
+	if r.outcome.States[r.state] == "failure" || len(r.values) == 0 || !r.hasCompleteRequiredBindings(r.values) {
 		if r.fallbackValid {
 			return r.fallback
 		}
@@ -323,7 +436,17 @@ func (r *continuationRun) resumeHint() string {
 	if len(paths) > 0 {
 		parts = append(parts, "set "+strings.Join(paths, ", ")+" in the request body")
 	}
-	return "To continue, " + strings.Join(parts, " and ")
+	hint := "To continue, " + strings.Join(parts, " and ")
+	var omitted []string
+	for _, omit := range r.cfg.Omit {
+		if r.omitEnabled(omit) && omit.Name != "" {
+			omitted = append(omitted, omit.Name)
+		}
+	}
+	if len(omitted) > 0 {
+		hint += ", leaving " + strings.Join(omitted, ", ") + " out of the request body"
+	}
+	return hint
 }
 
 func (r *continuationRun) wrap(err error) error {
@@ -348,6 +471,9 @@ func (r *continuationRun) finish() error {
 	stderr := r.cmd.ErrOrStderr()
 	if r.hops > 1 {
 		fmt.Fprintf(stderr, "Continued across %d responses.\n", r.hops)
+	}
+	if r.stalled {
+		fmt.Fprintln(stderr, "Stopped continuing: the response returned the resume value it was sent with.")
 	}
 	if r.outcome.States[r.state] == "continue" && !r.auto {
 		if hint := r.resumeHint(); hint != "" {
@@ -434,6 +560,9 @@ func ContinuationResult(cmd *cobra.Command, request interface{}, hop Continuatio
 	if err != nil {
 		return Error(cmd, err)
 	}
+	if run.skipped {
+		return Result(cmd, res)
+	}
 	return run.discrete(res)
 }
 
@@ -473,7 +602,7 @@ func (r *continuationRun) discrete(res interface{}) error {
 	}
 
 	target := last
-	if len(payloads) > 1 && (len(run.cfg.Merge) > 0 || len(run.cfg.Sum) > 0) {
+	if run.combines(len(payloads)) {
 		target = mergedContinuationResult(last, mergeContinuationPayloads(run.cfg, payloads))
 	}
 	if failure := outcomeResultFailure(cmd, target); failure != nil {
@@ -493,21 +622,76 @@ func (r *continuationRun) discrete(res interface{}) error {
 	return run.finish()
 }
 
+// combines leaves a single auto-continued response as sent unless the recipe
+// adds fields to it, so one-hop results match multi-hop ones.
+func (r *continuationRun) combines(hops int) bool {
+	cfg := r.cfg
+	if !r.auto || hops == 0 {
+		return false
+	}
+	if len(cfg.Collect) > 0 {
+		return true
+	}
+	for _, kept := range cfg.KeepFirst {
+		if kept.Fallback != "" {
+			return true
+		}
+	}
+	return hops > 1 && (len(cfg.Merge) > 0 || len(cfg.Sum) > 0 || len(cfg.KeepFirst) > 0 || len(cfg.SumBy) > 0)
+}
+
 func mergeContinuationPayloads(cfg *continuationConfig, payloads []interface{}) interface{} {
-	merged := payloads[len(payloads)-1]
+	first := payloads[0]
+	merged := cloneContinuationJSON(payloads[len(payloads)-1])
 	for _, pointer := range cfg.Merge {
+		var drop *continuationMergeDrop
+		for i := range cfg.MergeDropLeadingWhere {
+			if cfg.MergeDropLeadingWhere[i].Pointer == pointer {
+				drop = &cfg.MergeDropLeadingWhere[i]
+			}
+		}
 		var items []interface{}
 		found := false
-		for _, payload := range payloads {
+		for i, payload := range payloads {
 			if value, ok := outcomePointer(payload, pointer); ok {
 				if list, isList := value.([]interface{}); isList {
-					items = append(items, list...)
+					if i > 0 && drop != nil {
+						list = dropContinuationLeading(list, drop)
+					}
+					items = append(items, cloneContinuationJSON(list).([]interface{})...)
 					found = true
 				}
 			}
 		}
 		if found {
+			if items == nil {
+				items = []interface{}{}
+			}
 			merged = setContinuationPointer(merged, pointer, items)
+		}
+	}
+	for _, kept := range cfg.KeepFirst {
+		value, ok := outcomePointer(first, kept.Pointer)
+		if (!ok || value == nil) && kept.Fallback != "" {
+			if fallback, found := outcomePointer(first, kept.Fallback); found && fallback != nil {
+				value, ok = fallback, true
+			}
+		}
+		switch {
+		case ok && value != nil:
+			parent := continuationParentPointer(kept.Pointer)
+			_, firstHasParent := continuationObjectAt(first, parent)
+			_, mergedHasParent := continuationObjectAt(merged, parent)
+			if firstHasParent || mergedHasParent {
+				merged = setContinuationPointer(merged, kept.Pointer, cloneContinuationJSON(value))
+			}
+		case len(payloads) > 1:
+			deleteContinuationPointer(merged, kept.Pointer)
+		}
+	}
+	for _, collect := range cfg.Collect {
+		if values := collectContinuationStrings(payloads, collect); len(values) > 0 {
+			merged = setContinuationPointer(merged, collect.To, values)
 		}
 	}
 	for _, pointer := range cfg.Sum {
@@ -515,7 +699,129 @@ func mergeContinuationPayloads(cfg *continuationConfig, payloads []interface{}) 
 			merged = setContinuationPointer(merged, pointer, total)
 		}
 	}
+	for _, rule := range cfg.SumBy {
+		if items, ok := sumContinuationGroups(payloads, rule); ok {
+			merged = setContinuationPointer(merged, rule.Pointer, items)
+		}
+	}
 	return merged
+}
+
+func dropContinuationLeading(items []interface{}, drop *continuationMergeDrop) []interface{} {
+	for len(items) > 0 {
+		object, ok := items[0].(map[string]interface{})
+		if !ok {
+			break
+		}
+		value, present := object[drop.Field]
+		if !present || !continuationValuesEqual(value, drop.Equals) {
+			break
+		}
+		items = items[1:]
+	}
+	return items
+}
+
+func collectContinuationStrings(payloads []interface{}, collect continuationCollect) []interface{} {
+	var values []interface{}
+	seen := map[string]bool{}
+	add := func(value interface{}) {
+		text, ok := value.(string)
+		if !ok || text == "" || (collect.Unique && seen[text]) {
+			return
+		}
+		seen[text] = true
+		values = append(values, text)
+	}
+	for _, payload := range payloads {
+		for _, pointer := range collect.From {
+			value, ok := outcomePointer(payload, pointer)
+			if !ok {
+				continue
+			}
+			if list, isList := value.([]interface{}); isList {
+				for _, item := range list {
+					add(item)
+				}
+				continue
+			}
+			add(value)
+		}
+	}
+	return values
+}
+
+type continuationGroup struct {
+	item   map[string]interface{}
+	total  *big.Rat
+	summed bool
+}
+
+// sumContinuationGroups keeps items that are not objects with a scalar key
+// as they are.
+func sumContinuationGroups(payloads []interface{}, rule continuationSumBy) ([]interface{}, bool) {
+	var entries []interface{}
+	groups := map[string]*continuationGroup{}
+	found := false
+	for _, payload := range payloads {
+		value, ok := outcomePointer(payload, rule.Pointer)
+		list, isList := value.([]interface{})
+		if !ok || !isList {
+			continue
+		}
+		found = true
+		for _, element := range list {
+			object, isObject := element.(map[string]interface{})
+			var key interface{}
+			if isObject {
+				key = object[rule.Key]
+			}
+			id, groupable := continuationGroupKey(key)
+			if !groupable {
+				entries = append(entries, cloneContinuationJSON(element))
+				continue
+			}
+			group := groups[id]
+			if group == nil {
+				group = &continuationGroup{item: cloneContinuationJSON(object).(map[string]interface{}), total: new(big.Rat)}
+				groups[id] = group
+				entries = append(entries, group)
+			}
+			if number, ok := continuationNumber(object[rule.Value]); ok {
+				group.total.Add(group.total, number)
+				group.summed = true
+			}
+		}
+	}
+	if !found {
+		return nil, false
+	}
+	items := make([]interface{}, 0, len(entries))
+	for _, entry := range entries {
+		group, isGroup := entry.(*continuationGroup)
+		if !isGroup {
+			items = append(items, entry)
+			continue
+		}
+		if group.summed {
+			group.item[rule.Value] = continuationTotal(group.total)
+		}
+		items = append(items, group.item)
+	}
+	return items, true
+}
+
+func continuationGroupKey(key interface{}) (string, bool) {
+	switch typed := key.(type) {
+	case string:
+		return "s" + typed, true
+	case bool:
+		return "b" + strconv.FormatBool(typed), true
+	}
+	if number, ok := continuationNumber(key); ok {
+		return "n" + number.RatString(), true
+	}
+	return "", false
 }
 
 func sumContinuationValues(payloads []interface{}, pointer string) (json.Number, bool) {
@@ -540,23 +846,64 @@ func sumContinuationValues(payloads []interface{}, pointer string) (json.Number,
 	if !found {
 		return "", false
 	}
-	if total.IsInt() {
-		return json.Number(total.Num().String()), true
-	}
-	approx, _ := total.Float64()
-	return json.Number(strconv.FormatFloat(approx, 'g', -1, 64)), true
+	return continuationTotal(total), true
 }
 
-func setContinuationPointer(root interface{}, pointer string, value interface{}) interface{} {
+func continuationTotal(total *big.Rat) json.Number {
+	if total.IsInt() {
+		return json.Number(total.Num().String())
+	}
+	approx, _ := total.Float64()
+	return json.Number(strconv.FormatFloat(approx, 'g', -1, 64))
+}
+
+func cloneContinuationJSON(value interface{}) interface{} {
+	switch typed := value.(type) {
+	case map[string]interface{}:
+		cloned := make(map[string]interface{}, len(typed))
+		for key, child := range typed {
+			cloned[key] = cloneContinuationJSON(child)
+		}
+		return cloned
+	case []interface{}:
+		cloned := make([]interface{}, len(typed))
+		for i, child := range typed {
+			cloned[i] = cloneContinuationJSON(child)
+		}
+		return cloned
+	default:
+		return value
+	}
+}
+
+func continuationPointerTokens(pointer string) []string {
 	if !strings.HasPrefix(pointer, "/") {
-		return root
+		return nil
 	}
 	var tokens []string
 	for _, raw := range strings.Split(strings.TrimPrefix(pointer, "/"), "/") {
 		tokens = append(tokens, strings.ReplaceAll(strings.ReplaceAll(raw, "~1", "/"), "~0", "~"))
 	}
+	return tokens
+}
+
+func continuationParentPointer(pointer string) string {
+	if index := strings.LastIndex(pointer, "/"); index > 0 {
+		return pointer[:index]
+	}
+	return ""
+}
+
+func continuationObjectAt(root interface{}, pointer string) (map[string]interface{}, bool) {
+	value, ok := outcomePointer(root, pointer)
+	object, isObject := value.(map[string]interface{})
+	return object, ok && isObject
+}
+
+func setContinuationPointer(root interface{}, pointer string, value interface{}) interface{} {
+	tokens := continuationPointerTokens(pointer)
 	object, ok := root.(map[string]interface{})
-	if !ok {
+	if len(tokens) == 0 || !ok {
 		return root
 	}
 	current := object
@@ -570,6 +917,17 @@ func setContinuationPointer(root interface{}, pointer string, value interface{})
 	}
 	current[tokens[len(tokens)-1]] = value
 	return object
+}
+
+func deleteContinuationPointer(root interface{}, pointer string) {
+	tokens := continuationPointerTokens(pointer)
+	if len(tokens) == 0 {
+		return
+	}
+	parent, ok := continuationObjectAt(root, continuationParentPointer(pointer))
+	if ok {
+		delete(parent, tokens[len(tokens)-1])
+	}
 }
 
 type continuationHTTPMeta struct {
@@ -611,11 +969,20 @@ func continuationRequestPayload(request interface{}) interface{} {
 	return payload
 }
 
-// setContinuationBodyValue writes value at path inside the request body: the
-// request field tagged as the media-type body, or the request itself when the
-// body is the whole request. The body round-trips through JSON so nested
-// paths and union bodies are written the way the API receives them.
-func setContinuationBodyValue(request interface{}, path []string, value string) error {
+type continuationBodySet struct {
+	to    string
+	path  []string
+	value string
+}
+
+// updateContinuationBody edits the request field tagged as the media-type
+// body, or the request itself when the body is the whole request. The body
+// round-trips through JSON so nested paths and union bodies are written the
+// way the API receives them.
+func updateContinuationBody(request interface{}, sets []continuationBodySet, omits [][]string) error {
+	if len(sets) == 0 && len(omits) == 0 {
+		return nil
+	}
 	target, err := continuationBodyTarget(request)
 	if err != nil {
 		return err
@@ -635,7 +1002,12 @@ func setContinuationBodyValue(request interface{}, path []string, value string) 
 	if !ok {
 		return errors.New("the request body is not a JSON object")
 	}
-	flagutil.SetBodyPath(body, path, value)
+	for _, set := range sets {
+		flagutil.SetBodyPath(body, set.path, set.value)
+	}
+	for _, path := range omits {
+		deleteContinuationBodyPath(body, path)
+	}
 	encoded, err = json.Marshal(body)
 	if err != nil {
 		return err
@@ -646,6 +1018,21 @@ func setContinuationBodyValue(request interface{}, path []string, value string) 
 	}
 	target.Set(fresh.Elem())
 	return nil
+}
+
+func deleteContinuationBodyPath(body map[string]interface{}, path []string) {
+	if len(path) == 0 {
+		return
+	}
+	current := body
+	for _, key := range path[:len(path)-1] {
+		child, ok := current[key].(map[string]interface{})
+		if !ok {
+			return
+		}
+		current = child
+	}
+	delete(current, path[len(path)-1])
 }
 
 func continuationBodyTarget(request interface{}) (reflect.Value, error) {
@@ -678,7 +1065,7 @@ func ContinuationStream(cmd *cobra.Command, request interface{}, hop Continuatio
 	if err != nil {
 		return err
 	}
-	if len(run.outcome.streamStatePointers()) == 0 {
+	if run.skipped || len(run.outcome.streamStatePointers()) == 0 {
 		res, err := run.send()
 		if err != nil {
 			return Error(cmd, err)
@@ -711,6 +1098,13 @@ func (s *streamContinuation) observe(frame map[string]interface{}) {
 	if frame != nil {
 		s.run.capture(frame, true)
 	}
+}
+
+// abort discards the values captured in a stream the server ended with an
+// error event, so a resume points at the last hop that completed.
+func (s *streamContinuation) abort() {
+	s.run.state = ""
+	s.run.values = map[string]string{}
 }
 
 func (s *streamContinuation) wrap(err error) error { return s.run.wrap(err) }

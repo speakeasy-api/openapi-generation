@@ -1,0 +1,10 @@
+id: 1794872777-cf076de2
+features:
+    - cliCommands
+targets:
+    - cli
+type: feat
+bump: patch
+description: add continuation primitives for omitting request fields, skipping by request shape, stopping on repeated tokens, and combining keyed results
+author: TristanSpeakEasy
+date: "2026-11-17"

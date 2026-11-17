@@ -1451,6 +1451,10 @@ function continuationJSON(
       `x-speakeasy-cli-commands: operation "${op.OriginalID}" is paginated; continuation cannot be combined with pagination in v1`,
     );
   }
+  const condition = (c: CLICommandContinuationRequestCondition) =>
+    c.Operator === "exists"
+      ? { pointer: c.Pointer, exists: Boolean(c.Exists) }
+      : { pointer: c.Pointer, equals: c.Equals };
   return JSON.stringify({
     bind: recipe.Bind.map((binding) => ({
       ...(binding.Pointer ? { pointer: binding.Pointer } : {}),
@@ -1461,17 +1465,66 @@ function continuationJSON(
       toPath: binding.ToPath,
       ...(binding.Optional ? { optional: true } : {}),
       ...(binding.UnlessRequest
+        ? { unlessRequest: condition(binding.UnlessRequest) }
+        : {}),
+      ...(binding.StreamAuthoritativeWhen
         ? {
-            unlessRequest: {
-              pointer: binding.UnlessRequest.Pointer,
-              equals: binding.UnlessRequest.Equals,
-            },
+            streamAuthoritativeWhen: condition(binding.StreamAuthoritativeWhen),
           }
         : {}),
       ...(binding.Flag ? { flag: binding.Flag } : {}),
     })),
+    ...(recipe.Omit?.length
+      ? {
+          omit: recipe.Omit.map((omit) => ({
+            name: omit.Path,
+            path: omit.PathSegments,
+            ...(omit.UnlessRequest
+              ? { unlessRequest: condition(omit.UnlessRequest) }
+              : {}),
+          })),
+        }
+      : {}),
+    ...(recipe.UnlessRequest?.length
+      ? { unlessRequest: recipe.UnlessRequest.map(condition) }
+      : {}),
     ...(recipe.Merge?.length ? { merge: recipe.Merge } : {}),
+    ...(recipe.MergeDropLeadingWhere?.length
+      ? {
+          mergeDropLeadingWhere: recipe.MergeDropLeadingWhere.map((drop) => ({
+            pointer: drop.Pointer,
+            field: drop.Field,
+            equals: drop.Equals,
+          })),
+        }
+      : {}),
     ...(recipe.Sum?.length ? { sum: recipe.Sum } : {}),
+    ...(recipe.KeepFirst?.length
+      ? {
+          keepFirst: recipe.KeepFirst.map((kept) => ({
+            pointer: kept.Pointer,
+            ...(kept.FallbackPointer ? { fallback: kept.FallbackPointer } : {}),
+          })),
+        }
+      : {}),
+    ...(recipe.Collect?.length
+      ? {
+          collect: recipe.Collect.map((collect) => ({
+            to: collect.ToPointer,
+            from: collect.FromPointers,
+            unique: collect.Unique,
+          })),
+        }
+      : {}),
+    ...(recipe.SumBy?.length
+      ? {
+          sumBy: recipe.SumBy.map((sum) => ({
+            pointer: sum.Pointer,
+            key: sum.Key,
+            value: sum.Value,
+          })),
+        }
+      : {}),
     maxHops: recipe.MaxHops,
   });
 }

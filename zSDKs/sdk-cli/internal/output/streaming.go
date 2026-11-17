@@ -39,6 +39,7 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string, s
 // so every hop's events reach one projector and one output sequence.
 type streamHops interface {
 	observe(frame map[string]interface{})
+	abort()
 	wrap(err error) error
 	next() (interface{}, bool, error)
 	discrete(res interface{}) error
@@ -178,6 +179,9 @@ func streamResult(cmd *cobra.Command, res interface{}, streamFieldName string, h
 
 			if len(valueResults) == 1 {
 				if body, isErr := streamErrorEvent(item, raw); isErr {
+					if hops != nil {
+						hops.abort()
+					}
 					return false, renderAfterFinish(wrap(&StreamEventError{Body: string(body)}))
 				}
 			}

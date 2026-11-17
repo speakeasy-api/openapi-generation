@@ -272,10 +272,26 @@ func (d *cliManifestDecoder) linkContinuation(owner string, recipe *CLICommandCo
 		return fmt.Errorf("%s continuation: operation %q has no application/json request body to carry resume values", owner, opID)
 	}
 
+	for i := range recipe.UnlessRequest {
+		if err := d.linkContinuationRequestCondition(owner, "continuation.unlessRequest", opID, &recipe.UnlessRequest[i], opInfo.bodySchema); err != nil {
+			return err
+		}
+	}
 	for i := range recipe.Bind {
 		binding := &recipe.Bind[i]
 		if binding.UnlessRequest != nil {
-			if err := d.linkContinuationRequestCondition(owner, opID, binding.UnlessRequest, opInfo.bodySchema); err != nil {
+			if err := d.linkContinuationRequestCondition(owner, "continuation.bind.unlessRequest", opID, binding.UnlessRequest, opInfo.bodySchema); err != nil {
+				return err
+			}
+		}
+		if condition := binding.StreamAuthoritativeWhen; condition != nil {
+			if !hasStream {
+				return fmt.Errorf("%s continuation.bind.streamAuthoritativeWhen: operation %q has no streaming 2xx response", owner, opID)
+			}
+			if _, ok := condition.Equals.(string); !ok {
+				return fmt.Errorf("%s continuation.bind.streamAuthoritativeWhen.equals must be a string", owner)
+			}
+			if err := d.linkStreamSelection(owner, "continuation.bind.streamAuthoritativeWhen.path", condition.Path, opInfo); err != nil {
 				return err
 			}
 		}
@@ -315,11 +331,34 @@ func (d *cliManifestDecoder) linkContinuation(owner string, recipe *CLICommandCo
 		}
 	}
 
-	if (len(recipe.Merge) > 0 || len(recipe.Sum) > 0) && !hasJSON {
-		return fmt.Errorf("%s continuation.merge and continuation.sum apply to application/json responses, and operation %q has none", owner, opID)
+	omitExclusions := make([]*CLICommandContinuationRequestCondition, 0, len(recipe.UnlessRequest)+1)
+	for i := range recipe.UnlessRequest {
+		omitExclusions = append(omitExclusions, &recipe.UnlessRequest[i])
+	}
+	for i := range recipe.Omit {
+		omit := &recipe.Omit[i]
+		exclusions := omitExclusions
+		if omit.UnlessRequest != nil {
+			if err := d.linkContinuationRequestCondition(owner, "continuation.omit.unlessRequest", opID, omit.UnlessRequest, opInfo.bodySchema); err != nil {
+				return err
+			}
+			exclusions = append(slices.Clone(omitExclusions), omit.UnlessRequest)
+		}
+		if err := d.linkContinuationOmit(owner, opID, omit, exclusions, opInfo.bodySchema); err != nil {
+			return err
+		}
+	}
+
+	if (len(recipe.Merge) > 0 || len(recipe.Sum) > 0 || len(recipe.KeepFirst) > 0 || len(recipe.Collect) > 0 || len(recipe.SumBy) > 0) && !hasJSON {
+		return fmt.Errorf("%s continuation.merge, sum, keepFirst, collect, and sumBy apply to application/json responses, and operation %q has none", owner, opID)
 	}
 	for _, path := range recipe.MergeFrom {
 		if err := d.linkContinuationResultPath(owner, "continuation.merge", path, opID, opInfo, func(kind string) bool { return kind == "array" }, "an array"); err != nil {
+			return err
+		}
+	}
+	for i := range recipe.MergeDropLeadingWhere {
+		if err := d.linkContinuationMergeDrop(owner, opID, &recipe.MergeDropLeadingWhere[i], opInfo); err != nil {
 			return err
 		}
 	}
@@ -328,39 +367,77 @@ func (d *cliManifestDecoder) linkContinuation(owner string, recipe *CLICommandCo
 			return err
 		}
 	}
+	for _, kept := range recipe.KeepFirst {
+		if err := d.linkContinuationResultPresence(owner, "continuation.keepFirst", kept.Path, opID, opInfo); err != nil {
+			return err
+		}
+		if kept.Fallback != "" {
+			if err := d.linkContinuationResultPresence(owner, "continuation.keepFirst.fallback", kept.Fallback, opID, opInfo); err != nil {
+				return err
+			}
+		}
+	}
+	for _, collect := range recipe.Collect {
+		if err := d.linkContinuationResultFacts(owner, "continuation.collect.to", collect.To, opID, opInfo, cliFactsStringArray, "an array of strings"); err != nil {
+			return err
+		}
+		for _, path := range collect.From {
+			if err := d.linkContinuationResultFacts(owner, "continuation.collect.from", path, opID, opInfo, func(facts *cliPropertyFacts) bool {
+				return cliFactsStringArray(facts) || (len(facts.kinds) == 1 && facts.kinds[0] == "string")
+			}, "a string or an array of strings"); err != nil {
+				return err
+			}
+		}
+	}
+	for _, sum := range recipe.SumBy {
+		if err := d.linkContinuationSumBy(owner, opID, sum, opInfo); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func (d *cliManifestDecoder) linkContinuationRequestCondition(owner, opID string, condition *CLICommandContinuationRequestCondition, bodySchema any) error {
+func cliFactsStringArray(facts *cliPropertyFacts) bool {
+	return len(facts.kinds) == 1 && facts.kinds[0] == "array" && facts.arrayOfStr
+}
+
+func (d *cliManifestDecoder) continuationPathLeaves(schema any, segments []cliPathSegment) []any {
+	current := []any{schema}
+	for _, segment := range segments {
+		var next []any
+		for _, parent := range current {
+			for _, variant := range d.continuationTargetVariants(parent) {
+				resolved, err := d.resolveObjectSchema(variant, nil)
+				if err != nil {
+					continue
+				}
+				if property, ok := resolved.properties[segment.Name]; ok {
+					next = append(next, property)
+				}
+			}
+		}
+		current = next
+	}
+	return current
+}
+
+func (d *cliManifestDecoder) linkContinuationRequestCondition(owner, field, opID string, condition *CLICommandContinuationRequestCondition, bodySchema any) error {
 	segments, err := cliParseSingularPath(condition.Path)
 	if err != nil {
 		return err
 	}
-	variants := d.continuationTargetVariants(bodySchema)
-	for index, variantSchema := range variants {
-		current := []any{variantSchema}
-		for _, segment := range segments {
-			next := []any{}
-			for _, schema := range current {
-				resolved, err := d.resolveObjectSchema(schema, nil)
-				if err != nil {
-					return fmt.Errorf("%s continuation.bind.unlessRequest.path %s in request body variant %d of operation %q: %w", owner, condition.Path, index+1, opID, err)
-				}
-				if segment.IsIndex {
-					return fmt.Errorf("%s continuation.bind.unlessRequest.path %s must name object properties only", owner, condition.Path)
-				}
-				property, exists := resolved.properties[segment.Name]
-				if !exists {
-					return fmt.Errorf("%s continuation.bind.unlessRequest.path %s is absent from request body variant %d of operation %q", owner, condition.Path, index+1, opID)
-				}
-				next = append(next, d.continuationTargetVariants(property)...)
-			}
-			current = next
-		}
-		if len(current) == 0 {
-			return fmt.Errorf("%s continuation.bind.unlessRequest.path %s does not resolve in request body variant %d of operation %q", owner, condition.Path, index+1, opID)
-		}
-		for _, schema := range current {
+	if slices.ContainsFunc(segments, func(segment cliPathSegment) bool { return segment.IsIndex || segment.IsWild }) {
+		return fmt.Errorf("%s %s.path %s must name object properties only", owner, field, condition.Path)
+	}
+	leaves := d.continuationPathLeaves(bodySchema, segments)
+	if len(leaves) == 0 {
+		return fmt.Errorf("%s %s.path %s is absent from every request body variant of operation %q", owner, field, condition.Path, opID)
+	}
+	if condition.Operator != "equals" {
+		return nil
+	}
+	for _, leaf := range leaves {
+		for _, schema := range d.continuationTargetVariants(leaf) {
 			if raw, ok := schema.(map[string]any); ok {
 				stripped := cliWithoutNullType(raw)
 				if stripped == nil {
@@ -370,17 +447,134 @@ func (d *cliManifestDecoder) linkContinuationRequestCondition(owner, opID string
 			}
 			facts, err := d.propertyFacts(schema, nil)
 			if err != nil {
-				return fmt.Errorf("%s continuation.bind.unlessRequest.path %s in operation %q: %w", owner, condition.Path, opID, err)
+				return fmt.Errorf("%s %s.path %s in operation %q: %w", owner, field, condition.Path, opID, err)
 			}
 			if len(facts.kinds) != 1 || !cliIsScalarKind(facts.kinds[0]) {
-				return fmt.Errorf("%s continuation.bind.unlessRequest.path %s must select a scalar property in every request body variant of operation %q", owner, condition.Path, opID)
+				return fmt.Errorf("%s %s.path %s must select a scalar property in every request body variant of operation %q that declares it", owner, field, condition.Path, opID)
 			}
 		}
 	}
 	return nil
 }
 
+// linkContinuationOmit rejects omitting a property a request-body variant
+// requires, unless an exists: true condition in exclusions names a non-null
+// property that variant requires, so the omit can never apply to it.
+func (d *cliManifestDecoder) linkContinuationOmit(owner, opID string, omit *CLICommandContinuationOmit, exclusions []*CLICommandContinuationRequestCondition, bodySchema any) error {
+	found := false
+	last := len(omit.PathSegments) - 1
+	for _, variant := range d.continuationTargetVariants(bodySchema) {
+		excluded := d.continuationVariantExcluded(variant, exclusions)
+		parents := []any{variant}
+		for depth, name := range omit.PathSegments {
+			var next []any
+			for _, parent := range parents {
+				for _, member := range d.continuationTargetVariants(parent) {
+					resolved, err := d.resolveObjectSchema(member, nil)
+					if err != nil {
+						continue
+					}
+					prop, ok := resolved.properties[name]
+					if !ok {
+						continue
+					}
+					if depth < last {
+						next = append(next, prop)
+						continue
+					}
+					found = true
+					facts, err := d.propertyFacts(prop, nil)
+					if err != nil {
+						return fmt.Errorf("%s continuation.omit %s in request body variant %s of operation %q: %w", owner, omit.Path, cliSchemaLabel(resolved), opID, err)
+					}
+					readOnly := facts.readOnly
+					if leaf := d.continuationTargetLeaf(prop); leaf != nil {
+						if leafFacts, err := d.propertyFacts(leaf, nil); err == nil {
+							readOnly = readOnly || leafFacts.readOnly
+						}
+					}
+					if readOnly {
+						return fmt.Errorf("%s continuation.omit %s names readOnly property %q in request body variant %s of operation %q", owner, omit.Path, name, cliSchemaLabel(resolved), opID)
+					}
+					if !excluded && resolved.required[name] {
+						return fmt.Errorf("%s continuation.omit %s names property %q, which request body variant %s of operation %q requires; make it optional there or add an unlessRequest exists condition on a property only that variant requires", owner, omit.Path, name, cliSchemaLabel(resolved), opID)
+					}
+				}
+			}
+			parents = next
+		}
+	}
+	if !found {
+		return fmt.Errorf("%s continuation.omit %s is absent from every request body variant of operation %q", owner, omit.Path, opID)
+	}
+	return nil
+}
+
+func (d *cliManifestDecoder) continuationVariantExcluded(variant any, conditions []*CLICommandContinuationRequestCondition) bool {
+	for _, condition := range conditions {
+		if condition.Operator != "exists" || !condition.Exists {
+			continue
+		}
+		segments, err := cliParseSingularPath(condition.Path)
+		if err == nil && d.continuationSchemaRequires(variant, segments) {
+			return true
+		}
+	}
+	return false
+}
+
+func (d *cliManifestDecoder) continuationSchemaRequires(schema any, segments []cliPathSegment) bool {
+	if len(segments) == 0 {
+		return true
+	}
+	variants := d.continuationTargetVariants(schema)
+	if len(variants) == 0 {
+		return false
+	}
+	for _, variant := range variants {
+		resolved, err := d.resolveObjectSchema(variant, nil)
+		if err != nil {
+			return false
+		}
+		prop, ok := resolved.properties[segments[0].Name]
+		if !ok || !resolved.required[segments[0].Name] || d.continuationSchemaNullable(prop, 0) || !d.continuationSchemaRequires(prop, segments[1:]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (d *cliManifestDecoder) continuationSchemaNullable(schema any, depth int) bool {
+	raw, ok := schema.(map[string]any)
+	if !ok || depth > 16 {
+		return false
+	}
+	if nullable, _ := raw["nullable"].(bool); nullable || slices.Contains(cliSchemaTypes(raw), "null") {
+		return true
+	}
+	if ref, ok := raw["$ref"].(string); ok && strings.HasPrefix(ref, cliComponentRefPrefix) {
+		if d.continuationSchemaNullable(d.schemaIndex.components[strings.TrimPrefix(ref, cliComponentRefPrefix)], depth+1) {
+			return true
+		}
+	}
+	for _, key := range []string{"oneOf", "anyOf"} {
+		members, _ := raw[key].([]any)
+		for _, member := range members {
+			if d.continuationSchemaNullable(member, depth+1) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (d *cliManifestDecoder) linkContinuationResultPath(owner, field, path, opID string, opInfo *cliOperationInfo, accept func(string) bool, expected string) error {
+	return d.linkContinuationResultFacts(owner, field, path, opID, opInfo, func(facts *cliPropertyFacts) bool {
+		return len(facts.kinds) == 1 && accept(facts.kinds[0])
+	}, expected)
+}
+
+func (d *cliManifestDecoder) linkContinuationResultFacts(owner, field, path, opID string, opInfo *cliOperationInfo, accept func(*cliPropertyFacts) bool, expected string) error {
 	for _, response := range opInfo.jsonResponses {
 		views, err := d.walkResponsePath(path, response.schema)
 		if err != nil {
@@ -391,12 +585,101 @@ func (d *cliManifestDecoder) linkContinuationResultPath(owner, field, path, opID
 			return fmt.Errorf("%s %s %s in operation %q response %s: %w", owner, field, path, opID, response.code, err)
 		}
 		for _, propertyFacts := range facts {
-			if len(propertyFacts.kinds) != 1 || !accept(propertyFacts.kinds[0]) {
+			if !accept(propertyFacts) {
 				return fmt.Errorf("%s %s %s in operation %q response %s must select %s in every response variant", owner, field, path, opID, response.code, expected)
 			}
 		}
 	}
 	return nil
+}
+
+func (d *cliManifestDecoder) linkContinuationResultPresence(owner, field, path, opID string, opInfo *cliOperationInfo) error {
+	segments, err := cliParseSingularPath(path)
+	if err != nil {
+		return fmt.Errorf("%s %s: %w", owner, field, err)
+	}
+	for _, response := range opInfo.jsonResponses {
+		if len(d.continuationPathLeaves(response.schema, segments)) == 0 {
+			return fmt.Errorf("%s %s %s is absent from operation %q response %s", owner, field, path, opID, response.code)
+		}
+	}
+	return nil
+}
+
+func (d *cliManifestDecoder) continuationItemViews(owner, field, path, opID string, opInfo *cliOperationInfo) ([]*cliResolvedSchema, error) {
+	var items []*cliResolvedSchema
+	for _, response := range opInfo.jsonResponses {
+		views, err := d.walkResponsePath(path+"[0]", response.schema)
+		if err != nil {
+			return nil, fmt.Errorf("%s %s %s in operation %q response %s: %w", owner, field, path, opID, response.code, err)
+		}
+		for _, view := range views {
+			if cliWithoutNullType(view.raw) == nil {
+				continue
+			}
+			facts, err := d.propertyFacts(view.raw, nil)
+			if err != nil {
+				return nil, fmt.Errorf("%s %s %s in operation %q response %s: %w", owner, field, path, opID, response.code, err)
+			}
+			if len(facts.kinds) != 1 || facts.kinds[0] != "object" {
+				return nil, fmt.Errorf("%s %s %s in operation %q response %s must select an array of objects", owner, field, path, opID, response.code)
+			}
+			items = append(items, view)
+		}
+	}
+	if len(items) == 0 {
+		return nil, fmt.Errorf("%s %s %s in operation %q must select an array of objects", owner, field, path, opID)
+	}
+	return items, nil
+}
+
+func (d *cliManifestDecoder) linkContinuationMergeDrop(owner, opID string, drop *CLICommandContinuationMergeDrop, opInfo *cliOperationInfo) error {
+	items, err := d.continuationItemViews(owner, "continuation.merge.dropLeadingWhere", drop.Path, opID, opInfo)
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		if _, ok := item.properties[drop.Field]; ok {
+			return nil
+		}
+	}
+	return fmt.Errorf("%s continuation.merge.dropLeadingWhere.field %q is not a property of any item of %s in operation %q", owner, drop.Field, drop.Path, opID)
+}
+
+func (d *cliManifestDecoder) linkContinuationSumBy(owner, opID string, sum CLICommandContinuationSumBy, opInfo *cliOperationInfo) error {
+	if err := d.linkContinuationResultPath(owner, "continuation.sumBy", sum.Path, opID, opInfo, func(kind string) bool { return kind == "array" }, "an array"); err != nil {
+		return err
+	}
+	items, err := d.continuationItemViews(owner, "continuation.sumBy", sum.Path, opID, opInfo)
+	if err != nil {
+		return err
+	}
+	check := func(name, role string, accept func(string) bool, expected string) error {
+		for _, item := range items {
+			prop, ok := item.properties[name]
+			if !ok {
+				return fmt.Errorf("%s continuation.sumBy %s %s %q is not a property of every item of %s in operation %q%s", owner, sum.Path, role, name, sum.Path, opID, cliDidYouMean(name, item.propOrder))
+			}
+			views, err := d.artifactExpand(prop, 0)
+			if err != nil {
+				return fmt.Errorf("%s continuation.sumBy %s %s %q in operation %q: %w", owner, sum.Path, role, name, opID, err)
+			}
+			facts, err := d.responseLeafFacts(views)
+			if err != nil {
+				return fmt.Errorf("%s continuation.sumBy %s %s %q in operation %q: %w", owner, sum.Path, role, name, opID, err)
+			}
+			for _, propertyFacts := range facts {
+				if len(propertyFacts.kinds) != 1 || !accept(propertyFacts.kinds[0]) {
+					return fmt.Errorf("%s continuation.sumBy %s %s %q in operation %q must select %s", owner, sum.Path, role, name, opID, expected)
+				}
+			}
+		}
+		return nil
+	}
+	if err := check(sum.Key, "key", cliIsScalarKind, "a scalar"); err != nil {
+		return err
+	}
+	return check(sum.Value, "value", func(kind string) bool { return kind == "int" || kind == "float" }, "a number")
 }
 
 // linkContinuationTarget requires the bound request-body path to be a
