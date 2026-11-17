@@ -390,7 +390,7 @@ func (r *continuationRun) resumeValues() map[string]string {
 	if r.outcome.States[r.state] == "success" || r.outcome.States[r.state] == "handoff" {
 		return nil
 	}
-	if r.outcome.States[r.state] == "failure" || len(r.values) == 0 || !r.hasCompleteRequiredBindings(r.values) {
+	if r.outcome.States[r.state] == "failure" || len(r.values) == 0 || !r.hasCompleteRequiredBindings(r.values) || (r.repeated() && r.fallbackValid) {
 		if r.fallbackValid {
 			return r.fallback
 		}
@@ -944,12 +944,16 @@ func mergedContinuationResult(last interface{}, merged interface{}) interface{} 
 	if err != nil {
 		return last
 	}
+	var resp http.Response
+	if lastResp := extractHTTPResponse(last); lastResp != nil {
+		resp = *lastResp
+		resp.Header = lastResp.Header.Clone()
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(raw))
+	resp.ContentLength = int64(len(raw))
 	return &continuationResultEnvelope{
-		HTTPMeta: continuationHTTPMeta{Response: &http.Response{
-			Body:   io.NopCloser(bytes.NewReader(raw)),
-			Header: extractResponseHeaders(last).Clone(),
-		}},
-		Result: merged,
+		HTTPMeta: continuationHTTPMeta{Response: &resp},
+		Result:   merged,
 	}
 }
 

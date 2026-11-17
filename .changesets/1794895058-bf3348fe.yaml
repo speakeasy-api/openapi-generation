@@ -1,0 +1,10 @@
+id: 1794895058-bf3348fe
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: keep response metadata on combined continuation results and keep the issuing hop bindings when a repeated-token hop drops
+author: TristanSpeakEasy
+date: "2026-11-17"
