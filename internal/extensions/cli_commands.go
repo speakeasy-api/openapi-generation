@@ -1926,6 +1926,11 @@ func (d *cliManifestDecoder) decodeContinuationOmits(owner string, node *yaml.No
 		if bound[omit.Pointer] {
 			return nil, fmt.Errorf("line %d: %s continuation.omit %s is also a continuation.bind target; a request field cannot be both set and removed", item.Line, owner, omit.Path)
 		}
+		for target := range bound {
+			if strings.HasPrefix(target, omit.Pointer+"/") || strings.HasPrefix(omit.Pointer, target+"/") {
+				return nil, fmt.Errorf("line %d: %s continuation.omit %s overlaps a continuation.bind target; omitting a parent or child of a bound field would remove or corrupt the bound value", item.Line, owner, omit.Path)
+			}
+		}
 		if seen[omit.Pointer] {
 			return nil, fmt.Errorf("line %d: %s continuation.omit lists %s more than once", item.Line, owner, omit.Path)
 		}

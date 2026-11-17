@@ -6305,6 +6305,8 @@ func TestCLICommands_ContinuationTaskErrors(t *testing.T) {
 		want     string
 	}{
 		{"omit collides with bind", strings.Replace(base, "        - path: $.prompt\n", "        - path: $.resume_token\n", 1), "continuation.omit $.resume_token is also a continuation.bind target"},
+		{"omit below a bind target", strings.Replace(base, "        - path: $.prompt\n", "        - path: $.resume_token.value\n", 1), "continuation.omit $.resume_token.value overlaps a continuation.bind target"},
+		{"omit above a bind target", strings.Replace(strings.Replace(base, "          to: $.resume_token\n", "          to: $.resume.token\n", 1), "        - path: $.prompt\n", "        - path: $.resume\n", 1), "continuation.omit $.resume overlaps a continuation.bind target"},
 		{"omit array index", strings.Replace(base, "        - path: $.prompt\n", "        - path: $.prompt[0]\n", 1), "continuation.omit.path $.prompt[0] must name object properties only"},
 		{"omit duplicate", strings.Replace(base, "      omit:\n", "      omit:\n        - $.prompt\n", 1), "continuation.omit lists $.prompt more than once"},
 		{"omit unknown", strings.Replace(base, "        - path: $.prompt\n", "        - path: $.nope\n", 1), "continuation.omit $.nope is absent from every request body variant"},
