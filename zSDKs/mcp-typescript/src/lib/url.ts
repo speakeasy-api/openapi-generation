@@ -6,27 +6,41 @@ const hasOwn = Object.prototype.hasOwnProperty;
 
 export type Params = Partial<Record<string, string | number>>;
 
-// WHATWG URL parsing strips tab and newline characters, ends the path at "?" or
-// "#", treats "\" as "/" in special schemes, and resolves "%2e" as "." when
-// removing dot segments.
+// WHATWG URL parsing strips tab and newline characters, trims leading and
+// trailing C0 controls and spaces, ends the path at "?" or "#", treats "\" as
+// "/" in special schemes, resolves "%2e" as "." when removing dot segments, and
+// reads a leading scheme or "//" as overriding the base URL.
 const ignoredURLCharsRE = /[\t\n\r]/g;
+// eslint-disable-next-line no-control-regex
+const trimmedURLCharsRE = /^[\x00-\x20]+|[\x00-\x20]+$/g;
 const pathEndRE = /[?#]/;
 const segmentSeparatorRE = /[/\\]/;
 const dotSegmentRE = /^(?:\.|%2e){1,2}$/i;
+const baseOverrideRE = /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|[/\\]{2})/;
 
 function hasDotSegment(value: string): boolean {
-  const path = value.replace(ignoredURLCharsRE, "").split(pathEndRE, 1)[0];
-  return (path ?? "")
+  return value
+    .replace(ignoredURLCharsRE, "")
     .split(segmentSeparatorRE)
-    .some((part) => dotSegmentRE.test(part));
+    .some((part) => dotSegmentRE.test(part.replace(trimmedURLCharsRE, "")));
 }
 
-function dotSegmentError(names: string[]): Error {
+function overridesBaseURL(path: string): boolean {
+  return baseOverrideRE.test(
+    path.replace(ignoredURLCharsRE, "").replace(trimmedURLCharsRE, ""),
+  );
+}
+
+function isBlankSegment(value: string): boolean {
+  return value.replace(trimmedURLCharsRE, "") === "";
+}
+
+function parameterError(names: string[], problem: string): Error {
   const subject =
     names.length === 1
       ? `Parameter '${names[0]}'`
       : `Parameters '${names.join("', '")}'`;
-  return new Error(`${subject} must not form a '.' or '..' path segment`);
+  return new Error(`${subject} ${problem}`);
 }
 
 export function pathToFunc(
@@ -39,7 +53,10 @@ export function pathToFunc(
   const paramRE = /\{([a-zA-Z0-9_][a-zA-Z0-9_-]*?)\}/g;
 
   return function buildURLPath(params: Record<string, unknown> = {}): string {
-    return pathPattern
+    const leadingContributors: string[] = [];
+    let leadingSegmentFound = false;
+
+    const path = pathPattern
       .split("/")
       .map((segment) => {
         const contributors: string[] = [];
@@ -59,6 +76,12 @@ export function pathToFunc(
             options?.charEncoding === "percent"
               ? encodeURIComponent(`${value}`)
               : `${value}`;
+          if (options?.rejectDotSegments && pathEndRE.test(encoded)) {
+            throw parameterError(
+              [placeholder],
+              "must not contain an unencoded '?' or '#'",
+            );
+          }
           if (encoded !== "") {
             contributors.push(placeholder);
           }
@@ -70,11 +93,32 @@ export function pathToFunc(
           contributors.length > 0 &&
           hasDotSegment(rendered)
         ) {
-          throw dotSegmentError(contributors);
+          throw parameterError(
+            contributors,
+            "must not form a '.' or '..' path segment",
+          );
+        }
+
+        if (!leadingSegmentFound) {
+          leadingContributors.push(...contributors);
+          leadingSegmentFound = !isBlankSegment(rendered);
         }
 
         return rendered;
       })
       .join("/");
+
+    if (
+      options?.rejectDotSegments &&
+      leadingContributors.length > 0 &&
+      overridesBaseURL(path)
+    ) {
+      throw parameterError(
+        leadingContributors,
+        "must not start the path with a URL scheme or '//'",
+      );
+    }
+
+    return path;
   };
 }

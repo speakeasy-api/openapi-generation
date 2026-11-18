@@ -220,8 +220,7 @@ func continuationNumber(value interface{}) (*big.Rat, bool) {
 	default:
 		return nil, false
 	}
-	rational, ok := new(big.Rat).SetString(text)
-	return rational, ok
+	return parseBoundedRat(text)
 }
 
 func (r *continuationRun) capture(payload interface{}, stream bool) {
@@ -836,7 +835,7 @@ func sumContinuationValues(payloads []interface{}, pointer string) (json.Number,
 		if !isNumber {
 			continue
 		}
-		term, ok := new(big.Rat).SetString(number.String())
+		term, ok := continuationNumber(number)
 		if !ok {
 			continue
 		}

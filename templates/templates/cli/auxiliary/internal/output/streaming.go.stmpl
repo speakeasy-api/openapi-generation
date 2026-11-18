@@ -386,7 +386,7 @@ func typedLeaves(wire, typed interface{}) interface{} {
 
 // Bigint and long-decimal lexemes are kept: float64 would change their value.
 func canonicalNumber(n json.Number) interface{} {
-	exact, ok := new(big.Rat).SetString(n.String())
+	exact, ok := parseBoundedRat(n.String())
 	if !ok {
 		return n
 	}

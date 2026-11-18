@@ -91,16 +91,31 @@ describe("pathToFunc dot segments", () => {
     "a/../b",
     "a/./b",
     "..\\b",
-    "..?x=1",
-    "..#frag",
     ".\t.",
     ".\n",
     "\r..",
+    "..\x00",
+    ".. ",
+    "\x00..",
+    " ..",
+    "a/.. ",
+    ".. \n",
   ])("rejects %j when values are pre-encoded", (value) => {
     expect(() =>
       checked(pattern)({ store_id: value, item_id: "item-1" }),
     ).toThrow(dotSegmentError);
   });
+
+  test.each(["..?x=1", "..#frag", "safe?next=/..", "safe#/../x", "a?b", "#"])(
+    "rejects unencoded '?' or '#' in %j",
+    (value) => {
+      expect(() =>
+        checked(pattern)({ store_id: value, item_id: "item-1" }),
+      ).toThrow(
+        /^Parameter 'store_id' must not contain an unencoded '\?' or '#'$/,
+      );
+    },
+  );
 
   test.each([".", ".."])("rejects %j under percent encoding", (value) => {
     expect(() =>
@@ -157,8 +172,6 @@ describe("pathToFunc dot segments", () => {
     ["..a", "..a"],
     ["%2e%2e%2e", "%2e%2e%2e"],
     ["%2e%2", "%2e%2"],
-    ["safe?next=/..", "safe?next=/.."],
-    ["safe#/../x", "safe#/../x"],
     [1.5, "1.5"],
   ])("allows %j", (value, segment) => {
     expect(checked(pattern)({ store_id: value, item_id: "item-1" })).toEqual(
@@ -200,6 +213,58 @@ describe("pathToFunc dot segments", () => {
         charEncoding: "percent",
       })({ hostname: "localhost", port: 8080, basePath: "." }),
     ).toEqual("http://localhost:8080/.");
+  });
+
+  test("keeps encoded '?' and '#' inside the path segment", () => {
+    const path = checked(pattern)({
+      store_id: encodeSimple("id", "a?b=1#c", {
+        charEncoding: "percentExceptReserved",
+      })!,
+      item_id: "item-1",
+    });
+    const url = new URL(path, "https://api.example.com/v2/");
+    expect(url.pathname).toEqual("/v2/stores/a%3Fb=1%23c/items/item-1/details");
+    expect(url.search).toEqual("");
+    expect(url.hash).toEqual("");
+  });
+
+  test.each([
+    "https://evil.example.com",
+    "http:evil.example.com",
+    "javascript:alert(1)",
+    " https://evil.example.com",
+    "\x00http:evil.example.com",
+    "ht\ttp://evil.example.com",
+    "\\\\evil.example.com",
+  ])("rejects %j overriding the base URL", (value) => {
+    expect(() => checked("/{id}/details")({ id: value })).toThrow(
+      /^Parameter 'id' must not start the path with a URL scheme or '\/\/'$/,
+    );
+  });
+
+  test("rejects a scheme formed after empty leading parameters", () => {
+    expect(() =>
+      checked("/{a}/{b}/details")({ a: "", b: "http:evil.example.com" }),
+    ).toThrow(/^Parameter 'b' must not start the path/);
+    expect(() => checked("/user{id}")({ id: ":x" })).toThrow(
+      /^Parameter 'id' must not start the path/,
+    );
+  });
+
+  test("allows ':' outside the first path segment", () => {
+    expect(
+      checked("/v1/models/{id}")({ id: "model-a:generateContent" }),
+    ).toEqual("v1/models/model-a:generateContent");
+    expect(checked("/v1/items/{id}")({ id: "foo:bar" })).toEqual(
+      "v1/items/foo:bar",
+    );
+  });
+
+  test("allows ordinary first segment values", () => {
+    expect(checked("/{id}/details")({ id: "v1.2.3" })).toEqual(
+      "v1.2.3/details",
+    );
+    expect(checked("/{id}/details")({ id: "/v1" })).toEqual("v1/details");
   });
 
   test("resolves allowed values to the intended route", () => {

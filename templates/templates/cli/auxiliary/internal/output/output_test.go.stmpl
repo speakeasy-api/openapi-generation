@@ -1698,6 +1698,89 @@ func TestUpdateContinuationBodySetsAndOmits(t *testing.T) {
 		t.Fatalf("request = %s", got)
 	}
 }
+
+func TestContinuationIgnoresUnboundedNumbers(t *testing.T) {
+	for _, number := range unboundedJSONNumbers() {
+		if _, ok := continuationNumber(number); ok {
+			t.Errorf("continuationNumber(%.20q) parsed", number)
+		}
+		if continuationValuesEqual(number, json.Number("1")) {
+			t.Errorf("continuationValuesEqual(%.20q, 1) = true", number)
+		}
+		if _, ok := continuationGroupKey(number); ok {
+			t.Errorf("continuationGroupKey(%.20q) grouped", number)
+		}
+		payloads := []interface{}{map[string]interface{}{
+			"total":  number,
+			"counts": []interface{}{map[string]interface{}{"id": number, "n": json.Number("1")}, map[string]interface{}{"id": "a", "n": number}},
+		}}
+		if total, ok := sumContinuationValues(payloads, "/total"); ok {
+			t.Errorf("sumContinuationValues(%.20q) = %s", number, total)
+		}
+		items, ok := sumContinuationGroups(payloads, continuationSumBy{Pointer: "/counts", Key: "id", Value: "n"})
+		if !ok || len(items) != 2 || !reflect.DeepEqual(items[0], map[string]interface{}{"id": number, "n": json.Number("1")}) || !reflect.DeepEqual(items[1], map[string]interface{}{"id": "a", "n": number}) {
+			t.Errorf("sumContinuationGroups(%.20q) = %v", number, items)
+		}
+	}
+}
+{{- end}}
+{{- if or hasCliContinuations anyOperationHasStreaming}}
+
+func unboundedJSONNumbers() []json.Number {
+	return []json.Number{
+		"1e100000000",
+		"1e-100000000",
+		"1E+99999999999999999999",
+		json.Number(strings.Repeat("9", maxDecimalLength+1)),
+		"1/2",
+		"0x1p100000000",
+		"1_000",
+		"+1",
+		".5",
+		"1.",
+		"1e",
+		"",
+	}
+}
+
+func TestParseBoundedRat(t *testing.T) {
+	for _, number := range unboundedJSONNumbers() {
+		if _, ok := parseBoundedRat(number.String()); ok {
+			t.Errorf("parseBoundedRat(%.20q) parsed", number)
+		}
+	}
+	for text, want := range map[string]string{
+		"0":       "0",
+		"-0":      "0",
+		"12":      "12",
+		"-1.5":    "-3/2",
+		"2.5E+1":  "25",
+		"25e-1":   "5/2",
+		"1e1000":  "1" + strings.Repeat("0", 1000),
+		"1e-1000": "1/1" + strings.Repeat("0", 1000),
+	} {
+		got, ok := parseBoundedRat(text)
+		if !ok || got.RatString() != want {
+			t.Errorf("parseBoundedRat(%q) = %v, %t, want %s", text, got, ok, want)
+		}
+	}
+	if _, ok := parseBoundedRat("1e1001"); ok {
+		t.Error("parseBoundedRat(1e1001) parsed")
+	}
+}
+{{- end}}
+{{- if anyOperationHasStreaming}}
+
+func TestCanonicalNumberKeepsUnboundedLexemes(t *testing.T) {
+	for _, number := range unboundedJSONNumbers() {
+		if got := canonicalNumber(number); got != number {
+			t.Errorf("canonicalNumber(%.20q) = %v", number, got)
+		}
+	}
+	if got := canonicalNumber("1.50"); got != json.Number("1.5") {
+		t.Errorf("canonicalNumber(1.50) = %v", got)
+	}
+}
 {{- end}}
 
 func TestUnknownSubcommandHonoursDisableSuggestions(t *testing.T) {

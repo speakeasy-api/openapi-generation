@@ -47,14 +47,70 @@ describe("pathToFunc dot segments", () => {
     options?: { charEncoding?: "percent" | "none" },
   ) => pathToFunc(path, { ...options, rejectDotSegments: true });
 
-  test.each(["..", ".", "%2e%2e", ".%2E", "a/../b", "..\\b", "..?x", ".\t."])(
-    "rejects %j",
+  test.each([
+    "..",
+    ".",
+    "%2e%2e",
+    ".%2E",
+    "a/../b",
+    "..\\b",
+    ".\t.",
+    "..\x00",
+    ".. ",
+    "\x00..",
+    " ..",
+    "a/.. ",
+    ".. \n",
+  ])("rejects %j", (value) => {
+    expect(() =>
+      checked(pattern)({ store_id: value, item_id: "item-1" }),
+    ).toThrow(dotSegmentError);
+  });
+
+  test.each(["..?x", "..#frag", "safe?next=/..", "safe#/../x", "a?b", "#"])(
+    "rejects unencoded '?' or '#' in %j",
     (value) => {
       expect(() =>
         checked(pattern)({ store_id: value, item_id: "item-1" }),
-      ).toThrow(dotSegmentError);
+      ).toThrow(
+        /^Parameter 'store_id' must not contain an unencoded '\?' or '#'$/,
+      );
     },
   );
+
+  test.each([
+    "https://evil.example.com",
+    "http:evil.example.com",
+    "//evil.example.com",
+    "\\\\evil.example.com",
+    " //evil.example.com",
+    "\x00http:evil.example.com",
+  ])("rejects %j overriding the base URL", (value) => {
+    expect(() => checked("{id}/details")({ id: value })).toThrow(
+      /^Parameter 'id' must not start the path with a URL scheme or '\/\/'$/,
+    );
+  });
+
+  test.each(["/evil.example.com", "\\evil.example.com"])(
+    "rejects %j forming '//' after a leading slash",
+    (value) => {
+      expect(() => checked("/{id}/details")({ id: value })).toThrow(
+        /^Parameter 'id' must not start the path/,
+      );
+    },
+  );
+
+  test("rejects a protocol-relative path formed after empty parameters", () => {
+    expect(() =>
+      checked("/{a}/{b}/details")({ a: "", b: "//evil.example.com" }),
+    ).toThrow(/^Parameter 'b' must not start the path/);
+  });
+
+  test("allows ':' outside the first path segment", () => {
+    expect(checked("/v1/items/{id}")({ id: "foo:bar" })).toEqual(
+      "/v1/items/foo:bar",
+    );
+  });
 
   test.each([".", ".."])("rejects %j under percent encoding", (value) => {
     expect(() =>
@@ -80,14 +136,11 @@ describe("pathToFunc dot segments", () => {
     );
   });
 
-  test.each(["...", ".hidden", "v1.2.3", "a..b", "safe?next=/.."])(
-    "allows %j",
-    (value) => {
-      expect(checked(pattern)({ store_id: value, item_id: "item-1" })).toEqual(
-        `/stores/${value}/items/item-1/details`,
-      );
-    },
-  );
+  test.each(["...", ".hidden", "v1.2.3", "a..b"])("allows %j", (value) => {
+    expect(checked(pattern)({ store_id: value, item_id: "item-1" })).toEqual(
+      `/stores/${value}/items/item-1/details`,
+    );
+  });
 
   test("leaves literal template segments unchanged", () => {
     expect(checked("/v1/../{id}")({ id: "x" })).toEqual("/v1/../x");
