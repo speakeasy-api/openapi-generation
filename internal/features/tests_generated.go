@@ -732,6 +732,8 @@ func (t Test) String() string {
         return "parameters-form-query-params-unions"
     case TestParametersHeaderParamsArray:
         return "parameters-header-params-array"
+    case TestParametersHeaderParamsEnum:
+        return "parameters-header-params-enum"
     case TestParametersHeaderParamsMap:
         return "parameters-header-params-map"
     case TestParametersHeaderParamsNil:
@@ -2288,6 +2290,8 @@ func TestFromString(s string) Test {
         return TestParametersFormQueryParamsUnions
     case "parameters-header-params-array":
         return TestParametersHeaderParamsArray
+    case "parameters-header-params-enum":
+        return TestParametersHeaderParamsEnum
     case "parameters-header-params-map":
         return TestParametersHeaderParamsMap
     case "parameters-header-params-nil":
@@ -3479,6 +3483,7 @@ var testList = []Test{
     TestParametersFormQueryParamsRefParamObject,
     TestParametersFormQueryParamsUnions,
     TestParametersHeaderParamsArray,
+    TestParametersHeaderParamsEnum,
     TestParametersHeaderParamsMap,
     TestParametersHeaderParamsNil,
     TestParametersHeaderParamsObject,

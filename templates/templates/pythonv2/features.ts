@@ -446,6 +446,7 @@ function isTestSkipped(test: string): boolean {
     "unions-body-variant-overloads-request-body",
     "unions-body-variant-overloads-nested-union",
     "unions-body-variant-overloads-open-enum",
+    "parameters-header-params-enum",
   ].includes(test);
 }
 

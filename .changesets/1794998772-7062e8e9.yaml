@@ -1,0 +1,10 @@
+id: 1794998772-7062e8e9
+features:
+    - core
+targets:
+    - php
+type: fix
+bump: patch
+description: send enum and date-time header parameters instead of dropping them
+author: AshGodfrey
+date: "2026-11-18"

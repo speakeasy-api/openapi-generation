@@ -53,6 +53,10 @@ class Headers
 
     private function serializeHeader(ParamsMetadata $metadata, mixed $value): string
     {
+        if ($value instanceof \Brick\Math\BigDecimal || $value instanceof \Brick\Math\BigInteger || $value instanceof \Brick\DateTime\LocalDate || $value instanceof \DateTime || $value instanceof \UnitEnum) {
+            return valToString($value, ['dateTimeFormat' => $metadata->dateTimeFormat]);
+        }
+
         switch (gettype($value)) {
             case 'object':
                 $items = [];

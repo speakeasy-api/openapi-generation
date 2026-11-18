@@ -1,0 +1,66 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/headers/enum:
+    get:
+      operationId: headerParamsEnum
+      tags:
+        - parameters
+      description: >-
+        Exercises header parameters whose schema is a referenced enum or a
+        date-time formatted string. Targets that map these to a dedicated
+        enum or date type must serialize the value into the header as its
+        string form; the header must not be dropped or sent empty.
+      parameters:
+        - name: X-Header-Enum
+          in: header
+          required: true
+          schema:
+            $ref: "#/components/schemas/HeaderEnum"
+        - name: X-Header-Enum-Optional
+          in: header
+          schema:
+            $ref: "#/components/schemas/HeaderEnum"
+        - name: X-Header-Date-Time
+          in: header
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  headers:
+                    type: object
+                    properties:
+                      X-Header-Enum:
+                        type: string
+                      X-Header-Enum-Optional:
+                        type: string
+                      X-Header-Date-Time:
+                        type: string
+                    required:
+                      - X-Header-Enum
+                      - X-Header-Enum-Optional
+                      - X-Header-Date-Time
+                required:
+                  - headers
+components:
+  schemas:
+    HeaderEnum:
+      type: string
+      enum:
+        - first-value
+        - second-value

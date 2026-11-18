@@ -4,6 +4,7 @@ namespace OpenAPI\OpenAPI\Tests;
 
 use OpenAPI\OpenAPI\Models\Shared\DeepObjectQueryParams;
 use OpenAPI\OpenAPI\Models\Shared\DeepObjectQueryParams2;
+use OpenAPI\OpenAPI\Models\Shared\HeaderEnum;
 use OpenAPI\OpenAPI\Tests\CommonHelpers;
 use OpenAPI\OpenAPI\Tests\Helpers\Helpers;
 use OpenAPI\OpenAPI\Utils\JSON;
@@ -413,6 +414,28 @@ final class ParameterTest extends TestCase
         $this->assertEquals('true', $response->res->headers->xHeaderBoolean);
         $this->assertEquals('1', $response->res->headers->xHeaderInteger);
         $this->assertEquals('1.1', $response->res->headers->xHeaderNumber);
+    }
+
+    public function testHeaderParamsEnum(): void
+    {
+        CommonHelpers::recordTest('parameters-header-params-enum');
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->build();
+
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        $response = $sdk->parameters->headerParamsEnum(
+            xHeaderEnum: HeaderEnum::FirstValue,
+            xHeaderEnumOptional: HeaderEnum::SecondValue,
+            xHeaderDateTime: \DateTime::createFromFormat('Y-m-d\TH:i:s.up', '2020-01-01T00:00:00.000001Z'),
+        );
+
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $this->assertNotNull($response->res);
+        $this->assertEquals('first-value', $response->res->headers->xHeaderEnum);
+        $this->assertEquals('second-value', $response->res->headers->xHeaderEnumOptional);
+        $this->assertEquals('2020-01-01T00:00:00.000001Z', $response->res->headers->xHeaderDateTime);
     }
 
     public function testHeaderParamsObject(): void

@@ -130,6 +130,7 @@ const (
 	TestParametersJSONQueryParamsObject
 	TestParametersMixedQueryParams
 	TestParametersHeaderParamsPrimitive
+	TestParametersHeaderParamsEnum
 	TestParametersHeaderParamsObject
 	TestParametersHeaderParamsMap
 	TestParametersHeaderParamsArray
