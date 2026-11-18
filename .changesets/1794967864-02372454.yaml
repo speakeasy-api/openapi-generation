@@ -1,0 +1,12 @@
+id: 1794967864-02372454
+features:
+    - core
+    - allowReserved
+targets:
+    - typescriptv2
+    - mcp-typescript
+type: fix
+bump: patch
+description: 'reject path parameters that could inject a query, fragment, or base URL override, and keep ? and # encoded for allowReserved path parameters'
+author: TristanSpeakEasy
+date: "2026-11-18"

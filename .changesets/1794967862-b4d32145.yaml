@@ -1,0 +1,10 @@
+id: 1794967862-b4d32145
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: bound JSON number parsing in CLI output so oversized exponents cannot exhaust memory
+author: TristanSpeakEasy
+date: "2026-11-18"

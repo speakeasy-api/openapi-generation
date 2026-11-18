@@ -60,6 +60,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/auxiliary/internal/output/errortable.go.stmpl":                                                       0o644,
 	"templates/cli/auxiliary/internal/output/exitcodes.go.stmpl":                                                        0o644,
 	"templates/cli/auxiliary/internal/output/jq.go.stmpl":                                                               0o644,
+	"templates/cli/auxiliary/internal/output/number.go.stmpl":                                                           0o644,
 	"templates/cli/auxiliary/internal/output/outcome.go.stmpl":                                                          0o644,
 	"templates/cli/auxiliary/internal/output/output.go.stmpl":                                                           0o644,
 	"templates/cli/auxiliary/internal/output/output_test.go.stmpl":                                                      0o644,

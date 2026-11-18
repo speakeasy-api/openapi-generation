@@ -1084,6 +1084,68 @@ func TestOutcomeStreamStatePointerOrder(t *testing.T) {
 	}
 }
 
+func unboundedJSONNumbers() []json.Number {
+	return []json.Number{
+		"1e100000000",
+		"1e-100000000",
+		"1E+99999999999999999999",
+		json.Number(strings.Repeat("9", maxDecimalLength+1)),
+		"1/2",
+		"0x1p100000000",
+		"1_000",
+		"+1",
+		".5",
+		"1.",
+		"1e",
+		"",
+		"00",
+		"01",
+		"-01",
+		"01e2",
+		"01.5",
+	}
+}
+
+func TestParseBoundedRat(t *testing.T) {
+	for _, number := range unboundedJSONNumbers() {
+		if _, ok := parseBoundedRat(number.String()); ok {
+			t.Errorf("parseBoundedRat(%.20q) parsed", number)
+		}
+	}
+	for text, want := range map[string]string{
+		"0":       "0",
+		"-0":      "0",
+		"0.5":     "1/2",
+		"-0e1":    "0",
+		"10":      "10",
+		"12":      "12",
+		"-1.5":    "-3/2",
+		"2.5E+1":  "25",
+		"25e-1":   "5/2",
+		"1e1000":  "1" + strings.Repeat("0", 1000),
+		"1e-1000": "1/1" + strings.Repeat("0", 1000),
+	} {
+		got, ok := parseBoundedRat(text)
+		if !ok || got.RatString() != want {
+			t.Errorf("parseBoundedRat(%q) = %v, %t, want %s", text, got, ok, want)
+		}
+	}
+	if _, ok := parseBoundedRat("1e1001"); ok {
+		t.Error("parseBoundedRat(1e1001) parsed")
+	}
+}
+
+func TestCanonicalNumberKeepsUnboundedLexemes(t *testing.T) {
+	for _, number := range unboundedJSONNumbers() {
+		if got := canonicalNumber(number); got != number {
+			t.Errorf("canonicalNumber(%.20q) = %v", number, got)
+		}
+	}
+	if got := canonicalNumber("1.50"); got != json.Number("1.5") {
+		t.Errorf("canonicalNumber(1.50) = %v", got)
+	}
+}
+
 func TestUnknownSubcommandHonoursDisableSuggestions(t *testing.T) {
 	root, _ := unknownCommandTestTree()
 	group, _, _ := root.Find([]string{"errors"})
