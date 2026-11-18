@@ -2,6 +2,7 @@ declare(strict_types=1);
 
 namespace OpenAPI\OpenAPI\Tests;
 
+use OpenAPI\OpenAPI\Models\Operations\OptionalNullableSpecialHeadersRequest;
 use OpenAPI\OpenAPI\Models\Shared\DeepObjectQueryParams;
 use OpenAPI\OpenAPI\Models\Shared\DeepObjectQueryParams2;
 use OpenAPI\OpenAPI\Models\Shared\HeaderEnum;
@@ -405,14 +406,14 @@ final class ParameterTest extends TestCase
 
         $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
 
-        $response = $sdk->parameters->headerParamsPrimitive(true, 1, 1.1, 'test');
+        $response = $sdk->parameters->headerParamsPrimitive(true, 0, 1.1, 'test');
 
         $this->assertNotNull($response);
         $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
         $this->assertNotNull($response->res);
         $this->assertEquals('test', $response->res->headers->xHeaderString);
         $this->assertEquals('true', $response->res->headers->xHeaderBoolean);
-        $this->assertEquals('1', $response->res->headers->xHeaderInteger);
+        $this->assertEquals('0', $response->res->headers->xHeaderInteger);
         $this->assertEquals('1.1', $response->res->headers->xHeaderNumber);
     }
 
@@ -427,7 +428,6 @@ final class ParameterTest extends TestCase
         $response = $sdk->parameters->headerParamsEnum(
             xHeaderEnum: HeaderEnum::FirstValue,
             xHeaderEnumOptional: HeaderEnum::SecondValue,
-            xHeaderDateTime: \DateTime::createFromFormat('Y-m-d\TH:i:s.up', '2020-01-01T00:00:00.000001Z'),
         );
 
         $this->assertNotNull($response);
@@ -435,7 +435,60 @@ final class ParameterTest extends TestCase
         $this->assertNotNull($response->res);
         $this->assertEquals('first-value', $response->res->headers->xHeaderEnum);
         $this->assertEquals('second-value', $response->res->headers->xHeaderEnumOptional);
-        $this->assertEquals('2020-01-01T00:00:00.000001Z', $response->res->headers->xHeaderDateTime);
+
+        $response = $sdk->parameters->headerParamsEnum(xHeaderEnum: HeaderEnum::SecondValue);
+
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $this->assertNotNull($response->res);
+        $this->assertEquals('second-value', $response->res->headers->xHeaderEnum);
+        $this->assertNull($response->res->headers->xHeaderEnumOptional);
+    }
+
+    public function testOptionalNullableSpecialHeaders(): void
+    {
+        CommonHelpers::recordTest('optional-nullable-special-header-params');
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->build();
+
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        $response = $sdk->parameters->optionalNullableSpecialHeaders(
+            new OptionalNullableSpecialHeadersRequest(
+                bareBigintHeader: \Brick\Math\BigInteger::of('8821239038968084'),
+                bareDateHeader: \Brick\DateTime\LocalDate::parse('2024-01-02'),
+                bareDateTimeHeader: \DateTime::createFromFormat('Y-m-d\TH:i:s.up', '2024-01-02T03:04:05.000000Z'),
+                bareDecimalHeader: \Brick\Math\BigDecimal::of('3.141592653589793'),
+                wrappedBigintHeader: \Brick\Math\BigInteger::of('9223372036854775808'),
+                wrappedDateTimeHeader: \DateTime::createFromFormat('Y-m-d\TH:i:s.up', '2024-02-03T04:05:06.000000Z'),
+            ),
+        );
+
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $this->assertNotNull($response->res);
+        $this->assertEquals('8821239038968084', $response->res->headers['Bare-Bigint-Header']);
+        $this->assertEquals('2024-01-02', $response->res->headers['Bare-Date-Header']);
+        $this->assertEquals('2024-01-02T03:04:05.000000Z', $response->res->headers['Bare-Date-Time-Header']);
+        $this->assertEquals('3.1415926535898', $response->res->headers['Bare-Decimal-Header']);
+        $this->assertEquals('9223372036854775808', $response->res->headers['Wrapped-Bigint-Header']);
+        $this->assertEquals('2024-02-03T04:05:06.000000Z', $response->res->headers['Wrapped-Date-Time-Header']);
+
+        $response = $sdk->parameters->optionalNullableSpecialHeaders(
+            new OptionalNullableSpecialHeadersRequest(
+                bareBigintHeader: \Brick\Math\BigInteger::of('8821239038968084'),
+                bareDateHeader: \Brick\DateTime\LocalDate::parse('2024-01-02'),
+                bareDateTimeHeader: \DateTime::createFromFormat('Y-m-d\TH:i:s.up', '2024-01-02T03:04:05.000000Z'),
+                bareDecimalHeader: \Brick\Math\BigDecimal::of('3.141592653589793'),
+            ),
+        );
+
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $this->assertNotNull($response->res);
+        $this->assertEquals('8821239038968084', $response->res->headers['Bare-Bigint-Header']);
+        $this->assertArrayNotHasKey('Wrapped-Bigint-Header', $response->res->headers);
+        $this->assertArrayNotHasKey('Wrapped-Date-Time-Header', $response->res->headers);
     }
 
     public function testHeaderParamsObject(): void

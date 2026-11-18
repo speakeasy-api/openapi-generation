@@ -14,10 +14,11 @@ paths:
       tags:
         - parameters
       description: >-
-        Exercises header parameters whose schema is a referenced enum or a
-        date-time formatted string. Targets that map these to a dedicated
-        enum or date type must serialize the value into the header as its
-        string form; the header must not be dropped or sent empty.
+        Exercises header parameters whose schema is a referenced enum.
+        Targets that map the enum to a dedicated type must serialize the
+        value into the header as its string form; the header must not be
+        dropped or sent empty. The optional header is omitted in one call
+        to check that an unset enum header is not sent.
       parameters:
         - name: X-Header-Enum
           in: header
@@ -28,11 +29,6 @@ paths:
           in: header
           schema:
             $ref: "#/components/schemas/HeaderEnum"
-        - name: X-Header-Date-Time
-          in: header
-          schema:
-            type: string
-            format: date-time
       responses:
         "200":
           description: OK
@@ -49,12 +45,8 @@ paths:
                         type: string
                       X-Header-Enum-Optional:
                         type: string
-                      X-Header-Date-Time:
-                        type: string
                     required:
                       - X-Header-Enum
-                      - X-Header-Enum-Optional
-                      - X-Header-Date-Time
                 required:
                   - headers
 components:
