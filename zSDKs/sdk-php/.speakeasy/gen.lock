@@ -965,7 +965,7 @@ trackedFiles:
   src/Utils/FormMetadata.php:
     last_write_checksum: sha1:88a51ef0c94473353e3f2f04a1d2709d8bc5f79d
   src/Utils/Headers.php:
-    last_write_checksum: sha1:2bbe3bcb1f3ec72ebe2d9556e377eb4714a80f9e
+    last_write_checksum: sha1:75746f8ace759eaddae532702d3afb7c0e5622e9
   src/Utils/JSON.php:
     last_write_checksum: sha1:699d18afb5666cc4ff9f098abdd4a9ae5d860bf9
   src/Utils/MixedJSONHandler.php:

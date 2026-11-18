@@ -442,6 +442,7 @@ function isTestSkipped(test: string): boolean {
     "debug-env-var-false-keeps-logging-off",
     "request-bodies-base64-file-input-raw-bytes",
     "parameters-header-params-enum",
+    "parameters-header-params-string-formats",
   ].includes(test);
 }
 

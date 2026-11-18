@@ -1,0 +1,69 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/headers/stringFormats:
+    get:
+      operationId: headerParamsStringFormats
+      tags:
+        - parameters
+      description: >-
+        Exercises header parameters whose schema is a string with the bigint
+        or decimal format, and an integer enum. Targets that map these to
+        arbitrary-precision or enum types must send the exact digits as the
+        header value, with no surrounding quotes and no loss of precision.
+      parameters:
+        - name: X-Header-Bigint-Str
+          in: header
+          required: true
+          schema:
+            type: string
+            format: bigint
+        - name: X-Header-Decimal-Str
+          in: header
+          required: true
+          schema:
+            type: string
+            format: decimal
+        - name: X-Header-Int-Enum
+          in: header
+          required: true
+          schema:
+            $ref: "#/components/schemas/HeaderIntEnum"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  headers:
+                    type: object
+                    properties:
+                      X-Header-Bigint-Str:
+                        type: string
+                      X-Header-Decimal-Str:
+                        type: string
+                      X-Header-Int-Enum:
+                        type: string
+                    required:
+                      - X-Header-Bigint-Str
+                      - X-Header-Decimal-Str
+                      - X-Header-Int-Enum
+                required:
+                  - headers
+components:
+  schemas:
+    HeaderIntEnum:
+      type: integer
+      enum:
+        - 1
+        - 2

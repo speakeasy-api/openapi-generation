@@ -742,6 +742,8 @@ func (t Test) String() string {
         return "parameters-header-params-object"
     case TestParametersHeaderParamsPrimitive:
         return "parameters-header-params-primitive"
+    case TestParametersHeaderParamsStringFormats:
+        return "parameters-header-params-string-formats"
     case TestParametersJSONQueryParamsObject:
         return "parameters-json-query-params-object"
     case TestParametersMixedPrimitives:
@@ -2300,6 +2302,8 @@ func TestFromString(s string) Test {
         return TestParametersHeaderParamsObject
     case "parameters-header-params-primitive":
         return TestParametersHeaderParamsPrimitive
+    case "parameters-header-params-string-formats":
+        return TestParametersHeaderParamsStringFormats
     case "parameters-json-query-params-object":
         return TestParametersJSONQueryParamsObject
     case "parameters-mixed-primitives":
@@ -3488,6 +3492,7 @@ var testList = []Test{
     TestParametersHeaderParamsNil,
     TestParametersHeaderParamsObject,
     TestParametersHeaderParamsPrimitive,
+    TestParametersHeaderParamsStringFormats,
     TestParametersJSONQueryParamsObject,
     TestParametersMixedPrimitives,
     TestParametersMixedQueryParams,

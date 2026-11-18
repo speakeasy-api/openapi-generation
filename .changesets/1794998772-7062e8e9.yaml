@@ -5,6 +5,6 @@ targets:
     - php
 type: fix
 bump: patch
-description: send enum and date-time header parameters instead of dropping them
+description: send enum, date, date-time, bigint and decimal header parameters instead of dropping them, and keep headers whose value serializes to "0"
 author: AshGodfrey
 date: "2026-11-18"

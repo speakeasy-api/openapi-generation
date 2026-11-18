@@ -6,6 +6,7 @@ use OpenAPI\OpenAPI\Models\Operations\OptionalNullableSpecialHeadersRequest;
 use OpenAPI\OpenAPI\Models\Shared\DeepObjectQueryParams;
 use OpenAPI\OpenAPI\Models\Shared\DeepObjectQueryParams2;
 use OpenAPI\OpenAPI\Models\Shared\HeaderEnum;
+use OpenAPI\OpenAPI\Models\Shared\HeaderIntEnum;
 use OpenAPI\OpenAPI\Tests\CommonHelpers;
 use OpenAPI\OpenAPI\Tests\Helpers\Helpers;
 use OpenAPI\OpenAPI\Utils\JSON;
@@ -470,7 +471,7 @@ final class ParameterTest extends TestCase
         $this->assertEquals('8821239038968084', $response->res->headers['Bare-Bigint-Header']);
         $this->assertEquals('2024-01-02', $response->res->headers['Bare-Date-Header']);
         $this->assertEquals('2024-01-02T03:04:05.000000Z', $response->res->headers['Bare-Date-Time-Header']);
-        $this->assertEquals('3.1415926535898', $response->res->headers['Bare-Decimal-Header']);
+        $this->assertEquals('3.141592653589793', $response->res->headers['Bare-Decimal-Header']);
         $this->assertEquals('9223372036854775808', $response->res->headers['Wrapped-Bigint-Header']);
         $this->assertEquals('2024-02-03T04:05:06.000000Z', $response->res->headers['Wrapped-Date-Time-Header']);
 
@@ -489,6 +490,28 @@ final class ParameterTest extends TestCase
         $this->assertEquals('8821239038968084', $response->res->headers['Bare-Bigint-Header']);
         $this->assertArrayNotHasKey('Wrapped-Bigint-Header', $response->res->headers);
         $this->assertArrayNotHasKey('Wrapped-Date-Time-Header', $response->res->headers);
+    }
+
+    public function testHeaderParamsStringFormats(): void
+    {
+        CommonHelpers::recordTest('parameters-header-params-string-formats');
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->build();
+
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        $response = $sdk->parameters->headerParamsStringFormats(
+            xHeaderBigintStr: \Brick\Math\BigInteger::of('9223372036854775808'),
+            xHeaderDecimalStr: \Brick\Math\BigDecimal::of('3.14159265358979344719667586'),
+            xHeaderIntEnum: HeaderIntEnum::Two,
+        );
+
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $this->assertNotNull($response->res);
+        $this->assertEquals('9223372036854775808', $response->res->headers->xHeaderBigintStr);
+        $this->assertEquals('3.14159265358979344719667586', $response->res->headers->xHeaderDecimalStr);
+        $this->assertEquals('2', $response->res->headers->xHeaderIntEnum);
     }
 
     public function testHeaderParamsObject(): void

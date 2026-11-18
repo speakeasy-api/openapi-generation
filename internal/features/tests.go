@@ -131,6 +131,7 @@ const (
 	TestParametersMixedQueryParams
 	TestParametersHeaderParamsPrimitive
 	TestParametersHeaderParamsEnum
+	TestParametersHeaderParamsStringFormats
 	TestParametersHeaderParamsObject
 	TestParametersHeaderParamsMap
 	TestParametersHeaderParamsArray
