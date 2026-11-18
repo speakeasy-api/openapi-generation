@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.31.14",
+  core: "3.31.15",
   flattening: "2.82.1",
   globalSecurity: "2.82.16",
   methodSecurity: "2.82.8",
@@ -9,7 +9,7 @@ const supportedFeatures = {
   globals: "2.82.2",
   enums: "2.83.2",
   openEnums: "0.1.4",
-  allowReserved: "0.2.0",
+  allowReserved: "0.2.1",
   openDiscriminatedUnions: "0.1.0",
   serverIDs: "2.81.2",
   nameOverrides: "2.81.4",
