@@ -1098,6 +1098,11 @@ func unboundedJSONNumbers() []json.Number {
 		"1.",
 		"1e",
 		"",
+		"00",
+		"01",
+		"-01",
+		"01e2",
+		"01.5",
 	}
 }
 
@@ -1110,6 +1115,9 @@ func TestParseBoundedRat(t *testing.T) {
 	for text, want := range map[string]string{
 		"0":       "0",
 		"-0":      "0",
+		"0.5":     "1/2",
+		"-0e1":    "0",
+		"10":      "10",
 		"12":      "12",
 		"-1.5":    "-3/2",
 		"2.5E+1":  "25",

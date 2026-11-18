@@ -15,8 +15,8 @@ const dotSegmentRE = /^(?:\.|%2e){1,2}$/i;
 const baseOverrideRE = /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|[/\\]{2})/;
 
 function hasDotSegment(value: string): boolean {
-  return value
-    .replace(ignoredURLCharsRE, "")
+  const path = value.replace(ignoredURLCharsRE, "").split(pathEndRE, 1)[0];
+  return (path ?? "")
     .split(segmentSeparatorRE)
     .some((part) => dotSegmentRE.test(part.replace(trimmedURLCharsRE, "")));
 }

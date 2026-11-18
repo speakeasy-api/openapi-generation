@@ -142,6 +142,15 @@ describe("pathToFunc dot segments", () => {
     );
   });
 
+  test.each(["/x/{id}?y", "/x/{id}#y", "/x/{id}?y/z"])(
+    "rejects a dot segment before a literal '?' or '#' in %j",
+    (path) => {
+      expect(() => checked(path)({ id: ".." })).toThrow(
+        /^Parameter 'id' must not form a '\.' or '\.\.' path segment$/,
+      );
+    },
+  );
+
   test("leaves literal template segments unchanged", () => {
     expect(checked("/v1/../{id}")({ id: "x" })).toEqual("/v1/../x");
     expect(checked("/entity/user-{id}")({ id: ".." })).toEqual(

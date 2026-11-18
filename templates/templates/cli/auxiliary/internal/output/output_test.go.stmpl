@@ -1723,6 +1723,21 @@ func TestContinuationIgnoresUnboundedNumbers(t *testing.T) {
 		}
 	}
 }
+
+func TestContinuationSumSkipsTotalsWithUnboundedTerms(t *testing.T) {
+	payloads := []interface{}{
+		map[string]interface{}{"total": json.Number("1"), "counts": []interface{}{map[string]interface{}{"id": "a", "n": json.Number("1")}, map[string]interface{}{"id": "b", "n": json.Number("1")}}},
+		map[string]interface{}{"total": json.Number("1e100000000"), "counts": []interface{}{map[string]interface{}{"id": "a", "n": json.Number("1e100000000")}, map[string]interface{}{"id": "b", "n": json.Number("2")}}},
+	}
+	if total, ok := sumContinuationValues(payloads, "/total"); ok {
+		t.Errorf("sumContinuationValues = %s, want no total", total)
+	}
+	items, ok := sumContinuationGroups(payloads, continuationSumBy{Pointer: "/counts", Key: "id", Value: "n"})
+	want := []interface{}{map[string]interface{}{"id": "a", "n": json.Number("1")}, map[string]interface{}{"id": "b", "n": json.Number("3")}}
+	if !ok || !reflect.DeepEqual(items, want) {
+		t.Errorf("sumContinuationGroups = %v, want %v", items, want)
+	}
+}
 {{- end}}
 {{- if or hasCliContinuations anyOperationHasStreaming}}
 
@@ -1740,6 +1755,11 @@ func unboundedJSONNumbers() []json.Number {
 		"1.",
 		"1e",
 		"",
+		"00",
+		"01",
+		"-01",
+		"01e2",
+		"01.5",
 	}
 }
 
@@ -1752,6 +1772,9 @@ func TestParseBoundedRat(t *testing.T) {
 	for text, want := range map[string]string{
 		"0":       "0",
 		"-0":      "0",
+		"0.5":     "1/2",
+		"-0e1":    "0",
+		"10":      "10",
 		"12":      "12",
 		"-1.5":    "-3/2",
 		"2.5E+1":  "25",

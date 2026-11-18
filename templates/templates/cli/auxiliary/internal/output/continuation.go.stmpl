@@ -751,9 +751,10 @@ func collectContinuationStrings(payloads []interface{}, collect continuationColl
 }
 
 type continuationGroup struct {
-	item   map[string]interface{}
-	total  *big.Rat
-	summed bool
+	item       map[string]interface{}
+	total      *big.Rat
+	summed     bool
+	unsummable bool
 }
 
 // sumContinuationGroups keeps items that are not objects with a scalar key
@@ -789,6 +790,8 @@ func sumContinuationGroups(payloads []interface{}, rule continuationSumBy) ([]in
 			if number, ok := continuationNumber(object[rule.Value]); ok {
 				group.total.Add(group.total, number)
 				group.summed = true
+			} else if _, isNumber := object[rule.Value].(json.Number); isNumber {
+				group.unsummable = true
 			}
 		}
 	}
@@ -802,7 +805,7 @@ func sumContinuationGroups(payloads []interface{}, rule continuationSumBy) ([]in
 			items = append(items, entry)
 			continue
 		}
-		if group.summed {
+		if group.summed && !group.unsummable {
 			group.item[rule.Value] = continuationTotal(group.total)
 		}
 		items = append(items, group.item)
@@ -837,7 +840,7 @@ func sumContinuationValues(payloads []interface{}, pointer string) (json.Number,
 		}
 		term, ok := continuationNumber(number)
 		if !ok {
-			continue
+			return "", false
 		}
 		total.Add(total, term)
 		found = true

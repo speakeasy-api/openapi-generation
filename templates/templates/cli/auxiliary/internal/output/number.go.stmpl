@@ -40,7 +40,8 @@ func isJSONDecimal(text string) bool {
 	if i < len(text) && text[i] == '-' {
 		i++
 	}
-	if !digits() {
+	integer := i
+	if !digits() || (text[integer] == '0' && i-integer > 1) {
 		return false
 	}
 	if i < len(text) && text[i] == '.' {
