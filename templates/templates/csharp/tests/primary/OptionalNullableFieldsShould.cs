@@ -79,31 +79,6 @@ public class OptionalNullableFieldsShould
     }
 
     [Fact]
-    public void ImplicitUnwrap_Absent_ReadsAsNull()
-    {
-        string? unwrapped = OptionalNullable<string?>.Absent;
-        Assert.Null(unwrapped);
-    }
-
-    [Fact]
-    public void ImplicitUnwrap_ExplicitNull_ReadsAsNull()
-    {
-        string? unwrapped = OptionalNullable<string?>.Set(null);
-        Assert.Null(unwrapped);
-    }
-
-    [Fact]
-    public void ImplicitUnwrap_Value_ReadsValue()
-    {
-        var model = new NullableModel { Field = "hello" };
-        string? unwrapped = model.Field;
-        Assert.Equal("hello", unwrapped);
-        Assert.Equal(5, Length(model.Field));
-    }
-
-    private static int Length(string? value) => value?.Length ?? -1;
-
-    [Fact]
     public void Serialize_AbsentOmittedViaShouldSerialize()
     {
         var model = new NullableModel { };

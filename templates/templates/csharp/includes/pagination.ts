@@ -24,7 +24,7 @@ function templatePaginationInputAccessor(
   // unwrapped by reading its raw underlying value.
   const unwrapOptionalNullable = (
     inputField: FieldDef | undefined,
-    owner: TypeDef | undefined,
+    owner: TypeDef,
     accessOperator: string,
   ): string =>
     inputField && needsOptionalNullableWrapper(inputField, owner)

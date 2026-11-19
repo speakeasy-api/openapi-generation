@@ -57,6 +57,7 @@ namespace {{getScopeNamespace "utils"}}
         /// For Absent, use <see cref="Absent"/> or leave the field at its default value.
         /// </remarks>
         public static implicit operator OptionalNullable<T>(T? value) => Set(value);
+{{- if eq .Global.Config.OptionalNullableScope "writable-models" }}
 
         /// <summary>
         /// Implicitly reads the wrapped value, yielding <c>default(T)</c> when Absent.
@@ -69,6 +70,7 @@ namespace {{getScopeNamespace "utils"}}
         /// <see cref="IsSet"/> first, when the distinction must survive a round trip.
         /// </remarks>
         public static implicit operator T?(OptionalNullable<T> value) => value.ValueOrDefault;
+{{- end }}
 
         public override string ToString() =>
             !IsSet ? "absent" : value is null ? "null" : $"\"{value}\"";

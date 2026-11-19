@@ -1480,7 +1480,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Utils/OpenEnumConverter.cs:
     last_write_checksum: sha1:b8a93e434652e0b256abe2c394bd161a47eef437
   src/Speakeasy/OpenAPI/Utils/OptionalNullable.cs:
-    last_write_checksum: sha1:e0a8e834b2d927751d5e62f2c5d897d9e83d17cf
+    last_write_checksum: sha1:e38e13563996304b9e6c857f7fe07d3c2924b4be
   src/Speakeasy/OpenAPI/Utils/OptionalNullableJsonConverter.cs:
     last_write_checksum: sha1:bf8eec6e762302070ff3a32d58ebc04347c8ed79
   src/Speakeasy/OpenAPI/Utils/RequestBodySerializer.cs:

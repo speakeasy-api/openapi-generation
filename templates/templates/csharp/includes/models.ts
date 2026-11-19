@@ -28,18 +28,10 @@ type CSharpModel = {
 // @ts-ignore
 function needsOptionalNullableWrapper(
   fieldDef: FieldDef,
-  owner?: TypeDef,
+  owner: TypeDef,
 ): boolean {
   return (
-    context.Global.Config.PresenceAwareJSONSerialization &&
-    fieldDef.Optional &&
-    fieldDef.Nullable &&
-    !fieldDef.Const &&
-    !isScalarOptionalNullableDecimal(fieldDef) &&
-    Array.from(fieldDef.Annotations).some(
-      (a) => a.Type().toString() === "json",
-    ) &&
-    isPresenceTrackedModel(owner)
+    isPresenceAwareOptionalNullable(fieldDef) && isPresenceTrackedModel(owner)
   );
 }
 registerTemplateFunc(
@@ -48,11 +40,23 @@ registerTemplateFunc(
 );
 
 // @ts-ignore
-function isPresenceTrackedModel(owner?: TypeDef): boolean {
+function isPresenceAwareOptionalNullable(fieldDef: FieldDef): boolean {
+  return (
+    context.Global.Config.PresenceAwareJSONSerialization &&
+    fieldDef.Optional &&
+    fieldDef.Nullable &&
+    !fieldDef.Const &&
+    !isScalarOptionalNullableDecimal(fieldDef) &&
+    Array.from(fieldDef.Annotations).some((a) => a.Type().toString() === "json")
+  );
+}
+
+// @ts-ignore
+function isPresenceTrackedModel(owner: TypeDef): boolean {
   if (context.Global.Config.OptionalNullableScope !== "writable-models") {
     return true;
   }
-  return owner === undefined || owner.UsedInRequest === true;
+  return owner.UsedInRequest === true;
 }
 
 // NB: A scalar (non-array/non-map) bare-number `format: decimal` field is emitted as
@@ -103,7 +107,7 @@ function templateFieldType(
   fieldDef: FieldDef,
   fallbackOptional: boolean,
   usageLocation: string,
-  owner?: TypeDef,
+  owner: TypeDef,
 ): string {
   if (!context.Global.Config.PresenceAwareJSONSerialization) {
     return sanitizeType(fieldDef.Type, fallbackOptional, usageLocation);
@@ -120,7 +124,7 @@ function templateFieldType(
 registerTemplateFunc("templateFieldType", templateFieldType);
 
 // @ts-ignore
-function templateFieldDefault(fieldDef: FieldDef, owner?: TypeDef): string {
+function templateFieldDefault(fieldDef: FieldDef, owner: TypeDef): string {
   if (!context.Global.Config.PresenceAwareJSONSerialization) {
     return templateDefaultValue(fieldDef);
   }
@@ -145,7 +149,7 @@ registerTemplateFunc("templateFieldDefault", templateFieldDefault);
 function templateShouldSerialize(
   fieldDef: FieldDef,
   className: string,
-  owner?: TypeDef,
+  owner: TypeDef,
 ): string {
   if (!needsOptionalNullableWrapper(fieldDef, owner)) return "";
   const name = sanitizeFieldName(fieldDef.Name, className);

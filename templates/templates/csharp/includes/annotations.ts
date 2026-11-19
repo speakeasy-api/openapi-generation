@@ -2,7 +2,7 @@
 function templateFieldAnnotations(
   fieldDef: FieldDef,
   indent: number,
-  owner?: TypeDef,
+  owner: TypeDef,
 ): string {
   let resolved = [];
   let speakeasyMetadata = [];
@@ -151,7 +151,7 @@ function needsCustomJsonConverter(fieldDef: FieldDef): boolean {
 function templateJSONAnnotation(
   fieldDef: FieldDef,
   annotation: JSONAnnotation,
-  owner?: TypeDef,
+  owner: TypeDef,
 ): string {
   const wrapped = needsOptionalNullableWrapper(fieldDef, owner);
   if (
@@ -216,7 +216,11 @@ function templateJSONAnnotation(
   // Override global NullValueHandling.Ignore to write/read an explicit null
   const requiredNullable = !fieldDef.Optional && fieldDef.Nullable;
   const isUnion = fieldType === "union";
-  if (wrapped || isUnion || requiredNullable) {
+  if (
+    isPresenceAwareOptionalNullable(fieldDef) ||
+    isUnion ||
+    requiredNullable
+  ) {
     const disallowNull =
       presenceAware && fieldDef.Optional && !fieldDef.Nullable;
     if (!disallowNull) {
