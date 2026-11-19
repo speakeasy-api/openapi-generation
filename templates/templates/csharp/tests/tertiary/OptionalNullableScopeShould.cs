@@ -70,5 +70,24 @@ public class OptionalNullableScopeShould
         Assert.True(model.OptNullBool.IsNull);
     }
 
+    // Both implicit conversions exist, so a wrapped field beside a bare T in a
+    // conditional or an inferred generic argument is ambiguous; these are the
+    // forms that compile.
+    [Fact]
+    public void WritableModel_DisambiguatesWithExplicitTypes()
+    {
+        var model = new ObjectWithOptionalNullableFields { OptNullBool = true };
+        var flip = false;
+
+        bool? viaCast = flip ? false : (bool?)model.OptNullBool;
+        Assert.True(viaCast);
+
+        bool? viaValue = flip ? false : model.OptNullBool.Value;
+        Assert.True(viaValue);
+
+        Assert.Equal<bool?>(true, model.OptNullBool);
+        Assert.Equal(true, model.OptNullBool.ValueOrDefault);
+    }
+
     private static bool IsTrue(bool? value) => value == true;
 }

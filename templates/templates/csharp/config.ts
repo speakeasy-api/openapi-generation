@@ -342,7 +342,7 @@ function getConfigFields(
       Required: false,
       DefaultValue: "all",
       Description:
-        "Which models get OptionalNullable<T> fields under presenceAwareJsonSerialization. 'all' wraps optional+nullable fields on every model. 'writable-models' wraps only models the SDK can send (request bodies, parameters and the schemas they embed) and leaves response-only models as plain T?; a schema used in both requests and responses is still wrapped, and OptionalNullable<T> gains an implicit conversion to T? so such fields can be read as plain nullables. Requires presenceAwareJsonSerialization: true; otherwise falls back to 'all' with a warning.",
+        "Which models get OptionalNullable<T> fields under presenceAwareJsonSerialization. 'all' wraps optional+nullable fields on every model. 'writable-models' wraps only models the SDK can send (request bodies, parameters and the schemas they embed) and leaves response-only models as plain T?; a schema used in both requests and responses is still wrapped, and OptionalNullable<T> gains an implicit conversion to T? so such fields can be read as plain nullables. With conversions in both directions, a wrapped field next to a bare T in a conditional expression or an inferred generic argument no longer compiles (CS0172, CS0411); read .Value, cast, or name the type argument. Requires presenceAwareJsonSerialization: true; otherwise falls back to 'all' with a warning.",
       ValidationRegex: /^(all|writable-models)$/.source,
       ValidationMessage: '"all" or "writable-models" only',
     },
