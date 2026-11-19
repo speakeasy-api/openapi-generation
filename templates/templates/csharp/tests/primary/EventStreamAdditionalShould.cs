@@ -14,7 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-public class EventStreamAdditionalShould : IDisposable
+public partial class EventStreamAdditionalShould : IDisposable
 {
     private readonly SDK _sdk;
     private readonly CustomHttpClientWithTimeout _httpClient;
@@ -104,7 +104,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<JsonEventData>();
-        using (var stream = res.JsonEvent)
+        using (var stream = Compat.Events(res.JsonEvent))
         {
             Assert.NotNull(stream);
 
@@ -142,7 +142,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<ChatCompletionStream>();
-        using (var stream = res.ChatCompletionStream)
+        using (var stream = Compat.Events(res.ChatCompletionStream))
         {
             Assert.NotNull(stream);
 
@@ -187,7 +187,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<ChatCompletionEvent>();
-        using (var stream = res.ChatCompletionEvent)
+        using (var stream = Compat.Events(res.ChatCompletionEvent))
         {
             Assert.NotNull(stream);
 
@@ -218,7 +218,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<DifferentDataSchemas>();
-        using (var stream = res.DifferentDataSchemas)
+        using (var stream = Compat.Events(res.DifferentDataSchemas))
         {
             Assert.NotNull(stream);
 
@@ -266,7 +266,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<MixedDataEvent>();
-        using (var stream = res.MixedDataEvent)
+        using (var stream = Compat.Events(res.MixedDataEvent))
         {
             Assert.NotNull(stream);
 
@@ -311,7 +311,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<TextEvent>();
-        using (var stream = res.TextEvent)
+        using (var stream = Compat.Events(res.TextEvent))
         {
             Assert.NotNull(stream);
 
@@ -340,7 +340,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<RichStream>();
-        using (var stream = res.RichStream)
+        using (var stream = Compat.Events(res.RichStream))
         {
             Assert.NotNull(stream);
 
@@ -379,7 +379,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<TextEvent>();
-        var stream = res.TextEvent;
+        var stream = Compat.Events(res.TextEvent);
         Assert.NotNull(stream);
 
         TextEvent? e;
@@ -414,7 +414,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.NotNull(res);
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
-        var stream = res.JsonEvent;
+        var stream = Compat.Events(res.JsonEvent);
         Assert.NotNull(stream);
 
         // Read a few events
@@ -439,7 +439,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.NotNull(res);
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
-        var stream = res.TextEvent;
+        var stream = Compat.Events(res.TextEvent);
         Assert.NotNull(stream);
         using (stream)
         {
@@ -467,8 +467,8 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.NotNull(textRes);
 
         // Verify both streams can be consumed independently
-        using var jsonStream = jsonRes.JsonEvent;
-        using var textStream = textRes.TextEvent;
+        using var jsonStream = Compat.Events(jsonRes.JsonEvent);
+        using var textStream = Compat.Events(textRes.TextEvent);
         Assert.NotNull(jsonStream);
         Assert.NotNull(textStream);
         var jsonEvent = await jsonStream.Next();
@@ -489,7 +489,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<JsonEventData>();
-        using (var stream = res.JsonEvent)
+        using (var stream = Compat.Events(res.JsonEvent))
         {
             Assert.NotNull(stream);
 
@@ -524,7 +524,7 @@ public class EventStreamAdditionalShould : IDisposable
         var events = new List<TextEvent>();
         var timestamps = new List<DateTime>();
 
-        using (var stream = res.TextEvent)
+        using (var stream = Compat.Events(res.TextEvent))
         {
             Assert.NotNull(stream);
 
@@ -558,7 +558,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<JsonEvent>();
-        using (var stream = res.JsonEvent)
+        using (var stream = Compat.Events(res.JsonEvent))
         {
             Assert.NotNull(stream);
 
@@ -597,7 +597,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<TextEvent>();
-        using (var stream = res.TextEvent)
+        using (var stream = Compat.Events(res.TextEvent))
         {
             Assert.NotNull(stream);
 
@@ -631,7 +631,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<RichStream>();
-        using (var stream = res.RichStream)
+        using (var stream = Compat.Events(res.RichStream))
         {
             Assert.NotNull(stream);
 
@@ -700,7 +700,6 @@ public class EventStreamAdditionalShould : IDisposable
         }
     }
 
-
     [Fact]
     public async Task EventStreamWithCancellationToken()
     {
@@ -716,7 +715,7 @@ public class EventStreamAdditionalShould : IDisposable
         var events = new List<TextEvent>();
         string message = "";
         bool cancelled = false;
-        using (var stream = res.TextEvent)
+        using (var stream = Compat.Events(res.TextEvent))
         {
             Assert.NotNull(stream);
 
@@ -759,7 +758,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<PartialWithCommentsEvent>();
-        using (var stream = res.PartialWithCommentsEvent)
+        using (var stream = Compat.Events(res.PartialWithCommentsEvent))
         {
             Assert.NotNull(stream);
 
@@ -816,7 +815,7 @@ public class EventStreamAdditionalShould : IDisposable
         var actual = new List<SseEvent>();
         List<SseEvent>? expected = null;
 
-        using (var stream = res.SseEvent)
+        using (var stream = Compat.Events(res.SseEvent))
         {
             Assert.NotNull(stream);
 
@@ -851,7 +850,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<ChatCompletionEvent>();
-        using (var stream = res.ChatCompletionEvent)
+        using (var stream = Compat.Events(res.ChatCompletionEvent))
         {
             Assert.NotNull(stream);
 
@@ -880,7 +879,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var events = new List<OptionalDataEvent>();
-        using (var stream = res.OptionalDataEvent)
+        using (var stream = Compat.Events(res.OptionalDataEvent))
         {
             Assert.NotNull(stream);
 
@@ -910,7 +909,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.NotNull(res);
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
-        var stream = res.TextEvent;
+        var stream = Compat.Events(res.TextEvent);
         Assert.NotNull(stream);
 
         var events = new List<TextEvent>();
@@ -947,7 +946,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.NotNull(res);
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
-        var stream = res.TextEvent;
+        var stream = Compat.Events(res.TextEvent);
         Assert.NotNull(stream);
 
         var events = new List<TextEvent>();
@@ -965,87 +964,6 @@ public class EventStreamAdditionalShould : IDisposable
     }
 
     [Fact]
-    public async Task AsyncEnumerableBreakPreservesCallerOwnedStream()
-    {
-        var underlying = new MemoryStream(Encoding.UTF8.GetBytes("data: first\n\ndata: second\n\n"));
-        var stream = new Openapi.Utils.Sse.EventStream<string>(underlying);
-
-        await foreach (var e in stream)
-        {
-            Assert.Equal("first", e);
-            break;
-        }
-
-        Assert.True(stream.IsClosed, "EventStream should be disposed when enumeration exits early");
-        Assert.True(underlying.CanRead, "A stream passed to the public constructor should remain open");
-    }
-
-    [Fact]
-    public async Task AsyncEnumerableBreakClosesResponseStream()
-    {
-        var underlying = new MemoryStream(Encoding.UTF8.GetBytes("data: first\n\ndata: second\n\n"));
-        using var response = new HttpResponseMessage
-        {
-            Content = new StreamContent(underlying),
-        };
-        response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/event-stream");
-        var stream = await Openapi.Utils.Sse.SseStreamExtensions.AsServerSentEventStream<string>(response);
-
-        await foreach (var e in stream)
-        {
-            Assert.Equal("first", e);
-            break;
-        }
-
-        Assert.True(stream.IsClosed, "EventStream should be disposed when enumeration exits early");
-        Assert.False(underlying.CanRead, "The response stream should be closed when enumeration exits early");
-    }
-
-    [Fact]
-    public async Task AwaitUsingClosesWithoutEnumeration()
-    {
-        var stream = new Openapi.Utils.Sse.EventStream<string>(new MemoryStream());
-
-        await using (stream)
-        {
-        }
-
-        Assert.True(stream.IsClosed);
-    }
-
-    [Fact]
-    public async Task AsyncEnumerableEmitsDefaultValueTypeEventOnce()
-    {
-        var stream = new Openapi.Utils.Sse.EventStream<ValueTypeEvent>(
-            new MemoryStream(Encoding.UTF8.GetBytes("data: 0\n\n")));
-        var events = new List<ValueTypeEvent>();
-
-        await foreach (var e in stream)
-        {
-            events.Add(e);
-        }
-
-        var value = Assert.Single(events);
-        Assert.Equal(0, value.Data);
-    }
-
-    [Fact]
-    public async Task NextPropagatesCancellationDuringRead()
-    {
-        using var cts = new CancellationTokenSource();
-        await using var stream = new Openapi.Utils.Sse.EventStream<string>(
-            new CancellableReadStream("data: Hello\n\n"));
-
-        Assert.Equal("Hello", await stream.Next(cts.Token));
-
-        var pendingRead = stream.Next(cts.Token);
-        cts.Cancel();
-
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pendingRead);
-        Assert.True(stream.IsClosed);
-    }
-
-    [Fact]
     public async Task ParseLargeEventSplitAcrossSmallChunks()
     {
         CommonHelpers.RecordTest("event-stream-large-event-small-chunks");
@@ -1056,7 +974,7 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
 
         var contents = new List<string>();
-        using (var stream = res.LargeChunkedEvent)
+        using (var stream = Compat.Events(res.LargeChunkedEvent))
         {
             Assert.NotNull(stream);
 
@@ -1076,37 +994,5 @@ public class EventStreamAdditionalShould : IDisposable
         Assert.Equal('S', big[0]);
         Assert.Equal('E', big[big.Length - 1]);
         Assert.Equal(new string('a', (int)size - 2), big.Substring(1, big.Length - 2));
-    }
-
-    private sealed class CancellableReadStream : MemoryStream
-    {
-        public CancellableReadStream(string contents) : base(Encoding.UTF8.GetBytes(contents))
-        {
-        }
-
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            return Position < Length
-                ? base.ReadAsync(buffer, cancellationToken)
-                : new ValueTask<int>(WaitForCancellation(cancellationToken));
-        }
-
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            return Position < Length
-                ? base.ReadAsync(buffer, offset, count, cancellationToken)
-                : WaitForCancellation(cancellationToken);
-        }
-
-        private static async Task<int> WaitForCancellation(CancellationToken cancellationToken)
-        {
-            await Task.Delay(Timeout.Infinite, cancellationToken);
-            return 0;
-        }
-    }
-
-    private struct ValueTypeEvent
-    {
-        public int Data { get; set; }
     }
 }

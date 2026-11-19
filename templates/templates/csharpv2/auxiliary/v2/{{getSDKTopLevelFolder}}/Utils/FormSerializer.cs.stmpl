@@ -1,0 +1,97 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Text.Json;
+    using System.Text.Json.Serialization.Metadata;
+
+    internal static class FormSerializer
+    {
+        public static List<KeyValuePair<string?, string?>> CreatePairs()
+            => new List<KeyValuePair<string?, string?>>();
+
+        public static FormUrlEncodedContent FromPairs(List<KeyValuePair<string?, string?>> pairs)
+            => new FormUrlEncodedContent(pairs);
+
+        public static void AddScalar(List<KeyValuePair<string?, string?>> pairs, string name, object? value)
+        {
+            if (value != null)
+            {
+                pairs.Add(new KeyValuePair<string?, string?>(name, Utilities.ValueToString(value)));
+            }
+        }
+
+        public static void AddList<T>(List<KeyValuePair<string?, string?>> pairs, string name, IEnumerable<T>? values, bool explode)
+        {
+            if (values == null) return;
+
+            if (explode)
+            {
+                foreach (var item in values)
+                {
+                    pairs.Add(new KeyValuePair<string?, string?>(name, Utilities.ValueToString(item)));
+                }
+                return;
+            }
+
+            pairs.Add(new KeyValuePair<string?, string?>(name, string.Join(",", values.Select(value => Utilities.ValueToString(value)))));
+        }
+
+        public static void AddMap<T>(List<KeyValuePair<string?, string?>> pairs, string name, IDictionary<string, T>? map, bool explode)
+        {
+            if (map == null) return;
+
+            if (explode)
+            {
+                foreach (var kv in map)
+                {
+                    pairs.Add(new KeyValuePair<string?, string?>(kv.Key, Utilities.ValueToString(kv.Value)));
+                }
+                return;
+            }
+
+            var items = new List<string>();
+            foreach (var kv in map)
+            {
+                items.Add(kv.Key);
+                items.Add(Utilities.ValueToString(kv.Value));
+            }
+            pairs.Add(new KeyValuePair<string?, string?>(name, string.Join(",", items)));
+        }
+
+        public static void AddJson<T>(List<KeyValuePair<string?, string?>> pairs, string name, T? value, JsonTypeInfo<T> typeInfo)
+        {
+            if (value == null) return;
+
+            var json = JsonSerializer.Serialize(value, typeInfo);
+            pairs.Add(new KeyValuePair<string?, string?>(name, json));
+        }
+
+        public static void AddObjectFlatten(
+            List<KeyValuePair<string?, string?>> pairs,
+            string name,
+            Action<List<KeyValuePair<string?, string?>>> emitProps,
+            bool explode
+        )
+        {
+            if (explode)
+            {
+                emitProps(pairs);
+                return;
+            }
+
+            var nested = new List<KeyValuePair<string?, string?>>();
+            emitProps(nested);
+            var items = new List<string>();
+            foreach (var kv in nested)
+            {
+                items.Add(kv.Key ?? "");
+                items.Add(kv.Value ?? "");
+            }
+            pairs.Add(new KeyValuePair<string?, string?>(name, string.Join(",", items)));
+        }
+    }
+}

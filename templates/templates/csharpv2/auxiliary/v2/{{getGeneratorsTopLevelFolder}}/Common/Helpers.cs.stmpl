@@ -1,0 +1,16 @@
+#nullable enable
+using Microsoft.CodeAnalysis;
+
+namespace {{getGeneratorsPackageId}};
+
+internal static class Helpers
+{
+    private const int IndentSize = 4;
+
+    public static string Indent(int level) => new string(' ', level * IndentSize);
+
+    /// <summary>Returns the file-scoped namespace declaration for <paramref name="ns"/>,
+    /// e.g. <c>"namespace Foo.Bar;\n\n"</c>, or an empty string for the global namespace.</summary>
+    public static string NamespaceDeclaration(INamespaceSymbol ns) =>
+        ns.IsGlobalNamespace ? "" : $"namespace {ns.ToDisplayString()};\n\n";
+}

@@ -36,8 +36,8 @@ function templateDefaultError(full: boolean = true): string {
     return className;
   }
 
-  const useFull = full || hasNamespaceConflict();
-  const namespace = getScopeNamespace("errors", useFull);
+  full = full || hasNamespaceConflict() || isCsharpV2();
+  const namespace = getScopeNamespace("errors", full);
   return namespace ? `${namespace}.${className}` : className;
 }
 
@@ -73,7 +73,11 @@ function getErrorMessageAccessorString(
         i == fields.length - 1
           ? "string"
           : sanitizeType(f.Type, false, usageLocation);
-      expr = `((${inner}?)Utilities.UnwrapValue(${access}))`;
+      if (isCsharpV2()) {
+        expr = `((${inner}?)${access}${nullable ? "?" : ""}.ValueOrDefault)`;
+      } else {
+        expr = `((${inner}?)Utilities.UnwrapValue(${access}))`;
+      }
       nullable = true;
     } else {
       expr = access;

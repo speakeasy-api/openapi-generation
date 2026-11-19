@@ -1,0 +1,87 @@
+#nullable enable
+namespace {{getModelNamespace ""}}
+{
+    using System;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
+    using System.Text.Json.Serialization.Metadata;
+
+    /// <summary>
+    /// System.Text.Json converter for <see cref="OptionalNullable{T}"/>.
+    /// </summary>
+    public sealed class OptionalNullableJsonConverter<T> : JsonConverter<OptionalNullable<T>>
+    {
+        public override OptionalNullable<T> Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        )
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return OptionalNullable<T>.Set(default);
+            }
+
+            var info = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+            var value = JsonSerializer.Deserialize(ref reader, info);
+            return OptionalNullable<T>.Set(value);
+        }
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            OptionalNullable<T> value,
+            JsonSerializerOptions options
+        )
+        {
+            if (!value.IsSet || value.IsNull)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+            var info = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+            JsonSerializer.Serialize(writer, value.ValueOrDefault!, info);
+        }
+    }
+
+    /// <summary>
+    /// System.Text.Json converter for <see cref="OptionalNullable{T}"/> using the value converter from <typeparamref name="TFactory"/>.
+    /// </summary>
+    public sealed class OptionalNullableJsonConverter<T, TFactory> : JsonConverter<OptionalNullable<T>>
+        where TFactory : JsonConverterFactory, new()
+    {
+        private JsonConverter<T>? _inner;
+
+        public override OptionalNullable<T> Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        )
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return OptionalNullable<T>.Set(default);
+            }
+
+            return OptionalNullable<T>.Set(Inner(options).Read(ref reader, typeof(T), options));
+        }
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            OptionalNullable<T> value,
+            JsonSerializerOptions options
+        )
+        {
+            if (!value.IsSet || value.IsNull)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+            Inner(options).Write(writer, value.ValueOrDefault!, options);
+        }
+
+        private JsonConverter<T> Inner(JsonSerializerOptions options) =>
+            _inner ??= (JsonConverter<T>)new TFactory().CreateConverter(typeof(T), options)!;
+    }
+}

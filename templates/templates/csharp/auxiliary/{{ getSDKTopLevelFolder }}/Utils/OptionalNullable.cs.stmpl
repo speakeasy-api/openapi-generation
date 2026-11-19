@@ -1,6 +1,6 @@
 {{- if .Global.Config.PresenceAwareJSONSerialization -}}
 #nullable enable
-namespace {{getScopeNamespace "utils"}}
+namespace {{if isCsharpV2}}{{getModelNamespace ""}}{{else}}{{getScopeNamespace "utils"}}{{end}}
 {
     using System;
 

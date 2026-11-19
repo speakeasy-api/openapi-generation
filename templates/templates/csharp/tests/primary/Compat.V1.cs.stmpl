@@ -1,0 +1,97 @@
+{{- /* v1-only: v2 Compat lives in csharpv2/tests/Common/Compat.cs.stmpl. */ -}}
+{{- if not isCsharpV2 -}}
+#nullable enable
+using System;
+using System.IO;
+using System.Net.Http;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Openapi.Utils;
+using Openapi.Utils.Sse;
+using Xunit;
+
+// Compat — v1 ⇄ v2 test-side glue.
+//
+// Tests under tests/primary are inherited by both csharp (v1) and csharpv2.
+// Where the two SDKs expose different internal helpers (Newtonsoft-based in v1,
+// System.Text.Json + source-generated context in v2), tests must not call those
+// helpers directly. Instead they call Compat.* — each variant ships its own
+// Compat.cs with the same signatures but variant-native implementations.
+//
+// v2's implementation lives at templates/csharpv2/tests/Common/Compat.cs.stmpl.
+public static class Compat
+{
+    public static T DeserializeJson<T>(string json) =>
+        ResponseBodyDeserializer.DeserializeNotNull<T>(json, NullValueHandling.Ignore);
+
+    public static string SerializeJson(object? value) =>
+        JsonConvert.SerializeObject(value);
+
+    public static void AssertIsJsonParseException(Exception? ex) {
+        var typed = Assert.IsType<JsonReaderException>(ex);
+        Assert.Equal(
+            "Invalid property identifier character: ,. Path '', line 1, position 1.",
+            typed.Message
+        );
+    }
+
+    public static HttpContent? SerializeRequestBody(
+        object? body,
+        string requestField,
+        string method,
+        bool nullable,
+        bool optional,
+        string format = ""
+    ) => RequestBodySerializer.Serialize(body, requestField, method, nullable, optional, format);
+
+    // Stringify any value for test assertions. v1 delegates to Utilities.ToString
+    // (already reflective via Newtonsoft). v2 reimplements with reflective STJ
+    // path so production Utilities can stay AOT-clean.
+    public static string ToString(object? value) => Utilities.ToString(value);
+
+    public static T? DeserializeWithDefaultSettings<T>(string json) =>
+        JsonConvert.DeserializeObject<T>(json, Utilities.GetDefaultJsonDeserializerSettings());
+
+    public static T? DeserializeUnregistered<T>(string json) => DeserializeWithDefaultSettings<T>(json);
+
+    public static string SerializeWithDefaultSettings(object? value) =>
+        JsonConvert.SerializeObject(value, Utilities.GetDefaultJsonSerializerSettings());
+
+    public static Exception AssertThrowsJsonSerializationException(Action action) =>
+        Assert.Throws<JsonSerializationException>(action);
+
+    public static Exception AssertThrowsUnionNoMatch(Action action) =>
+        Assert.Throws<ResponseBodyDeserializer.DeserializationException>(action);
+
+    public static readonly Type OptionalNullableType = typeof(OptionalNullable<>);
+
+    // v1 streams expose Next()/Dispose()/IsClosed natively; v2 wraps its IAsyncEnumerable.
+    public static EventStream<T>? Events<T>(EventStream<T>? stream) => stream;
+
+    public const string UnknownNoRawPayloadMessage =
+        "Unknown union value has no raw payload; construct via CreateUnknown(JToken).";
+
+    public const string RequiredPropertyMissingFragment = "Required property";
+
+    public const string FormExplodedArrayKeySuffix = "[]";
+
+    public static JToken ParseRaw(string json)
+    {
+        using var reader = new JsonTextReader(new StringReader(json)) { DateParseHandling = DateParseHandling.None };
+        return JToken.ReadFrom(reader);
+    }
+
+    public static bool RawEquals(JToken? raw, string json) => JToken.DeepEquals(raw, ParseRaw(json));
+
+    public static string? RawString(JToken? raw, string property) => (string?)raw?[property];
+
+    public static int? RawInt(JToken? raw, string property) => (int?)raw?[property];
+
+    public static bool RawIsString(JToken? raw, string property) => raw?[property]?.Type == JTokenType.String;
+
+    public static void AssertSameRaw(JToken expected, JToken? actual) => Assert.Same(expected, actual);
+
+    public static Exception AssertThrowsAnyJsonException(Action action) =>
+        Assert.ThrowsAny<JsonException>(action);
+}
+{{ end -}}

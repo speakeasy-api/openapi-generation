@@ -1,0 +1,97 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    using System;
+    using System.Text.Json;
+
+    internal static class JsonPath
+    {
+        public static bool TryResolve(JsonElement root, string path, out JsonElement result)
+        {
+            result = root;
+            if (string.IsNullOrEmpty(path)) return !IsAbsent(root);
+
+            var trimmed = path;
+            if (trimmed.StartsWith("$.")) trimmed = trimmed.Substring(2);
+            else if (trimmed.StartsWith("$")) trimmed = trimmed.Substring(1);
+
+            var cur = root;
+            foreach (var seg in trimmed.Split('.'))
+            {
+                if (string.IsNullOrEmpty(seg)) continue;
+                if (!ApplySegment(ref cur, seg)) return false;
+            }
+            if (IsAbsent(cur)) return false;
+            result = cur;
+            return true;
+        }
+
+        private static bool ApplySegment(ref JsonElement cur, string seg)
+        {
+            var bracket = seg.IndexOf('[');
+            var name = bracket < 0 ? seg : seg.Substring(0, bracket);
+            if (name.Length > 0)
+            {
+                if (cur.ValueKind != JsonValueKind.Object) return false;
+                if (!cur.TryGetProperty(name, out var next)) return false;
+                cur = next;
+            }
+            if (bracket < 0) return true;
+
+            var i = bracket;
+            while (i < seg.Length)
+            {
+                if (seg[i] != '[') return false;
+                var end = seg.IndexOf(']', i + 1);
+                if (end < 0) return false;
+                var expr = seg.Substring(i + 1, end - i - 1);
+                if (!ApplyBracket(ref cur, expr)) return false;
+                i = end + 1;
+            }
+            return true;
+        }
+
+        private static bool ApplyBracket(ref JsonElement cur, string expr)
+        {
+            if (cur.ValueKind != JsonValueKind.Array) return false;
+            var len = cur.GetArrayLength();
+
+            var colon = expr.IndexOf(':');
+            if (colon < 0)
+            {
+                if (!int.TryParse(expr, out var idx)) return false;
+                if (idx < 0) idx = len + idx;
+                if (idx < 0 || idx >= len) return false;
+                cur = cur[idx];
+                return true;
+            }
+
+            var start = expr.Substring(0, colon);
+            var stop = expr.Substring(colon + 1);
+            if (stop.Length != 0) return false;
+            if (!int.TryParse(start, out var s)) return false;
+            if (s != -1) return false;
+            if (len == 0) return false;
+            cur = cur[len - 1];
+            return true;
+        }
+
+        public static int CountChildren(JsonElement el)
+        {
+            switch (el.ValueKind)
+            {
+                case JsonValueKind.Array:  return el.GetArrayLength();
+                case JsonValueKind.Object:
+                {
+                    var n = 0;
+                    foreach (var _ in el.EnumerateObject()) n++;
+                    return n;
+                }
+                default: return 0;
+            }
+        }
+
+        private static bool IsAbsent(JsonElement el)
+            => el.ValueKind == JsonValueKind.Null || el.ValueKind == JsonValueKind.Undefined;
+    }
+}

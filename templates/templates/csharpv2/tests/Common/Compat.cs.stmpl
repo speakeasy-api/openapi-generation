@@ -1,0 +1,516 @@
+#nullable enable
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Threading;
+using System.Threading.Tasks;
+using {{getScopeNamespace "utils"}};
+using Xunit;
+
+// Compat — v2 implementation of the test-side glue defined in
+// templates/csharp/tests/<group>/Compat.V1.cs.stmpl. Same public signatures, v2-native
+// implementations using System.Text.Json with the source-generated
+// JsonTypeInfoResolver chain wired up via JsonOptions.
+public static class Compat
+{
+    public static T DeserializeJson<T>(string json) =>
+        JsonSerializer.Deserialize<T>(json, global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions)!;
+
+    public static string SerializeJson(object? value) =>
+        JsonSerializer.Serialize(value, global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions);
+
+    public static void AssertIsJsonParseException(Exception? ex) =>
+        Assert.IsType<JsonException>(ex);
+
+    // Variant-specific parser error message for the malformed body "{,}" used in the
+    // errors test handler. System.Text.Json emits a different message than Newtonsoft.
+    public const string MalformedJsonInnerMessage =
+        "',' is an invalid start of a property name. Expected a '\"'. Path: $ | LineNumber: 0 | BytePositionInLine: 1.";
+
+    // Test-only shim for the v1 RequestBodySerializer.Serialize signature.
+    // Tests under csharp/tests/primary call this through Compat to keep a single
+    // call site across v1 and v2. The v2 production API splits per
+    // serialization-method into typed entry points; Compat rebuilds the
+    // v1-shaped `(object body, string method, ...)` dispatch on top of those
+    // typed methods. Reflection-mode JSON path is AOT-hostile but tests are
+    // not AOT-published, so we silence the analyzer here.
+    [RequiresUnreferencedCode("Test-only path; production callers use SerializeJsonBody<T>.")]
+    [RequiresDynamicCode("Test-only path; production callers use SerializeJsonBody<T>.")]
+    public static HttpContent? SerializeRequestBody(
+        object? body,
+        string requestField,
+        string method,
+        bool nullable,
+        bool optional,
+        string format = ""
+    )
+    {
+        if (body == null)
+        {
+            if (!nullable && !optional)
+            {
+                throw new ArgumentNullException(nameof(body), "request body is required");
+            }
+            if (nullable && method == "json")
+            {
+                return RequestBodySerializer.NullJsonBody();
+            }
+            return null;
+        }
+
+        return method switch
+        {
+            "json" => SerializeJsonReflective(body, format),
+            "raw" => RequestBodySerializer.SerializeRaw(body),
+            "string" => RequestBodySerializer.SerializeString(body),
+            "form" => SerializeFormReflective(body),
+            "multipart" => SerializeMultipartReflective(body),
+            _ => throw new NotSupportedException(
+                $"Serialization method '{method}' is not supported by Compat.SerializeRequestBody."
+            ),
+        };
+    }
+
+    // Stringify any value for test assertions. v1 delegates to Utilities.ToString
+    // (already reflective via Newtonsoft). v2 implements its own reflective STJ
+    // path so production Utilities can stay AOT-clean.
+    [RequiresUnreferencedCode("Reflects over user types to stringify class/list/map shapes for tests.")]
+    [RequiresDynamicCode("Reflects over user types to stringify class/list/map shapes for tests.")]
+    public static string ToString(object? value)
+    {
+        if (value == null) return "";
+        if (value is string s) return s;
+        var t = value.GetType();
+        if (t.IsPrimitive || t.IsEnum || Utilities.IsDate(value)
+            || value is System.Numerics.BigInteger || t == typeof(decimal))
+        {
+            return Utilities.ValueToString(value);
+        }
+        return JsonSerializer.Serialize(value, t, global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions);
+    }
+
+    public const string UnknownNoRawPayloadMessage =
+        "Unknown union value has no raw payload; construct via CreateUnknown(JsonElement).";
+
+    public const string RequiredPropertyMissingFragment = "missing required properties";
+
+    public const string FormExplodedArrayKeySuffix = "";
+
+    public static T? Unwrap<T>(global::{{getSDKNamespace}}.Models.OptionalNullable<T> value) => value.Value;
+
+    public static Exception AssertThrowsUnknownDiscriminator(Action action)
+    {
+        var ex = Assert.Throws<JsonException>(action);
+        Assert.Contains("Unknown discriminator value", ex.Message);
+        return ex;
+    }
+
+    public static Exception AssertThrowsMissingDiscriminator(Action action)
+    {
+        var ex = Assert.Throws<JsonException>(action);
+        Assert.Contains("Missing or non-string discriminator property", ex.Message);
+        return ex;
+    }
+
+    public static JsonElement ParseRaw(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.Clone();
+    }
+
+    public static bool RawEquals(JsonElement? raw, string json) =>
+        raw is { } r && JsonNode.DeepEquals(JsonNode.Parse(r.GetRawText()), JsonNode.Parse(json));
+
+    public static string? RawString(JsonElement? raw, string property) =>
+        raw is { ValueKind: JsonValueKind.Object } r && r.TryGetProperty(property, out var p) && p.ValueKind == JsonValueKind.String
+            ? p.GetString()
+            : null;
+
+    public static int? RawInt(JsonElement? raw, string property) =>
+        raw is { ValueKind: JsonValueKind.Object } r && r.TryGetProperty(property, out var p) && p.ValueKind == JsonValueKind.Number
+            ? p.GetInt32()
+            : null;
+
+    public static bool RawIsString(JsonElement? raw, string property) =>
+        raw is { ValueKind: JsonValueKind.Object } r && r.TryGetProperty(property, out var p) && p.ValueKind == JsonValueKind.String;
+
+    public static void AssertSameRaw(JsonElement expected, JsonElement? actual) =>
+        Assert.True(actual is { } a && JsonNode.DeepEquals(JsonNode.Parse(expected.GetRawText()), JsonNode.Parse(a.GetRawText())));
+
+    public static Exception AssertThrowsAnyJsonException(Action action) =>
+        Assert.ThrowsAny<JsonException>(action);
+
+    public static T? DeserializeWithDefaultSettings<T>(string json) =>
+        JsonSerializer.Deserialize<T>(json, global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions);
+
+    public static string SerializeWithDefaultSettings(object? value) => SerializeJson(value);
+
+    // Root types missing from the source-generated contexts (e.g. List<Model> only built by tests).
+    [RequiresUnreferencedCode("Test-only reflection fallback for unregistered root types.")]
+    [RequiresDynamicCode("Test-only reflection fallback for unregistered root types.")]
+    public static T? DeserializeUnregistered<T>(string json)
+    {
+        var sdkOptions = global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions;
+        var options = new JsonSerializerOptions(sdkOptions)
+        {
+            TypeInfoResolver = System.Text.Json.Serialization.Metadata.JsonTypeInfoResolver.Combine(
+                sdkOptions.TypeInfoResolver,
+                new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
+            ),
+        };
+        return JsonSerializer.Deserialize<T>(json, options);
+    }
+
+    public static Exception AssertThrowsJsonSerializationException(Action action) =>
+        Assert.ThrowsAny<JsonException>(action);
+
+    public static Exception AssertThrowsUnionNoMatch(Action action) =>
+        Assert.Throws<JsonException>(action);
+
+    public static readonly Type OptionalNullableType = typeof(global::{{getSDKNamespace}}.Models.OptionalNullable<>);
+
+    public static EventStreamReader<T>? Events<T>(IAsyncEnumerable<T>? stream) =>
+        stream == null ? null : new EventStreamReader<T>(stream);
+
+    // Exposes the v1 EventStream<T> pull API (Next/Dispose/IsClosed) over a v2 IAsyncEnumerable<T>.
+    public sealed class EventStreamReader<T> : IDisposable, IAsyncDisposable, IAsyncEnumerable<T>
+    {
+        private readonly IAsyncEnumerable<T> _source;
+        private IAsyncEnumerator<T>? _enumerator;
+
+        public EventStreamReader(IAsyncEnumerable<T> source) => _source = source;
+
+        public bool IsClosed { get; private set; }
+
+        public async Task<T?> Next(CancellationToken? cancellationToken = null)
+        {
+            if (IsClosed)
+            {
+                return default;
+            }
+            _enumerator ??= _source.GetAsyncEnumerator(cancellationToken ?? CancellationToken.None);
+            try
+            {
+                if (await _enumerator.MoveNextAsync())
+                {
+                    return _enumerator.Current;
+                }
+            }
+            catch
+            {
+                Dispose();
+                throw;
+            }
+            Dispose();
+            return default;
+        }
+
+        // Shares the Next() enumerator so a consumed or disposed stream yields nothing, as v1 EventStream does.
+        public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        {
+            if (IsClosed)
+            {
+                yield break;
+            }
+            _enumerator ??= _source.GetAsyncEnumerator(cancellationToken);
+            try
+            {
+                while (await _enumerator.MoveNextAsync())
+                {
+                    yield return _enumerator.Current;
+                }
+            }
+            finally
+            {
+                await DisposeAsync();
+            }
+        }
+
+        public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
+
+        public async ValueTask DisposeAsync()
+        {
+            if (IsClosed)
+            {
+                return;
+            }
+            IsClosed = true;
+            if (_enumerator != null)
+            {
+                await _enumerator.DisposeAsync();
+            }
+        }
+    }
+
+    // Reflective form encoding for test inspection only, mirroring the
+    // per-operation form emission on top of v2's [FormField] attribute.
+    private const string FormFieldAttrFullName = "{{getSDKNamespace}}.Generators.Serialization.FormFieldAttribute";
+
+    private static (string? Name, bool IsJson, bool Explode)? ReadFormAttr(MemberInfo m)
+    {
+        var attr = m.GetCustomAttributes(false).FirstOrDefault(a => a.GetType().FullName == FormFieldAttrFullName);
+        if (attr == null) return null;
+        var t = attr.GetType();
+        var name = (string?)t.GetProperty("Name")?.GetValue(attr);
+        var isJson = (bool?)t.GetProperty("IsJson")?.GetValue(attr) ?? false;
+        var explode = (bool?)t.GetProperty("Explode")?.GetValue(attr) ?? true;
+        return (name, isJson, explode);
+    }
+
+    [RequiresUnreferencedCode("Reflects over the body's runtime type to build JSON bodies for tests.")]
+    [RequiresDynamicCode("Reflects over the body's runtime type to build JSON bodies for tests.")]
+    private static HttpContent SerializeJsonReflective(object body, string format)
+    {
+        var options = format == "string" ? BuildStringFormatJsonOptions() : global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions;
+        var json = JsonSerializer.Serialize(body, body.GetType(), options);
+        return new StringContent(json, System.Text.Encoding.UTF8, RequestBodySerializer.JsonMediaType);
+    }
+
+    private static JsonSerializerOptions BuildStringFormatJsonOptions()
+    {
+        var options = new JsonSerializerOptions(global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions);
+        options.Converters.Insert(0, new {{getScopeNamespace "utils" true}}.DecimalStringJsonConverterFactory());
+        options.Converters.Insert(0, new {{getScopeNamespace "utils" true}}.BigIntegerStringJsonConverterFactory());
+        return options;
+    }
+
+    [RequiresUnreferencedCode("Reflects over user types to build form bodies for tests.")]
+    [RequiresDynamicCode("Reflects over user types to build form bodies for tests.")]
+    private static HttpContent SerializeFormReflective(object body)
+    {
+        var pairs = new List<KeyValuePair<string?, string?>>();
+        AddFormFields(pairs, body);
+        return new FormUrlEncodedContent(pairs);
+    }
+
+    [RequiresUnreferencedCode("Reflects over user types to build form bodies for tests.")]
+    [RequiresDynamicCode("Reflects over user types to build form bodies for tests.")]
+    private static void AddFormFields(List<KeyValuePair<string?, string?>> pairs, object obj)
+    {
+        foreach (var prop in obj.GetType().GetProperties())
+        {
+            var meta = ReadFormAttr(prop);
+            if (meta == null) continue;
+            var value = prop.GetValue(obj);
+            if (value == null) continue;
+
+            // Union members carry an unnamed [FormField]; the active member is encoded in place.
+            if (meta.Value.Name == null)
+            {
+                AddFormFields(pairs, value);
+                continue;
+            }
+            AddFormField(pairs, meta.Value.Name, ActiveUnionMember(value), meta.Value.IsJson, meta.Value.Explode);
+        }
+    }
+
+    [RequiresUnreferencedCode("Reflects over user types to build form bodies for tests.")]
+    [RequiresDynamicCode("Reflects over user types to build form bodies for tests.")]
+    private static void AddFormField(List<KeyValuePair<string?, string?>> pairs, string name, object? value, bool isJson, bool explode)
+    {
+        if (value == null) return;
+
+        if (isJson)
+        {
+            pairs.Add(new(name, JsonSerializer.Serialize(value, value.GetType(), global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions)));
+            return;
+        }
+
+        if (value is IDictionary map)
+        {
+            var entries = map.Cast<DictionaryEntry>().Select(kv => (Key: (string)kv.Key, Value: FormWireValue(kv.Value)));
+            if (explode)
+            {
+                pairs.AddRange(entries.Select(kv => new KeyValuePair<string?, string?>(kv.Key, kv.Value)));
+            }
+            else
+            {
+                pairs.Add(new(name, string.Join(",", entries.SelectMany(kv => new[] { kv.Key, kv.Value }))));
+            }
+            return;
+        }
+
+        if (value is IEnumerable list && value is not string)
+        {
+            var items = list.Cast<object?>().Select(FormWireValue);
+            if (explode)
+            {
+                pairs.AddRange(items.Select(item => new KeyValuePair<string?, string?>(name, item)));
+            }
+            else
+            {
+                pairs.Add(new(name, string.Join(",", items)));
+            }
+            return;
+        }
+
+        if (value.GetType().GetProperties().Any(p => ReadFormAttr(p) != null))
+        {
+            var nested = new List<KeyValuePair<string?, string?>>();
+            AddFormFields(nested, value);
+            if (explode)
+            {
+                pairs.AddRange(nested);
+            }
+            else
+            {
+                pairs.Add(new(name, string.Join(",", nested.SelectMany(kv => new[] { kv.Key ?? "", kv.Value ?? "" }))));
+            }
+            return;
+        }
+
+        pairs.Add(new(name, FormWireValue(value)));
+    }
+
+    [RequiresUnreferencedCode("Reflects over union types for tests.")]
+    private static object? ActiveUnionMember(object? value)
+    {
+        while (value != null)
+        {
+            var members = value.GetType().GetProperties()
+                .Where(p => ReadFormAttr(p) is { Name: null })
+                .ToList();
+            if (members.Count == 0) return value;
+            value = members.Select(p => p.GetValue(value)).FirstOrDefault(v => v != null);
+        }
+        return null;
+    }
+
+    [RequiresUnreferencedCode("Reflects over enum types for tests.")]
+    [RequiresDynamicCode("Reflects over enum types for tests.")]
+    private static string FormWireValue(object? value)
+    {
+        if (value == null) return "";
+        var t = value.GetType();
+        if (t.IsEnum || t.GetMethod("FromString", BindingFlags.Public | BindingFlags.Static) != null)
+        {
+            using var doc = JsonDocument.Parse(JsonSerializer.Serialize(value, t, global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions));
+            return doc.RootElement.ValueKind == JsonValueKind.String ? doc.RootElement.GetString()! : doc.RootElement.GetRawText();
+        }
+        return Utilities.ValueToString(value);
+    }
+
+    // Reflective multipart for test inspection only. Mirrors v1 SerializeMultipart
+    // on top of v2's typed [MultipartField] attribute. Production multipart path
+    // is emitted inline at call sites; this method exists so shared tests can
+    // assert on serialized bytes via Compat.
+    private const string MultipartFieldAttrFullName = "{{getSDKNamespace}}.Generators.Serialization.MultipartFieldAttribute";
+
+    private static (string? Name, bool IsContent, bool IsJson)? ReadMultipartAttr(MemberInfo m)
+    {
+        var attr = m.GetCustomAttributes(false).FirstOrDefault(a => a.GetType().FullName == MultipartFieldAttrFullName);
+        if (attr == null) return null;
+        var t = attr.GetType();
+        var name = (string?)t.GetProperty("Name")?.GetValue(attr);
+        var isContent = (bool?)t.GetProperty("IsContent")?.GetValue(attr) ?? false;
+        var isJson = (bool?)t.GetProperty("IsJson")?.GetValue(attr) ?? false;
+        return (name, isContent, isJson);
+    }
+
+    [RequiresUnreferencedCode("Reflects over user types to build multipart for tests.")]
+    [RequiresDynamicCode("Reflects over user types to build multipart for tests.")]
+    private static HttpContent SerializeMultipartReflective(object body)
+    {
+        var form = new MultipartFormDataContent();
+        foreach (var prop in body.GetType().GetProperties())
+        {
+            var meta = ReadMultipartAttr(prop);
+            if (meta == null) continue;
+            var value = prop.GetValue(body);
+            if (value == null) continue;
+            var fieldName = meta.Value.Name ?? prop.Name;
+
+            if (meta.Value.IsJson)
+            {
+                form.Add(new StringContent(JsonSerializer.Serialize(value, value.GetType(), global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions)), fieldName);
+                continue;
+            }
+
+            if (value is IList list && !(value is byte[]))
+            {
+                var itemType = prop.PropertyType.IsGenericType
+                    ? prop.PropertyType.GetGenericArguments()[0]
+                    : typeof(object);
+                if (IsFileShape(itemType))
+                {
+                    foreach (var item in list)
+                    {
+                        if (item == null) continue;
+                        AddFile(form, fieldName, item);
+                    }
+                }
+                else
+                {
+                    foreach (var item in list)
+                    {
+                        if (item == null) continue;
+                        form.Add(new StringContent(Utilities.ValueToString(item)), fieldName);
+                    }
+                }
+                continue;
+            }
+
+            if (IsFileShape(prop.PropertyType))
+            {
+                AddFile(form, fieldName, value);
+                continue;
+            }
+
+            form.Add(new StringContent(Utilities.ValueToString(value)), fieldName);
+        }
+        return form;
+    }
+
+    private static bool IsFileShape(Type t)
+    {
+        if (t == null || t.IsPrimitive || t == typeof(string) || t == typeof(byte[])) return false;
+        return t.GetProperties().Any(p => ReadMultipartAttr(p)?.IsContent == true);
+    }
+
+    [RequiresUnreferencedCode("Reflects file shape for tests.")]
+    private static void AddFile(MultipartFormDataContent form, string fieldName, object fileObj)
+    {
+        string fileName = "";
+        byte[]? content = null;
+        foreach (var p in fileObj.GetType().GetProperties())
+        {
+            var m = ReadMultipartAttr(p);
+            if (m == null) continue;
+            if (m.Value.IsContent) content = (byte[]?)p.GetValue(fileObj);
+            else fileName = (p.GetValue(fileObj) as string) ?? "";
+        }
+        if (content == null) return;
+        var bc = new ByteArrayContent(content);
+        bc.Headers.ContentType = new MediaTypeHeaderValue(GuessMime(fileName));
+        form.Add(bc, fieldName, fileName);
+    }
+
+    private static string GuessMime(string fileName)
+    {
+        var ext = Path.GetExtension(fileName)?.ToLowerInvariant();
+        return ext switch
+        {
+            ".json" => "application/json",
+            ".xml" => "application/xml",
+            ".txt" => "text/plain",
+            ".csv" => "text/csv",
+            ".html" or ".htm" => "text/html",
+            ".pdf" => "application/pdf",
+            ".zip" => "application/zip",
+            ".png" => "image/png",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".gif" => "image/gif",
+            ".svg" => "image/svg+xml",
+            ".webp" => "image/webp",
+            _ => "application/octet-stream",
+        };
+    }
+}
