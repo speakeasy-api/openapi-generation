@@ -517,7 +517,7 @@ func SaveConfig(c *Config) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	if err := os.WriteFile(configPath, data, 0600); err != nil {
+	if err := writeConfigFile(configDir, configPath, data); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
@@ -527,4 +527,37 @@ func SaveConfig(c *Config) error {
 	cfgMu.Unlock()
 
 	return nil
+}
+
+// writeConfigFile replaces the config file through a rename so a failed write
+// keeps the previous contents. The file can hold credentials, so permissions
+// left over from an earlier write are tightened rather than inherited.
+func writeConfigFile(configDir, configPath string, data []byte) error {
+	if err := os.Chmod(configDir, 0700); err != nil {
+		return err
+	}
+	if target, err := filepath.EvalSymlinks(configPath); err == nil {
+		configPath = target
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(configPath), ".config-*.yaml.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmpName, 0600); err != nil {
+		return err
+	}
+	return os.Rename(tmpName, configPath)
 }
