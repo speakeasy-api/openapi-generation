@@ -159,7 +159,8 @@ public class PaginationAdditionalTest {
     void paginationLimitOffsetPageNumPagesMissing() throws Exception {
         recordTest("pagination-limit-offset-page-num-pages-missing");
 
-        SDK s = SDK.builder().serverURL(Helpers.HTTPBIN_URL).build();
+        PaginationRecordingClient recordingClient = new PaginationRecordingClient(new SpeakeasyHTTPClient());
+        SDK s = SDK.builder().serverURL(Helpers.HTTPBIN_URL).client(recordingClient).build();
 
         // the test service omits numPages on the first page and returns null on
         // the second, so termination must fall back to the result length
@@ -192,6 +193,7 @@ public class PaginationAdditionalTest {
         assertEquals(List.of(14L, 15L, 16L, 17L, 18L, 19L), lastRes.res().get().resultArray());
 
         assertFalse(iterator.hasNext());
+        assertEquals(3, recordingClient.requests().size());
     }
 
     @Test

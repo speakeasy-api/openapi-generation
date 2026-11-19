@@ -167,11 +167,27 @@ module OpenApiSDK
     def test_pagination_limit_offset_page_num_pages_missing
       record_test("pagination-limit-offset-page-num-pages-missing")
 
-      assert_instance_of(OpenApiSDK::SDK, @sdk)
+      # setup faraday client for pagination observability
+      connection_options = {
+        request: {
+          params_encoder: Faraday::FlatParamsEncoder
+        }
+      }
+      client = Faraday.new(**connection_options) do |f|
+        f.request(:multipart, {})
+        f.request(:instrumentation)
+      end
+
+      log = []
+      ActiveSupport::Notifications.subscribe("request.faraday") do |_name, _start, _finish, _id, payload|
+        log << PaginationLogEntry.new(payload[:url].request_uri, payload[:response].status, payload[:request_body])
+      end
+
+      sdk = OpenApiSDK::SDK.new(server_url: CommonHelpers.httpbin_url, client: client)
 
       # the test service omits numPages on the first page and returns null on
       # the second, so termination must fall back to the result length
-      responses = @sdk
+      responses = sdk
         .pagination
         .pagination_limit_offset_page_num_pages_missing(page: 1, limit: 7)
 
@@ -195,6 +211,7 @@ module OpenApiSDK
       )
       assert_equal([nil, nil, 3], num_pages)
       assert_nil(T.must(last).next_page.call)
+      assert_equal(3, log.size)
     end
 
     def test_pagination_limit_offset_deep_outputs_page_body

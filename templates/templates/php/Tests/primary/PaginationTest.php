@@ -7,6 +7,8 @@ use OpenAPI\OpenAPI\Tests\Helpers\Helpers;
 use OpenAPI\OpenAPI\Utils\JSON;
 use OpenAPI\OpenAPI\Models\Shared;
 use OpenAPI\OpenAPI\Models\Operations;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
 use PHPUnit\Framework\TestCase;
 
 final class PaginationTest extends TestCase
@@ -144,7 +146,17 @@ final class PaginationTest extends TestCase
     {
         CommonHelpers::recordTest('pagination-limit-offset-page-num-pages-missing');
 
-        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->build();
+        $container = [];
+        $history = Middleware::history($container);
+
+        $handlerStack = HandlerStack::create();
+        $handlerStack->push($history);
+
+        $client = new \GuzzleHttp\Client([
+            'handler' => $handlerStack
+        ]);
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->setClient($client)->build();
 
         $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
 
@@ -171,6 +183,7 @@ final class PaginationTest extends TestCase
         $this->assertSame([null, null, 3], $numPages);
         $this->assertNotNull($last);
         $this->assertNull(($last->next)());
+        $this->assertCount(3, $container);
     }
 
     public function testPaginationLimitOffsetDeepOutputsPageBody(): void
