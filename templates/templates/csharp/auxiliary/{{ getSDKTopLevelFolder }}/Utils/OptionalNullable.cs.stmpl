@@ -68,6 +68,9 @@ namespace {{getScopeNamespace "utils"}}
         /// <c>T?</c> assigned back to a wrapped field becomes an explicit null (serialized
         /// as JSON null), never Absent. Copy wrapped fields directly, or check
         /// <see cref="IsSet"/> first, when the distinction must survive a round trip.
+        /// The conversion needs a target type, so string interpolation and
+        /// <see cref="ToString"/> still render the wrapper ("absent", or the value in
+        /// quotes); read <see cref="ValueOrDefault"/> when the plain value is wanted.
         /// <para>
         /// Because the conversion exists in both directions, the compiler cannot pick a
         /// type when a wrapped field meets a bare <c>T</c> in a conditional expression or a
