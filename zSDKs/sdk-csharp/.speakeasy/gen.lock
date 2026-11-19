@@ -6,7 +6,7 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 32b2e2e6cc08d8d7fb71890a899beee2
+  configChecksum: 493e13fd1eb042742dddc1f2cf453c42
   repoURL: https://github.com/speakeasy-sdks/test-sdk
   installationURL: https://github.com/speakeasy-sdks/test-sdk
 features:
@@ -1480,7 +1480,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Utils/OpenEnumConverter.cs:
     last_write_checksum: sha1:b8a93e434652e0b256abe2c394bd161a47eef437
   src/Speakeasy/OpenAPI/Utils/OptionalNullable.cs:
-    last_write_checksum: sha1:e38e13563996304b9e6c857f7fe07d3c2924b4be
+    last_write_checksum: sha1:abfd587222163effcb2caf8410cf30dcf513f229
   src/Speakeasy/OpenAPI/Utils/OptionalNullableJsonConverter.cs:
     last_write_checksum: sha1:bf8eec6e762302070ff3a32d58ebc04347c8ed79
   src/Speakeasy/OpenAPI/Utils/RequestBodySerializer.cs:

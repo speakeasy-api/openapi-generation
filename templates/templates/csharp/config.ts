@@ -139,7 +139,22 @@ function upgradeConfig(_oldVersion, _newVersion, cfg, _defaults) {
 // @ts-ignore
 function resolveConfig(cfg: Record<string, any>) {
   resolveUnionStrategy(cfg);
+  resolveOptionalNullableScope(cfg);
   normalizeForwardCompatibleUnionsConfig(cfg);
+}
+
+// @ts-ignore
+function resolveOptionalNullableScope(cfg: Record<string, any>) {
+  if (
+    cfg.optionalNullableScope === "writable-models" &&
+    cfg.presenceAwareJsonSerialization !== true
+  ) {
+    console.warn(
+      'csharp: optionalNullableScope "writable-models" requires presenceAwareJsonSerialization: true. ' +
+        'Falling back to "all".',
+    );
+    cfg.optionalNullableScope = "all";
+  }
 }
 
 // @ts-ignore
@@ -321,6 +336,15 @@ function getConfigFields(
         "Distinguish required-nullable from optional fields by wrapping optional+nullable fields in OptionalNullable<T> (preserving absent vs. explicit-null), and validate field presence and null-permissiveness during deserialization.",
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
+    },
+    optionalNullableScope: {
+      Name: "optionalNullableScope",
+      Required: false,
+      DefaultValue: "all",
+      Description:
+        "Which models get OptionalNullable<T> fields under presenceAwareJsonSerialization. 'all' wraps optional+nullable fields on every model. 'writable-models' wraps only models the SDK can send (request bodies, parameters and the schemas they embed) and leaves response-only models as plain T?; a schema used in both requests and responses is still wrapped. Inert when presenceAwareJsonSerialization is off.",
+      ValidationRegex: /^(all|writable-models)$/.source,
+      ValidationMessage: '"all" or "writable-models" only',
     },
     forwardCompatibleEnumsByDefault: {
       Name: "forwardCompatibleEnumsByDefault",

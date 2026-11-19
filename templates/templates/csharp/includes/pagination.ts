@@ -24,9 +24,10 @@ function templatePaginationInputAccessor(
   // unwrapped by reading its raw underlying value.
   const unwrapOptionalNullable = (
     inputField: FieldDef | undefined,
+    owner: TypeDef | undefined,
     accessOperator: string,
   ): string =>
-    inputField && needsOptionalNullableWrapper(inputField)
+    inputField && needsOptionalNullableWrapper(inputField, owner)
       ? `${accessOperator}ValueOrDefault`
       : "";
 
@@ -57,7 +58,11 @@ function templatePaginationInputAccessor(
       sanitizeFieldName(wrappedRequestField.Name) +
       wrappedAccessOp +
       sanitizeFieldName(input.Name) +
-      unwrapOptionalNullable(inputField, wrappedAccessOp) +
+      unwrapOptionalNullable(
+        inputField,
+        wrappedRequestField.Type,
+        wrappedAccessOp,
+      ) +
       defaultValue(
         isRequestOptional ||
           wrappedRequestField.Optional ||
@@ -75,7 +80,7 @@ function templatePaginationInputAccessor(
     sanitizePrivateFieldName(requestField.Name) +
     requestAccessOp +
     sanitizeFieldName(input.Name) +
-    unwrapOptionalNullable(inputField, requestAccessOp) +
+    unwrapOptionalNullable(inputField, requestField.Type, requestAccessOp) +
     defaultValue(
       isRequestOptional || (inputField ? canFieldBeNull(inputField) : false),
     )

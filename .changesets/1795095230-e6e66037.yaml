@@ -1,0 +1,10 @@
+id: 1795095230-e6e66037
+features:
+    - core
+targets:
+    - csharp
+type: feat
+bump: patch
+description: add optionalNullableScope to limit OptionalNullable<T> wrapping to writable models and allow implicit unwrap to T?
+author: AshGodfrey
+date: "2026-11-19"

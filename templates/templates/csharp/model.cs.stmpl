@@ -14,9 +14,9 @@
         {{- $fieldName := sanitizeFieldName .Name $className }}
         {{- $optional := or .Nullable (and (not .Const) (or .Optional (eq .Name "ContentType"))) }}
         {{- templateComments .Comments 2 "field" (ne $index 0)}}
-        {{- templateFieldAnnotations . 2}}
-        public {{templateFieldType . $optional $usageLocation}} {{sanitizeFieldName .Name $className}} { get;{{if not .Const}} set;{{end}} }{{templateFieldDefault .}}
-        {{- templateShouldSerialize . $className}}
+        {{- templateFieldAnnotations . 2 $.Local}}
+        public {{templateFieldType . $optional $usageLocation $.Local}} {{sanitizeFieldName .Name $className}} { get;{{if not .Const}} set;{{end}} }{{templateFieldDefault . $.Local}}
+        {{- templateShouldSerialize . $className $.Local}}
         {{- if eq .Type.Type "union"}}
           {{- if .Type.Discriminator}}
             {{- $unionClassName := sanitizeClassName .Type.Name}}
@@ -24,7 +24,7 @@
 
         public {{sanitizeType .Type true $usageLocation false}} Get{{$fieldName}}{{sanitizeFieldName .Name $className}}()
         {
-          {{- if needsOptionalNullableWrapper $field }}
+          {{- if needsOptionalNullableWrapper $field $.Local }}
             return {{$fieldName}}.IsSet && !{{$fieldName}}.IsNull ? {{$fieldName}}.Value!.{{sanitizeFieldName .Type.Name $unionClassName}} : null;
           {{- else if $optional }}
             return {{$fieldName}} != null ? {{$fieldName}}.{{sanitizeFieldName .Type.Name $unionClassName}} : null;

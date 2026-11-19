@@ -65,6 +65,16 @@ namespace Speakeasy.OpenAPI.Utils
         /// </remarks>
         public static implicit operator OptionalNullable<T>(T? value) => Set(value);
 
+        /// <summary>
+        /// Implicitly reads the wrapped value, yielding <c>default(T)</c> when Absent.
+        /// </summary>
+        /// <remarks>
+        /// Lets an <c>OptionalNullable&lt;T&gt;</c> field be assigned to or passed as a
+        /// <c>T?</c> without unwrapping. Absent and explicit null both read as null;
+        /// check <see cref="IsSet"/> when the difference matters.
+        /// </remarks>
+        public static implicit operator T?(OptionalNullable<T> value) => value.ValueOrDefault;
+
         public override string ToString() =>
             !IsSet ? "absent" : value is null ? "null"
                                               : $"\"{value}\"";
