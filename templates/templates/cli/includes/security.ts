@@ -2573,7 +2573,7 @@ function templateAuthLoginBody(): string {
     lines.push(`// #endregion custom-auth-groups`);
     lines.push(``);
     lines.push(
-      `form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(cmd.InOrStdin(), cmd.OutOrStdout())`,
+      `form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(cmd.InOrStdin(), cmd.ErrOrStderr())`,
     );
     lines.push(``);
     lines.push(`if err := form.Run(); err != nil {`);
@@ -2601,7 +2601,7 @@ function templateAuthLoginBody(): string {
     lines.push(`    Description("Choose which credentials to configure")`);
     lines.push(``);
     lines.push(
-      `if err := forms.New(forms.NewPage("", schemeSelect)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout()).Run(); err != nil {`,
+      `if err := forms.New(forms.NewPage("", schemeSelect)).Accessible(accessible).IO(promptInput, cmd.ErrOrStderr()).Run(); err != nil {`,
     );
     lines.push(`    return fmt.Errorf("auth login: %w", err)`);
     lines.push(`}`);
@@ -2622,7 +2622,7 @@ function templateAuthLoginBody(): string {
       lines.push(`    }`);
       lines.push(``);
       lines.push(
-        `    form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())`,
+        `    form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.ErrOrStderr())`,
       );
       lines.push(``);
       lines.push(`    if err := form.Run(); err != nil {`);
