@@ -211,7 +211,8 @@ public class PaginationShould
     public async Task PaginationLimitOffsetPageNumPagesMissing()
     {
         CommonHelpers.RecordTest("pagination-limit-offset-page-num-pages-missing");
-        var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
+        var log = new List<PaginationLogEntry>{};
+        var sdk = new SDK(serverUrl: Helpers.HttpBinUrl, client: new PaginationRecorderClient(log));
 
         // the test service omits numPages on the first page and returns null on
         // the second, so termination must fall back to the result length
@@ -238,6 +239,7 @@ public class PaginationShould
 
         var nullRes = await lastRes.Next!();
         Assert.Null(nullRes);
+        Assert.Equal(3, log.Count);
     }
 
     [Fact]
