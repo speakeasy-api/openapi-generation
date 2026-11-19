@@ -70,8 +70,10 @@ namespace Speakeasy.OpenAPI.Utils
         /// </summary>
         /// <remarks>
         /// Lets an <c>OptionalNullable&lt;T&gt;</c> field be assigned to or passed as a
-        /// <c>T?</c> without unwrapping. Absent and explicit null both read as null;
-        /// check <see cref="IsSet"/> when the difference matters.
+        /// <c>T?</c> without unwrapping. Absent and explicit null both read as null, so a
+        /// <c>T?</c> assigned back to a wrapped field becomes an explicit null (serialized
+        /// as JSON null), never Absent. Copy wrapped fields directly, or check
+        /// <see cref="IsSet"/> first, when the distinction must survive a round trip.
         /// </remarks>
         public static implicit operator T?(OptionalNullable<T> value) => value.ValueOrDefault;
 
