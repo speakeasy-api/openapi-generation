@@ -1,0 +1,10 @@
+id: 1795095658-268f632f
+features:
+    - core
+targets:
+    - mcp-typescript
+type: fix
+bump: patch
+description: raise the hono floor to 4.13.16 so generated MCP servers pick up the middleware, csrf and form validator fixes
+author: AshGodfrey
+date: "2026-11-19"
