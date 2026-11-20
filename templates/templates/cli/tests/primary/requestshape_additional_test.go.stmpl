@@ -427,3 +427,64 @@ func TestNestedUnionOwnFlagDefaultSelectorMerges(t *testing.T) {
 	assert.Equal(t, "model-default-1", jsonGetString(output, "json.interaction.model"))
 	assert.Equal(t, "hi", jsonGetString(output, "json.interaction.input"))
 }
+
+// --- Discriminated-union variant flags ---
+
+var unionVariantRequiredFlags = []string{"--id", "r1", "--name", "resource", "--chocolates", "[]"}
+
+func unionVariantPreviewVehicle(t *testing.T, args ...string) (map[string]any, string) {
+	t.Helper()
+	resetAgentMode(t)
+	h := NewCLITestHarness(t)
+	full := append([]string{"resource", "create-resource", "--dry-run", "--output-format", "json"}, args...)
+	require.NoError(t, h.RunWithServer("http://127.0.0.1:1", full), "stderr: %s", h.GetStderr())
+	previews := primaryDryRunPreviews(t, h.GetStdout())
+	require.Len(t, previews, 1)
+	body, ok := previews[0].Request.Body.(map[string]any)
+	require.True(t, ok, "request body: %#v", previews[0].Request.Body)
+	vehicle, ok := body["vehicle"].(map[string]any)
+	require.True(t, ok, "vehicle: %#v", body["vehicle"])
+	return vehicle, h.GetStderr()
+}
+
+func TestUnionVariantJSONFlagReportsUnknownKeys(t *testing.T) {
+	variant := `{"make":"Acme","modle":"Roadster","name":"car","year":2020}`
+	_, stderr := unionVariantPreviewVehicle(t, append(unionVariantRequiredFlags, "--vehicle.car", variant)...)
+	assert.Contains(t, stderr, `"modle"`)
+
+	resetAgentMode(t)
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", append([]string{"--agent-mode", "resource", "create-resource", "--dry-run", "--vehicle.car", variant}, unionVariantRequiredFlags...))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"modle"`)
+}
+
+func TestUnionVariantJSONFlagAppliesFieldFlags(t *testing.T) {
+	vehicle, _ := unionVariantPreviewVehicle(t, append(unionVariantRequiredFlags,
+		"--vehicle.car", `{"make":"Acme","model":"Roadster","name":"car","year":2020}`,
+		"--vehicle.car.model", "Coupe")...)
+	assert.Equal(t, "car", vehicle["type"])
+	assert.Equal(t, "Coupe", vehicle["model"])
+	assert.Equal(t, "Acme", vehicle["make"])
+	assert.Equal(t, "car", vehicle["name"])
+}
+
+func TestUnionVariantFieldFlagsLayerOverBody(t *testing.T) {
+	vehicle, _ := unionVariantPreviewVehicle(t,
+		"--body", `{"id":"r1","name":"resource","chocolates":[],"vehicle":{"type":"car","make":"Acme","model":"Roadster","name":"keep-me","year":2020}}`,
+		"--vehicle.car.model", "Coupe")
+	assert.Equal(t, "Coupe", vehicle["model"])
+	assert.Equal(t, "Acme", vehicle["make"])
+	assert.Equal(t, "keep-me", vehicle["name"])
+	assert.EqualValues(t, 2020, vehicle["year"])
+}
+
+func TestUnionVariantFieldFlagsCompletePartialBody(t *testing.T) {
+	vehicle, stderr := unionVariantPreviewVehicle(t,
+		"--body", `{"id":"r1","name":"resource","chocolates":[],"vehicle":{"type":"car","make":"Acme"}}`,
+		"--vehicle.car.model", "Coupe")
+	assert.NotContains(t, stderr, "required")
+	assert.Equal(t, "car", vehicle["type"])
+	assert.Equal(t, "Acme", vehicle["make"])
+	assert.Equal(t, "Coupe", vehicle["model"])
+}

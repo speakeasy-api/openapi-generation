@@ -1,0 +1,10 @@
+id: 1795134794-15add902
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: check variant JSON flag keys and layer variant field flags over the variant JSON flag and --body
+author: TristanSpeakEasy
+date: "2026-11-20"
