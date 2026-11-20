@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -348,6 +349,84 @@ func TestConfigureCreatesConfigDir(t *testing.T) {
 
 	_, err = os.Stat(configPath)
 	assert.NoError(t, err, "config.yaml should exist")
+}
+
+func TestSaveConfigTightensExistingPermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX permission bits")
+	}
+	_, tmpDir := setupConfigureTest(t)
+	configPath := cliConfigPath(tmpDir)
+	configDir := filepath.Dir(configPath)
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
+	require.NoError(t, os.Chmod(configDir, 0o755))
+	require.NoError(t, os.WriteFile(configPath, []byte("version: 0\n"), 0o644))
+	require.NoError(t, os.Chmod(configPath, 0o644))
+
+	require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
+	require.NoError(t, config.SaveConfig(&config.Config{}))
+
+	fileInfo, err := os.Stat(configPath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o600), fileInfo.Mode().Perm())
+	dirInfo, err := os.Stat(configDir)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o700), dirInfo.Mode().Perm())
+
+	entries, err := os.ReadDir(configDir)
+	require.NoError(t, err)
+	require.Len(t, entries, 1, "temporary files must not be left behind")
+	assert.Equal(t, "config.yaml", entries[0].Name())
+
+	data, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+	var saved map[string]any
+	require.NoError(t, yaml.Unmarshal(data, &saved))
+	assert.Equal(t, config.ConfigVersion, saved["version"])
+}
+
+func TestSaveConfigWritesThroughSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need elevated privileges")
+	}
+	_, tmpDir := setupConfigureTest(t)
+	configPath := cliConfigPath(tmpDir)
+	require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0o700))
+	targetDir := filepath.Join(tmpDir, "dotfiles")
+	require.NoError(t, os.MkdirAll(targetDir, 0o700))
+	target := filepath.Join(targetDir, "config.yaml")
+	require.NoError(t, os.WriteFile(target, []byte("version: 0\n"), 0o644))
+	require.NoError(t, os.Symlink(target, configPath))
+
+	require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
+	require.NoError(t, config.SaveConfig(&config.Config{}))
+
+	linkInfo, err := os.Lstat(configPath)
+	require.NoError(t, err)
+	assert.NotZero(t, linkInfo.Mode()&os.ModeSymlink, "config.yaml should remain a symlink")
+	targetInfo, err := os.Stat(target)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o600), targetInfo.Mode().Perm())
+	data, err := os.ReadFile(target)
+	require.NoError(t, err)
+	assert.NotEqual(t, "version: 0\n", string(data))
+}
+
+func TestSaveConfigRefusesDanglingSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need elevated privileges")
+	}
+	_, tmpDir := setupConfigureTest(t)
+	configPath := cliConfigPath(tmpDir)
+	require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0o700))
+	require.NoError(t, os.Symlink(filepath.Join(tmpDir, "missing", "config.yaml"), configPath))
+
+	require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
+	require.Error(t, config.SaveConfig(&config.Config{}))
+
+	linkInfo, err := os.Lstat(configPath)
+	require.NoError(t, err)
+	assert.NotZero(t, linkInfo.Mode()&os.ModeSymlink, "a dangling config.yaml symlink must not be replaced")
 }
 
 // TestConfigureNoInteractiveStoresFlags verifies that the compatibility
