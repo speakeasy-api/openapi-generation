@@ -7,11 +7,14 @@ import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.operations.ChatRequest;
 import org.openapis.openapi.models.operations.ChatStream;
 import org.openapis.openapi.operations.Chat;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 import org.openapis.openapi.utils.reactive.EventStream;
 import org.reactivestreams.Publisher;
@@ -20,9 +23,16 @@ public class ChatRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
     private ChatRequest request;
+    private final Options.Builder optionsBuilder;
 
     public ChatRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public ChatRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public ChatRequestBuilder request(@Nonnull ChatRequest request) {
@@ -55,7 +65,9 @@ public class ChatRequestBuilder {
      * @return A reactive streaming {@link Publisher} that emits typed events from the server.
      */
     public EventStream<ChatResponse, ChatStream> call() {
-        AsyncRequestOperation<ChatRequest, ChatResponse> operation = new Chat.Async(sdkConfiguration, _headers);
+        Options options = optionsBuilder.build();
+        AsyncRequestOperation<ChatRequest, ChatResponse> operation =
+                new Chat.Async(sdkConfiguration, options, _headers);
         return EventStream.forSSE(
                 operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse),
                 new TypeReference<>() {},

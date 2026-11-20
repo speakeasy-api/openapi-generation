@@ -2,6 +2,7 @@
 package {{templatePackageName}}.utils.transport;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -20,12 +21,14 @@ public final class HttpRequest {
     private final URI uri;
     private final Headers headers;
     private final Optional<HttpBody> body;
+    private final Optional<Duration> timeout;
 
-    private HttpRequest(String method, URI uri, Headers headers, Optional<HttpBody> body) {
+    private HttpRequest(String method, URI uri, Headers headers, Optional<HttpBody> body, Optional<Duration> timeout) {
         this.method = method;
         this.uri = uri;
         this.headers = headers;
         this.body = body;
+        this.timeout = timeout;
     }
 
     /**
@@ -52,6 +55,13 @@ public final class HttpRequest {
         return body;
     }
 
+    /**
+     * Returns the overall call timeout for this request, if one was set.
+     */
+    public Optional<Duration> timeout() {
+        return timeout;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -65,6 +75,7 @@ public final class HttpRequest {
         b.uri = uri;
         b.headers = copyOf(headers);
         b.body = body;
+        b.timeout = timeout;
         return b;
     }
 
@@ -85,6 +96,7 @@ public final class HttpRequest {
         private URI uri;
         private Headers headers = new Headers();
         private Optional<HttpBody> body = Optional.empty();
+        private Optional<Duration> timeout = Optional.empty();
 
         private Builder() {
         }
@@ -143,11 +155,20 @@ public final class HttpRequest {
             return this;
         }
 
+        public Builder timeout(Duration timeout) {
+            Utils.checkNotNull(timeout, "timeout");
+            if (timeout.isZero() || timeout.isNegative()) {
+                throw new IllegalArgumentException("timeout must be positive");
+            }
+            this.timeout = Optional.of(timeout);
+            return this;
+        }
+
         public HttpRequest build() {
             if (uri == null) {
                 throw new IllegalStateException("uri must be set");
             }
-            return new HttpRequest(method, uri, copyOf(headers), body);
+            return new HttpRequest(method, uri, copyOf(headers), body, timeout);
         }
     }
 }

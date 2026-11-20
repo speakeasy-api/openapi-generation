@@ -5,6 +5,7 @@ package org.openapis.openapi;
 
 import java.lang.String;
 import java.lang.SuppressWarnings;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -168,6 +169,17 @@ public class SDKConfiguration {
     public void setRetryConfig(Optional<RetryConfig> retryConfig) {
         Utils.checkNotNull(retryConfig, "retryConfig");
         this.retryConfig = retryConfig;
+    }
+
+    private Optional<Duration> timeout = Optional.empty();
+
+    public Optional<Duration> timeout() {
+        return timeout;
+    }
+
+    public void setTimeout(Optional<Duration> timeout) {
+        Utils.checkNotNull(timeout, "timeout");
+        this.timeout = timeout;
     }
 
     private ScheduledExecutorService retryScheduler = Executors.newSingleThreadScheduledExecutor();

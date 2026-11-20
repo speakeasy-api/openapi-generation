@@ -5,18 +5,28 @@ package org.openapis.openapi.models.operations.async;
 
 import static org.openapis.openapi.operations.Operations.AsyncRequestlessOperation;
 
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.GetPetOwners;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class GetPetOwnersRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
+    private final Options.Builder optionsBuilder;
 
     public GetPetOwnersRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public GetPetOwnersRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public GetPetOwnersRequestBuilder header(String name, String value) {
@@ -32,7 +42,9 @@ public class GetPetOwnersRequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<GetPetOwnersResponse> call() {
-        AsyncRequestlessOperation<GetPetOwnersResponse> operation = new GetPetOwners.Async(sdkConfiguration, _headers);
+        Options options = optionsBuilder.build();
+        AsyncRequestlessOperation<GetPetOwnersResponse> operation =
+                new GetPetOwners.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 }

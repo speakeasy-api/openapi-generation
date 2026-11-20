@@ -5,11 +5,13 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.AsyncRequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.models.operations.async.RootGroupOpRequestBuilder;
 import org.openapis.openapi.models.operations.async.RootGroupOpResponse;
 import org.openapis.openapi.operations.RootGroupOp;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class AsyncGroup {
     private static final Headers _headers = Headers.EMPTY;
@@ -57,7 +59,21 @@ public class AsyncGroup {
      * @return {@code CompletableFuture<RootGroupOpResponse>} - The async response
      */
     public CompletableFuture<RootGroupOpResponse> rootGroupOpDirect() {
-        AsyncRequestlessOperation<RootGroupOpResponse> operation = new RootGroupOp.Async(sdkConfiguration, _headers);
+        return rootGroupOp(null);
+    }
+
+    /**
+     * An operation at the group's root level
+     *
+     * <p>'group' differs from 'TestGroup' in that it not only contains subgroups,
+     * but also an operation.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<RootGroupOpResponse>} - The async response
+     */
+    public CompletableFuture<RootGroupOpResponse> rootGroupOp(@Nullable Options options) {
+        AsyncRequestlessOperation<RootGroupOpResponse> operation =
+                new RootGroupOp.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 }

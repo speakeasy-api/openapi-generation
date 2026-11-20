@@ -5,17 +5,27 @@ package org.openapis.openapi.models.operations;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.GetEmptyObjectError;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class GetEmptyObjectErrorRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
+    private final Options.Builder optionsBuilder;
 
     public GetEmptyObjectErrorRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public GetEmptyObjectErrorRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public GetEmptyObjectErrorRequestBuilder header(String name, String value) {
@@ -31,8 +41,9 @@ public class GetEmptyObjectErrorRequestBuilder {
      * @return The response from the server.
      */
     public GetEmptyObjectErrorResponse call() {
+        Options options = optionsBuilder.build();
         RequestlessOperation<GetEmptyObjectErrorResponse> operation =
-                new GetEmptyObjectError.Sync(sdkConfiguration, _headers);
+                new GetEmptyObjectError.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }

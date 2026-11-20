@@ -515,6 +515,15 @@ function getConfigFields(
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
+    enforceOperationTimeout: {
+      Name: "enforceOperationTimeout",
+      Required: false,
+      DefaultValue: newSDK,
+      Description:
+        "Whether operations declaring `x-speakeasy-timeout` enforce it as their default request timeout. Enabled for new SDKs; existing SDKs keep ignoring the extension until this is set to true. `SDK.builder().timeout` and per-call timeouts apply regardless.",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
     getterStyle: {
       Name: "getterStyle",
       Required: false,

@@ -62,7 +62,9 @@ public class OkHttpDelegateClient implements HTTPClient {
     @Override
     public HttpResponse<InputStream> send(HttpRequest request) throws IOException {
         Request okRequest = toOkHttpRequest(request);
-        Response okResponse = delegate.newCall(okRequest).execute();
+        okhttp3.Call call = delegate.newCall(okRequest);
+        request.timeout().ifPresent(t -> call.timeout().timeout(t.toNanos(), TimeUnit.NANOSECONDS));
+        Response okResponse = call.execute();
         return toJdkResponse(request, okResponse);
     }
 
@@ -70,7 +72,9 @@ public class OkHttpDelegateClient implements HTTPClient {
     public CompletableFuture<HttpResponse<Blob>> sendAsync(HttpRequest request) {
         Request okRequest = toOkHttpRequest(request);
         CompletableFuture<HttpResponse<Blob>> future = new CompletableFuture<>();
-        delegate.newCall(okRequest).enqueue(new okhttp3.Callback() {
+        okhttp3.Call call = delegate.newCall(okRequest);
+        request.timeout().ifPresent(t -> call.timeout().timeout(t.toNanos(), TimeUnit.NANOSECONDS));
+        call.enqueue(new okhttp3.Callback() {
             @Override
             public void onFailure(okhttp3.Call call, IOException e) {
                 future.completeExceptionally(e);

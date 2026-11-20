@@ -5,10 +5,12 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import org.openapis.openapi.models.operations.GetSingleNamespaceBarPetRequestBuilder;
 import org.openapis.openapi.models.operations.GetSingleNamespaceBarPetResponse;
 import org.openapis.openapi.operations.GetSingleNamespaceBarPet;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class SingleBar {
     private static final Headers _headers = Headers.EMPTY;
@@ -51,8 +53,22 @@ public class SingleBar {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetSingleNamespaceBarPetResponse getSingleNamespaceBarPetDirect() {
+        return getSingleNamespaceBarPet(null);
+    }
+
+    /**
+     * Get Single Namespace Bar Pet
+     *
+     * <p>This endpoint tests using a single component from the bar namespace.
+     * No import aliasing should be needed since there's no conflict within this group.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetSingleNamespaceBarPetResponse getSingleNamespaceBarPet(@Nullable Options options) {
         RequestlessOperation<GetSingleNamespaceBarPetResponse> operation =
-                new GetSingleNamespaceBarPet.Sync(sdkConfiguration, _headers);
+                new GetSingleNamespaceBarPet.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }

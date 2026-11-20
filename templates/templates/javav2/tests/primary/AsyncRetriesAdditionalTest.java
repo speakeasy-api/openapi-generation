@@ -18,6 +18,7 @@ import org.openapis.openapi.utils.NonRetryableException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpResponse;
 import org.openapis.openapi.utils.Blob;
@@ -497,6 +498,26 @@ class AsyncRetriesAdditionalTest {
         when(backoffStrategy.retryReadTimeoutError()).thenReturn(false);
 
         IOException timeoutException = new IOException("Read timed out");
+        CompletableFuture<HttpResponse<Blob>> taskResult = CompletableFuture.failedFuture(timeoutException);
+
+        asyncRetries = AsyncRetries.builder()
+                .retryConfig(retryConfig)
+                .statusCodes(List.of("500"))
+                .scheduler(scheduler)
+                .build();
+
+        when(task.get()).thenReturn(taskResult);
+
+        CompletableFuture<HttpResponse<Blob>> result = asyncRetries.retry(task);
+
+        assertCompletableFutureFails(result, DEFAULT_TIMEOUT, NonRetryableException.class);
+    }
+
+    @Test
+    void testConnectTimeoutNotRetriedAsReadTimeout() {
+        when(backoffStrategy.retryConnectError()).thenReturn(false);
+
+        HttpConnectTimeoutException timeoutException = new HttpConnectTimeoutException("HTTP connect timed out");
         CompletableFuture<HttpResponse<Blob>> taskResult = CompletableFuture.failedFuture(timeoutException);
 
         asyncRetries = AsyncRetries.builder()

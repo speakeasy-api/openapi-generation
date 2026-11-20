@@ -10,11 +10,13 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.lang.Boolean;
 import java.lang.String;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.operations.AssetStatusStream;
 import org.openapis.openapi.models.operations.GetAssetRequest;
 import org.openapis.openapi.operations.GetAsset;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 import org.openapis.openapi.utils.reactive.EventStream;
 import org.reactivestreams.Publisher;
@@ -24,11 +26,13 @@ public class GetAssetRequestBuilder {
     private final Headers _headers = new Headers();
     private final GetAssetRequest.Builder pojoBuilder;
     private GetAssetRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public GetAssetRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = GetAssetRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public GetAssetRequestBuilder id(@Nonnull String id) {
@@ -40,6 +44,11 @@ public class GetAssetRequestBuilder {
     public GetAssetRequestBuilder stream(@Nullable Boolean stream) {
         this.pojoBuilder.stream(stream);
         this._setterCalled = true;
+        return this;
+    }
+
+    public GetAssetRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -71,8 +80,9 @@ public class GetAssetRequestBuilder {
      * @return A reactive streaming {@link Publisher} that emits typed events from the server.
      */
     public EventStream<GetAssetResponse, AssetStatusStream> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<GetAssetRequest, GetAssetResponse> operation =
-                new GetAsset.Async(sdkConfiguration, _headers);
+                new GetAsset.Async(sdkConfiguration, options, _headers);
         return EventStream.forSSE(
                 operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse),
                 new TypeReference<>() {},

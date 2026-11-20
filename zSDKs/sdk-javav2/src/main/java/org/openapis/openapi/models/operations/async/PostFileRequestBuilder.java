@@ -6,20 +6,30 @@ package org.openapis.openapi.models.operations.async;
 import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.operations.PostFileRequest;
 import org.openapis.openapi.operations.PostFile;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class PostFileRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
     private PostFileRequest request;
+    private final Options.Builder optionsBuilder;
 
     public PostFileRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public PostFileRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public PostFileRequestBuilder request(@Nonnull PostFileRequest request) {
@@ -44,8 +54,9 @@ public class PostFileRequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<PostFileResponse> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<PostFileRequest, PostFileResponse> operation =
-                new PostFile.Async(sdkConfiguration, _headers);
+                new PostFile.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse);
     }
 }

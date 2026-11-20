@@ -7,6 +7,7 @@ import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 import static org.openapis.openapi.operations.Operations.AsyncRequestlessOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.models.foo.Pet;
 import org.openapis.openapi.models.operations.async.CreateSingleNamespaceFooPetRequestBuilder;
@@ -16,6 +17,7 @@ import org.openapis.openapi.models.operations.async.GetSingleNamespaceFooPetResp
 import org.openapis.openapi.operations.CreateSingleNamespaceFooPet;
 import org.openapis.openapi.operations.GetSingleNamespaceFooPet;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class AsyncSingleFoo {
     private static final Headers _headers = Headers.EMPTY;
@@ -57,8 +59,21 @@ public class AsyncSingleFoo {
      * @return {@code CompletableFuture<GetSingleNamespaceFooPetResponse>} - The async response
      */
     public CompletableFuture<GetSingleNamespaceFooPetResponse> getSingleNamespaceFooPetDirect() {
+        return getSingleNamespaceFooPet(null);
+    }
+
+    /**
+     * Get Single Namespace Foo Pet
+     *
+     * <p>This endpoint tests using a single component from the foo namespace.
+     * No import aliasing should be needed since there's no conflict within this group.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetSingleNamespaceFooPetResponse>} - The async response
+     */
+    public CompletableFuture<GetSingleNamespaceFooPetResponse> getSingleNamespaceFooPet(@Nullable Options options) {
         AsyncRequestlessOperation<GetSingleNamespaceFooPetResponse> operation =
-                new GetSingleNamespaceFooPet.Async(sdkConfiguration, _headers);
+                new GetSingleNamespaceFooPet.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -84,8 +99,23 @@ public class AsyncSingleFoo {
      * @return {@code CompletableFuture<CreateSingleNamespaceFooPetResponse>} - The async response
      */
     public CompletableFuture<CreateSingleNamespaceFooPetResponse> createSingleNamespaceFooPet(@Nonnull Pet request) {
+        return createSingleNamespaceFooPet(request, null);
+    }
+
+    /**
+     * Create Single Namespace Foo Pet
+     *
+     * <p>This endpoint tests creating a component in the foo namespace.
+     * No import aliasing should be needed since there's no conflict within this group.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return {@code CompletableFuture<CreateSingleNamespaceFooPetResponse>} - The async response
+     */
+    public CompletableFuture<CreateSingleNamespaceFooPetResponse> createSingleNamespaceFooPet(
+            @Nonnull Pet request, @Nullable Options options) {
         AsyncRequestOperation<Pet, CreateSingleNamespaceFooPetResponse> operation =
-                new CreateSingleNamespaceFooPet.Async(sdkConfiguration, _headers);
+                new CreateSingleNamespaceFooPet.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 }
