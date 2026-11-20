@@ -478,3 +478,13 @@ func TestUnionVariantFieldFlagsLayerOverBody(t *testing.T) {
 	assert.Equal(t, "keep-me", vehicle["name"])
 	assert.EqualValues(t, 2020, vehicle["year"])
 }
+
+func TestUnionVariantFieldFlagsCompletePartialBody(t *testing.T) {
+	vehicle, stderr := unionVariantPreviewVehicle(t,
+		"--body", `{"id":"r1","name":"resource","chocolates":[],"vehicle":{"type":"car","make":"Acme"}}`,
+		"--vehicle.car.model", "Coupe")
+	assert.NotContains(t, stderr, "required")
+	assert.Equal(t, "car", vehicle["type"])
+	assert.Equal(t, "Acme", vehicle["make"])
+	assert.Equal(t, "Coupe", vehicle["model"])
+}
