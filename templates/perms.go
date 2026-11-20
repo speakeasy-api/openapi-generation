@@ -538,6 +538,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/csharp/tests/tertiary/CustomClientShould.cs":                                                             0o644,
 	"templates/csharp/tests/tertiary/EventStreamAdditionalShould.cs":                                                    0o644,
 	"templates/csharp/tests/tertiary/Helpers.cs":                                                                        0o644,
+	"templates/csharp/tests/tertiary/OptionalNullableScopeShould.cs":                                                    0o644,
 	"templates/csharp/tests/tertiary/ParametersShould.cs":                                                               0o644,
 	"templates/csharp/tests/tertiary/PartialTypesAdditionalShould.cs":                                                   0o644,
 	"templates/csharp/tests/tertiary/SchemaValidationShould.cs":                                                         0o644,

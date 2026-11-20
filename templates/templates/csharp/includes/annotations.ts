@@ -1,5 +1,9 @@
 // @ts-ignore
-function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
+function templateFieldAnnotations(
+  fieldDef: FieldDef,
+  indent: number,
+  owner: TypeDef,
+): string {
   let resolved = [];
   let speakeasyMetadata = [];
 
@@ -14,7 +18,11 @@ function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
         case "security":
           return templateSecurityAnnotation(annotation as SecurityAnnotation);
         case "json":
-          return templateJSONAnnotation(fieldDef, annotation as JSONAnnotation);
+          return templateJSONAnnotation(
+            fieldDef,
+            annotation as JSONAnnotation,
+            owner,
+          );
         case "param":
           return templateParamAnnotation(annotation as ParamAnnotation);
         case "request":
@@ -143,7 +151,9 @@ function needsCustomJsonConverter(fieldDef: FieldDef): boolean {
 function templateJSONAnnotation(
   fieldDef: FieldDef,
   annotation: JSONAnnotation,
+  owner: TypeDef,
 ): string {
+  const wrapped = needsOptionalNullableWrapper(fieldDef, owner);
   if (
     annotation.Ignore &&
     context.Global.Config.PresenceAwareJSONSerialization &&
@@ -169,7 +179,7 @@ function templateJSONAnnotation(
     case "map":
       const itemConverterType = getJsonConverterType(fieldDef.Type.ItemType);
       if (itemConverterType != "") {
-        if (needsOptionalNullableWrapper(fieldDef)) {
+        if (wrapped) {
           jsonConverters.push(`typeof(${itemConverterType})`);
           itemLevelConverter = true;
         } else {
@@ -206,7 +216,11 @@ function templateJSONAnnotation(
   // Override global NullValueHandling.Ignore to write/read an explicit null
   const requiredNullable = !fieldDef.Optional && fieldDef.Nullable;
   const isUnion = fieldType === "union";
-  if (needsOptionalNullableWrapper(fieldDef) || isUnion || requiredNullable) {
+  if (
+    isPresenceAwareOptionalNullable(fieldDef) ||
+    isUnion ||
+    requiredNullable
+  ) {
     const disallowNull =
       presenceAware && fieldDef.Optional && !fieldDef.Nullable;
     if (!disallowNull) {
@@ -217,7 +231,7 @@ function templateJSONAnnotation(
   const attributes = [`[JsonProperty(${jsonProperties.join(", ")})]`];
   if (jsonConverters.length > 0) {
     let jsonConverterType = jsonConverters.join(", ");
-    if (needsOptionalNullableWrapper(fieldDef)) {
+    if (wrapped) {
       const wrapperConverter = itemLevelConverter
         ? "OptionalNullableItemJsonConverter"
         : "OptionalNullableJsonConverter";

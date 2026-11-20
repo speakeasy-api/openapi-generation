@@ -19,6 +19,7 @@ csharp:
   dotnetVersion: net8.0
   targetFramework: net5.0
   presenceAwareJsonSerialization: true
+  optionalNullableScope: writable-models
   schemaValidation: lenient
   unionStrategy: left-to-right
   imports:
