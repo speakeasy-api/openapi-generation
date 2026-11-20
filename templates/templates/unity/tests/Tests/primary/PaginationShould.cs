@@ -5,6 +5,7 @@ using Openapi.Models.Operations;
 using NUnit.Framework;
 using UnityEngine.TestTools;
 using System.Collections;
+using System.Collections.Generic;
 
 public class PaginationShould
 {
@@ -72,6 +73,61 @@ public class PaginationShould
                     using (var nullRes = await nextRes.Next())
                     {
                         Assert.Null(nullRes);
+                    }
+                }
+            }
+        });
+    }
+
+    [UnityTest]
+    public IEnumerator PaginationLimitOffsetPageNumPagesMissing()
+    {
+        CommonHelpers.RecordTest("pagination-limit-offset-page-num-pages-missing");
+
+        yield return CommonHelpers.Await(async () =>
+        {
+            var sdk = new SDK();
+
+            // the test service omits numPages on the first page and returns null on
+            // the second, so termination must fall back to the result length
+            using (
+                var res = await sdk.Pagination.PaginationLimitOffsetPageNumPagesMissingAsync(
+                    page: 1,
+                    limit: 7
+                )
+            )
+            {
+                Assert.AreEqual(200, res.StatusCode);
+                Assert.NotNull(res.Res);
+                Assert.Null(res.Res.NumPages);
+                CollectionAssert.AreEqual(new List<long> { 0, 1, 2, 3, 4, 5, 6 }, res.Res.ResultArray);
+
+                using (var nextRes = await res.Next())
+                {
+                    Assert.NotNull(nextRes);
+                    Assert.AreEqual(200, nextRes.StatusCode);
+                    Assert.NotNull(nextRes.Res);
+                    Assert.Null(nextRes.Res.NumPages);
+                    CollectionAssert.AreEqual(
+                        new List<long> { 7, 8, 9, 10, 11, 12, 13 },
+                        nextRes.Res.ResultArray
+                    );
+
+                    using (var lastRes = await nextRes.Next())
+                    {
+                        Assert.NotNull(lastRes);
+                        Assert.AreEqual(200, lastRes.StatusCode);
+                        Assert.NotNull(lastRes.Res);
+                        Assert.AreEqual(3, lastRes.Res.NumPages);
+                        CollectionAssert.AreEqual(
+                            new List<long> { 14, 15, 16, 17, 18, 19 },
+                            lastRes.Res.ResultArray
+                        );
+
+                        using (var nullRes = await lastRes.Next())
+                        {
+                            Assert.Null(nullRes);
+                        }
                     }
                 }
             }

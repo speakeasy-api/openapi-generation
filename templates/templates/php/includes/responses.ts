@@ -292,9 +292,15 @@ function templatePagination(op: Operation): string {
             op.Extensions.Pagination.Outputs.NumPages,
           )}');\n`;
         }
-        response += `${indent}if ($numPages == null || $numPages[0] <= $page) {
+        if (op.Extensions.Pagination.Outputs.Results) {
+          response += `${indent}if (is_array($numPages) && isset($numPages[0]) && is_numeric($numPages[0]) && $numPages[0] <= $page) {
         return null;
     }\n`;
+        } else {
+          response += `${indent}if ($numPages == null || $numPages[0] <= $page) {
+        return null;
+    }\n`;
+        }
       }
     }
 
