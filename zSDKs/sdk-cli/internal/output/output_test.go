@@ -1161,3 +1161,26 @@ func TestUnknownSubcommandHonoursDisableSuggestions(t *testing.T) {
 		}
 	}
 }
+
+type failingTableWriter struct{}
+
+func (failingTableWriter) Write([]byte) (int, error) { return 0, errors.New("write failed") }
+
+func TestPrintTableRendersEmptyValues(t *testing.T) {
+	var nilPointer *struct{ Name string }
+	for name, content := range map[string]any{
+		"untyped nil":  nil,
+		"nil pointer":  nilPointer,
+		"empty struct": struct{}{},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var buf bytes.Buffer
+			if err := printTable(&buf, content); err != nil || buf.String() != "(empty)\n" {
+				t.Fatalf("got %q, error %v; want (empty)", buf.String(), err)
+			}
+			if err := printTable(failingTableWriter{}, content); err == nil {
+				t.Fatal("expected the write error to be returned")
+			}
+		})
+	}
+}
