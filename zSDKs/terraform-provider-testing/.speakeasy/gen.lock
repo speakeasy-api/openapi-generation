@@ -11,8 +11,8 @@ features:
   terraform:
     additionalDependencies: 0.1.0
     additionalProperties: 0.1.5
-    constArrays: 0.1.0
-    constObjects: 0.1.0
+    constArrays: 0.2.0
+    constObjects: 0.2.0
     constsAndDefaults: 0.3.2
     contentMediaTypeApplicationJSON: 0.1.1
     core: 3.50.7

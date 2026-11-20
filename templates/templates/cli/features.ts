@@ -32,7 +32,7 @@ const supportedFeatures = {
   bigint: "0.0.0",
   decimal: "0.0.0",
   devContainers: "0.0.0",
-  constsAndDefaults: "0.0.0",
+  constsAndDefaults: "0.0.1",
   additionalProperties: "0.0.1",
   deepObjectParams: "0.0.0",
   downloadStreams: "0.0.2",

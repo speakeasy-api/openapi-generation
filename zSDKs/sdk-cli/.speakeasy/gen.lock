@@ -12,7 +12,7 @@ features:
     additionalProperties: 0.0.1
     bigint: 0.0.0
     cliCommands: 0.4.5
-    constsAndDefaults: 0.0.0
+    constsAndDefaults: 0.0.1
     core: 0.9.33
     customSecuritySchemes: 0.0.0
     decimal: 0.0.0
