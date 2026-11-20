@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.966.0] - 2026-11-20
+### :bee: New Features
+- [`d36cd61`](https://github.com/speakeasy-api/openapi-generation/commit/d36cd613f96e6988d133a21ecbaa360ab223de25) - **terraform**: honor const values on array and map properties ([#132](https://github.com/speakeasy-api/openapi-generation/pull/132)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.965.1] - 2026-11-18
 ### :bug: Bug Fixes
 - [`65aa2fa`](https://github.com/speakeasy-api/openapi-generation/commit/65aa2fa3cce1e580a97c8fac8a9e1a0de29f929f) - **cli,typescript,mcp**: bound JSON number parsing and harden path parameter URLs ([#220](https://github.com/speakeasy-api/openapi-generation/pull/220)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21067,3 +21072,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.964.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.964.2...v2.964.3
 [v2.965.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.964.3...v2.965.0
 [v2.965.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.965.0...v2.965.1
+[v2.966.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.965.1...v2.966.0
