@@ -442,7 +442,6 @@ function isTestSkipped(test: string): boolean {
     "optional-nullable-array-params-null-and-unset",
     "optional-nullable-array-params-set",
     "optional-nullable-deep-object-param",
-    "optional-nullable-special-header-params",
     "optional-nullable-urlencoded-body",
     "agent-mode-does-not-leak-between-invocations",
     "catalog-lists-values",

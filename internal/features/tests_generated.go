@@ -732,6 +732,8 @@ func (t Test) String() string {
         return "parameters-form-query-params-unions"
     case TestParametersHeaderParamsArray:
         return "parameters-header-params-array"
+    case TestParametersHeaderParamsEnum:
+        return "parameters-header-params-enum"
     case TestParametersHeaderParamsMap:
         return "parameters-header-params-map"
     case TestParametersHeaderParamsNil:
@@ -740,6 +742,8 @@ func (t Test) String() string {
         return "parameters-header-params-object"
     case TestParametersHeaderParamsPrimitive:
         return "parameters-header-params-primitive"
+    case TestParametersHeaderParamsStringFormats:
+        return "parameters-header-params-string-formats"
     case TestParametersJSONQueryParamsObject:
         return "parameters-json-query-params-object"
     case TestParametersMixedPrimitives:
@@ -2288,6 +2292,8 @@ func TestFromString(s string) Test {
         return TestParametersFormQueryParamsUnions
     case "parameters-header-params-array":
         return TestParametersHeaderParamsArray
+    case "parameters-header-params-enum":
+        return TestParametersHeaderParamsEnum
     case "parameters-header-params-map":
         return TestParametersHeaderParamsMap
     case "parameters-header-params-nil":
@@ -2296,6 +2302,8 @@ func TestFromString(s string) Test {
         return TestParametersHeaderParamsObject
     case "parameters-header-params-primitive":
         return TestParametersHeaderParamsPrimitive
+    case "parameters-header-params-string-formats":
+        return TestParametersHeaderParamsStringFormats
     case "parameters-json-query-params-object":
         return TestParametersJSONQueryParamsObject
     case "parameters-mixed-primitives":
@@ -3479,10 +3487,12 @@ var testList = []Test{
     TestParametersFormQueryParamsRefParamObject,
     TestParametersFormQueryParamsUnions,
     TestParametersHeaderParamsArray,
+    TestParametersHeaderParamsEnum,
     TestParametersHeaderParamsMap,
     TestParametersHeaderParamsNil,
     TestParametersHeaderParamsObject,
     TestParametersHeaderParamsPrimitive,
+    TestParametersHeaderParamsStringFormats,
     TestParametersJSONQueryParamsObject,
     TestParametersMixedPrimitives,
     TestParametersMixedQueryParams,
