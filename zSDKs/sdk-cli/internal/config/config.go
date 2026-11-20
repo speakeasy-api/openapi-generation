@@ -536,7 +536,11 @@ func writeConfigFile(configDir, configPath string, data []byte) error {
 	if err := os.Chmod(configDir, 0700); err != nil {
 		return err
 	}
-	if target, err := filepath.EvalSymlinks(configPath); err == nil {
+	if info, err := os.Lstat(configPath); err == nil && info.Mode()&os.ModeSymlink != 0 {
+		target, err := filepath.EvalSymlinks(configPath)
+		if err != nil {
+			return fmt.Errorf("resolve config symlink: %w", err)
+		}
 		configPath = target
 	}
 	tmp, err := os.CreateTemp(filepath.Dir(configPath), ".config-*.yaml.tmp")
@@ -545,6 +549,10 @@ func writeConfigFile(configDir, configPath string, data []byte) error {
 	}
 	tmpName := tmp.Name()
 	defer os.Remove(tmpName)
+	if err := tmp.Chmod(0600); err != nil {
+		tmp.Close()
+		return err
+	}
 	if _, err := tmp.Write(data); err != nil {
 		tmp.Close()
 		return err
@@ -554,9 +562,6 @@ func writeConfigFile(configDir, configPath string, data []byte) error {
 		return err
 	}
 	if err := tmp.Close(); err != nil {
-		return err
-	}
-	if err := os.Chmod(tmpName, 0600); err != nil {
 		return err
 	}
 	return os.Rename(tmpName, configPath)

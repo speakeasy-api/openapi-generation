@@ -363,7 +363,7 @@ func TestSaveConfigTightensExistingPermissions(t *testing.T) {
 	require.NoError(t, os.WriteFile(configPath, []byte("version: 0\n"), 0o644))
 	require.NoError(t, os.Chmod(configPath, 0o644))
 
-	require.NoError(t, config.Init("cli", "CLI"))
+	require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
 	require.NoError(t, config.SaveConfig(&config.Config{}))
 
 	fileInfo, err := os.Stat(configPath)
@@ -398,7 +398,7 @@ func TestSaveConfigWritesThroughSymlink(t *testing.T) {
 	require.NoError(t, os.WriteFile(target, []byte("version: 0\n"), 0o644))
 	require.NoError(t, os.Symlink(target, configPath))
 
-	require.NoError(t, config.Init("cli", "CLI"))
+	require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
 	require.NoError(t, config.SaveConfig(&config.Config{}))
 
 	linkInfo, err := os.Lstat(configPath)
@@ -410,6 +410,23 @@ func TestSaveConfigWritesThroughSymlink(t *testing.T) {
 	data, err := os.ReadFile(target)
 	require.NoError(t, err)
 	assert.NotEqual(t, "version: 0\n", string(data))
+}
+
+func TestSaveConfigRefusesDanglingSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need elevated privileges")
+	}
+	_, tmpDir := setupConfigureTest(t)
+	configPath := cliConfigPath(tmpDir)
+	require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0o700))
+	require.NoError(t, os.Symlink(filepath.Join(tmpDir, "missing", "config.yaml"), configPath))
+
+	require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
+	require.Error(t, config.SaveConfig(&config.Config{}))
+
+	linkInfo, err := os.Lstat(configPath)
+	require.NoError(t, err)
+	assert.NotZero(t, linkInfo.Mode()&os.ModeSymlink, "a dangling config.yaml symlink must not be replaced")
 }
 
 // TestConfigureNoInteractiveStoresFlags verifies that the compatibility
