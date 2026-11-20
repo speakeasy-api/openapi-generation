@@ -1,3 +1,5 @@
+import json
+import httpx
 import time
 import pytest
 from openapi import SDK
@@ -5,6 +7,7 @@ from openapi.models.operations import *
 from openapi.models.shared import *
 from openapi.utils import *
 from openapi.utils import jsonl
+from openapi.utils.jsonl import JsonLStream, JsonLStreamAsync
 
 from .common_helpers import *
 from .test_helpers import *
@@ -164,3 +167,61 @@ async def test_jsonl_stream_holds_http_client_async():
         nb_chunks += 1
 
     assert nb_chunks == 2, "The generator should yield exactly 2 chunks"
+
+
+CASES = [
+    (b"", []),
+    (b'{"name":"one"}\n', [{"name": "one"}]),
+    (b'{"name":"one"}', [{"name": "one"}]),
+    (b'{"name":"one"}\n{"name":"two"}', [{"name": "one"}, {"name": "two"}]),
+    (b'{"name":"one"}\r\n{"name":"two"}', [{"name": "one"}, {"name": "two"}]),
+    (b'{"name":"one"}\n \t\r\n', [{"name": "one"}]),
+    ('{"name":"café"}'.encode(), [{"name": "café"}]),
+    (b'{"name":"one"}\r\n{"name":"two"}\r\n', [{"name": "one"}, {"name": "two"}]),
+]
+
+
+class ChunkStream(httpx.SyncByteStream, httpx.AsyncByteStream):
+    def __init__(self, payload, chunk_size):
+        self.chunks = [payload] if chunk_size is None else [
+            payload[i:i + chunk_size] for i in range(0, len(payload), chunk_size)
+        ]
+
+    def __iter__(self):
+        yield from self.chunks
+
+    async def __aiter__(self):
+        for chunk in self.chunks:
+            yield chunk
+
+
+@pytest.mark.parametrize("payload, expected", CASES)
+@pytest.mark.parametrize("chunk_size", [None, 1, 5])
+def test_jsonl_final_record(payload, expected, chunk_size):
+    response = httpx.Response(200, stream=ChunkStream(payload, chunk_size))
+    with JsonLStream(response, json.loads) as events:
+        assert list(events) == expected
+    assert response.is_closed
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("payload, expected", CASES)
+@pytest.mark.parametrize("chunk_size", [None, 1, 5])
+async def test_jsonl_final_record_async(payload, expected, chunk_size):
+    response = httpx.Response(200, stream=ChunkStream(payload, chunk_size))
+    async with JsonLStreamAsync(response, json.loads) as events:
+        assert [event async for event in events] == expected
+    assert response.is_closed
+
+
+def test_jsonl_invalid_final_record():
+    response = httpx.Response(200, stream=ChunkStream(b'{"name":', 1))
+    with pytest.raises(json.JSONDecodeError):
+        list(JsonLStream(response, json.loads))
+
+
+@pytest.mark.asyncio
+async def test_jsonl_invalid_final_record_async():
+    response = httpx.Response(200, stream=ChunkStream(b'{"name":', 1))
+    with pytest.raises(json.JSONDecodeError):
+        [event async for event in JsonLStreamAsync(response, json.loads)]
