@@ -182,7 +182,7 @@ trackedFiles:
   internal/cli/renderasset.go:
     last_write_checksum: sha1:6ac1b5552a2f82c3ee4a300084f75af0972bda96
   internal/cli/root.go:
-    last_write_checksum: sha1:48f538b9ead4f7b896c5064555a05f04987b0e1c
+    last_write_checksum: sha1:bd2cd64f4dcb6022b933c626c99605f06660a21c
   internal/cli/streammetadata/root.go:
     last_write_checksum: sha1:42a01737002d2daef8a33be267f7060659fdac65
   internal/cli/streammetadata/streammetadata.go:

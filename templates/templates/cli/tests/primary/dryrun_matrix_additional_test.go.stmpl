@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"strings"
@@ -225,4 +227,39 @@ func TestExplorerHandoffPreservesDiagnosticsFlags(t *testing.T) {
 	selected := []string{"methods", "method-get"}
 	assert.Equal(t, []string{"--interactive", "--dry-run", "--debug", "methods", "method-get"}, cli.ExplorerHandoffArgs(root, selected))
 	assert.Equal(t, []string{"methods", "method-get"}, selected, "handoff must not mutate explorer-owned args")
+}
+
+func TestExplorerHandoffForwardsGlobalFlags(t *testing.T) {
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	flags := root.PersistentFlags()
+	require.NoError(t, flags.Set("dry-run", "true"))
+	require.NoError(t, flags.Set("output-format", "json"))
+	require.NoError(t, flags.Set("server-url", "http://handoff.example.test/base"))
+	require.NoError(t, flags.Set("header", "X-Handoff: one"))
+	require.NoError(t, flags.Set("header", "X-Handoff: two"))
+	require.NoError(t, flags.Set("timeout", "45s"))
+
+	args := cli.ExplorerHandoffArgs(root, []string{"methods", "method-get"})
+	assert.Equal(t, []string{
+		"--interactive", "--dry-run",
+		"--header=X-Handoff: one", "--header=X-Handoff: two",
+		"--output-format=json",
+		"--server-url=http://handoff.example.test/base",
+		"--timeout=45s",
+		"methods", "method-get",
+	}, args)
+
+	fresh, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	var stdout bytes.Buffer
+	fresh.SetOut(&stdout)
+	fresh.SetErr(io.Discard)
+	require.NoError(t, cli.ExecuteRoot(context.Background(), fresh, args))
+	previews := primaryDryRunPreviews(t, stdout.String())
+	require.Len(t, previews, 1)
+	assert.True(t, strings.HasPrefix(previews[0].Request.URL, "http://handoff.example.test/base/"), previews[0].Request.URL)
+	assert.Contains(t, previews[0].Request.Headers["X-Handoff"], "one")
 }
