@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.968.1] - 2026-11-20
+### :bug: Bug Fixes
+- [`f101a96`](https://github.com/speakeasy-api/openapi-generation/commit/f101a963c70ed4f5055baefb088328a630cc5238) - **mcp**: raise the hono floor to 4.13.16 ([#223](https://github.com/speakeasy-api/openapi-generation/pull/223)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.968.0] - 2026-11-20
 ### :bee: New Features
 - [`6cec4b4`](https://github.com/speakeasy-api/openapi-generation/commit/6cec4b4abfdb39bc817ca5bfa6764fa963ca6ea8) - **csharp**: add optionalNullableScope to limit OptionalNullable<T> to writable models ([#222](https://github.com/speakeasy-api/openapi-generation/pull/222)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -21091,3 +21096,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.967.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.966.0...v2.967.0
 [v2.967.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.967.0...v2.967.1
 [v2.968.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.967.1...v2.968.0
+[v2.968.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.0...v2.968.1
