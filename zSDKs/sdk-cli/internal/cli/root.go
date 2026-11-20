@@ -400,15 +400,23 @@ func ExplorerHandoffArgs(root *cobra.Command, selectedArgs []string) []string {
 	if debug, _ := root.PersistentFlags().GetBool("debug"); debug {
 		handoffArgs = append(handoffArgs, "--debug")
 	}
-	// Rendering flags given to the explore invocation apply to the selected
-	// command: the fresh command tree re-parses argv (and resets the
-	// preparsed rendering state), so they must travel with it. The
-	// --name=value form keeps boolean flags from swallowing the next token.
-	for _, name := range []string{"output-format", "jq", "raw-output", "color"} {
-		if flag := root.PersistentFlags().Lookup(name); flag != nil && flag.Changed {
-			handoffArgs = append(handoffArgs, "--"+name+"="+flag.Value.String())
+	// Global flags given to the explore invocation (server, credentials,
+	// headers, rendering) apply to the selected command: the fresh command
+	// tree re-parses argv, so they must travel with it. The --name=value form
+	// keeps boolean flags from swallowing the next token.
+	handled := map[string]bool{"interactive": true, "no-interactive": true, "dry-run": true, "debug": true, "help": true}
+	root.PersistentFlags().VisitAll(func(flag *pflag.Flag) {
+		if !flag.Changed || handled[flag.Name] {
+			return
 		}
-	}
+		if values, ok := flag.Value.(pflag.SliceValue); ok {
+			for _, value := range values.GetSlice() {
+				handoffArgs = append(handoffArgs, "--"+flag.Name+"="+value)
+			}
+			return
+		}
+		handoffArgs = append(handoffArgs, "--"+flag.Name+"="+flag.Value.String())
+	})
 	return append(handoffArgs, selectedArgs...)
 }
 
