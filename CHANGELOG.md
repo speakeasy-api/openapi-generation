@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.967.1] - 2026-11-20
+### :bug: Bug Fixes
+- [`81af5b5`](https://github.com/speakeasy-api/openapi-generation/commit/81af5b5c619e0e2bb1f23b87cff096c263fbf4ff) - **php**: send enum and date-time header parameters ([#221](https://github.com/speakeasy-api/openapi-generation/pull/221)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.967.0] - 2026-11-20
 ### :bee: New Features
 - [`c4b7cf9`](https://github.com/speakeasy-api/openapi-generation/commit/c4b7cf9feca6b6032683dd33e481a2d45539749a) - **java**: SDK-wide and per-call request timeouts ([#178](https://github.com/speakeasy-api/openapi-generation/pull/178)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -21079,3 +21084,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.965.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.965.0...v2.965.1
 [v2.966.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.965.1...v2.966.0
 [v2.967.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.966.0...v2.967.0
+[v2.967.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.967.0...v2.967.1
