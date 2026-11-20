@@ -1405,7 +1405,8 @@ func printTable(out io.Writer, content any) error {
 	v := reflect.ValueOf(content)
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 		if v.IsNil() {
-			return fmt.Errorf("nil value, nothing to display as table")
+			fmt.Fprintln(out, "(empty)")
+			return nil
 		}
 		v = v.Elem()
 	}
@@ -1550,7 +1551,7 @@ func printTableSingle(out io.Writer, v reflect.Value) error {
 		}
 	}
 	if blocks == 0 {
-		return fmt.Errorf("no displayable fields found")
+		fmt.Fprintln(&buf, "(empty)")
 	}
 	_, err := out.Write(buf.Bytes())
 	return err
