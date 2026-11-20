@@ -1,0 +1,10 @@
+id: 1795132518-d8c06faf
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: write interactive line prompts to stderr so machine output on stdout stays parseable
+author: TristanSpeakEasy
+date: "2026-11-20"

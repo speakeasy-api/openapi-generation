@@ -205,7 +205,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 			Title("Authentication Method").
 			Description("Choose which credentials to configure")
 
-		if err := forms.New(forms.NewPage("", schemeSelect)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout()).Run(); err != nil {
+		if err := forms.New(forms.NewPage("", schemeSelect)).Accessible(accessible).IO(promptInput, cmd.ErrOrStderr()).Run(); err != nil {
 			return fmt.Errorf("auth login: %w", err)
 		}
 
@@ -226,7 +226,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 					Placeholder(maskSecret(config.GetStoredSecret("password", cfg.Security.Password))),
 			}
 
-			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.ErrOrStderr())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -259,7 +259,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 					Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))),
 			}
 
-			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.ErrOrStderr())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -288,7 +288,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 					Placeholder(maskSecret(config.GetStoredSecret("oauth2", cfg.Security.Oauth2))),
 			}
 
-			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.ErrOrStderr())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -317,7 +317,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 					Placeholder(maskSecret(config.GetStoredSecret("secret", cfg.Security.Secret))),
 			}
 
-			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.ErrOrStderr())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -346,7 +346,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 					Placeholder(maskSecret(config.GetStoredSecret("mobile-auth", cfg.Security.MobileAuth))),
 			}
 
-			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.ErrOrStderr())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -380,7 +380,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 					Placeholder(cmp.Or(cfg.Security.TokenURL, "/clientcredentials/token")),
 			}
 
-			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.ErrOrStderr())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -413,7 +413,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 					Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))),
 			}
 
-			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.ErrOrStderr())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)

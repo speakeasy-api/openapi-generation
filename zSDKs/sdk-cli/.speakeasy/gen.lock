@@ -60,13 +60,13 @@ trackedFiles:
   go.mod:
     last_write_checksum: sha1:15ced474cbb1ec803f17960c0b73f10ea969c22a
   internal/cli/auth.go:
-    last_write_checksum: sha1:437aab6849f3bb917de447a4568e06217fe302c3
+    last_write_checksum: sha1:9ec26ec1d7127f2054d7195a9c1835f97bb782f5
   internal/cli/binaryandstringupload.go:
     last_write_checksum: sha1:20d8028b7618e73dcf1763372f9145ea325b32b0
   internal/cli/chat.go:
     last_write_checksum: sha1:e195b15f923b77ba9c19861e0145ba17dd896c2c
   internal/cli/configure.go:
-    last_write_checksum: sha1:3f4f3f60afb2647dcd09159d9f3b91894f9441dd
+    last_write_checksum: sha1:b946962641fcc49272075a662bac758c7a548c20
   internal/cli/createuser.go:
     last_write_checksum: sha1:5b60000059db85dcf4c90f5e67c37b7fff3cf852
   internal/cli/createwithunion.go:
@@ -256,7 +256,7 @@ trackedFiles:
   internal/flagutil/preset.go:
     last_write_checksum: sha1:cbe756496ae3524857c4b985b095c91483e58b4c
   internal/forms/forms.go:
-    last_write_checksum: sha1:c21352632fd50812eda8d9ac9159208e26c15cfa
+    last_write_checksum: sha1:b19a8f2d76b0ff9ec8f805274462e30cc4c25d5c
   internal/interactive/interactive.go:
     last_write_checksum: sha1:ee537c6deda49ba3f24ee2d06a6df4e7619e8e55
   internal/interactive/policy.go:
