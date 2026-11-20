@@ -53,7 +53,7 @@ const supportedFeatures = {
   hiddenGlobals: "0.1.0",
   uploadStreams: "0.1.0",
   modelNamespaces: "0.1.2",
-  operationTimeout: "0.1.0",
+  operationTimeout: "0.2.0",
 };
 
 //@ts-ignore
