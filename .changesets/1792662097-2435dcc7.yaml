@@ -1,0 +1,11 @@
+id: 1792662097-2435dcc7
+features:
+    - constsAndDefaults
+targets:
+    - go
+    - cli
+type: fix
+bump: patch
+description: JSON unmarshaling compares array and map const values structurally instead of by exact text and treats null as absent for a container const
+author: AshGodfrey
+date: "2026-10-22"

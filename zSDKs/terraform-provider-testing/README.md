@@ -102,6 +102,8 @@ Available configuration:
 
 * [testing_api_create_and_update](docs/resources/api_create_and_update.md)
 * [testing_basic](docs/resources/basic.md)
+* [testing_const_container](docs/resources/const_container.md)
+* [testing_const_empty_set_delete](docs/resources/const_empty_set_delete.md)
 * [testing_discriminated_union](docs/resources/discriminated_union.md)
 * [testing_discriminated_union_array](docs/resources/discriminated_union_array.md)
 * [testing_framework_type](docs/resources/framework_type.md)
@@ -179,6 +181,7 @@ Available configuration:
 
 * [testing_api_create_and_update](docs/data-sources/api_create_and_update.md)
 * [testing_basic](docs/data-sources/basic.md)
+* [testing_const_container](docs/data-sources/const_container.md)
 * [testing_discriminated_union](docs/data-sources/discriminated_union.md)
 * [testing_framework_type](docs/data-sources/framework_type.md)
 * [testing_import_defaulted_id](docs/data-sources/import_defaulted_id.md)
