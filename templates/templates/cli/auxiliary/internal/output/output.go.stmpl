@@ -1425,10 +1425,13 @@ func printTable(out io.Writer, content any) error {
 	v := reflect.ValueOf(content)
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 		if v.IsNil() {
-			fmt.Fprintln(out, "(empty)")
-			return nil
+			break
 		}
 		v = v.Elem()
+	}
+	if !v.IsValid() || ((v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface) && v.IsNil()) {
+		_, err := fmt.Fprintln(out, "(empty)")
+		return err
 	}
 
 	switch v.Kind() {
@@ -1571,7 +1574,7 @@ func printTableSingle(out io.Writer, v reflect.Value) error {
 		}
 	}
 	if blocks == 0 {
-		fmt.Fprintln(&buf, "(empty)")
+		buf.WriteString("(empty)\n")
 	}
 	_, err := out.Write(buf.Bytes())
 	return err
