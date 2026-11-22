@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.968.4] - 2026-11-22
+### :bug: Bug Fixes
+- [`cb49ea3`](https://github.com/speakeasy-api/openapi-generation/commit/cb49ea30d11dbe00c735643f38f845bf9e39e8da) - **cli**: render empty response bodies as (empty) under -o table ([#227](https://github.com/speakeasy-api/openapi-generation/pull/227)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.968.3] - 2026-11-22
 ### :bug: Bug Fixes
 - [`2f15c36`](https://github.com/speakeasy-api/openapi-generation/commit/2f15c363695c0adb26ef5701bcaecd43845f8dcc) - **cli**: forward every explicitly set global flag from explore ([#226](https://github.com/speakeasy-api/openapi-generation/pull/226)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21109,3 +21114,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.968.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.0...v2.968.1
 [v2.968.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.1...v2.968.2
 [v2.968.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.2...v2.968.3
+[v2.968.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.3...v2.968.4
