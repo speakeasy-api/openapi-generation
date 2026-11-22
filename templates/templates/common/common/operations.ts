@@ -245,6 +245,11 @@ function hasAnyRedactGraphs(): boolean {
 }
 registerTemplateFunc("hasAnyRedactGraphs", hasAnyRedactGraphs);
 
+function typeHasSensitiveValues(typeDef: TypeDef): boolean {
+  return typeDef.HasSensitiveValues();
+}
+registerTemplateFunc("typeHasSensitiveValues", typeHasSensitiveValues);
+
 // @ts-ignore
 function getAllowEmptyValueQueryParamNames(op: Operation): string[] {
   const queryParams = op.Request?.Params?.QueryParams ?? [];

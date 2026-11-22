@@ -1654,3 +1654,46 @@ func TestCircularReferenceRecursiveOneOf(t *testing.T) {
 	require.NotNil(t, res.Object)
 	assert.Equal(t, payload, res.Object.JSON.Value)
 }
+
+func TestUnionUnmarshalErrorPayloadOnlyWithoutSensitiveValues(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		data        string
+		target      any
+		wantPayload bool
+	}{
+		{
+			name:   "sensitive discriminated variant",
+			data:   `{"kind":"api_key","key":["canary-key"]}`,
+			target: &shared.Credential{},
+		},
+		{
+			name:   "password format discriminated variant",
+			data:   `{"kind":"password","password":["canary-password"]}`,
+			target: &shared.Credential{},
+		},
+		{
+			name:        "plain discriminated variant",
+			data:        `{"kind":"model","model":5,"input":"canary-discriminated"}`,
+			target:      &shared.DiscriminatedVariantBody{},
+			wantPayload: true,
+		},
+		{
+			name:        "plain members",
+			data:        `{"value":"canary-undiscriminated"}`,
+			target:      &shared.PrimitiveTypeUnion{},
+			wantPayload: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := json.Unmarshal([]byte(tc.data), tc.target)
+			require.Error(t, err)
+			if tc.wantPayload {
+				assert.Contains(t, err.Error(), tc.data)
+			} else {
+				assert.NotContains(t, err.Error(), "canary-")
+				assert.Contains(t, err.Error(), "within Credential")
+			}
+		})
+	}
+}
