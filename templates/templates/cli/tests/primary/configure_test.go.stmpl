@@ -221,8 +221,9 @@ func TestConfigureSkipsOptionalCredentials(t *testing.T) {
 
 {{- if not (isInteractiveAuthEnabled)}}
 	// Verify intro messages (readline mode only — guided forms don't print these)
-	assert.Contains(t, output, "Configure ")
-	assert.Contains(t, output, "Enter - to clear a previously set value.")
+	assert.Contains(t, h.GetStderr(), "Configure ")
+	assert.Contains(t, h.GetStderr(), "Enter - to clear a previously set value.")
+	assert.NotContains(t, output, "Enter - to clear a previously set value.")
 {{- end}}
 
 	// Verify completion message
@@ -313,10 +314,11 @@ func TestConfigureMaskSecretDisplay(t *testing.T) {
 
 	// Should NOT contain the full secret in any mode
 	assert.NotContains(t, output, "sk-1234567890abcdef")
+	assert.NotContains(t, h.GetStderr(), "sk-1234567890abcdef")
 
 {{- if not (isInteractiveAuthEnabled)}}
 	// In readline mode, existing value should be masked inline in the prompt
-	assert.Contains(t, output, "sk******ef")
+	assert.Contains(t, h.GetStderr(), "sk******ef")
 {{- end}}
 	// In guided form mode, the masked value is used as a Placeholder which may not
 	// appear in accessible text output. The key assertion is that the full secret

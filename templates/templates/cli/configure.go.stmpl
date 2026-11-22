@@ -111,7 +111,7 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
             pages = append(pages, forms.NewPage("Preferences", preferenceFields...))
         }
 
-        form := forms.New(pages...).Accessible(accessible).IO(cmd.InOrStdin(), cmd.OutOrStdout())
+        form := forms.New(pages...).Accessible(accessible).IO(cmd.InOrStdin(), cmd.ErrOrStderr())
 
         if err := form.Run(); err != nil {
             return fmt.Errorf("configure: %w", err)
@@ -133,7 +133,7 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
         {{templateConfigureNonInteractiveStore | indent 8 | trim}}
     } else {
     {{- end}}
-    out := cmd.OutOrStdout()
+    out := cmd.ErrOrStderr()
     fmt.Fprintln(out, "Configure {{sanitizeCliName}}")
     fmt.Fprintln(out, "Press Enter to keep the current value, or enter a new value.")
     fmt.Fprintln(out, "Enter - to clear a previously set value.")
