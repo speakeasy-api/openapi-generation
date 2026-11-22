@@ -13,7 +13,7 @@ features:
     bigint: 0.0.0
     cliCommands: 0.4.5
     constsAndDefaults: 0.0.1
-    core: 0.9.35
+    core: 0.9.36
     customSecuritySchemes: 0.0.0
     decimal: 0.0.0
     deprecations: 0.0.0
