@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.968.2] - 2026-11-22
+### :bug: Bug Fixes
+- [`01eab10`](https://github.com/speakeasy-api/openapi-generation/commit/01eab106a8a5ba7566b3237f74189a9ef22a39d4) - **cli**: write interactive line prompts to stderr ([#225](https://github.com/speakeasy-api/openapi-generation/pull/225)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.968.1] - 2026-11-20
 ### :bug: Bug Fixes
 - [`f101a96`](https://github.com/speakeasy-api/openapi-generation/commit/f101a963c70ed4f5055baefb088328a630cc5238) - **mcp**: raise the hono floor to 4.13.16 ([#223](https://github.com/speakeasy-api/openapi-generation/pull/223)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -21097,3 +21102,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.967.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.967.0...v2.967.1
 [v2.968.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.967.1...v2.968.0
 [v2.968.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.0...v2.968.1
+[v2.968.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.1...v2.968.2
