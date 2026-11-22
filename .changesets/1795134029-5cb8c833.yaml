@@ -1,0 +1,10 @@
+id: 1795134029-5cb8c833
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: render empty response bodies as (empty) under -o table instead of failing
+author: TristanSpeakEasy
+date: "2026-11-20"

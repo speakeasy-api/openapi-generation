@@ -875,6 +875,14 @@ func tableLines(lines ...string) string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
+// TestTableOutputEmptyResponseSucceeds verifies that a successful response
+// whose body has no fields, such as a delete returning {}, renders as
+// "(empty)" instead of failing the command.
+func TestTableOutputEmptyResponseSucceeds(t *testing.T) {
+	type emptyBody struct{}
+	assert.Equal(t, "(empty)\n", renderTable(t, &emptyBody{}))
+}
+
 var tableFixtureCreated = time.Date(2024, 5, 1, 12, 30, 0, 0, time.UTC)
 
 func TestTableOutputRendersListItems(t *testing.T) {
