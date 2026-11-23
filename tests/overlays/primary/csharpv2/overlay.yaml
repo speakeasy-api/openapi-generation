@@ -1,0 +1,305 @@
+overlay: 1.0.0
+info:
+  title: C# Open Enum Union Test Overlay
+  version: 0.0.0
+  x-base-spec: ./tests/specs/uber.yaml
+actions:
+  - target: $.components.schemas
+    update:
+      SimpleContentType:
+        type: string
+        description: A simple content type enum.
+        x-speakeasy-unknown-values: allow
+        enum:
+          - text
+          - image
+      TextContent:
+        type: object
+        properties:
+          type:
+            $ref: "#/components/schemas/SimpleContentType"
+          message:
+            type: string
+        required:
+          - type
+          - message
+      ImageContent:
+        type: object
+        properties:
+          type:
+            $ref: "#/components/schemas/SimpleContentType"
+          url:
+            type: string
+        required:
+          - type
+          - url
+      SimpleContent:
+        type: object
+        oneOf:
+          - $ref: "#/components/schemas/TextContent"
+          - $ref: "#/components/schemas/ImageContent"
+        discriminator:
+          propertyName: type
+          mapping:
+            text: "#/components/schemas/TextContent"
+            image: "#/components/schemas/ImageContent"
+      UnknownRaw:
+        type: object
+        x-speakeasy-name-override: UnknownRaw
+        required:
+          - raw
+        properties:
+          raw:
+            type: string
+      IsUnknown:
+        type: object
+        x-speakeasy-name-override: IsUnknown
+        required:
+          - flag
+        properties:
+          flag:
+            type: boolean
+      Unknown:
+        type: object
+        x-speakeasy-name-override: Unknown
+        required:
+          - value
+        properties:
+          value:
+            type: string
+      OpenUnionHelperNameCollision:
+        oneOf:
+          - $ref: "#/components/schemas/UnknownRaw"
+          - $ref: "#/components/schemas/IsUnknown"
+          - $ref: "#/components/schemas/Unknown"
+        x-speakeasy-unknown-values: allow
+      CountedItem:
+        type: object
+        properties:
+          count:
+            type: integer
+          name:
+            type: string
+          note:
+            type: string
+      ObjectOrMap:
+        oneOf:
+          - $ref: "#/components/schemas/CountedItem"
+          - type: object
+            additionalProperties: true
+      NamedItem:
+        type: object
+        required:
+          - name
+        properties:
+          name:
+            type: string
+      ObjectOrMapWrapper:
+        type: object
+        required:
+          - value
+        properties:
+          value:
+            $ref: "#/components/schemas/ObjectOrMap"
+      NamedItemWrapper:
+        type: object
+        required:
+          - value
+        properties:
+          value:
+            $ref: "#/components/schemas/NamedItem"
+      NestedObjectChoice:
+        oneOf:
+          - $ref: "#/components/schemas/ObjectOrMapWrapper"
+          - $ref: "#/components/schemas/NamedItemWrapper"
+      CountedItemContainer:
+        type: object
+        properties:
+          value:
+            $ref: "#/components/schemas/CountedItem"
+          entries:
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/CountedItem"
+      NamedItemContainer:
+        type: object
+        properties:
+          value:
+            $ref: "#/components/schemas/NamedItem"
+          entries:
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/NamedItem"
+          alive:
+            type: boolean
+      ItemContainerChoice:
+        oneOf:
+          - $ref: "#/components/schemas/CountedItemContainer"
+          - $ref: "#/components/schemas/NamedItemContainer"
+      WidgetUpload:
+        type: object
+        properties:
+          label:
+            type: string
+          widgetImage:
+            type: string
+            format: binary
+      WidgetForm:
+        type: object
+        properties:
+          label:
+            type: string
+          count:
+            type: integer
+  - target: $.paths
+    update:
+      /anything/openEnumUnion:
+        post:
+          operationId: openEnumUnionPost
+          tags:
+            - unions
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/SimpleContent"
+            required: true
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    title: res
+                    type: object
+                    properties:
+                      json:
+                        $ref: "#/components/schemas/SimpleContent"
+                    required:
+                      - json
+      /anything/openUnionHelperNameCollision:
+        get:
+          operationId: openUnionHelperNameCollisionGet
+          tags:
+            - unions
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/OpenUnionHelperNameCollision"
+      /anything/nestedObjectChoice:
+        get:
+          operationId: nestedObjectChoiceGet
+          description: Returns competing object shapes with a nested object or free-form map.
+          tags:
+            - unions
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/NestedObjectChoice"
+      /anything/itemContainerChoice:
+        get:
+          operationId: itemContainerChoiceGet
+          description: Returns a union with competing object and dictionary value shapes.
+          tags:
+            - unions
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/ItemContainerChoice"
+      /anything/widgets/{widgetId}/optionalMultipart:
+        put:
+          operationId: optionalWrappedMultipartBody
+          description: >
+            A required path parameter places the multipart body in a request object. The body is optional: omitting it sends the request with no content.
+          tags:
+            - requestBodies
+          parameters:
+            - name: widgetId
+              in: path
+              required: true
+              schema:
+                type: string
+          requestBody:
+            required: false
+            content:
+              multipart/form-data:
+                schema:
+                  $ref: "#/components/schemas/WidgetUpload"
+          responses:
+            "200":
+              description: OK
+      /anything/widgets/{widgetId}/requiredMultipart:
+        put:
+          operationId: requiredWrappedMultipartBody
+          description: >
+            A required path parameter places the multipart body in a request object. The body is required: a null body is rejected before sending.
+          tags:
+            - requestBodies
+          parameters:
+            - name: widgetId
+              in: path
+              required: true
+              schema:
+                type: string
+          requestBody:
+            required: true
+            content:
+              multipart/form-data:
+                schema:
+                  $ref: "#/components/schemas/WidgetUpload"
+          responses:
+            "200":
+              description: OK
+      /anything/widgets/{widgetId}/optionalForm:
+        put:
+          operationId: optionalWrappedFormBody
+          description: >
+            A required path parameter places the form-urlencoded body in a request object. The body is optional: omitting it sends the request with no content.
+          tags:
+            - requestBodies
+          parameters:
+            - name: widgetId
+              in: path
+              required: true
+              schema:
+                type: string
+          requestBody:
+            required: false
+            content:
+              application/x-www-form-urlencoded:
+                schema:
+                  $ref: "#/components/schemas/WidgetForm"
+          responses:
+            "200":
+              description: OK
+      /anything/widgets/{widgetId}/requiredForm:
+        put:
+          operationId: requiredWrappedFormBody
+          description: >
+            A required path parameter places the form-urlencoded body in a request object. The body is required: a null body is rejected before sending.
+          tags:
+            - requestBodies
+          parameters:
+            - name: widgetId
+              in: path
+              required: true
+              schema:
+                type: string
+          requestBody:
+            required: true
+            content:
+              application/x-www-form-urlencoded:
+                schema:
+                  $ref: "#/components/schemas/WidgetForm"
+          responses:
+            "200":
+              description: OK

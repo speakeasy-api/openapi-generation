@@ -1,0 +1,26 @@
+{{- $className := .Local.Open.ClassName -}}
+{{- $unionType := .Local.Open.UnionType -}}
+{{- $unknownMember := .Local.Open.UnknownMember -}}
+{{- $unknownValue := sanitizeEnumValue .Local.Open.UnknownValue "string" -}}
+{{- if eq .Local.Block "type"}}
+
+        public static {{$unionType}} {{$unknownMember}} { get { return new {{$unionType}}({{$unknownValue}}); } }
+{{- else if eq .Local.Block "case"}}
+                case {{$unknownValue}}: return {{$unknownMember}};
+{{- else if eq .Local.Block "members"}}
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public System.Text.Json.JsonElement? {{$unknownMember}}Raw { get; private set; }
+
+        public static {{$className}} CreateUnknown(System.Text.Json.JsonElement raw)
+        {
+            return new {{$className}}({{$unionType}}.{{$unknownMember}}) { {{$unknownMember}}Raw = raw };
+        }
+
+        public bool Is{{$unknownMember}}()
+        {
+            return {{.Local.Open.TypeFieldName}}.Equals({{$unionType}}.{{$unknownMember}});
+        }
+
+        bool global::{{getModelNamespace ""}}.IOpenUnion.IsUnknown() => Is{{$unknownMember}}();
+{{- end -}}

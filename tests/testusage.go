@@ -131,7 +131,7 @@ func getOutputFile(lang, filename string) string {
 	switch lang {
 	case "go":
 		return "main.go"
-	case "csharp", "unity":
+	case "csharp", "csharpv2", "unity":
 		return filename + ".cs"
 	case "javav2":
 		return "src/main/java/hello/world/Application.java"
@@ -210,7 +210,7 @@ func sourceDirectory(lang, group string) string {
 	sdkDir := sdkDirectory(lang, group)
 
 	switch lang {
-	case "csharp":
+	case "csharp", "csharpv2":
 		projectDir := ""
 		csprojRegex := regexp.MustCompile(`\.csproj$`)
 		err := filepath.Walk(sdkDir,
@@ -261,7 +261,7 @@ func installCommand(lang, group string) string {
 	srcDir := sourceDirectory(lang, group)
 
 	switch lang {
-	case "csharp":
+	case "csharp", "csharpv2":
 		return "dotnet add reference ../../../" + srcDir
 	case "go":
 		return fmt.Sprintf("cp ../../../%s/go.sum .", srcDir)
@@ -297,7 +297,7 @@ func buildCommand(lang, group string, run bool) string {
 	command := ""
 
 	switch lang {
-	case "csharp":
+	case "csharp", "csharpv2":
 		command = "dotnet build"
 		if run {
 			command += " && dotnet run"

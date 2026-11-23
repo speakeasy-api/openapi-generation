@@ -1,0 +1,270 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/modelNamespaceSameName:
+    post:
+      operationId: modelNamespaceSameNamePost
+      description: >-
+        Tests that models sharing a name across two model namespaces (via
+        x-speakeasy-model-namespace) can be generated, compiled and serialized
+        together. Each namespace has a same-named undiscriminated union, a
+        same-named discriminated union with same-named variants, a same-named
+        closed enum, and a holder with an array of the undiscriminated union, a
+        map whose values are an inline oneOf, nested arrays and maps of arrays,
+        an optional nullable reference, an optional closed enum and an array of
+        nullable closed enum items. Both holders are reached from one request
+        and response body.
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SameNameEnvelope"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  json:
+                    $ref: "#/components/schemas/SameNameEnvelope"
+                required:
+                  - json
+components:
+  schemas:
+    SameNameEnvelope:
+      description: Envelope referencing the same-named holders of both model namespaces.
+      type: object
+      properties:
+        alpha:
+          $ref: "#/components/schemas/alpha_SameNameHolder"
+        beta:
+          $ref: "#/components/schemas/beta_SameNameHolder"
+    alpha_SameNameItem:
+      x-speakeasy-name-override: SameNameItem
+      x-speakeasy-model-namespace: alpha
+      description: Object variant with the same name as an object in another model namespace.
+      type: object
+      properties:
+        id:
+          type: string
+        count:
+          type: integer
+      required:
+        - id
+    beta_SameNameItem:
+      x-speakeasy-name-override: SameNameItem
+      x-speakeasy-model-namespace: beta
+      description: Object variant with the same name as an object in another model namespace.
+      type: object
+      properties:
+        id:
+          type: string
+        count:
+          type: integer
+      required:
+        - id
+    alpha_SameNameHolder:
+      x-speakeasy-name-override: SameNameHolder
+      x-speakeasy-model-namespace: alpha
+      description: Holder with the same name as a holder in another model namespace.
+      type: object
+      properties:
+        choices:
+          type: array
+          items:
+            $ref: "#/components/schemas/alpha_SameNameChoice"
+        shape:
+          $ref: "#/components/schemas/alpha_SameNameShape"
+        itemMatrix:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: "#/components/schemas/alpha_SameNameItem"
+        choicesByKey:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/alpha_SameNameChoice"
+        maybeItem:
+          oneOf:
+            - $ref: "#/components/schemas/alpha_SameNameItem"
+            - type: "null"
+        status:
+          $ref: "#/components/schemas/alpha_SameNameStatus"
+        statuses:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/alpha_SameNameStatus"
+              - type: "null"
+        settings:
+          type: object
+          additionalProperties:
+            oneOf:
+              - $ref: "#/components/schemas/alpha_SameNameItem"
+              - type: string
+    beta_SameNameHolder:
+      x-speakeasy-name-override: SameNameHolder
+      x-speakeasy-model-namespace: beta
+      description: Holder with the same name as a holder in another model namespace.
+      type: object
+      properties:
+        choices:
+          type: array
+          items:
+            $ref: "#/components/schemas/beta_SameNameChoice"
+        shape:
+          $ref: "#/components/schemas/beta_SameNameShape"
+        itemMatrix:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: "#/components/schemas/beta_SameNameItem"
+        choicesByKey:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/beta_SameNameChoice"
+        maybeItem:
+          oneOf:
+            - $ref: "#/components/schemas/beta_SameNameItem"
+            - type: "null"
+        status:
+          $ref: "#/components/schemas/beta_SameNameStatus"
+        statuses:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/beta_SameNameStatus"
+              - type: "null"
+        settings:
+          type: object
+          additionalProperties:
+            oneOf:
+              - $ref: "#/components/schemas/beta_SameNameItem"
+              - type: string
+    alpha_SameNameStatus:
+      x-speakeasy-name-override: SameNameStatus
+      x-speakeasy-model-namespace: alpha
+      x-speakeasy-unknown-values: disallow
+      description: Closed enum with the same name as an enum in another model namespace.
+      type: string
+      enum:
+        - active
+        - inactive
+    beta_SameNameStatus:
+      x-speakeasy-name-override: SameNameStatus
+      x-speakeasy-model-namespace: beta
+      x-speakeasy-unknown-values: disallow
+      description: Closed enum with the same name as an enum in another model namespace.
+      type: string
+      enum:
+        - active
+        - inactive
+    alpha_SameNameChoice:
+      x-speakeasy-name-override: SameNameChoice
+      x-speakeasy-model-namespace: alpha
+      description: Undiscriminated union with the same name as a union in another model namespace.
+      oneOf:
+        - $ref: "#/components/schemas/alpha_SameNameItem"
+        - type: string
+    beta_SameNameChoice:
+      x-speakeasy-name-override: SameNameChoice
+      x-speakeasy-model-namespace: beta
+      description: Undiscriminated union with the same name as a union in another model namespace.
+      oneOf:
+        - $ref: "#/components/schemas/beta_SameNameItem"
+        - type: integer
+    alpha_SameNameShape:
+      x-speakeasy-name-override: SameNameShape
+      x-speakeasy-model-namespace: alpha
+      description: Discriminated union with the same name as a union in another model namespace.
+      oneOf:
+        - $ref: "#/components/schemas/alpha_SameNameCircle"
+        - $ref: "#/components/schemas/alpha_SameNameSquare"
+      discriminator:
+        propertyName: kind
+        mapping:
+          circle: "#/components/schemas/alpha_SameNameCircle"
+          square: "#/components/schemas/alpha_SameNameSquare"
+    beta_SameNameShape:
+      x-speakeasy-name-override: SameNameShape
+      x-speakeasy-model-namespace: beta
+      description: Discriminated union with the same name as a union in another model namespace.
+      oneOf:
+        - $ref: "#/components/schemas/beta_SameNameCircle"
+        - $ref: "#/components/schemas/beta_SameNameSquare"
+      discriminator:
+        propertyName: kind
+        mapping:
+          circle: "#/components/schemas/beta_SameNameCircle"
+          square: "#/components/schemas/beta_SameNameSquare"
+    alpha_SameNameCircle:
+      x-speakeasy-name-override: SameNameCircle
+      x-speakeasy-model-namespace: alpha
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - circle
+        radius:
+          type: number
+      required:
+        - kind
+    alpha_SameNameSquare:
+      x-speakeasy-name-override: SameNameSquare
+      x-speakeasy-model-namespace: alpha
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - square
+        side:
+          type: number
+      required:
+        - kind
+    beta_SameNameCircle:
+      x-speakeasy-name-override: SameNameCircle
+      x-speakeasy-model-namespace: beta
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - circle
+        radius:
+          type: number
+      required:
+        - kind
+    beta_SameNameSquare:
+      x-speakeasy-name-override: SameNameSquare
+      x-speakeasy-model-namespace: beta
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - square
+        side:
+          type: number
+      required:
+        - kind

@@ -1,0 +1,7 @@
+namespace {{getGeneratorsPackageId}}.Enum;
+
+internal enum EnumType
+{
+    String = 0,
+    Int = 1,
+}

@@ -1,0 +1,281 @@
+#nullable enable
+namespace {{getModelNamespace ""}}
+{
+    using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization.Metadata;
+
+    /// <summary>
+    /// Structural fit of a JSON payload against a candidate union variant. Ranking prefers fewer
+    /// nested <see cref="Unknown"/> values, more <see cref="Matched"/> declared properties present in
+    /// the JSON, fewer <see cref="Overflow"/> undeclared JSON properties, then fewer
+    /// <see cref="Missing"/> variant properties absent from the JSON. When the earlier counts
+    /// tie, Missing favors a narrower variant over one with extra optional properties.
+    /// </summary>
+    internal readonly struct UnionScore
+    {
+        public readonly int Overflow;
+        public readonly int Missing;
+        public readonly int Unknown;
+        public readonly int Matched;
+
+        public UnionScore(int overflow, int missing, int unknown = 0, int matched = 0)
+        {
+            Overflow = overflow;
+            Missing = missing;
+            Unknown = unknown;
+            Matched = matched;
+        }
+
+        public static readonly UnionScore Zero = new UnionScore(0, 0);
+
+        public static UnionScore operator +(UnionScore a, UnionScore b) =>
+            new UnionScore(
+                a.Overflow + b.Overflow,
+                a.Missing + b.Missing,
+                a.Unknown + b.Unknown,
+                a.Matched + b.Matched
+            );
+
+        // Lower is a better fit: fewer unknown, more matched, fewer overflow, then fewer missing.
+        public int CompareTo(UnionScore other)
+        {
+            int c = Unknown.CompareTo(other.Unknown);
+            if (c != 0)
+            {
+                return c;
+            }
+            c = other.Matched.CompareTo(Matched);
+            if (c != 0)
+            {
+                return c;
+            }
+            c = Overflow.CompareTo(other.Overflow);
+            if (c != 0)
+            {
+                return c;
+            }
+            return Missing.CompareTo(other.Missing);
+        }
+    }
+
+    /// <summary>
+    /// Structural scoring helper for undiscriminated-union deserialization. Recurses through
+    /// nested objects and array/collection elements, accumulating a <see cref="UnionScore"/>
+    /// against a candidate variant's source-generated metadata. Lower scores mean a tighter fit,
+    /// so the widest structural match wins instead of the first-declared variant that merely
+    /// tolerates the extra fields (System.Text.Json ignores unmatched properties on read).
+    /// </summary>
+    internal static class UnionScoring
+    {
+        // Maps a union CLR type to its variant CLR types, so a nested union (whose own
+        // JsonTypeInfo is converter-based, not Object-kind) can be scored by its variants.
+        // Populated by each union's converter factory.
+        private static readonly ConcurrentDictionary<global::System.Type, global::System.Type[]> UnionVariants =
+            new ConcurrentDictionary<global::System.Type, global::System.Type[]>();
+
+        // Non-nullable open unions, which read JSON null as Unknown.
+        private static readonly ConcurrentDictionary<global::System.Type, bool> NullReadsAsUnknown =
+            new ConcurrentDictionary<global::System.Type, bool>();
+
+        public static void RegisterUnion(global::System.Type unionType, global::System.Type[] variantTypes)
+        {
+            UnionVariants[unionType] = variantTypes;
+        }
+
+        public static void RegisterNullAsUnknown(global::System.Type unionType)
+        {
+            NullReadsAsUnknown[unionType] = true;
+        }
+
+        public static UnionScore Score(
+            JsonElement element,
+            JsonTypeInfo? typeInfo,
+            JsonSerializerOptions options
+        )
+        {
+            return Score(element, typeInfo, options, 0);
+        }
+
+        private static UnionScore Score(
+            JsonElement element,
+            JsonTypeInfo? typeInfo,
+            JsonSerializerOptions options,
+            int depth
+        )
+        {
+            // Depth cap guards against pathological self-referential metadata graphs.
+            if (typeInfo == null || depth > 10)
+            {
+                return UnionScore.Zero;
+            }
+
+            if (element.ValueKind == JsonValueKind.Null && NullReadsAsUnknown.ContainsKey(typeInfo.Type))
+            {
+                return new UnionScore(0, 0, 1);
+            }
+
+            // Nested union: score by its tightest-fitting variant, not its opaque metadata.
+            if (UnionVariants.TryGetValue(typeInfo.Type, out var variantTypes))
+            {
+                UnionScore? best = null;
+                foreach (var variantType in variantTypes)
+                {
+                    var score = Score(
+                        element,
+                        ResolveTypeInfo(variantType, options),
+                        options,
+                        depth + 1
+                    );
+                    if (best == null || score.CompareTo(best.Value) < 0)
+                    {
+                        best = score;
+                    }
+                }
+                return best ?? UnionScore.Zero;
+            }
+
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    if (typeInfo.Kind == JsonTypeInfoKind.Dictionary)
+                    {
+                        var valueType = GetDictionaryValueType(typeInfo.Type);
+                        if (valueType == null)
+                        {
+                            return UnionScore.Zero;
+                        }
+                        var valueTypeInfo = ResolveTypeInfo(valueType, options);
+                        var values = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+                        foreach (var entry in element.EnumerateObject())
+                        {
+                            values[entry.Name] = entry.Value;
+                        }
+                        var valuesScore = UnionScore.Zero;
+                        foreach (var value in values.Values)
+                        {
+                            valuesScore += Score(value, valueTypeInfo, options, depth + 1);
+                        }
+                        return valuesScore;
+                    }
+
+                    // Only object-shaped metadata yields a property-fit signal.
+                    // Dictionary / freeform objects declare no properties and must not
+                    // be penalized — they legitimately accept arbitrary keys.
+                    if (typeInfo.Kind != JsonTypeInfoKind.Object || typeInfo.Properties.Count == 0)
+                    {
+                        return UnionScore.Zero;
+                    }
+
+                    var propertyNameComparer = typeInfo.Options.PropertyNameCaseInsensitive
+                        ? StringComparer.OrdinalIgnoreCase
+                        : StringComparer.Ordinal;
+                    var known = new Dictionary<string, JsonPropertyInfo>(propertyNameComparer);
+                    foreach (var prop in typeInfo.Properties)
+                    {
+                        if (prop.IsExtensionData || (prop.Get is null && prop.Set is null))
+                        {
+                            continue;
+                        }
+                        known[prop.Name] = prop;
+                    }
+
+                    if (known.Count == 0)
+                    {
+                        return UnionScore.Zero;
+                    }
+
+                    var matched = new Dictionary<JsonPropertyInfo, JsonElement>();
+                    var result = UnionScore.Zero;
+                    foreach (var jsonProp in element.EnumerateObject())
+                    {
+                        if (known.TryGetValue(jsonProp.Name, out var propInfo))
+                        {
+                            matched[propInfo] = jsonProp.Value;
+                        }
+                        else
+                        {
+                            result += new UnionScore(1, 0);
+                        }
+                    }
+
+                    foreach (var entry in matched)
+                    {
+                        result += Score(
+                            entry.Value,
+                            ResolveTypeInfo(entry.Key.PropertyType, options),
+                            options,
+                            depth + 1
+                        );
+                    }
+                    // Variant properties the JSON never supplied — penalizes a wider variant
+                    // that merely tolerates the payload over a narrower exact-shape variant.
+                    int missing = known.Count - matched.Count;
+                    return result + new UnionScore(0, missing, matched: matched.Count);
+
+                case JsonValueKind.Array:
+                    var elementType = GetElementType(typeInfo.Type);
+                    if (elementType == null)
+                    {
+                        return UnionScore.Zero;
+                    }
+                    var elementTypeInfo = ResolveTypeInfo(elementType, options);
+                    var sum = UnionScore.Zero;
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        sum += Score(item, elementTypeInfo, options, depth + 1);
+                    }
+                    return sum;
+
+                default:
+                    return UnionScore.Zero;
+            }
+        }
+
+        private static JsonTypeInfo? ResolveTypeInfo(global::System.Type type, JsonSerializerOptions options)
+        {
+            try
+            {
+                return options.GetTypeInfo(type);
+            }
+            catch (global::System.Exception)
+            {
+                return null;
+            }
+        }
+
+        private static global::System.Type? GetDictionaryValueType(global::System.Type type)
+        {
+            if (type.IsGenericType)
+            {
+                var args = type.GetGenericArguments();
+                if (args.Length == 2)
+                {
+                    return args[1];
+                }
+            }
+            return null;
+        }
+
+        // JsonTypeInfo exposes no element type, so derive it from the CLR type.
+        // Metadata-only reflection (IsArray / generic type arguments) is trim/AOT-safe.
+        private static global::System.Type? GetElementType(global::System.Type type)
+        {
+            if (type.IsArray)
+            {
+                return type.GetElementType();
+            }
+            if (type.IsGenericType)
+            {
+                var args = type.GetGenericArguments();
+                if (args.Length == 1)
+                {
+                    return args[0];
+                }
+            }
+            return null;
+        }
+    }
+}

@@ -80,6 +80,7 @@ func TestGetSupportedSDKTargets_DEBUG_Success(t *testing.T) {
 	assert.Equal(t, []types.Target{
 		{Target: "cli", Template: "cli", Maturity: "Beta"},
 		{Target: "csharp", Template: "csharp", Maturity: "GA"},
+		{Target: "csharp", Template: "csharpv2", Maturity: "GA"},
 		{Target: "go", Template: "go", Maturity: "GA"},
 		{Target: "java", Template: "javav2", Maturity: "GA"},
 		{Target: "mockserver", Template: "mockserver", Maturity: "Alpha"},
