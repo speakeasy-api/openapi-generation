@@ -559,16 +559,12 @@ func asyncElapsed(elapsed time.Duration) string {
 }
 
 // asyncFailureDetail extracts the human failure message through the
-// declared bindings (default "error"/"message").
+// declared bindings (default "error"/"message"). The error member may be an
+// object, a string, or an array of either; the first message found is used.
 func asyncFailureDetail(cfg *asyncConfig, payload interface{}) string {
 	object, ok := payload.(map[string]interface{})
 	if !ok {
 		return ""
 	}
-	errorMember, ok := object[cfg.ErrorField].(map[string]interface{})
-	if !ok {
-		return ""
-	}
-	message, _ := errorMember[cfg.ErrorMessageField].(string)
-	return message
+	return outcomeDetailMessage(object[cfg.ErrorField], cfg.ErrorMessageField)
 }
