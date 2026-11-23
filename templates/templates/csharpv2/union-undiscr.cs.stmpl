@@ -133,7 +133,7 @@
             return new {{$className}}Converter(
               {{- range $i, $v := getUnionVariants .Local.Type}}
                 {{- if $i}},{{end}}
-                (System.Text.Json.Serialization.Metadata.JsonTypeInfo<{{$v.CsType}}>)options.GetTypeInfo(typeof({{$v.CsType}}))!
+                {{$v.TypeInfo}}
               {{- end}});
         }
     }

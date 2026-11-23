@@ -123,9 +123,19 @@ declare global {
   function getDataTypeFormat(request: RequestDef): string;
   function canTypeBeNull(typeDef: TypeDef): boolean;
   function canFieldBeNull(field: FieldDef): boolean;
+  function bodyVariantOverloadTargets(op: Operation): {
+    bodyIndex: number;
+    conversions: { Member: TypeDef }[];
+  };
 
   // models.ts (csharp v1, presence-aware serialization)
   function needsOptionalNullableWrapper(fieldDef: FieldDef): boolean;
+  function getJsonAnnotation(fieldDef: FieldDef): JSONAnnotation | undefined;
+
+  // annotations.ts (csharp v1)
+  function requiredState(
+    fieldDef: FieldDef,
+  ): "Always" | "AllowNull" | "DisallowNull" | "Default";
 
   // sanitization.ts (csharp v1)
   function isValueType(typeDef: TypeDef): boolean;
@@ -133,7 +143,10 @@ declare global {
   // form.ts (csharpv2 v2)
   function templateApplyFormBody(op: Operation): string;
   function jsonTypeInfoRef(typeDef: TypeDef): string;
-  function csharpTypeForJsonContext(typeDef: TypeDef): string;
+  function csharpTypeForJsonContext(
+    typeDef: TypeDef,
+    annotateNullableReferenceItems?: boolean,
+  ): string;
 
   // multipart.ts (csharpv2 v2)
   function templateApplyMultipartBody(op: Operation): string;

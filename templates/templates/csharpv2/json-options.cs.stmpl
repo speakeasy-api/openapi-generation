@@ -1,11 +1,12 @@
-{{- $utils := getScopeNamespace "utils" true -}}
-
 #nullable enable
 
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Numerics;
+{{- if requiresNodatime}}
+using NodaTime;
+{{- end}}
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -34,17 +35,54 @@ internal static class JsonOptions
                     prop.CustomConverter = _objectConverter;
                 }
             }
-        });
+        }).WithAddedModifier(RejectExplicitNull);
 
     internal static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
     {
         TypeInfoResolver = _resolverChain,
+        NumberHandling = JsonNumberHandling.{{.Local.NumberHandling}},
         Converters =
         {
-            _objectConverter,
-            new {{$utils}}.BigIntegerJsonConverterFactory(),
-            new {{$utils}}.DecimalJsonConverterFactory(),
-            new {{$utils}}.DateTimeJsonConverterFactory(),
+{{- range .Local.Converters}}
+            {{.}},
+{{- end}}
         }
     };
+
+    private static readonly Dictionary<Type, (string JsonName, bool Required)[]> _nullCheckedFields =
+        new Dictionary<Type, (string JsonName, bool Required)[]>
+        {
+{{- range .Local.NullCheckedTypes}}
+            [typeof({{.Type}})] = new[] { {{- range $i, $f := .Fields}}{{if $i}},{{end}} ("{{$f.JsonName}}", {{$f.Required}}){{end}} },
+{{- end}}
+        };
+
+    private static void RejectExplicitNull(JsonTypeInfo typeInfo)
+    {
+        if (!_nullCheckedFields.TryGetValue(typeInfo.Type, out var fields)) return;
+        foreach (var prop in typeInfo.Properties)
+        {
+            if (prop.Set is not { } set) continue;
+            if (prop.PropertyType.IsValueType && Nullable.GetUnderlyingType(prop.PropertyType) is null) continue;
+            foreach (var (jsonName, required) in fields)
+            {
+                if (prop.Name != jsonName) continue;
+                var message = required
+                    ? $"Required property '{jsonName}' expects a value but got null."
+                    : $"Required property '{jsonName}' expects a non-null value.";
+                prop.Set = (obj, value) =>
+                {
+                    if (IsJsonNull(value)) throw new JsonException(message);
+                    set(obj, value);
+                };
+                break;
+            }
+        }
+    }
+
+    private static bool IsJsonNull(object? value) =>
+        value is null
+{{- if .Local.HasOpenUnion}}
+        || value is global::{{getModelNamespace ""}}.IOpenUnion union && union.GetUnknownRaw() is { ValueKind: JsonValueKind.Null }
+{{- end}};
 }

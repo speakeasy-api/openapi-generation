@@ -23,4 +23,6 @@
         }
 
         bool global::{{getModelNamespace ""}}.IOpenUnion.IsUnknown() => Is{{$unknownMember}}();
+
+        System.Text.Json.JsonElement? global::{{getModelNamespace ""}}.IOpenUnion.GetUnknownRaw() => {{$unknownMember}}Raw;
 {{- end -}}

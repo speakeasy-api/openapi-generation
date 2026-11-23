@@ -9,15 +9,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageId>{{getGeneratorsPackageId}}</PackageId>
+    <IsPackable>false</IsPackable>
     <Version>{{.Global.Config.SDKVersion}}</Version>
-    <Description>AOT-safe source generators for {{getPackageId}}</Description>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <DevelopmentDependency>true</DevelopmentDependency>
     <!-- Suppressed warnings:
-         - NU5128: no runtime DLL ships; compile-time-only tool emits AOT-safe code.
          - RS1041: tool targets netstandard2.1: legacy .NET Framework MSBuild not supported. -->
-    <NoWarn>$(NoWarn);NU5128;RS1041</NoWarn>
+    <NoWarn>$(NoWarn);RS1041</NoWarn>
   </PropertyGroup>
 
   <!-- Auto-detected from $(NETCoreSdkVersion): SDK >= 9.0.300 ships Roslyn >= 4.14.0 which supports
@@ -44,10 +40,4 @@
     <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="$(OutputPath)$(AssemblyName).dll"
-          Pack="true"
-          PackagePath="analyzers/dotnet/cs"
-          Visible="false" />
-  </ItemGroup>
 </Project>

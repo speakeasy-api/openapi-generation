@@ -43,3 +43,4 @@ csharp:
   enableCancellationToken: true
   enableFormatting: true
   useNodatime: false
+  bodyVariantOverloads: true

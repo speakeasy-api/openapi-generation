@@ -135,16 +135,20 @@ public class AttributeInjector : IIncrementalGenerator
                 """);
 
             // ── Union converters ──────────────────────────────────────────────────
-            // [DiscriminatorValue("type_value")]
+            // [DiscriminatorValue("type_value", Factory = "CreateTypeValue")]
             // Applied to: property on a discriminated union class, names the variant.
             // Used by: UnionGenerator
             ctx.AddSource("DiscriminatorValueAttribute.g.cs", $$"""
+                #nullable enable
+
                 namespace {{getGeneratorsPackageId}}.Union;
 
                 [System.AttributeUsage(System.AttributeTargets.Property, AllowMultiple = true)]
                 {{interp "EmbeddedMarker"}}internal sealed class DiscriminatorValueAttribute : System.Attribute
                 {
                     public string Value { get; }
+
+                    public string? Factory { get; set; }
 
                     public DiscriminatorValueAttribute(string value) => Value = value;
                 }

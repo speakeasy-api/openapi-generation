@@ -48,13 +48,18 @@ function formSerializerRef(typeDef: TypeDef): string {
   )}.${sanitizeClassName(typeDef.Name)}FormSerializer`;
 }
 
+function formFieldName(
+  field: FieldDef,
+  annotation: FormAnnotation | null,
+): string {
+  return annotation?.Name || getJsonAnnotationName(field) || field.Name;
+}
+
 function formWireName(
   field: FieldDef,
   annotation: FormAnnotation | null,
 ): string {
-  return escapeString(
-    annotation?.Name || getJsonAnnotationName(field) || field.Name,
-  );
+  return escapeString(formFieldName(field, annotation));
 }
 
 function formExplode(annotation: FormAnnotation | null): boolean {
@@ -101,21 +106,31 @@ function isDistinctNullableValueKind(typeDef: TypeDef): boolean {
 }
 
 // Renders a collection element for the JsonContext
-function jsonContextItemType(typeDef: TypeDef): string {
+function jsonContextItemType(
+  typeDef: TypeDef,
+  annotateNullableReferenceItems: boolean,
+): string {
   if (!typeDef.ItemType) {
     throw new Error(
       `jsonContextItemType: collection "${typeDef.Name}" (kind ${typeDef.Type}) has no ItemType`,
     );
   }
-  const contextType = csharpTypeForJsonContext(typeDef.ItemType);
+  const contextType = csharpTypeForJsonContext(
+    typeDef.ItemType,
+    annotateNullableReferenceItems,
+  );
 
   // A nullable value-type element inside a List<>/Dictionary<> must be rendered as
   // `T?` in the JsonContext so the registered JsonTypeInfo<T> matches the model's
   // declared collection element type; otherwise typed AddJson<T> cannot infer T
+  if (typeDef.ContainsNull && isDistinctNullableValueKind(typeDef.ItemType)) {
+    return `${contextType}?`;
+  }
+
   if (
+    annotateNullableReferenceItems &&
     typeDef.ContainsNull &&
-    isValueType(typeDef.ItemType) &&
-    typeDef.ItemType.Type?.toString() !== "enum"
+    !isValueType(typeDef.ItemType)
   ) {
     return `${contextType}?`;
   }
@@ -123,7 +138,10 @@ function jsonContextItemType(typeDef: TypeDef): string {
   return contextType;
 }
 
-function csharpTypeForJsonContext(typeDef: TypeDef): string {
+function csharpTypeForJsonContext(
+  typeDef: TypeDef,
+  annotateNullableReferenceItems = false,
+): string {
   switch (typeDef.Type.toString()) {
     case "class":
     case "enum":
@@ -142,10 +160,14 @@ function csharpTypeForJsonContext(typeDef: TypeDef): string {
         true,
       )}.${sanitizeClassName(typeDef.Name)}Payload`;
     case "array":
-      return `System.Collections.Generic.List<${jsonContextItemType(typeDef)}>`;
+      return `System.Collections.Generic.List<${jsonContextItemType(
+        typeDef,
+        annotateNullableReferenceItems,
+      )}>`;
     case "map":
       return `System.Collections.Generic.Dictionary<string, ${jsonContextItemType(
         typeDef,
+        annotateNullableReferenceItems,
       )}>`;
     default: {
       const raw = sanitizeType(typeDef, false, "");
@@ -155,22 +177,185 @@ function csharpTypeForJsonContext(typeDef: TypeDef): string {
   }
 }
 
-function scalarValueExpr(prop: string, field: FieldDef): string {
-  if (field.Type.Type.toString() !== "enum") return prop;
-
-  const enumType = field.Type.Enum?.Type?.Type?.toString();
-  const supported =
+function isWireEnum(typeDef: TypeDef | undefined): boolean {
+  if (typeDef?.Type.toString() !== "enum") return false;
+  const enumType = typeDef.Enum?.Type?.Type?.toString();
+  return (
     enumType === "string" ||
     enumType === "int32" ||
     enumType === "int64" ||
-    enumType === "integer";
-  if (!supported) return prop;
+    enumType === "integer"
+  );
+}
 
-  if (field.Nullable || field.Optional) {
-    prop += "?";
+// Utilities.ValueToString cannot map a closed enum to its wire value without reflection
+// (it would emit the member name) and does not know class-based open enums, so enum values,
+// including collection items, are converted at the call site.
+function wireValueExpr(
+  access: string,
+  typeDef: TypeDef,
+  nullable: boolean,
+): string {
+  const kind = typeDef.Type.toString();
+  if (isWireEnum(typeDef)) {
+    const acc = nullable ? `${access}?` : access;
+    return typeDef.Enum?.Open ? `${acc}.Value` : `${acc}.Value()`;
   }
+  if ((kind !== "array" && kind !== "map") || !isWireEnum(typeDef.ItemType)) {
+    return access;
+  }
+  return projectItemsExpr(access, typeDef, nullable, (v) =>
+    wireValueExpr(v, typeDef.ItemType, typeDef.ContainsNull),
+  );
+}
 
-  return field.Type.Enum?.Open ? `${prop}.Value` : `${prop}.Value()`;
+function projectItemsExpr(
+  access: string,
+  collection: TypeDef,
+  nullable: boolean,
+  item: (itemAccess: string) => string,
+): string {
+  const linq = "global::System.Linq.Enumerable";
+  const projected =
+    collection.Type.toString() === "array"
+      ? `${linq}.ToList(${linq}.Select(${access}, __e => ${item("__e")}))`
+      : `${linq}.ToDictionary(${access}, __kv => __kv.Key, __kv => ${item(
+          "__kv.Value",
+        )})`;
+  return nullable ? `(${access} == null ? null : ${projected})` : projected;
+}
+
+function isUnionType(typeDef: TypeDef | undefined): boolean {
+  return typeDef?.Type.toString() === "union";
+}
+
+function formValueExpr(
+  access: string,
+  typeDef: TypeDef,
+  nullable: boolean,
+): string {
+  const kind = typeDef.Type.toString();
+  if ((kind === "array" || kind === "map") && isUnionType(typeDef.ItemType)) {
+    return projectItemsExpr(access, typeDef, nullable, (v) =>
+      formItemValueExpr(v, typeDef.ItemType, typeDef.ContainsNull),
+    );
+  }
+  return wireValueExpr(access, typeDef, nullable);
+}
+
+function formItemValueExpr(
+  access: string,
+  itemType: TypeDef,
+  nullable: boolean,
+): string {
+  return isUnionType(itemType)
+    ? unionItemValueExpr(access, itemType, access, itemType)
+    : wireValueExpr(access, itemType, nullable);
+}
+
+function unionVariants(
+  typeDef: TypeDef,
+): Array<{ property: string; variant: TypeDef }> {
+  const variants = typeDef.Discriminator?.Mapping
+    ? typeDef.Discriminator.Mapping.map((m) => m.Type)
+    : typeDef.AssociatedTypes ?? [];
+  const seen = new Set<string>();
+  const result: Array<{ property: string; variant: TypeDef }> = [];
+  for (const variant of variants) {
+    const property = sanitizeFieldName(sanitizeUnionTypeName(variant));
+    if (seen.has(property)) continue;
+    seen.add(property);
+    result.push({ property, variant });
+  }
+  return result;
+}
+
+function unknownPrimitiveExpr(access: string): string {
+  const utilsNs = getScopeNamespace("utils", true);
+  return `global::${utilsNs}.Utilities.UnknownPrimitiveToString(((global::${getModelNamespace(
+    "",
+  )}.IOpenUnion)${access}).GetUnknownRaw())`;
+}
+
+function unionItemValueExpr(
+  access: string,
+  unionType: TypeDef,
+  itemAccess: string,
+  itemType: TypeDef,
+): string {
+  const branches = unionVariants(unionType).map(({ property, variant }) => {
+    const variantAccess = `${access}.${property}`;
+    let value: string;
+    switch (variant.Type.toString()) {
+      case "union":
+        value = unionItemValueExpr(
+          variantAccess,
+          variant,
+          itemAccess,
+          itemType,
+        );
+        break;
+      case "array":
+      case "map":
+      case "class":
+        value = `global::System.Text.Json.JsonSerializer.Serialize(${itemAccess}, ${jsonTypeInfoRef(
+          itemType,
+        )})`;
+        break;
+      default:
+        value = wireValueExpr(variantAccess, variant, true);
+    }
+    return `${variantAccess} != null ? (object?)${value}`;
+  });
+  if (branches.length === 0 && !unionType.IsUnionOpen) return "(object?)null";
+  const fallback = unionType.IsUnionOpen
+    ? unknownPrimitiveExpr(access)
+    : "null";
+  return `(${access} == null ? null : ${[...branches, fallback].join(" : ")})`;
+}
+
+let unionLocalCounter = 0;
+
+function resetUnionLocals(): void {
+  unionLocalCounter = 0;
+}
+
+function emitUnionVariants(
+  sourceExpr: string,
+  typeDef: TypeDef,
+  emitVariant: (access: string, variant: TypeDef) => string[],
+  emitUnknown: ((unknownExpr: string) => string[]) | null,
+  guarded: boolean,
+): string[] {
+  const isLocal = /^[A-Za-z_][A-Za-z0-9_]*$/.test(sourceExpr);
+  const union = isLocal ? sourceExpr : `__union${unionLocalCounter++}`;
+  const branches = unionVariants(typeDef).map(({ property, variant }) => {
+    const access = `${union}.${property}`;
+    return `if (${access} != null)
+{
+${indentString(emitVariant(access, variant).join("\n"), 1)}
+}`;
+  });
+  if (typeDef.IsUnionOpen && emitUnknown) {
+    branches.push(`{
+${indentString(emitUnknown(unknownPrimitiveExpr(union)).join("\n"), 1)}
+}`);
+  }
+  if (branches.length === 0) return [];
+  const chain = branches.join("\nelse ");
+  if (isLocal) return [chain];
+  if (guarded) return [`var ${union} = ${sourceExpr};\n${chain}`];
+  return [
+    `var ${union} = ${sourceExpr};
+if (${union} != null)
+{
+${indentString(chain, 1)}
+}`,
+  ];
+}
+
+function scalarValueExpr(prop: string, field: FieldDef): string {
+  return wireValueExpr(prop, field.Type, field.Nullable || field.Optional);
 }
 
 function jsonTypeInfoName(typeDef: TypeDef): string {
@@ -225,14 +410,7 @@ function jsonTypeInfoNameForContextType(contextType: string): string {
 }
 
 function jsonTypeInfoRef(typeDef: TypeDef): string {
-  let outputLocation = typeDef.OutputLocation || "";
-  const kind = typeDef.Type?.toString() ?? "";
-  if (!outputLocation && (kind === "array" || kind === "map")) {
-    outputLocation = typeDef.ItemType?.OutputLocation || "";
-  }
-  return `global::${getJsonContextNamespace(
-    outputLocation,
-  )}.${getJsonContextClassName(outputLocation)}.Default.${jsonTypeInfoName(
+  return `global::${getJsonContextNamespace()}.JsonTypeInfos.${jsonTypeInfoName(
     typeDef,
   )}`;
 }
@@ -266,11 +444,31 @@ function emitFormField(
 
   switch (field.Type.Type.toString()) {
     case "array":
-      return [`${fs}.AddList(${pairsVar}, "${name}", ${prop}, ${explode});`];
+      return [
+        `${fs}.AddList(${pairsVar}, "${name}", ${formValueExpr(
+          prop,
+          field.Type,
+          true,
+        )}, ${explode});`,
+      ];
     case "map":
-      return [`${fs}.AddMap(${pairsVar}, "${name}", ${prop}, ${explode});`];
+      return [
+        `${fs}.AddMap(${pairsVar}, "${name}", ${formValueExpr(
+          prop,
+          field.Type,
+          true,
+        )}, ${explode});`,
+      ];
     case "class":
       return emitFormObject(pairsVar, prop, field.Type, name, explode);
+    case "union":
+      return emitFormUnion(
+        pairsVar,
+        prop,
+        field.Type,
+        formFieldName(field, annotation),
+        true,
+      );
     default:
       return [
         `${fs}.AddScalar(${pairsVar}, "${name}", ${scalarValueExpr(
@@ -291,6 +489,7 @@ function isScalarFormField(
     case "array":
     case "map":
     case "class":
+    case "union":
       return false;
     default:
       return true;
@@ -401,49 +600,90 @@ ${indentString(nestedLines.join("\n"), 2)}
 function emitDirectFormBody(
   pairsVar: string,
   sourceExpr: string,
-  bodyField: FieldDef,
+  typeDef: TypeDef,
+  name: string,
+  nullable = true,
+  guarded = false,
 ): string[] {
   const utilsNs = getScopeNamespace("utils", true);
   const fs = `global::${utilsNs}.FormSerializer`;
-  switch (bodyField.Type.Type.toString()) {
+  const guard = (body: string): string[] => [
+    guarded
+      ? body
+      : `if (${sourceExpr} != null)
+{
+${indentString(body, 1)}
+}`,
+  ];
+  switch (typeDef.Type.toString()) {
     case "map":
-      return [
-        `if (${sourceExpr} != null)
+      return guard(`foreach (var kv in ${sourceExpr})
 {
-    foreach (var kv in ${sourceExpr})
-    {
-        ${pairsVar}.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(kv.Key, global::${utilsNs}.Utilities.ValueToString(kv.Value)));
-    }
-}`,
-      ];
+    ${pairsVar}.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(kv.Key, global::${utilsNs}.Utilities.ValueToString(${formItemValueExpr(
+      "kv.Value",
+      typeDef.ItemType,
+      typeDef.ContainsNull,
+    )})));
+}`);
     case "array":
-      return [
-        `if (${sourceExpr} != null)
-{
-    ${fs}.AddList(${pairsVar}, "${escapeString(
-      bodyField.Name,
-    )}", ${sourceExpr}, true);
-}`,
-      ];
+      return guard(
+        `${fs}.AddList(${pairsVar}, "${escapeString(name)}", ${formValueExpr(
+          sourceExpr,
+          typeDef,
+          false,
+        )}, true);`,
+      );
     case "class":
       return emitFormFields(
         pairsVar,
         sourceExpr,
-        bodyField.Type.Fields ?? [],
-        bodyField.Type,
+        typeDef.Fields ?? [],
+        typeDef,
       );
+    case "union":
+      return emitFormUnion(pairsVar, sourceExpr, typeDef, name, false, guarded);
     default:
       return [
-        `${fs}.AddScalar(${pairsVar}, "${escapeString(
-          bodyField.Name,
-        )}", ${sourceExpr});`,
+        `${fs}.AddScalar(${pairsVar}, "${escapeString(name)}", ${wireValueExpr(
+          sourceExpr,
+          typeDef,
+          nullable,
+        )});`,
       ];
   }
+}
+
+function emitFormUnion(
+  pairsVar: string,
+  sourceExpr: string,
+  typeDef: TypeDef,
+  name: string,
+  withUnknown: boolean,
+  guarded = false,
+): string[] {
+  const fs = `global::${getScopeNamespace("utils", true)}.FormSerializer`;
+  return emitUnionVariants(
+    sourceExpr,
+    typeDef,
+    (access, variant) =>
+      isUnionType(variant)
+        ? emitFormUnion(pairsVar, access, variant, name, withUnknown, true)
+        : emitDirectFormBody(pairsVar, access, variant, name, true, true),
+    withUnknown
+      ? (unknownExpr) => [
+          `${fs}.AddScalar(${pairsVar}, "${escapeString(
+            name,
+          )}", ${unknownExpr});`,
+        ]
+      : null,
+    guarded,
+  );
 }
 
 // @ts-ignore
 function templateApplyFormBody(op: Operation): string {
   if (!op.Request?.RequestBody) return "";
+  resetUnionLocals();
 
   const request = op.Request;
   const bodyField = request.RequestBody;
@@ -474,7 +714,13 @@ function templateApplyFormBody(op: Operation): string {
           requestType.Fields ?? [],
           requestType,
         )
-      : emitDirectFormBody(pairsVar, sourceExpr, bodyField);
+      : emitDirectFormBody(
+          pairsVar,
+          sourceExpr,
+          bodyField.Type,
+          bodyField.Name,
+          bodyField.Nullable || bodyField.Optional,
+        );
 
   return `if (request == null)
 {

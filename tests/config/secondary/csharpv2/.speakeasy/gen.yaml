@@ -38,3 +38,4 @@ csharp:
   sourceDirectory: ""
   httpClientPrefix: ""
   useNodatime: true
+  bodyVariantOverloads: true

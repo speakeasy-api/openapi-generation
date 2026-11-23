@@ -29,6 +29,11 @@ namespace {{getScopeNamespace "utils"}}.Sse
         /// <param name="sentinelValue">Optional sentinel value that indicates end of stream.</param>
         /// <param name="dataRequired">Whether to skip events without a data field.</param>
         /// <param name="cancellationToken">Cancellation token honored by the enumerator.{{if isNetstandard2}} On netstandard2.0, cancellation is observed between lines; a pending read is not interrupted.{{end}}</param>
+        /// <remarks>
+        /// Enumeration disposes the response content stream when it completes or exits through
+        /// <c>break</c>, cancellation, or an exception. The sequence can be enumerated once;
+        /// later enumerations yield no events.
+        /// </remarks>
         public static async IAsyncEnumerable<T> AsAsyncEnumerable<T>(
             this HttpResponseMessage response,
             JsonTypeInfo<T> typeInfo,
@@ -53,7 +58,11 @@ namespace {{getScopeNamespace "utils"}}.Sse
             }
 
             var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            using var reader = new StreamReader(stream, Encoding.UTF8, {{if isNetstandard2}}detectEncodingFromByteOrderMarks: true, bufferSize: 1024, {{end}}leaveOpen: true);
+            if (!stream.CanRead)
+            {
+                yield break;
+            }
+            using var reader = new StreamReader(stream, Encoding.UTF8);
             var parser = new SseStreamParser(sentinelValue);
 
             string? line;
@@ -152,14 +161,17 @@ namespace {{getScopeNamespace "utils"}}.Sse
                     writer.WriteNumber("retry", ev.Retry.Value);
                 }
 
-                writer.WritePropertyName("data");
-                if (dataIsPlainText || string.IsNullOrWhiteSpace(ev.Data))
+                if (ev.Data != null)
                 {
-                    writer.WriteStringValue(ev.Data);
-                }
-                else
-                {
-                    writer.WriteRawValue(ev.Data!);
+                    writer.WritePropertyName("data");
+                    if (dataIsPlainText || string.IsNullOrWhiteSpace(ev.Data))
+                    {
+                        writer.WriteStringValue(ev.Data);
+                    }
+                    else
+                    {
+                        writer.WriteRawValue(ev.Data);
+                    }
                 }
 
                 writer.WriteEndObject();
