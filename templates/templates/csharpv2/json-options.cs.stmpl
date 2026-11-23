@@ -1,0 +1,50 @@
+{{- $utils := getScopeNamespace "utils" true -}}
+
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Numerics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+
+namespace {{.Local.Namespace}};
+
+internal static class JsonOptions
+{
+    private static readonly ObjectJsonConverter _objectConverter = new ObjectJsonConverter();
+
+    // Source-gen contexts bake STJ's built-in ObjectConverter into every
+    // JsonTypeInfo whose property type is `object`. That converter reads JSON
+    // as `JsonElement`, bypassing the runtime `ObjectJsonConverter` registered
+    // in SerializerOptions.Converters. WithAddedModifier walks each TypeInfo
+    // returned by the chain and swaps the per-property CustomConverter for
+    // `object`-typed slots, restoring native CLR type round-trips under AOT.
+    private static readonly IJsonTypeInfoResolver _resolverChain =
+        JsonTypeInfoResolver.Combine(
+            {{.Local.Resolvers}}
+        ).WithAddedModifier(static typeInfo =>
+        {
+            foreach (var prop in typeInfo.Properties)
+            {
+                if (prop.PropertyType == typeof(object) && prop.CustomConverter is null)
+                {
+                    prop.CustomConverter = _objectConverter;
+                }
+            }
+        });
+
+    internal static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
+    {
+        TypeInfoResolver = _resolverChain,
+        Converters =
+        {
+            _objectConverter,
+            new {{$utils}}.BigIntegerJsonConverterFactory(),
+            new {{$utils}}.DecimalJsonConverterFactory(),
+            new {{$utils}}.DateTimeJsonConverterFactory(),
+        }
+    };
+}

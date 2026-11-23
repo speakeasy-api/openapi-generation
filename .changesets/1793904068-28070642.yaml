@@ -1,0 +1,10 @@
+id: 1793904068-28070642
+features:
+    - unions
+targets:
+    - csharp
+type: feat
+bump: patch
+description: add templateVersion v2 with System.Text.Json source generation, trimming- and NativeAOT-safe
+author: 2ynn
+date: "2026-11-05"
