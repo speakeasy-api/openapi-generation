@@ -771,6 +771,14 @@ func TestRedactedMessageDropsMaskedValues(t *testing.T) {
 	if got := redactedMessage("request failed", "", redacted); got != "request failed" {
 		t.Fatalf("a message with no source body must be kept, got %q", got)
 	}
+	if got := redactedMessage("secret-value", raw, redacted); got != "(sensitive)" {
+		t.Fatalf("a message that is a masked field must be masked, got %q", got)
+	}
+	nested := `{"outer":{"token":"abc-secret","codes":[123456]}}`
+	nestedRedacted := `{"outer":"(sensitive)"}`
+	if got := redactedMessage("rejected abc-secret with 123456", nested, nestedRedacted); got != "rejected (sensitive) with (sensitive)" {
+		t.Fatalf("values under a masked subtree must be masked, got %q", got)
+	}
 }
 
 func TestStructuredErrorEnvelopeRedactsNonObjectBodyErrorText(t *testing.T) {

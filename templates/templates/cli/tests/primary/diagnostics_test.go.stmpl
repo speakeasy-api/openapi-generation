@@ -688,6 +688,49 @@ func TestErrorOutputRedactsSensitiveResponseFields(t *testing.T) {
 		})
 	}
 }
+
+func TestErrorOutputRedactsSensitiveErrorMessageField(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"detail":"canary-message","name":"visible-name"}`))
+	}))
+	defer s.Close()
+	for _, args := range [][]string{
+		{"--output-format", "pretty"},
+		{"--output-format", "json"},
+		{"--agent-mode"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, append(args, "response-bodies", "cli-sensitive-error-message-get"))
+			require.Error(t, err)
+			assert.NotContains(t, h.GetStdout()+h.GetStderr(), "canary-message")
+			assert.Contains(t, h.GetStderr(), redact.Mask)
+		})
+	}
+}
+
+func TestErrorOutputRedactsSensitiveFieldsOfSplitOperation(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"name":"visible-name","value":"canary-split"}`))
+	}))
+	defer s.Close()
+	for name, command := range map[string][]string{
+		"form":      {"cli-sensitive-split-response-post-form", "--name", "n", "--value", "v"},
+		"multipart": {"cli-sensitive-split-response-post-multipart", "--label", "l"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, append([]string{"--agent-mode", "response-bodies"}, command...))
+			require.Error(t, err)
+			assert.NotContains(t, h.GetStdout()+h.GetStderr(), "canary-split")
+			assert.Contains(t, h.GetStderr(), "visible-name")
+		})
+	}
+}
 {{- if hasRootVersionFlag}}
 
 func TestRootVersionFlagMatchesVersionCommand(t *testing.T) {

@@ -295,6 +295,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CliSensitiveResponse"
+  /anything/cli/sensitiveErrorMessage:
+    get:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveErrorMessageGet
+      description: >-
+        Error response whose designated error-message field is itself marked
+        sensitive. Error output must mask it in the reported message as well
+        as in the body, while keeping its unmarked sibling readable.
+      tags:
+        - responseBodies
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Rejected request whose message is sensitive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CliSensitiveErrorMessage"
+  /anything/cli/sensitiveSplitResponse:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveSplitResponsePost
+      description: >-
+        Operation split into one generated method per request content type
+        (form and multipart, no JSON), whose error response marks a field
+        sensitive. Error output must mask it whichever generated method the
+        command calls.
+      tags:
+        - responseBodies
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/CliPlainBodyFields"
+          multipart/form-data:
+            schema:
+              type: object
+              required: [label]
+              properties:
+                label:
+                  type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Rejected request echoing the sensitive field
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CliSensitiveResponse"
 components:
   schemas:
     CliSensitiveBodyFields:
@@ -569,6 +621,16 @@ components:
           properties:
             label:
               type: string
+    CliSensitiveErrorMessage:
+      type: object
+      required: [detail, name]
+      properties:
+        detail:
+          type: string
+          x-speakeasy-error-message: true
+          x-speakeasy-param-sensitive: true
+        name:
+          type: string
     CliSensitiveResponse:
       type: object
       required:
