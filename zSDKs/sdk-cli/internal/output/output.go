@@ -689,7 +689,7 @@ func renderUnclassifiedStructuredAPIError(cmd *cobra.Command, out io.Writer, err
 				}
 				envelope = object
 			} else {
-				wrapped := map[string]interface{}{"error": err.Error(), "body": parsed}
+				wrapped := map[string]interface{}{"error": redactedErrorText(err, classification), "body": parsed}
 				if statusCode != 0 {
 					wrapped["status_code"] = statusCode
 				}
@@ -701,7 +701,7 @@ func renderUnclassifiedStructuredAPIError(cmd *cobra.Command, out io.Writer, err
 		}
 	}
 	if envelope == nil {
-		wrapped := map[string]interface{}{"error": err.Error()}
+		wrapped := map[string]interface{}{"error": redactedErrorText(err, classification)}
 		if statusCode != 0 {
 			wrapped["status_code"] = statusCode
 		}
@@ -732,7 +732,7 @@ func renderUnclassifiedStructuredAPIError(cmd *cobra.Command, out io.Writer, err
 	}
 	jsonData, marshalErr := json.MarshalIndent(envelope, "", "  ")
 	if marshalErr != nil {
-		jsonData, _ = json.MarshalIndent(map[string]interface{}{"error": err.Error(), "exit_code": ExitCodeFor(classification)}, "", "  ")
+		jsonData, _ = json.MarshalIndent(map[string]interface{}{"error": redactedErrorText(err, classification), "exit_code": ExitCodeFor(classification)}, "", "  ")
 	}
 	colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
 	printScrubbedJSON(out, jsonData, ShouldColorize(colorFlag))
@@ -777,7 +777,7 @@ func renderStructuredError(cmd *cobra.Command, out io.Writer, err error, classif
 	jsonData, marshalErr := json.MarshalIndent(envelope, "", "  ")
 	if marshalErr != nil {
 		jsonData, _ = json.MarshalIndent(map[string]interface{}{
-			"error":      err.Error(),
+			"error":      redactedErrorText(err, classification),
 			"error_type": string(classification.Type),
 			"exit_code":  ExitCodeFor(classification),
 			"message":    classification.Message,
@@ -796,7 +796,7 @@ func classifiedErrorEnvelope(err error, classification Classification) map[strin
 			envelope[key] = value
 		}
 	} else {
-		envelope = map[string]interface{}{"error": err.Error()}
+		envelope = map[string]interface{}{"error": redactedErrorText(err, classification)}
 		if classification.Body != nil {
 			envelope["body"] = classification.Body
 		} else if classification.RawBody != "" {

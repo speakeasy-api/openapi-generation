@@ -280,7 +280,7 @@ func redactErrorBody(cmd *cobra.Command, err error, body string) string {
 // re-exposing what body redaction masked: typed error models render their
 // fields as JSON, and fallback errors embed the raw body.
 func redactedMessage(message, rawBody, redactedBody string) string {
-	if redactedBody == rawBody {
+	if redactedBody == rawBody || rawBody == "" {
 		return message
 	}
 	if strings.Contains(message, rawBody) {
@@ -290,6 +290,12 @@ func redactedMessage(message, rawBody, redactedBody string) string {
 		return redactedBody
 	}
 	return message
+}
+
+// redactedErrorText is err's own text with any response body it embeds
+// replaced by the classification's redacted copy.
+func redactedErrorText(err error, classification Classification) string {
+	return redactedMessage(err.Error(), extractErrorBody(err), classification.RawBody)
 }
 
 func parseClassificationBody(raw string, c *Classification) (map[string]any, map[string]any) {

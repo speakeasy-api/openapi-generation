@@ -213,7 +213,7 @@ func CLIError(cmd *cobra.Command, err error) error {
 	}
 
 	envelope := map[string]interface{}{
-		"error":     err.Error(),
+		"error":     redactedErrorText(err, classification),
 		"exit_code": ExitCodeFor(classification),
 	}
 	mergeMachineErrorFields(envelope, err)
