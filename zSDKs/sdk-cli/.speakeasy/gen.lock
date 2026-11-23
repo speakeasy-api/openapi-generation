@@ -300,7 +300,7 @@ trackedFiles:
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:d6aeaa02897f5b77ee672a2c6640aac0cfa0a190
+    last_write_checksum: sha1:f80f5bffa9c87e1ab77a13118614dfec0313f92b
   internal/output/streaming_test.go:
     last_write_checksum: sha1:ed4ffe1ebf27f5b32e69d0d2e4a377d47e1655c4
   internal/output/streamproject.go:

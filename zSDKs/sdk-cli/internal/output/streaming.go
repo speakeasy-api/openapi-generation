@@ -412,7 +412,8 @@ func streamErrorEvent(item interface{}, raw []byte) (json.RawMessage, bool) {
 		return nil, false
 	}
 	var frame map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &frame); err == nil {
+	frameErr := json.Unmarshal(raw, &frame)
+	if frameErr == nil {
 		if data := frame["data"]; strings.HasPrefix(strings.TrimSpace(string(data)), "{") {
 			return data, true
 		}
@@ -424,7 +425,10 @@ func streamErrorEvent(item interface{}, raw []byte) (json.RawMessage, bool) {
 		data, err := json.Marshal(wireStreamItem(item, raw, nil, false))
 		return data, err == nil
 	}
-	return nil, false
+	if frameErr != nil || len(frame["data"]) == 0 {
+		return nil, false
+	}
+	return frame["data"], true
 }
 
 func errorUnionValue(v reflect.Value) (reflect.Value, bool) {
