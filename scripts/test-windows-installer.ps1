@@ -66,9 +66,20 @@ function global:Invoke-RestMethod {
     throw 'the installer must not look up the latest release when CLI_VERSION is set'
 }
 
+$global:InstallerTestChecksum = $null
+$global:InstallerTestArchiveName = $null
 function global:Invoke-WebRequest {
     param([string]$Uri, [string]$OutFile, [switch]$UseBasicParsing)
     $global:InstallerTestDownloads += $Uri
+    if ($Uri -like '*/checksums.txt') {
+        $hash = $global:InstallerTestChecksum
+        if (-not $hash) {
+            $hash = (Get-FileHash -LiteralPath $global:InstallerTestArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+        }
+        Set-Content -LiteralPath $OutFile -Value "$hash  $($global:InstallerTestArchiveName)" -Encoding ascii
+        return
+    }
+    $global:InstallerTestArchiveName = ($Uri -split '/')[-1]
     Copy-Item -LiteralPath $global:InstallerTestArchive -Destination $OutFile
 }
 
@@ -93,10 +104,26 @@ try {
     $installed = Join-Path $sandbox.InstallDir 'cli.exe'
     Assert-True (Test-Path -LiteralPath $installed) 'binary is copied into CLI_INSTALL_DIR'
     Assert-True ((Get-Content -LiteralPath $installed -Raw) -eq (Get-Content -LiteralPath $sandbox.Binary -Raw)) 'installed binary matches the archived one'
-    Assert-True ($global:InstallerTestDownloads.Count -eq 1) 'exactly one archive download'
+    Assert-True ($global:InstallerTestDownloads.Count -eq 2) 'the archive and checksums.txt are downloaded'
     Assert-True ($global:InstallerTestDownloads[0] -like '*/releases/download/v0.0.0-test/cli_Windows_*.zip') "download URL names the pinned version: $($global:InstallerTestDownloads[0])"
+    Assert-True ($global:InstallerTestDownloads[1] -like '*/releases/download/v0.0.0-test/checksums.txt') "checksums come from the same release: $($global:InstallerTestDownloads[1])"
     Assert-True (@(Get-ChildItem -LiteralPath $sandbox.Temp -Force).Count -eq 0) 'temporary directory is removed'
+    Assert-True (($output -join "`n") -match 'Checksum verified') 'installer verifies the archive checksum'
     Assert-True (($output -join "`n") -match 'Installation successful') 'installer reports success'
+
+    Write-Host '--- install fails when the archive does not match checksums.txt'
+    $global:InstallerTestChecksum = '0' * 64
+    $sandbox = New-InstallerSandbox
+    $mismatch = $null
+    try {
+        Invoke-Installer $sandbox | Out-Null
+    }
+    catch {
+        $mismatch = $_.Exception.Message
+    }
+    $global:InstallerTestChecksum = $null
+    Assert-True ($mismatch -match 'Checksum mismatch') "checksum mismatch stops the install: $mismatch"
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $sandbox.InstallDir 'cli.exe'))) 'nothing is installed on a checksum mismatch'
 
     if ($isWindowsHost) {
         Write-Host '--- install succeeds when the temporary directory cannot be removed'
