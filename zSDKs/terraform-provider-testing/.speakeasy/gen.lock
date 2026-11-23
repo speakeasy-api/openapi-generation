@@ -1010,9 +1010,9 @@ trackedFiles:
   internal/provider/oasoneof_data_source_sdk.go:
     last_write_checksum: sha1:4e2dd2928cc8b0c51086fb8d77c99dae8c1d6608
   internal/provider/oasoneof_resource.go:
-    last_write_checksum: sha1:f0f16a47551a86f19b90fb9ccc7ddea13465254f
+    last_write_checksum: sha1:5730f046d9c4126ffcfd0c329a344124ff7a26e3
   internal/provider/oasoneof_resource_sdk.go:
-    last_write_checksum: sha1:ff4ba3ffe888e924575c58aa828c316d4c386184
+    last_write_checksum: sha1:1e52c6e4fca588e9ad048ff21f20427271e36ff1
   internal/provider/oaspattern_data_source.go:
     last_write_checksum: sha1:88007829795c5e1d601e972066432f4537b06ca5
   internal/provider/oaspattern_data_source_sdk.go:
@@ -3306,7 +3306,7 @@ trackedFiles:
   internal/sdk/models/shared/oasoneofobjectstring.go:
     last_write_checksum: sha1:086a316170abf1ff01a0b1900125f19bf516f03b
   internal/sdk/models/shared/oasoneofrequest.go:
-    last_write_checksum: sha1:2f8ea81dcf3a85612275e72b421f39229ba93602
+    last_write_checksum: sha1:85472a74b3725f0b768090ef6f66e762a2f32839
   internal/sdk/models/shared/oasoneofresponse.go:
     last_write_checksum: sha1:2255d6bce076137eb59811d95f485cb235e35bae
   internal/sdk/models/shared/oaspatternrequest.go:

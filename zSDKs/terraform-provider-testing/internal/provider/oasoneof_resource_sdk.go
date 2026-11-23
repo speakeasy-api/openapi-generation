@@ -1517,23 +1517,6 @@ func (r *OASOneOfResourceModel) ToSharedOASOneOfRequest(ctx context.Context) (*s
 		}
 	}
 	var requiredRefObjectRequestAndResponse shared.OASOneOfRequestRequiredRefObjectRequestAndResponse
-	var oasOneOfObjectNumber3 *shared.OASOneOfObjectNumber
-	if r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber != nil {
-		objectNumber25 := new(float64)
-		if !r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.IsUnknown() && !r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.IsNull() {
-			*objectNumber25 = r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.ValueFloat64()
-		} else {
-			objectNumber25 = nil
-		}
-		oasOneOfObjectNumber3 = &shared.OASOneOfObjectNumber{
-			ObjectNumber: objectNumber25,
-		}
-	}
-	if oasOneOfObjectNumber3 != nil {
-		requiredRefObjectRequestAndResponse = shared.OASOneOfRequestRequiredRefObjectRequestAndResponse{
-			OASOneOfObjectNumber: oasOneOfObjectNumber3,
-		}
-	}
 	var oasOneOfObjectString3 *shared.OASOneOfObjectString
 	if r.RequiredRefObjectRequestAndResponse.OASOneOfObjectString != nil {
 		objectString25 := new(string)
@@ -1549,6 +1532,23 @@ func (r *OASOneOfResourceModel) ToSharedOASOneOfRequest(ctx context.Context) (*s
 	if oasOneOfObjectString3 != nil {
 		requiredRefObjectRequestAndResponse = shared.OASOneOfRequestRequiredRefObjectRequestAndResponse{
 			OASOneOfObjectString: oasOneOfObjectString3,
+		}
+	}
+	var oasOneOfObjectNumber3 *shared.OASOneOfObjectNumber
+	if r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber != nil {
+		objectNumber25 := new(float64)
+		if !r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.IsUnknown() && !r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.IsNull() {
+			*objectNumber25 = r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.ValueFloat64()
+		} else {
+			objectNumber25 = nil
+		}
+		oasOneOfObjectNumber3 = &shared.OASOneOfObjectNumber{
+			ObjectNumber: objectNumber25,
+		}
+	}
+	if oasOneOfObjectNumber3 != nil {
+		requiredRefObjectRequestAndResponse = shared.OASOneOfRequestRequiredRefObjectRequestAndResponse{
+			OASOneOfObjectNumber: oasOneOfObjectNumber3,
 		}
 	}
 	var requiredRefPrimitivesRequestOnly shared.RequiredRefPrimitivesRequestOnly

@@ -641,6 +641,7 @@ func (r *OASOneOfResource) Schema(ctx context.Context, req resource.SchemaReques
 						Optional: true,
 						Attributes: map[string]schema.Attribute{
 							"object_number": schema.Float64Attribute{
+								Computed: true,
 								Optional: true,
 							},
 						},
@@ -654,6 +655,7 @@ func (r *OASOneOfResource) Schema(ctx context.Context, req resource.SchemaReques
 						Optional: true,
 						Attributes: map[string]schema.Attribute{
 							"object_string": schema.StringAttribute{
+								Computed: true,
 								Optional: true,
 							},
 						},

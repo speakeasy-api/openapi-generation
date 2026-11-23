@@ -2867,25 +2867,16 @@ func (u RequiredRefObjectRequestOnly) MarshalJSON() ([]byte, error) {
 type OASOneOfRequestRequiredRefObjectRequestAndResponseType string
 
 const (
-	OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber OASOneOfRequestRequiredRefObjectRequestAndResponseType = "OASOneOfObjectNumber"
 	OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectString OASOneOfRequestRequiredRefObjectRequestAndResponseType = "OASOneOfObjectString"
+	OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber OASOneOfRequestRequiredRefObjectRequestAndResponseType = "OASOneOfObjectNumber"
 )
 
 // OASOneOfRequestRequiredRefObjectRequestAndResponse - required_ref_object_request_and_response oneOf level description
 type OASOneOfRequestRequiredRefObjectRequestAndResponse struct {
-	OASOneOfObjectNumber *OASOneOfObjectNumber `queryParam:"inline" union:"member"`
 	OASOneOfObjectString *OASOneOfObjectString `queryParam:"inline" union:"member"`
+	OASOneOfObjectNumber *OASOneOfObjectNumber `queryParam:"inline" union:"member"`
 
 	Type OASOneOfRequestRequiredRefObjectRequestAndResponseType
-}
-
-func CreateOASOneOfRequestRequiredRefObjectRequestAndResponseOASOneOfObjectNumber(oasOneOfObjectNumber OASOneOfObjectNumber) OASOneOfRequestRequiredRefObjectRequestAndResponse {
-	typ := OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber
-
-	return OASOneOfRequestRequiredRefObjectRequestAndResponse{
-		OASOneOfObjectNumber: &oasOneOfObjectNumber,
-		Type:                 typ,
-	}
 }
 
 func CreateOASOneOfRequestRequiredRefObjectRequestAndResponseOASOneOfObjectString(oasOneOfObjectString OASOneOfObjectString) OASOneOfRequestRequiredRefObjectRequestAndResponse {
@@ -2893,6 +2884,15 @@ func CreateOASOneOfRequestRequiredRefObjectRequestAndResponseOASOneOfObjectStrin
 
 	return OASOneOfRequestRequiredRefObjectRequestAndResponse{
 		OASOneOfObjectString: &oasOneOfObjectString,
+		Type:                 typ,
+	}
+}
+
+func CreateOASOneOfRequestRequiredRefObjectRequestAndResponseOASOneOfObjectNumber(oasOneOfObjectNumber OASOneOfObjectNumber) OASOneOfRequestRequiredRefObjectRequestAndResponse {
+	typ := OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber
+
+	return OASOneOfRequestRequiredRefObjectRequestAndResponse{
+		OASOneOfObjectNumber: &oasOneOfObjectNumber,
 		Type:                 typ,
 	}
 }
@@ -2909,19 +2909,19 @@ func (u *OASOneOfRequestRequiredRefObjectRequestAndResponse) UnmarshalJSON(data 
 	var candidates []utils.UnionCandidate
 
 	// Collect all valid candidates
-	var oasOneOfObjectNumber OASOneOfObjectNumber = OASOneOfObjectNumber{}
-	if err := utils.UnmarshalJSON(data, &oasOneOfObjectNumber, "", true, nil); err == nil {
-		candidates = append(candidates, utils.UnionCandidate{
-			Type:  OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber,
-			Value: &oasOneOfObjectNumber,
-		})
-	}
-
 	var oasOneOfObjectString OASOneOfObjectString = OASOneOfObjectString{}
 	if err := utils.UnmarshalJSON(data, &oasOneOfObjectString, "", true, nil); err == nil {
 		candidates = append(candidates, utils.UnionCandidate{
 			Type:  OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectString,
 			Value: &oasOneOfObjectString,
+		})
+	}
+
+	var oasOneOfObjectNumber OASOneOfObjectNumber = OASOneOfObjectNumber{}
+	if err := utils.UnmarshalJSON(data, &oasOneOfObjectNumber, "", true, nil); err == nil {
+		candidates = append(candidates, utils.UnionCandidate{
+			Type:  OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber,
+			Value: &oasOneOfObjectNumber,
 		})
 	}
 
@@ -2938,11 +2938,11 @@ func (u *OASOneOfRequestRequiredRefObjectRequestAndResponse) UnmarshalJSON(data 
 	// Set the union type and value based on the best candidate
 	u.Type = best.Type.(OASOneOfRequestRequiredRefObjectRequestAndResponseType)
 	switch best.Type {
-	case OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber:
-		u.OASOneOfObjectNumber = best.Value.(*OASOneOfObjectNumber)
-		return nil
 	case OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectString:
 		u.OASOneOfObjectString = best.Value.(*OASOneOfObjectString)
+		return nil
+	case OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber:
+		u.OASOneOfObjectNumber = best.Value.(*OASOneOfObjectNumber)
 		return nil
 	}
 
@@ -2950,12 +2950,12 @@ func (u *OASOneOfRequestRequiredRefObjectRequestAndResponse) UnmarshalJSON(data 
 }
 
 func (u OASOneOfRequestRequiredRefObjectRequestAndResponse) MarshalJSON() ([]byte, error) {
-	if u.OASOneOfObjectNumber != nil {
-		return utils.MarshalJSON(u.OASOneOfObjectNumber, "", true)
-	}
-
 	if u.OASOneOfObjectString != nil {
 		return utils.MarshalJSON(u.OASOneOfObjectString, "", true)
+	}
+
+	if u.OASOneOfObjectNumber != nil {
+		return utils.MarshalJSON(u.OASOneOfObjectNumber, "", true)
 	}
 
 	return nil, errors.New("could not marshal union type OASOneOfRequestRequiredRefObjectRequestAndResponse: all fields are null")
