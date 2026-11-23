@@ -1456,7 +1456,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Types.cs:
     last_write_checksum: sha1:7775fbb89f62699087683cf47642c3ead6b62861
   src/Speakeasy/OpenAPI/Utils/AnyDeserializer.cs:
-    last_write_checksum: sha1:0132e56c9b583ca2b8ec632c9ef924600dd0cd68
+    last_write_checksum: sha1:e3b1814b90eb10e0bf595115bc1647de659d83e0
   src/Speakeasy/OpenAPI/Utils/BigIntStrConverter.cs:
     last_write_checksum: sha1:62c143c14a8ca2a1df4731614a09b993e085923f
   src/Speakeasy/OpenAPI/Utils/Constants.cs:
