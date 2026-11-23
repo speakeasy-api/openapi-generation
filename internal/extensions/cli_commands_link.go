@@ -1879,8 +1879,8 @@ func cliLastPathSegmentName(path string) string {
 // bindings against a poll response schema. The errorField member must exist
 // at the root of at least one traversable variant (failure detail
 // legitimately lives on only the failure arm of a response union), and
-// everywhere it resolves it must be an object whose every object view
-// carries errorMessageField as a string — so a misspelled binding fails
+// everywhere it resolves it must be an object, or an array of objects, whose
+// every object view carries errorMessageField as a string — so a misspelled binding fails
 // generation with the member named instead of silently degrading every
 // failure message at runtime. Defaulted bindings are deliberately not
 // linked, keeping the v1 best-effort reads for undeclared recipes.
@@ -1904,6 +1904,9 @@ func (d *cliManifestDecoder) linkAsyncErrorBindings(cmdKey string, recipe *CLICo
 		}
 		resolved = true
 		errorViews, err := d.artifactExpand(prop, 0)
+		if err == nil {
+			errorViews, err = d.asyncErrorItemViews(errorViews)
+		}
 		if err != nil {
 			return fmt.Errorf("command %q async.errorField %q: %w", cmdKey, recipe.ErrorField, err)
 		}
@@ -1929,13 +1932,49 @@ func (d *cliManifestDecoder) linkAsyncErrorBindings(cmdKey string, recipe *CLICo
 			}
 		}
 		if !objectSeen {
-			return fmt.Errorf("command %q async.errorField: property %q in the %s response of poll operation %q is not an object; the failure-detail binding must name the object member that carries the %q message", cmdKey, recipe.ErrorField, responseCode, recipe.OperationID, recipe.ErrorMessageField)
+			return fmt.Errorf("command %q async.errorField: property %q in the %s response of poll operation %q is not an object or an array of objects; the failure-detail binding must name the member that carries the %q message", cmdKey, recipe.ErrorField, responseCode, recipe.OperationID, recipe.ErrorMessageField)
 		}
 	}
 	if !resolved {
 		return fmt.Errorf("command %q async.errorField: property %q does not resolve at the root of the %s response of poll operation %q%s", cmdKey, recipe.ErrorField, responseCode, recipe.OperationID, cliDidYouMean(recipe.ErrorField, cliSortedKeys(rootCandidates)))
 	}
 	return nil
+}
+
+// asyncErrorItemViews replaces array views of the bound failure-detail member
+// with the views of their items; the runtime reads the first message found.
+func (d *cliManifestDecoder) asyncErrorItemViews(views []*cliResolvedSchema) ([]*cliResolvedSchema, error) {
+	out := make([]*cliResolvedSchema, 0, len(views))
+	for _, view := range views {
+		items, isArray := cliArraySchemaItems(view.raw)
+		if !isArray {
+			out = append(out, view)
+			continue
+		}
+		expanded, err := d.artifactExpand(items, 1)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, expanded...)
+	}
+	return out, nil
+}
+
+func cliArraySchemaItems(raw map[string]any) (any, bool) {
+	if raw == nil || raw["items"] == nil {
+		return nil, false
+	}
+	switch declared := raw["type"].(type) {
+	case string:
+		return raw["items"], declared == "array"
+	case []any:
+		for _, member := range declared {
+			if member == "array" {
+				return raw["items"], true
+			}
+		}
+	}
+	return nil, false
 }
 
 // cliAsyncErrorViewIsObject reports whether an expanded view of the bound

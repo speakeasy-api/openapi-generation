@@ -761,6 +761,17 @@ func TestCLICommands_AsyncErrorBindings(t *testing.T) {
               type: string
             code:
               type: integer
+        failures:
+          type: array
+          items:
+            type: object
+            properties:
+              detail:
+                type: string
+        labels:
+          type: array
+          items:
+            type: string
 `, 1)
 	require.NotEqual(t, cliCommandsTestSpec, withFailure, "fixture replacement must apply")
 
@@ -793,10 +804,20 @@ func TestCLICommands_AsyncErrorBindings(t *testing.T) {
 	assert.Contains(t, err.Error(), `async.errorField: property "failur" does not resolve at the root of the 200 response of poll operation "GetTask"`)
 	assert.Contains(t, err.Error(), `did you mean "failure"?`)
 
-	// The bound member must be an object able to carry the message.
+	// The bound member must be an object, or an array of objects, able to
+	// carry the message.
 	_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: id\n"))
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `async.errorField: property "id" in the 200 response of poll operation "GetTask" is not an object`)
+	assert.Contains(t, err.Error(), `async.errorField: property "id" in the 200 response of poll operation "GetTask" is not an object or an array of objects`)
+	_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: labels\n"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `async.errorField: property "labels" in the 200 response of poll operation "GetTask" is not an object or an array of objects`)
+	manifest, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: failures\n      errorMessageField: detail\n"))
+	require.NoError(t, err)
+	assert.Equal(t, "failures", manifest.Commands[0].Async.ErrorField)
+	_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: failures\n      errorMessageField: detial\n"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `async.errorMessageField: property "detial" does not resolve inside the "failures" member`)
 
 	// Declaring only errorField still validates the defaulted message member.
 	_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: failure\n"))
