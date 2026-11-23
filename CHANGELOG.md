@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.968.6] - 2026-11-23
+### :bug: Bug Fixes
+- [`7ec0a56`](https://github.com/speakeasy-api/openapi-generation/commit/7ec0a56c8d9d2a00369aeb081a7bed705544f57a) - **cli**: validate and merge discriminated-union variant flags ([#228](https://github.com/speakeasy-api/openapi-generation/pull/228)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.968.5] - 2026-11-23
 ### :bug: Bug Fixes
 - [`8e0d413`](https://github.com/speakeasy-api/openapi-generation/commit/8e0d4136a4f114aeac5b5f790bd66458302a419b) - **cli**: write the config file atomically and tighten its permissions ([#224](https://github.com/speakeasy-api/openapi-generation/pull/224)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21121,3 +21126,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.968.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.2...v2.968.3
 [v2.968.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.3...v2.968.4
 [v2.968.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.4...v2.968.5
+[v2.968.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.5...v2.968.6
