@@ -1,0 +1,63 @@
+{{- /* v1-only: unionStrategy left-to-right; v2 implements the smart (populated-fields) strategy only. */ -}}
+{{- if not isCsharpV2 -}}
+#nullable enable annotations
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading.Tasks;
+using System.Web;
+using NodaTime;
+using Company.Product.Feature.Subnamespace;
+using Company.Product.Feature.Subnamespace.Models.Operations;
+using Company.Product.Feature.Subnamespace.Models.Shared;
+using Company.Product.Feature.Subnamespace.Utils;
+using Xunit;
+
+// Legacy-mode union tests (unionStrategy: left-to-right)
+public partial class UnionsShould
+{
+    // No primary equivalent — legacy-only test, INTENTIONALLY DIVERGENT from the primary
+    // suite's smart-union expectations.
+    //
+    // Legacy candidate order: the legacy (non-smart) branch of union.cs.stmpl iterates
+    // `sortTypeDefFieldCount .Local.Type.AssociatedTypes` (internal/js/template/engine.go),
+    // which sorts class candidates by ASCENDING field count (classes before non-classes).
+    // So SmartUnionMoreFieldsA (1 field: foo) is tried before SmartUnionMoreFieldsB
+    // (2 fields: bar, foo), and the first candidate that deserializes strictly
+    // (MissingMemberHandling.Error) wins — left-to-right first-match semantics.
+    [Fact]
+    public void LegacyUnion_LeftToRightFirstMatchSemantics()
+    {
+        // Ambiguous payload representable by BOTH members ({"foo"} is a strict subset of A
+        // and of B): the first candidate in legacy order (A, fewest fields) wins immediately;
+        // B is never considered.
+        var first = Newtonsoft.Json.JsonConvert.DeserializeObject<SmartUnionSelectsMoreMatchedFieldsJson>(
+            "{\"foo\":\"test\"}"
+        )!;
+        Assert.Equal(
+            SmartUnionSelectsMoreMatchedFieldsJsonType.SmartUnionMoreFieldsA,
+            first.Type
+        );
+        Assert.NotNull(first.SmartUnionMoreFieldsA);
+        Assert.Null(first.SmartUnionMoreFieldsB);
+        Assert.Equal("test", first.SmartUnionMoreFieldsA!.Foo);
+
+        // DIVERGENT case: payload {"foo":"test","bar":123}. The smart (populated-fields)
+        // strategy scores bar:123 as an INEXACT match for B.Bar (string) and prefers A
+        // (1 exact match, 0 inexact) over B (1 exact, 1 inexact). The LEGACY converter
+        // instead rejects A in the strict pass (unknown member 'bar' raises
+        // MissingMemberException) and accepts B, with Newtonsoft coercing 123 -> "123".
+        var coerced = Newtonsoft.Json.JsonConvert.DeserializeObject<SmartUnionSelectsMoreMatchedFieldsJson>(
+            "{\"foo\":\"test\",\"bar\":123}"
+        )!;
+        Assert.Equal(
+            SmartUnionSelectsMoreMatchedFieldsJsonType.SmartUnionMoreFieldsB,
+            coerced.Type
+        );
+        Assert.Null(coerced.SmartUnionMoreFieldsA);
+        Assert.NotNull(coerced.SmartUnionMoreFieldsB);
+        Assert.Equal("test", coerced.SmartUnionMoreFieldsB!.Foo);
+        Assert.Equal("123", coerced.SmartUnionMoreFieldsB!.Bar);
+    }
+}
+{{ end -}}

@@ -257,4 +257,12 @@ public class ResponseBodiesShould
         Assert.Null(res.Object.Json.NormalField);
         Helpers.AssertDictEqual(req.AdditionalProperties, res.Object.Json.AdditionalProperties);
     }
+
+    [Fact]
+    public void NumericFieldsAcceptJsonStrings()
+    {
+        var config = Compat.DeserializeJson<LimitOffsetConfig>("{\"limit\":\"10\",\"offset\":\"20\"}");
+        Assert.Equal(10L, config.Limit);
+        Assert.Equal(20L, config.Offset);
+    }
 }

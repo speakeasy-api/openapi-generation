@@ -1,0 +1,60 @@
+{{- /* v1-only: v2 Compat lives in csharpv2/tests/Common/Compat.cs.stmpl. */ -}}
+{{- if not isCsharpV2 -}}
+#nullable enable
+using System;
+using System.IO;
+using System.Net.Http;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Company.Product.Feature.Subnamespace.Utils;
+using Company.Product.Feature.Subnamespace.Utils.Sse;
+using Xunit;
+
+// v1 counterpart of templates/csharpv2/tests/Common/Compat.cs.stmpl for the quaternary group.
+public static class Compat
+{
+    public static T DeserializeJson<T>(string json) =>
+        ResponseBodyDeserializer.DeserializeNotNull<T>(json, NullValueHandling.Ignore);
+
+    public static string SerializeJson(object? value) =>
+        JsonConvert.SerializeObject(value);
+
+    public static T? DeserializeWithDefaultSettings<T>(string json) =>
+        JsonConvert.DeserializeObject<T>(json, Utilities.GetDefaultJsonDeserializerSettings());
+
+    public static HttpContent? SerializeRequestBody(
+        object? body,
+        string requestField,
+        string method,
+        bool nullable,
+        bool optional,
+        string format = ""
+    ) => RequestBodySerializer.Serialize(body, requestField, method, nullable, optional, format);
+
+    public const string FormExplodedArrayKeySuffix = "[]";
+
+    public static T? Unwrap<T>(T? value) => value;
+
+    public static Exception AssertThrowsUnknownDiscriminator(Action action)
+    {
+        var ex = Assert.Throws<InvalidOperationException>(action);
+        Assert.Contains("Could not deserialize", ex.Message);
+        return ex;
+    }
+
+    public static Exception AssertThrowsMissingDiscriminator(Action action) =>
+        Assert.Throws<ArgumentNullException>(action);
+
+    public static EventStream<T>? Events<T>(EventStream<T>? stream) => stream;
+
+    public static JToken ParseRaw(string json)
+    {
+        using var reader = new JsonTextReader(new StringReader(json)) { DateParseHandling = DateParseHandling.None };
+        return JToken.ReadFrom(reader);
+    }
+
+    public static string? RawString(JToken? raw, string property) => (string?)raw?[property];
+
+    public static bool RawIsString(JToken? raw, string property) => raw?[property]?.Type == JTokenType.String;
+}
+{{ end -}}

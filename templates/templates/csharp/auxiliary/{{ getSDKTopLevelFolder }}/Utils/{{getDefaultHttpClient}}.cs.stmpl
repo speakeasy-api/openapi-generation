@@ -77,7 +77,23 @@ namespace {{getScopeNamespace "utils"}}
             {
                 clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
             }
-        {{- if isNetstandard2}}
+        {{- if and isCsharpV2 isNetstandard2}}
+
+#if NET8_0_OR_GREATER
+            foreach (KeyValuePair<string, object?> prop in request.Options)
+            {
+                clone.Options.TryAdd(prop.Key, prop.Value);
+            }
+#else
+            foreach (KeyValuePair<string, object?> prop in request.Properties)
+            {
+                if (!clone.Properties.ContainsKey(prop.Key))
+                {
+                    clone.Properties[prop.Key] = prop.Value;
+                }
+            }
+#endif
+        {{- else if isNetstandard2}}
 
             foreach (KeyValuePair<string, object?> prop in request.Properties)
             {

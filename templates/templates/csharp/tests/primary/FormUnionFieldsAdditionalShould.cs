@@ -2,15 +2,12 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using Openapi;
 using Openapi.Models.Shared;
 using Xunit;
 
 public class FormUnionFieldsAdditionalShould
 {
-    private const string FormExplodedArrayKeySuffix = "[]";
-
     [Fact]
     public async Task SendStringEnumAndJsonVariants()
     {
@@ -43,13 +40,10 @@ public class FormUnionFieldsAdditionalShould
         Assert.Equal("second", form["enumOrBooleanUnion"]);
         Assert.Equal(
             new List<object>() { "x", "3" },
-            form[$"arrayOfUnion{FormExplodedArrayKeySuffix}"]
+            form[$"arrayOfUnion{Compat.FormExplodedArrayKeySuffix}"]
         );
         Assert.Equal("plain", form["stringOrArrayOfUnion"]);
-        Assert.True(JToken.DeepEquals(
-            JObject.Parse("{\"label\":\"x\",\"count\":1}"),
-            JObject.Parse((string)form["jsonUnion"])
-        ));
+        Assert.True(Compat.RawEquals(Compat.ParseRaw((string)form["jsonUnion"]), "{\"label\":\"x\",\"count\":1}"));
         Assert.False(form.ContainsKey("nullableUnion"));
         Assert.False(form.ContainsKey("optionalUnion"));
         Assert.Equal(6, form.Count);
@@ -82,12 +76,12 @@ public class FormUnionFieldsAdditionalShould
         Assert.Equal("42", form["scalarUnion"]);
         Assert.Equal(
             new List<object>() { "a", "b" },
-            form[$"stringOrArrayUnion{FormExplodedArrayKeySuffix}"]
+            form[$"stringOrArrayUnion{Compat.FormExplodedArrayKeySuffix}"]
         );
         Assert.Equal("true", form["enumOrBooleanUnion"]);
         Assert.Equal(
             new List<object>() { "1", "true" },
-            form[$"stringOrArrayOfUnion{FormExplodedArrayKeySuffix}"]
+            form[$"stringOrArrayOfUnion{Compat.FormExplodedArrayKeySuffix}"]
         );
         Assert.Equal("7", form["nullableUnion"]);
         Assert.Equal("set", form["optionalUnion"]);
@@ -132,7 +126,7 @@ public class FormUnionFieldsAdditionalShould
         var res = await sdk.RequestBodies.RequestBodyPostFormUnionFieldsAsync(new FormUnionFields()
         {
             ScalarUnion = FormUnionStringOrInteger.CreateStr("abc"),
-            OpenUnion = FormUnionOpenStringOrInteger.CreateUnknown(JToken.Parse(rawJson)),
+            OpenUnion = FormUnionOpenStringOrInteger.CreateUnknown(Compat.ParseRaw(rawJson)),
         });
 
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
@@ -153,14 +147,14 @@ public class FormUnionFieldsAdditionalShould
         var res = await sdk.RequestBodies.RequestBodyPostFormUnionFieldsAsync(new FormUnionFields()
         {
             ScalarUnion = FormUnionStringOrInteger.CreateStr("abc"),
-            OpenUnion = FormUnionOpenStringOrInteger.CreateUnknown(JToken.Parse(rawJson)),
+            OpenUnion = FormUnionOpenStringOrInteger.CreateUnknown(Compat.ParseRaw(rawJson)),
         });
 
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
         var form = res.FormUnionEcho!.Form!;
 
         Assert.False(form.ContainsKey("openUnion"));
-        Assert.Equal(1, form.Count);
+        Assert.Single(form);
     }
 
     [Fact]
@@ -186,10 +180,7 @@ public class FormUnionFieldsAdditionalShould
 
         Assert.Equal("x", form["label"]);
         Assert.Equal("5", form["labelValue"]);
-        Assert.True(JToken.DeepEquals(
-            JObject.Parse("{\"label\":\"y\",\"count\":2}"),
-            JObject.Parse((string)form["labelJson"])
-        ));
+        Assert.True(Compat.RawEquals(Compat.ParseRaw((string)form["labelJson"]), "{\"label\":\"y\",\"count\":2}"));
         Assert.Equal(3, form.Count);
     }
 
@@ -263,10 +254,7 @@ public class FormUnionFieldsAdditionalShould
         Assert.Equal("abc", form["scalarUnion"]);
         Assert.Equal(new List<object>() { "a", "b" }, form["stringOrArrayUnion"]);
         Assert.Equal(new List<object>() { "x", "2" }, form["arrayOfUnion"]);
-        Assert.True(JToken.DeepEquals(
-            JObject.Parse("{\"label\":\"z\"}"),
-            JObject.Parse((string)form["jsonUnion"])
-        ));
+        Assert.True(Compat.RawEquals(Compat.ParseRaw((string)form["jsonUnion"]), "{\"label\":\"z\"}"));
         Assert.False(form.ContainsKey("nullableUnion"));
         Assert.Equal(4, form.Count);
     }

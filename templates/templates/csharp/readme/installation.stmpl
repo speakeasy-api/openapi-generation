@@ -12,4 +12,7 @@ dotnet add package {{ getPackageId }}
 To add a reference to a local instance of the SDK in a .NET project:
 ```bash
 dotnet add reference {{getSDKTopLevelFolder}}/{{getPackageId}}.csproj
+{{- if isCsharpV2}}
+dotnet add reference {{getSDKTopLevelFolder}}.Models/{{getPackageId}}.Models.csproj
+{{- end}}
 ```

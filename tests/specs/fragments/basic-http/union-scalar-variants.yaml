@@ -1,0 +1,76 @@
+openapi: 3.1.0
+security:
+  - basicHttp: []
+paths:
+  /anything/unionScalarVariants:
+    post:
+      operationId: unionScalarVariantsPost
+      description: >-
+        Tests unions whose non-object variant is a scalar type (int64 integer,
+        double number, date-time string) that no other schema in the document
+        uses, so the union is the only place the scalar type appears. The
+        request body holds one such union per scalar kind and the response
+        echoes it back.
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScalarVariantUnions"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  json:
+                    $ref: "#/components/schemas/ScalarVariantUnions"
+                required:
+                  - json
+components:
+  schemas:
+    ScalarVariantUnions:
+      description: Holder with one union per scalar kind.
+      type: object
+      properties:
+        integer:
+          $ref: "#/components/schemas/IntegerOrObject"
+        number:
+          $ref: "#/components/schemas/NumberOrObject"
+        dateTime:
+          $ref: "#/components/schemas/DateTimeOrObject"
+      required:
+        - integer
+        - number
+        - dateTime
+    ScalarVariantObject:
+      description: Object variant shared by the scalar-variant unions.
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+    IntegerOrObject:
+      description: Union of an object and an int64 integer.
+      oneOf:
+        - $ref: "#/components/schemas/ScalarVariantObject"
+        - type: integer
+          format: int64
+    NumberOrObject:
+      description: Union of an object and a double number.
+      oneOf:
+        - $ref: "#/components/schemas/ScalarVariantObject"
+        - type: number
+          format: double
+    DateTimeOrObject:
+      description: Union of an object and a date-time string.
+      oneOf:
+        - $ref: "#/components/schemas/ScalarVariantObject"
+        - type: string
+          format: date-time

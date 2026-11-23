@@ -1,9 +1,9 @@
+#nullable enable annotations
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
-using Newtonsoft.Json;
 using NodaTime;
 using Company.Product.Feature.Subnamespace;
 using Company.Product.Feature.Subnamespace.Models.Operations;
@@ -12,7 +12,7 @@ using Company.Product.Feature.Subnamespace.Utils;
 using Xunit;
 
 // Legacy-mode union tests (unionStrategy: left-to-right)
-public class UnionsShould
+public partial class UnionsShould
 {
     private static void AssertJsonEquivalent(object? expected, object? actual)
     {
@@ -85,10 +85,7 @@ public class UnionsShould
 
         // Deserialization should fail since TypedObjectOneOf is non-nullable
         var ex = Assert.Throws<InvalidOperationException>(
-            () => ResponseBodyDeserializer.DeserializeNotNull<TypedObjectOneOfPostRes>(
-                "{\"json\": null}",
-                NullValueHandling.Ignore
-            )
+            () => Compat.DeserializeJson<TypedObjectOneOfPostRes>("{\"json\": null}")
         );
 
         Assert.Equal("Received unexpected null JSON value", ex.Message);
@@ -173,7 +170,7 @@ public class UnionsShould
         foreach (var test in tests)
         {
             var req = test.arg;
-            var serializedBody = RequestBodySerializer.Serialize(
+            var serializedBody = Compat.SerializeRequestBody(
                 req,
                 "Request",
                 "json",
@@ -431,12 +428,15 @@ public class UnionsShould
         };
 
         var req1 = UnionNestedEnumsFormRequestBody.CreateNestedEnumArray(obj1);
-        var serializedForm1 = RequestBodySerializer.Serialize(req1, "Request", "form", false, false);
+        var enumsKey = $"enums{Compat.FormExplodedArrayKeySuffix}";
+        var serializedForm1 = Compat.SerializeRequestBody(req1, "Request", "form", false, false);
         var form1 = HttpUtility.UrlDecode(await serializedForm1!.ReadAsStringAsync());
-        Assert.Equal("enums[]=one&enums[]=two&tags=one,two", form1);
+        Assert.Equal($"{enumsKey}=one&{enumsKey}=two&tags=one,two", form1);
 
         var res1 = await sdk.Unions.UnionNestedEnumsFormAsync(req1);
         Assert.Equal(HttpStatusCode.OK, res1.RawResponse.StatusCode);
+        Assert.Equal("[\"one\",\"two\"]", Compat.SerializeJson(res1.Res!.Form[enumsKey]));
+        Assert.Equal("one,two", res1.Res!.Form["tags"].ToString());
 
         var obj2 = new NestedEnumMap()
         {
@@ -449,12 +449,14 @@ public class UnionsShould
         };
 
         var req2 = UnionNestedEnumsFormRequestBody.CreateNestedEnumMap(obj2);
-        var serializedForm2 = RequestBodySerializer.Serialize(req2, "Request", "form", false, false);
+        var serializedForm2 = Compat.SerializeRequestBody(req2, "Request", "form", false, false);
         var form2 = HttpUtility.UrlDecode(await serializedForm2!.ReadAsStringAsync());
         Assert.Equal("enums={\"key2\":\"two\",\"key3\":\"three\"}&tags=two,three", form2);
 
         var res2 = await sdk.Unions.UnionNestedEnumsFormAsync(req2);
         Assert.Equal(HttpStatusCode.OK, res2.RawResponse.StatusCode);
+        Assert.Equal("{\"key2\":\"two\",\"key3\":\"three\"}", res2.Res!.Form["enums"].ToString());
+        Assert.Equal("two,three", res2.Res!.Form["tags"].ToString());
     }
 
     // Primary: unions-nested-enums-multipart
@@ -470,13 +472,14 @@ public class UnionsShould
         };
 
         var req1 = new UnionNestedEnumsMultipartRequestBody() { Enums = Company.Product.Feature.Subnamespace.Models.Operations.Enums.CreateArrayOfEnum(enumArray) };
-        var serializedForm1 = RequestBodySerializer.Serialize(req1, "Request", "multipart", false, false);
+        var serializedForm1 = Compat.SerializeRequestBody(req1, "Request", "multipart", false, false);
         var form1 = await serializedForm1!.ReadAsStringAsync();
         Assert.Contains("Content-Disposition: form-data; name=enums", form1);
         Assert.Contains("[\"one\",\"two\"]", form1);
 
         var res1 = await sdk.Unions.UnionNestedEnumsMultipartAsync(req1);
         Assert.Equal(HttpStatusCode.OK, res1.RawResponse.StatusCode);
+        Assert.Equal("[\"one\",\"two\"]", res1.Res!.Form["enums"].ToString());
 
         var enumMap = new Dictionary<string, Company.Product.Feature.Subnamespace.Models.Shared.Enum>()
         {
@@ -485,13 +488,14 @@ public class UnionsShould
         };
 
         var req2 = new UnionNestedEnumsMultipartRequestBody() { Enums = Company.Product.Feature.Subnamespace.Models.Operations.Enums.CreateMapOfEnum(enumMap) };
-        var serializedForm2 = RequestBodySerializer.Serialize(req2, "Request", "multipart", false, false);
+        var serializedForm2 = Compat.SerializeRequestBody(req2, "Request", "multipart", false, false);
         var form2 = await serializedForm2!.ReadAsStringAsync();
         Assert.Contains("Content-Disposition: form-data; name=enums", form2);
         Assert.Contains("{\"key2\":\"two\",\"key3\":\"three\"}", form2);
 
         var res2 = await sdk.Unions.UnionNestedEnumsMultipartAsync(req2);
         Assert.Equal(HttpStatusCode.OK, res2.RawResponse.StatusCode);
+        Assert.Equal("{\"key2\":\"two\",\"key3\":\"three\"}", res2.Res!.Form["enums"].ToString());
     }
 
     // Primary: unions-union-of-arrays
@@ -594,53 +598,9 @@ public class UnionsShould
         Assert.Equal(HttpStatusCode.OK, res.RawResponse.StatusCode);
         Assert.NotNull(res.Object);
         Assert.Equal(
-            JsonConvert.SerializeObject(payload),
-            JsonConvert.SerializeObject(res.Object!.Json.Value)
+            Compat.SerializeJson(payload),
+            Compat.SerializeJson(res.Object!.Json.Value)
         );
-    }
-
-    // No primary equivalent — legacy-only test, INTENTIONALLY DIVERGENT from the primary
-    // suite's smart-union expectations.
-    //
-    // Legacy candidate order: the legacy (non-smart) branch of union.cs.stmpl iterates
-    // `sortTypeDefFieldCount .Local.Type.AssociatedTypes` (internal/js/template/engine.go),
-    // which sorts class candidates by ASCENDING field count (classes before non-classes).
-    // So SmartUnionMoreFieldsA (1 field: foo) is tried before SmartUnionMoreFieldsB
-    // (2 fields: bar, foo), and the first candidate that deserializes strictly
-    // (MissingMemberHandling.Error) wins — left-to-right first-match semantics.
-    [Fact]
-    public void LegacyUnion_LeftToRightFirstMatchSemantics()
-    {
-        // Ambiguous payload representable by BOTH members ({"foo"} is a strict subset of A
-        // and of B): the first candidate in legacy order (A, fewest fields) wins immediately;
-        // B is never considered.
-        var first = JsonConvert.DeserializeObject<SmartUnionSelectsMoreMatchedFieldsJson>(
-            "{\"foo\":\"test\"}"
-        )!;
-        Assert.Equal(
-            SmartUnionSelectsMoreMatchedFieldsJsonType.SmartUnionMoreFieldsA,
-            first.Type
-        );
-        Assert.NotNull(first.SmartUnionMoreFieldsA);
-        Assert.Null(first.SmartUnionMoreFieldsB);
-        Assert.Equal("test", first.SmartUnionMoreFieldsA!.Foo);
-
-        // DIVERGENT case: payload {"foo":"test","bar":123}. The smart (populated-fields)
-        // strategy scores bar:123 as an INEXACT match for B.Bar (string) and prefers A
-        // (1 exact match, 0 inexact) over B (1 exact, 1 inexact). The LEGACY converter
-        // instead rejects A in the strict pass (unknown member 'bar' raises
-        // MissingMemberException) and accepts B, with Newtonsoft coercing 123 -> "123".
-        var coerced = JsonConvert.DeserializeObject<SmartUnionSelectsMoreMatchedFieldsJson>(
-            "{\"foo\":\"test\",\"bar\":123}"
-        )!;
-        Assert.Equal(
-            SmartUnionSelectsMoreMatchedFieldsJsonType.SmartUnionMoreFieldsB,
-            coerced.Type
-        );
-        Assert.Null(coerced.SmartUnionMoreFieldsA);
-        Assert.NotNull(coerced.SmartUnionMoreFieldsB);
-        Assert.Equal("test", coerced.SmartUnionMoreFieldsB!.Foo);
-        Assert.Equal("123", coerced.SmartUnionMoreFieldsB!.Bar);
     }
 
     // Quaternary sets forwardCompatibleUnionsByDefault: false, so the Vehicle
@@ -648,10 +608,7 @@ public class UnionsShould
 
     private static Vehicle DeserializeVehicle(string json)
     {
-        return JsonConvert.DeserializeObject<Vehicle>(
-            json,
-            Utilities.GetDefaultJsonDeserializerSettings()
-        )!;
+        return Compat.DeserializeWithDefaultSettings<Vehicle>(json)!;
     }
 
     // Closed counterpart for primary's open-union-known-variant
@@ -667,17 +624,16 @@ public class UnionsShould
     [Fact]
     public void ClosedUnion_ThrowOnUnknownDiscriminator()
     {
-        var ex = Assert.Throws<InvalidOperationException>(
+        Compat.AssertThrowsUnknownDiscriminator(
             () => DeserializeVehicle("{\"vehicleType\":\"spaceship\",\"thrust\":9000}")
         );
-        Assert.Contains("Could not deserialize", ex.Message);
     }
 
     // Closed counterpart for primary's open-union-missing-discriminator
     [Fact]
     public void ClosedUnion_ThrowOnMissingDiscriminator()
     {
-        Assert.Throws<ArgumentNullException>(
+        Compat.AssertThrowsMissingDiscriminator(
             () => DeserializeVehicle("{\"wheelsType\":\"four\"}")
         );
     }
@@ -692,23 +648,20 @@ public class UnionsShould
     [Fact]
     public void OpenTagged_UnknownDiscriminator_ReplaysDateTimeVerbatim()
     {
-        var v = JsonConvert.DeserializeObject<OpenDateTimeTaggedUnion>(
-            "{\"kind\":\"paused\",\"occurredAt\":\"" + OffsetTimestamp + "\"}",
-            Utilities.GetDefaultJsonDeserializerSettings()
+        var v = Compat.DeserializeWithDefaultSettings<OpenDateTimeTaggedUnion>(
+            "{\"kind\":\"paused\",\"occurredAt\":\"" + OffsetTimestamp + "\"}"
         )!;
         Assert.True(v.IsUnknown());
-        var raw = (Newtonsoft.Json.Linq.JObject)v.UnknownRaw!;
-        Assert.Equal(Newtonsoft.Json.Linq.JTokenType.String, raw["occurredAt"]!.Type);
-        Assert.Equal(OffsetTimestamp, (string?)raw["occurredAt"]);
-        Assert.Contains(OffsetTimestamp, JsonConvert.SerializeObject(v));
+        Assert.True(Compat.RawIsString(v.UnknownRaw, "occurredAt"));
+        Assert.Equal(OffsetTimestamp, Compat.RawString(v.UnknownRaw, "occurredAt"));
+        Assert.Contains(OffsetTimestamp, Compat.SerializeJson(v));
     }
 
     [Fact]
     public void OpenTagged_KnownVariant_Deserializes()
     {
-        var v = JsonConvert.DeserializeObject<OpenDateTimeTaggedUnion>(
-            "{\"kind\":\"started\",\"occurredAt\":\"2024-01-02T03:04:05Z\"}",
-            Utilities.GetDefaultJsonDeserializerSettings()
+        var v = Compat.DeserializeWithDefaultSettings<OpenDateTimeTaggedUnion>(
+            "{\"kind\":\"started\",\"occurredAt\":\"2024-01-02T03:04:05Z\"}"
         )!;
         Assert.False(v.IsUnknown());
         Assert.NotNull(v.DateTimeEventStarted);
@@ -723,20 +676,18 @@ public class UnionsShould
         // legacy variant the reader has already materialized a DateTime:
         // UTC instants replay verbatim, but non-UTC offsets are normalized
         // (pre-existing reader limitation, same as untyped fields).
-        var v = JsonConvert.DeserializeObject<OpenDateTimeUntaggedUnion>(
-            "\"2024-01-02T03:04:05Z\"",
-            Utilities.GetDefaultJsonDeserializerSettings()
+        var v = Compat.DeserializeWithDefaultSettings<OpenDateTimeUntaggedUnion>(
+            "\"2024-01-02T03:04:05Z\""
         )!;
         Assert.True(v.IsUnknown());
-        Assert.Equal("2024-01-02T03:04:05Z", JsonConvert.SerializeObject(v).Trim('"'));
+        Assert.Equal("2024-01-02T03:04:05Z", Compat.SerializeJson(v).Trim('"'));
     }
 
     [Fact]
     public void OpenUntagged_KnownVariant_Deserializes()
     {
-        var v = JsonConvert.DeserializeObject<OpenDateTimeUntaggedUnion>(
-            "{\"betaAt\":\"2024-01-02T03:04:05Z\",\"count\":2}",
-            Utilities.GetDefaultJsonDeserializerSettings()
+        var v = Compat.DeserializeWithDefaultSettings<OpenDateTimeUntaggedUnion>(
+            "{\"betaAt\":\"2024-01-02T03:04:05Z\",\"count\":2}"
         )!;
         Assert.False(v.IsUnknown());
         Assert.NotNull(v.DateTimeRecordBeta);
@@ -747,12 +698,12 @@ public class UnionsShould
     {
         var sdk = new SDK(serverUrl: Helpers.HttpBinUrl, apiKeyAuth: "Bearer testToken");
 
-        // ParseRawToken keeps date-shaped strings as string tokens; JObject.Parse
+        // ParseRaw keeps date-shaped strings as string tokens; JObject.Parse
         // would coerce them to DateTime before they ever reach the SDK.
         var unknownTagged = OpenDateTimeTaggedUnion.CreateUnknown(
-            Utilities.ParseRawToken("{\"kind\":\"paused\",\"occurredAt\":\"" + OffsetTimestamp + "\"}"));
+            Compat.ParseRaw("{\"kind\":\"paused\",\"occurredAt\":\"" + OffsetTimestamp + "\"}"));
         var unknownUntagged = OpenDateTimeUntaggedUnion.CreateUnknown(
-            Utilities.ParseRawToken("{\"gammaAt\":\"" + OffsetTimestamp + "\"}"));
+            Compat.ParseRaw("{\"gammaAt\":\"" + OffsetTimestamp + "\"}"));
 
         var res = await sdk.Unions.OpenUnionDateTimePostAsync(new OpenUnionDateTimeEnvelope {
             Tagged = unknownTagged,
@@ -762,13 +713,12 @@ public class UnionsShould
 
         var tagged = res.Res!.OpenUnionDateTimeEnvelope.Tagged!;
         Assert.True(tagged.IsUnknown());
-        var taggedRaw = (Newtonsoft.Json.Linq.JObject)tagged.UnknownRaw!;
-        Assert.Equal("paused", (string?)taggedRaw["kind"]);
-        Assert.Equal(OffsetTimestamp, (string?)taggedRaw["occurredAt"]);
+        Assert.Equal("paused", Compat.RawString(tagged.UnknownRaw, "kind"));
+        Assert.Equal(OffsetTimestamp, Compat.RawString(tagged.UnknownRaw, "occurredAt"));
 
         var untagged = res.Res!.OpenUnionDateTimeEnvelope.Untagged!;
         Assert.True(untagged.IsUnknown());
-        Assert.Equal(OffsetTimestamp, (string?)((Newtonsoft.Json.Linq.JObject)untagged.UnknownRaw!)["gammaAt"]);
+        Assert.Equal(OffsetTimestamp, Compat.RawString(untagged.UnknownRaw, "gammaAt"));
     }
 
     [Fact]

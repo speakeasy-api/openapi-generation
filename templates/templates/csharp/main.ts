@@ -71,6 +71,11 @@ function getJobs(): Job[] {
     ...getModelJobs(context.Global.AST.BucketedTypes, getSDKTopLevelFolder()),
   );
 
+  if (isCsharpV2()) {
+    // @ts-ignore
+    jobs.push(...getCsharpV2Jobs());
+  }
+
   // registered sections are listed in includes/includes.ts
   jobs.push(...getReadmeJobs());
 

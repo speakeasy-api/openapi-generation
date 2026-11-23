@@ -9,6 +9,6 @@
     }
 {{- if eq .Local.Enum.Type.Type "string"}}
   {{- if $deprecated }}{{"\n"}}#pragma warning disable 0618{{- end}}
-{{templateString "enum-extension.cs.stmpl" $name }}
+{{templateString "enum-extension.cs.stmpl" (dict "Name" $name)}}
   {{- if $deprecated }}{{"\n"}}#pragma warning restore 0618{{- end}}
 {{- end}}

@@ -41,7 +41,17 @@ namespace Speakeasy.CustomHttp.Hooks
 
                     if (customHttp.Scopes != null && customHttp.Scopes.Count > 0)
                     {
-                        var scopesJson = JsonSerializer.Serialize(customHttp.Scopes);
+                        using var buffer = new System.IO.MemoryStream();
+                        using (var writer = new Utf8JsonWriter(buffer))
+                        {
+                            writer.WriteStartArray();
+                            foreach (var scope in customHttp.Scopes)
+                            {
+                                writer.WriteStringValue(scope);
+                            }
+                            writer.WriteEndArray();
+                        }
+                        var scopesJson = System.Text.Encoding.UTF8.GetString(buffer.ToArray());
                         request.Headers.Add("X-Security-Scopes", scopesJson);
                     }
 
