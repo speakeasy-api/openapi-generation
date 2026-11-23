@@ -7,7 +7,6 @@ using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using Openapi;
 using Openapi.Models.Operations;
 using Openapi.Models.Shared;
@@ -271,7 +270,7 @@ public class RequestBodiesShould
                 },
                 {
                     "mapElemObject",
-                    new { property = "property-test" }
+                    new Dictionary<string, object> { { "property", "property-test" } }
                 },
                 {
                     "mapElemString",
@@ -975,6 +974,13 @@ public class RequestBodiesShould
         CommonHelpers.RecordTest("request-bodies-post-json-optional-nullable");
         var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
 
+        var wire = await Helpers.GetSerializedBodyJson(OptionalNullableJsonAllSet());
+        Assert.Contains("\"optNullBigInt\":8821239038968084", wire);
+        Assert.Contains("\"optNullBigIntStr\":\"9223372036854775808\"", wire);
+        Assert.Contains("\"optNullBigIntStrArr\":[\"9223372036854775808\",\"7\",null]", wire);
+        Assert.Contains("\"optNullDecimalStr\":\"3.14159265358979344719667586\"", wire);
+        Assert.Contains("\"optNullDecimalStrMap\":{\"pi\":\"3.14159265358979344719667586\",\"none\":null}", wire);
+
         // Set: every field present, tri-state survives the round trip (incl. nested).
         var setJson = (
             await sdk.RequestBodies.RequestBodyPostJsonOptionalNullableAsync(OptionalNullableJsonAllSet())
@@ -1264,13 +1270,13 @@ public class RequestBodiesShould
         var res = await sdk.RequestBodies.RequestBodyPutMultipartDeepAsync(obj);
 
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
-        Assert.Equal(Utilities.ToString(obj.Arr), res.Res!.Form.Arr);
-        Assert.Equal("true", res.Res!.Form.Bool);
-        Assert.Equal("1", res.Res!.Form.Int);
-        Assert.Equal(Utilities.ToString(obj.Map), res.Res!.Form.Map);
-        Assert.Equal("1.1", res.Res!.Form.Num);
-        Assert.Equal(Utilities.ToString(obj.Obj), res.Res!.Form.Obj);
-        Assert.Equal("test", res.Res!.Form.Str);
+        Assert.Equal(Compat.ToString(obj.Arr), res.Res!.Form.Arr);
+        Assert.Equal("true", res.Res.Form.Bool);
+        Assert.Equal("1", res.Res.Form.Int);
+        Assert.Equal(Compat.ToString(obj.Map), res.Res.Form.Map);
+        Assert.Equal("1.1", res.Res.Form.Num);
+        Assert.Equal(Compat.ToString(obj.Obj), res.Res.Form.Obj);
+        Assert.Equal("test", res.Res.Form.Str);
     }
 
     [Fact]
@@ -1391,14 +1397,14 @@ public class RequestBodiesShould
         var res = await sdk.RequestBodies.RequestBodyPostFormDeepAsync(obj);
 
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
-        Assert.NotNull(res.Res!);
-        Assert.Equal(Utilities.ToString(obj.Arr), res.Res!.Form.Arr);
-        Assert.Equal("true", res.Res!.Form.Bool);
-        Assert.Equal("1", res.Res!.Form.Int);
-        Assert.Equal(Utilities.ToString(obj.Map), res.Res!.Form.Map);
-        Assert.Equal("1.1", res.Res!.Form.Num);
-        Assert.Equal(Utilities.ToString(obj.Obj), res.Res!.Form.Obj);
-        Assert.Equal("test", res.Res!.Form.Str);
+        Assert.NotNull(res.Res);
+        Assert.Equal(Compat.ToString(obj.Arr), res.Res.Form.Arr);
+        Assert.Equal("true", res.Res.Form.Bool);
+        Assert.Equal("1", res.Res.Form.Int);
+        Assert.Equal(Compat.ToString(obj.Map), res.Res.Form.Map);
+        Assert.Equal("1.1", res.Res.Form.Num);
+        Assert.Equal(Compat.ToString(obj.Obj), res.Res.Form.Obj);
+        Assert.Equal("test", res.Res.Form.Str);
     }
 
     [Fact]
@@ -1666,13 +1672,10 @@ public class RequestBodiesShould
         CommonHelpers.RecordTest("request-bodies-complex-number-types-required-missing");
 
         var incompleteJson = "{}";
-        var ex = Assert.Throws<JsonSerializationException>(
-            () => JsonConvert.DeserializeObject<ComplexNumberTypes>(
-                incompleteJson,
-                Utilities.GetDefaultJsonDeserializerSettings()
-            )
+        var ex = Compat.AssertThrowsJsonSerializationException(
+            () => Compat.DeserializeWithDefaultSettings<ComplexNumberTypes>(incompleteJson)
         );
-        Assert.Contains("Required property", ex.Message);
+        Assert.Contains(Compat.RequiredPropertyMissingFragment, ex.Message);
     }
 
     [Fact]
@@ -2041,6 +2044,28 @@ public class RequestBodiesShould
 
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
         Assert.Equal("null", res.Object!.Data);
+    }
+
+    [Fact]
+    public async Task RequestBodyPostNullableRequiredStringBodyWithValueAsync()
+    {
+        var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
+
+        var res = await sdk.RequestBodies.RequestBodyPostNullableRequiredStringBodyAsync("hello");
+
+        Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
+        Assert.Equal("\"hello\"", res.Object!.Data);
+    }
+
+    [Fact]
+    public async Task RequestBodyPostNullableNotRequiredStringBodyWithValueAsync()
+    {
+        var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
+
+        var res = await sdk.RequestBodies.RequestBodyPostNullableNotRequiredStringBodyAsync("hello");
+
+        Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
+        Assert.Equal("\"hello\"", res.Object!.Data);
     }
 
     [Fact]

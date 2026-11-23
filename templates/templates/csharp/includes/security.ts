@@ -101,15 +101,33 @@ function getGlobalSecurity(
     );
   }
 
-  const securityValue = templateSecurityUsage(
-    security.Type,
-    0,
-    true,
-    flattenedSecurity,
-    index,
-    example,
-    additionalContext,
-  ).trim();
+  const flattenedField =
+    security.Type.Fields.length == 1 && flattenedSecurity
+      ? security.Type.Fields[0]
+      : undefined;
+  const flattenedSchemeAnno = flattenedField
+    ? securityAnnotations(flattenedField).find((anno) => anno.Scheme)
+    : undefined;
+
+  const securityValue =
+    isCsharpV2() && flattenedSchemeAnno && !flattenedField.Type.IsPrimitive()
+      ? templateSchemeObjectValue(
+          flattenedField,
+          flattenedSchemeAnno,
+          "",
+          1,
+          example !== undefined ? example[flattenedField.Name] : undefined,
+          additionalContext,
+        )
+      : templateSecurityUsage(
+          security.Type,
+          0,
+          true,
+          flattenedSecurity,
+          index,
+          example,
+          additionalContext,
+        ).trim();
 
   return {
     fieldName: securityFieldName,
@@ -137,50 +155,92 @@ function templateScheme(
   if (fieldDef.Type.IsPrimitive()) {
     return indentLines(
       [
-        `${templateFieldDeclaration(
-          fieldDef,
-          schemeParent,
-        )}${templateSecurityFieldValue(
-          fieldDef,
-          schemeAnno,
-          optionalPrefix != "",
-          example,
-          additionalContext,
-        )}${templateFieldDelimiter()}`,
+        `${templateFieldDeclaration(fieldDef, schemeParent)}${
+          templateTypedSchemeValue(fieldDef, example, additionalContext) ??
+          templateSecurityFieldValue(
+            fieldDef,
+            schemeAnno,
+            optionalPrefix != "",
+            example,
+            additionalContext,
+          )
+        }${templateFieldDelimiter()}`,
       ],
       indent,
     );
   } else {
-    let fields = [];
-
-    for (const field of fieldDef.Type.Fields) {
-      const fieldExample =
-        example !== undefined ? example[field.OriginalName] : undefined;
-
-      fields.push(
-        `${templateFieldDeclaration(field, fieldDef.Type)}${templateSchemeValue(
-          field,
-          schemeAnno,
-          fieldExample,
-          additionalContext,
-        )}${templateFieldDelimiter()}`,
-      );
-    }
-
     return (
       indentLines(
         [
-          `${templateFieldDeclaration(fieldDef)}${optionalPrefix}${templateType(
-            fieldDef.Type,
-            { security: true },
-          )}${templateBracket(fieldDef.Type, true, { security: true })}`,
-          indentLines(fields, indent),
-          templateBracket(fieldDef.Type, false, { security: true }),
+          `${templateFieldDeclaration(fieldDef)}${templateSchemeObjectValue(
+            fieldDef,
+            schemeAnno,
+            optionalPrefix,
+            indent,
+            example,
+            additionalContext,
+          )}`,
         ],
         indent,
       ) + templateFieldDelimiter()
     );
   }
+}
+
+function templateSchemeObjectValue(
+  fieldDef: FieldDef,
+  schemeAnno: SecurityAnnotation,
+  optionalPrefix: string,
+  indent: number,
+  example?: any,
+  additionalContext?: TemplateValueContext,
+): string {
+  let fields = [];
+
+  for (const field of fieldDef.Type.Fields) {
+    const fieldExample =
+      example !== undefined ? example[field.OriginalName] : undefined;
+
+    const value = templateSchemeValue(
+      field,
+      schemeAnno,
+      fieldExample,
+      additionalContext,
+    );
+    if (isCsharpV2() && value === "") {
+      continue;
+    }
+
+    fields.push(
+      `${templateFieldDeclaration(
+        field,
+        fieldDef.Type,
+      )}${value}${templateFieldDelimiter()}`,
+    );
+  }
+
+  return [
+    `${optionalPrefix}${templateType(fieldDef.Type, {
+      security: true,
+    })}${templateBracket(fieldDef.Type, true, { security: true })}`,
+    indentLines(fields, indent),
+    templateBracket(fieldDef.Type, false, { security: true }),
+  ].join("\n");
+}
+
+function templateTypedSchemeValue(
+  field: FieldDef,
+  example: any,
+  additionalContext?: TemplateValueContext,
+): string | undefined {
+  const valueType =
+    field.Type.Type.toString() === "array" ? field.Type.ItemType : field.Type;
+  if (!isCsharpV2() || valueType.Type.toString() === "string") {
+    return undefined;
+  }
+  return field.Type.IsPrimitive()
+    ? templateValueAsRequired(field, example, additionalContext)
+    : templateValue(field, example, false, additionalContext);
 }
 
 function templateSchemeValue(
@@ -189,6 +249,14 @@ function templateSchemeValue(
   fieldExample: any,
   additionalContext?: TemplateValueContext,
 ): string {
+  const typedValue = templateTypedSchemeValue(
+    field,
+    fieldExample,
+    additionalContext,
+  );
+  if (typedValue !== undefined) {
+    return typedValue;
+  }
   if (field.Type.Type.toString() === "array") {
     const itemPlaceholder = getSecurityExample(
       fieldExample,
@@ -252,3 +320,30 @@ function templateHoistedSecurityRemark(
 
   return remark(`one of ${fieldList.join(", ")}, or ${last}`);
 }
+
+// @ts-ignore
+function templateApplyOpSecurity(_op: Operation): string {
+  return `new SecurityMetadata(() => security).Apply(httpRequest)`;
+}
+
+registerTemplateFunc("templateApplyOpSecurity", templateApplyOpSecurity);
+
+// @ts-ignore
+function templateApplyGlobalSecurity(op: Operation): string {
+  const hoisted = op.HoistedSecurityConfig;
+  const allowedFields =
+    hoisted && !hoisted.Equivalent
+      ? `, new string[] { ${hoisted.Fields.map(
+          (f) => `"${sanitizeFieldName(f.Name)}"`,
+        ).join(", ")} }`
+      : "";
+  return `if (SDKConfiguration.SecuritySource != null)
+            {
+                httpRequest = new SecurityMetadata(SDKConfiguration.SecuritySource${allowedFields}).Apply(httpRequest);
+            }`;
+}
+
+registerTemplateFunc(
+  "templateApplyGlobalSecurity",
+  templateApplyGlobalSecurity,
+);

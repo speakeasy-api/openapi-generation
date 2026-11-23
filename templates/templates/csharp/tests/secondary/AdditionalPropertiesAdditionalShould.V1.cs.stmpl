@@ -1,3 +1,5 @@
+{{- /* v1-only: asserts the Newtonsoft legacy additionalProperties wire shape (spreadAdditionalProperties off) through v1 serializer and union scorer helpers. */ -}}
+{{- if not isCsharpV2 -}}
 using System.Collections.Generic;
 using System.Numerics;
 using HoistedSecurity.Models.Shared;
@@ -98,3 +100,4 @@ public class AdditionalPropertiesAdditionalShould
         public Dictionary<string, string> AdditionalProperties { get; set; }
     }
 }
+{{ end -}}

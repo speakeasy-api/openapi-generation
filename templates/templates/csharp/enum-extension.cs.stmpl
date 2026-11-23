@@ -1,4 +1,4 @@
-{{- $name := .Local}}
+{{- $name := .Local.Name}}
     public static class {{ $name }}Extension
     {
         public static string Value(this {{ $name }} value)

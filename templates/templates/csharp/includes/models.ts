@@ -4,6 +4,18 @@ type CSharpModel = {
   OutputLocation: string;
 };
 
+// @ts-ignore
+function getJsonAnnotation(fieldDef: FieldDef): JSONAnnotation | undefined {
+  return Array.from(fieldDef.Annotations).find(
+    (a) => a.Type().toString() === "json",
+  ) as JSONAnnotation | undefined;
+}
+
+// @ts-ignore
+function hasJsonAnnotation(fieldDef: FieldDef): boolean {
+  return getJsonAnnotation(fieldDef) !== undefined;
+}
+
 // Returns true when a field must be emitted as OptionalNullable<T> rather than
 // plain T?. Wrapping is required only when the spec distinguishes three
 // states — absent / explicit null / set — which happens for optional+nullable
@@ -47,7 +59,7 @@ function isPresenceAwareOptionalNullable(fieldDef: FieldDef): boolean {
     fieldDef.Nullable &&
     !fieldDef.Const &&
     !isScalarOptionalNullableDecimal(fieldDef) &&
-    Array.from(fieldDef.Annotations).some((a) => a.Type().toString() === "json")
+    hasJsonAnnotation(fieldDef)
   );
 }
 
@@ -174,6 +186,16 @@ function useSmartUnion(typeDef?: TypeDef): boolean {
 registerTemplateFunc("useSmartUnion", useSmartUnion);
 
 // @ts-ignore
+function sanitizeModelFieldType(
+  fieldDef: FieldDef,
+  optional: boolean,
+  usageLocation: string,
+): string {
+  return sanitizeType(fieldDef.Type, optional, usageLocation);
+}
+registerTemplateFunc("sanitizeModelFieldType", sanitizeModelFieldType);
+
+// @ts-ignore
 function templateFieldType(
   fieldDef: FieldDef,
   fallbackOptional: boolean,
@@ -181,16 +203,18 @@ function templateFieldType(
   owner: TypeDef,
 ): string {
   if (!context.Global.Config.PresenceAwareJSONSerialization) {
-    return sanitizeType(fieldDef.Type, fallbackOptional, usageLocation);
+    return sanitizeModelFieldType(fieldDef, fallbackOptional, usageLocation);
   }
   if (fieldDef.Const) {
-    return sanitizeType(fieldDef.Type, fallbackOptional, usageLocation);
+    return sanitizeModelFieldType(fieldDef, fallbackOptional, usageLocation);
   }
   if (needsOptionalNullableWrapper(fieldDef, owner)) {
-    const inner = sanitizeType(fieldDef.Type, true, usageLocation);
-    return `OptionalNullable<${inner}>`;
+    const inner = sanitizeModelFieldType(fieldDef, true, usageLocation);
+    return isCsharpV2()
+      ? `global::${getModelNamespace("")}.OptionalNullable<${inner}>`
+      : `OptionalNullable<${inner}>`;
   }
-  return sanitizeType(fieldDef.Type, fallbackOptional, usageLocation);
+  return sanitizeModelFieldType(fieldDef, fallbackOptional, usageLocation);
 }
 registerTemplateFunc("templateFieldType", templateFieldType);
 
@@ -222,7 +246,7 @@ function templateShouldSerialize(
   className: string,
   owner: TypeDef,
 ): string {
-  if (!needsOptionalNullableWrapper(fieldDef, owner)) return "";
+  if (isCsharpV2() || !needsOptionalNullableWrapper(fieldDef, owner)) return "";
   const name = sanitizeFieldName(fieldDef.Name, className);
   return `\n        public bool ShouldSerialize${name}() => ${name}.IsSet;`;
 }

@@ -589,3 +589,14 @@ function getTestingConfiguration(genConfig): TestingConfiguration {
     },
   };
 }
+
+// Exports for csharpv2/config.ts
+if (typeof module !== "undefined") {
+  module.exports = {
+    getCompileDependencies,
+    getConfigFields,
+    getTemplateDependencies,
+    getTestingConfiguration,
+    upgradeConfig,
+  };
+}

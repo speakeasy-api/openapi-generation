@@ -4,7 +4,11 @@
 namespace {{getScopeNamespace "hooks" true}}
 {
     using System;
+{{- if isCsharpV2}}
+    using System.Text.Json.Serialization;
+{{- else}}
     using Newtonsoft.Json;
+{{- end}}
 
 {{- $scopesMap := .Local }}
 {{- range $schemeKey, $config := $scopesMap }}
@@ -17,12 +21,12 @@ namespace {{getScopeNamespace "hooks" true}}
     {
     {{- range $index, $scope := $config.AvailableScopes }}
         {{- templateComments .Comments 2 "field" (ne $index 0)}}
-        [JsonProperty("{{$scope.Name}}")]
+        {{templateJsonPropertyAttribute $scope.Name}}
         {{index $dedupNames $index}},
     {{- end}}
     }
 
-{{templateString "enum-extension.cs.stmpl" $enumName}}
+{{templateString "enum-extension.cs.stmpl" (dict "Name" $enumName "Scopes" $config.AvailableScopes "DedupNames" $dedupNames)}}
   {{- end}}
 {{- end}}
 }

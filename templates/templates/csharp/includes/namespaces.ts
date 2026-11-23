@@ -80,22 +80,23 @@ function getAccessNamespace(
   outputLocation: string,
   full: boolean = false,
   utils: boolean = false,
+  rootNamespace: string = getSDKNamespace(),
 ): string {
   if (utils) {
-    return `${getSDKNamespace()}.${outputLocation.replace("/", ".")}`;
+    return `${rootNamespace}.${outputLocation.replace("/", ".")}`;
   }
 
   if (usingGlobalImports() && !isCustomNamespace(outputLocation)) {
-    return full ? getSDKNamespace() : "";
+    return full ? rootNamespace : "";
   }
 
   if (outputLocation == "") {
-    return getSDKNamespace();
+    return rootNamespace;
   }
 
   const parts = outputLocation.split("/");
   if (full) {
-    parts.unshift(getSDKNamespace());
+    parts.unshift(rootNamespace);
   }
 
   return parts.join(".");
@@ -158,6 +159,15 @@ function getProjectFilePath(): string {
 }
 
 registerTemplateFunc("getProjectFilePath", getProjectFilePath);
+
+function templateTestProjectReferences(): string {
+  return `<ProjectReference Include="..\\${getProjectFilePath()}" />`;
+}
+
+registerTemplateFunc(
+  "templateTestProjectReferences",
+  templateTestProjectReferences,
+);
 
 // @ts-ignore
 function getUsageSourceFilePath(sourceDir: string): string {

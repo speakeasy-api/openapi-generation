@@ -133,8 +133,13 @@ function templateClientCredentialsImports(
   imports.add("System.Security.Cryptography");
   imports.add("System.Text");
   imports.add("System.Threading.Tasks");
-  imports.add("Newtonsoft.Json");
-  imports = addImport(imports, getScopeNamespace("shared"), true);
+  if (isCsharpV2()) {
+    imports.add("System.Text.Json");
+    imports.add("System.Text.Json.Serialization");
+  } else {
+    imports.add("Newtonsoft.Json");
+  }
+  imports = addImport(imports, getScopeNamespace("shared", true), false);
   imports = addImport(imports, "Utils", true);
 
   if (context.Global.Config.EnableCancellationToken) {
@@ -150,6 +155,24 @@ function templateClientCredentialsImports(
 registerTemplateFunc(
   "templateClientCredentialsImports",
   templateClientCredentialsImports,
+);
+
+// @ts-ignore
+function templateClientCredentialsTokenDeserialize(): string {
+  return "JsonConvert.DeserializeObject<TokenResponse?>(responseBody)";
+}
+registerTemplateFunc(
+  "templateClientCredentialsTokenDeserialize",
+  templateClientCredentialsTokenDeserialize,
+);
+
+// @ts-ignore
+function templateClientCredentialsHookContext(): string {
+  return "";
+}
+registerTemplateFunc(
+  "templateClientCredentialsHookContext",
+  templateClientCredentialsHookContext,
 );
 
 function templateClientCredentialsSecurityAccessFunction(

@@ -50,6 +50,58 @@ function useNodatime(): boolean {
 }
 registerTemplateFunc("useNodatime", useNodatime);
 
+function requiresNodatime(): boolean {
+  return useNodatime() && (!isCsharpV2() || sdkUsesDateType());
+}
+registerTemplateFunc("requiresNodatime", requiresNodatime);
+
+let sdkUsesDateTypeResult: boolean | undefined;
+
+function sdkUsesDateType(): boolean {
+  if (sdkUsesDateTypeResult === undefined) {
+    sdkUsesDateTypeResult = findDateType();
+  }
+  return sdkUsesDateTypeResult;
+}
+
+function findDateType(): boolean {
+  const visited = new Set<string>();
+  const visit = (t: TypeDef | undefined): boolean => {
+    if (!t || t.Truncated) return false;
+    const kind = t.Type?.toString() ?? "";
+    if (kind === "date") return true;
+    if (t.Name) {
+      const id = `${t.OutputLocation ?? ""}::${kind}::${t.Name}`;
+      if (visited.has(id)) return false;
+      visited.add(id);
+    }
+    return (
+      visit(t.ItemType) ||
+      (t.Fields ?? []).some((f) => visit(f.Type)) ||
+      (t.AssociatedTypes ?? []).some(visit)
+    );
+  };
+
+  const visitSDK = (sdk: SDK): boolean =>
+    visit(sdk.Globals) ||
+    (sdk.Operations ?? []).some(
+      (op) =>
+        visit(op.Request?.Field?.Type) ||
+        visit(op.Request?.RequestBody?.Type) ||
+        visit(op.Response?.Type),
+    ) ||
+    (sdk.SubSDKs ?? []).some(visitSDK);
+
+  for (const [, buckets] of sequencedMapEntries(
+    context.Global.AST.BucketedTypes,
+  )) {
+    for (const [, typeDefs] of sequencedMapEntries(buckets)) {
+      if (typeDefs.some(visit)) return true;
+    }
+  }
+  return visitSDK(context.Global.AST.MainSDK);
+}
+
 // Whether to pass a CancellationToken to TextReader.ReadLineAsync.
 function isReadLineAsyncCancellable(): boolean {
   if (!context.Global.Config.EnableCancellationToken) {

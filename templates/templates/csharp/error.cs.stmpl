@@ -52,7 +52,7 @@
         {{- continue }}
       {{- end}}
 
-      {{- $type := sanitizeType .Type false $usageLocation }}
+      {{- $type := sanitizeModelFieldType . false $usageLocation }}
       {{- $optional := or (or .Optional .Nullable) (eq .Name "ContentType") }}
 
         [Obsolete("This field will be removed in a future release, please migrate away from it as soon as possible. Use {{$className}}.Payload.{{$name}} instead.")]

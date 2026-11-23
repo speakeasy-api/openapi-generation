@@ -5,6 +5,7 @@
     {{- templateComments .Local.Comments 1 "class" false}}
     {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
     {{- templateAdditionalPropertiesClassAnnotation .Local 1}}
+    {{- templateClassAnnotations .Local 1}}
     public {{templatePartialModifier}}class {{ $className }}
     {
       {{- if .Local.Extensions.Pagination }}

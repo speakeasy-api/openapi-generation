@@ -220,6 +220,13 @@ function templateTypeMarkdown({
   docsRoot = "../..",
   source = GeneratedDocSource.README,
 }: TemplateTypeMarkdownParams): string {
+  if (
+    isCsharpV2() &&
+    fieldDef.IsAdditionalProperties &&
+    fieldDef.Type.ItemType?.Type.toString() === "any"
+  ) {
+    return `Dictionary\<String, *JsonElement*>`;
+  }
   let itemMarkdown = "";
   if (fieldDef.Type.ItemType != undefined) {
     itemMarkdown = templateTypeMarkdown({
