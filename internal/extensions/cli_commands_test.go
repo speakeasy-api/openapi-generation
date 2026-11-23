@@ -756,11 +756,39 @@ func TestCLICommands_AsyncErrorBindings(t *testing.T) {
         properties:
           detail:
             type: string
+    BareFailureList:
+      type: array
+      items:
+        type: object
     TaskResult:
       type: object
       properties:
         id:
           type: string
+        splitFailures:
+          allOf:
+            - type: array
+              items:
+                type: object
+            - items:
+                properties:
+                  detail:
+                    type: string
+        splitFailuresSwapped:
+          allOf:
+            - items:
+                properties:
+                  detail:
+                    type: string
+            - type: array
+              items:
+                type: object
+        refSplitFailures:
+          $ref: '#/components/schemas/BareFailureList'
+          items:
+            properties:
+              detail:
+                type: string
         refFailures:
           $ref: '#/components/schemas/FailureList'
           description: Failures behind a reference with a sibling keyword.
@@ -837,7 +865,7 @@ func TestCLICommands_AsyncErrorBindings(t *testing.T) {
 	_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: failures\n      errorMessageField: detial\n"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `async.errorMessageField: property "detial" does not resolve inside the "failures" member`)
-	for _, field := range []string{"refFailures", "allOfFailures", "untypedFailures"} {
+	for _, field := range []string{"refFailures", "allOfFailures", "untypedFailures", "splitFailures", "splitFailuresSwapped", "refSplitFailures"} {
 		_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: "+field+"\n      errorMessageField: detail\n"))
 		require.NoError(t, err, field)
 		_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: "+field+"\n      errorMessageField: detial\n"))
