@@ -18,6 +18,15 @@ func (e Color) ToPointer() *Color {
 	return &e
 }
 
+// ColorValues returns every known Color value in schema order.
+func ColorValues() []Color {
+	return []Color{
+		ColorRed,
+		ColorGreen,
+		ColorBlue,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *Color) IsExact() bool {
 	if e != nil {

@@ -16,6 +16,16 @@ func (e PetStatus) ToPointer() *PetStatus {
 	return &e
 }
 
+// PetStatusValues returns every known PetStatus value in schema order.
+func PetStatusValues() []PetStatus {
+	return []PetStatus{
+		PetStatusAvailable,
+		PetStatusAdopted,
+		PetStatusPending,
+		PetStatusUnavailable,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *PetStatus) IsExact() bool {
 	if e != nil {

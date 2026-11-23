@@ -14,6 +14,13 @@ func (e {{$enumType}}) ToPointer() *{{$enumType}} {
     return &e
 }
 
+// {{$enumType}}Values returns every known {{$enumType}} value in schema order.
+func {{$enumType}}Values() []{{$enumType}} {
+    return []{{$enumType}}{
+        {{templateEnumValueNames .Local.Type}}
+    }
+}
+
 {{- if $enum.Open }}
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *{{$enumType}}) IsExact() bool {

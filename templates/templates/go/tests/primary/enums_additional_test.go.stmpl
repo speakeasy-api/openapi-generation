@@ -50,3 +50,15 @@ func TestOpenEnumsRoundTrip(t *testing.T) {
 	wantHeroWidth = shared.HeroWidth(2160)
 	require.Equal(t, &wantHeroWidth, roundTripTheme.HeroWidth)
 }
+
+func TestEnumValues(t *testing.T) {
+	recordTest("enum-values")
+
+	require.Equal(t, []shared.Icon{shared.IconTick, shared.IconThumbsUp, shared.IconFire}, shared.IconValues())
+	require.Equal(t, []shared.Kind{shared.KindAgent}, shared.KindValues())
+
+	for _, w := range shared.HeroWidthValues() {
+		require.True(t, w.IsExact(), "HeroWidthValues returned %v, which IsExact rejects", w)
+	}
+	require.NotEmpty(t, shared.HeroWidthValues())
+}

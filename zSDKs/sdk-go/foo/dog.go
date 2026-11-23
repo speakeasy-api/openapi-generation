@@ -17,6 +17,13 @@ const (
 func (e DogAnimalType) ToPointer() *DogAnimalType {
 	return &e
 }
+
+// DogAnimalTypeValues returns every known DogAnimalType value in schema order.
+func DogAnimalTypeValues() []DogAnimalType {
+	return []DogAnimalType{
+		DogAnimalTypeDog,
+	}
+}
 func (e *DogAnimalType) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

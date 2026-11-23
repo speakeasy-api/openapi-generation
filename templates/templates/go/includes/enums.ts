@@ -26,6 +26,15 @@ function templateEnums(typeDef: TypeDef): string {
 
 registerTemplateFunc("templateEnums", templateEnums);
 
+// @ts-ignore
+function templateEnumValueNames(typeDef: TypeDef): string {
+  return getEnumNames(typeDef)
+    .map((name) => `${name},`)
+    .join("\n");
+}
+
+registerTemplateFunc("templateEnumValueNames", templateEnumValueNames);
+
 function formatGoEnumDescriptionComments(
   enumName: string,
   description: string,

@@ -27,6 +27,16 @@ const (
 func (e Emoji) ToPointer() *Emoji {
 	return &e
 }
+
+// EmojiValues returns every known Emoji value in schema order.
+func EmojiValues() []Emoji {
+	return []Emoji{
+		EmojiWave,
+		EmojiSmiley,
+		EmojiThumbsup,
+		EmojiTada,
+	}
+}
 func (e *Emoji) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {
