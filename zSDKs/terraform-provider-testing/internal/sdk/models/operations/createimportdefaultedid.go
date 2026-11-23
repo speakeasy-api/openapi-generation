@@ -21,6 +21,14 @@ const (
 func (e CreateImportDefaultedIDTier) ToPointer() *CreateImportDefaultedIDTier {
 	return &e
 }
+
+// CreateImportDefaultedIDTierValues returns every known CreateImportDefaultedIDTier value in schema order.
+func CreateImportDefaultedIDTierValues() []CreateImportDefaultedIDTier {
+	return []CreateImportDefaultedIDTier{
+		CreateImportDefaultedIDTierBasic,
+		CreateImportDefaultedIDTierPremium,
+	}
+}
 func (e *CreateImportDefaultedIDTier) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

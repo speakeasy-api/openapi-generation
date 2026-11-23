@@ -35,6 +35,50 @@ function templateEnumValueNames(typeDef: TypeDef): string {
 
 registerTemplateFunc("templateEnumValueNames", templateEnumValueNames);
 
+function definedTypeNames(outputLocation: string): Set<string> {
+  if (!context.GlobalComputed) {
+    context.GlobalComputed = {};
+  }
+  if (!context.GlobalComputed._typeNamesByLocation) {
+    const byLocation = new Map<string, Set<string>>();
+    for (const [location, models] of sequencedMapEntries(
+      context.Global.AST.BucketedTypes,
+    )) {
+      const names = new Set<string>();
+      for (const [, types] of sequencedMapEntries(models)) {
+        for (const t of types) {
+          names.add(sanitizeClass(t, location, true, false));
+        }
+      }
+      byLocation.set(location, names);
+    }
+    context.GlobalComputed._typeNamesByLocation = byLocation;
+  }
+  return (
+    context.GlobalComputed._typeNamesByLocation.get(outputLocation) ??
+    new Set<string>()
+  );
+}
+
+// @ts-ignore
+function templateEnumValuesFuncName(
+  typeDef: TypeDef,
+  enumType: string,
+): string {
+  const taken = definedTypeNames(typeDef.OutputLocation);
+  let name = `${enumType}Values`;
+  if (!taken.has(name)) {
+    return name;
+  }
+  name = `${enumType}EnumValues`;
+  for (let i = 2; taken.has(name); i++) {
+    name = `${enumType}EnumValues${i}`;
+  }
+  return name;
+}
+
+registerTemplateFunc("templateEnumValuesFuncName", templateEnumValuesFuncName);
+
 function formatGoEnumDescriptionComments(
   enumName: string,
   description: string,

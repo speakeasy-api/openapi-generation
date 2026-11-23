@@ -21,6 +21,14 @@ const (
 func (e FrameworkTypeResponseListEnumInt32) ToPointer() *FrameworkTypeResponseListEnumInt32 {
 	return &e
 }
+
+// FrameworkTypeResponseListEnumInt32Values returns every known FrameworkTypeResponseListEnumInt32 value in schema order.
+func FrameworkTypeResponseListEnumInt32Values() []FrameworkTypeResponseListEnumInt32 {
+	return []FrameworkTypeResponseListEnumInt32{
+		FrameworkTypeResponseListEnumInt32One,
+		FrameworkTypeResponseListEnumInt32Two,
+	}
+}
 func (e *FrameworkTypeResponseListEnumInt32) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -46,6 +54,14 @@ const (
 
 func (e FrameworkTypeResponseListEnumInt64) ToPointer() *FrameworkTypeResponseListEnumInt64 {
 	return &e
+}
+
+// FrameworkTypeResponseListEnumInt64Values returns every known FrameworkTypeResponseListEnumInt64 value in schema order.
+func FrameworkTypeResponseListEnumInt64Values() []FrameworkTypeResponseListEnumInt64 {
+	return []FrameworkTypeResponseListEnumInt64{
+		FrameworkTypeResponseListEnumInt64One,
+		FrameworkTypeResponseListEnumInt64Two,
+	}
 }
 func (e *FrameworkTypeResponseListEnumInt64) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -73,6 +89,14 @@ const (
 func (e FrameworkTypeResponseListEnumInteger) ToPointer() *FrameworkTypeResponseListEnumInteger {
 	return &e
 }
+
+// FrameworkTypeResponseListEnumIntegerValues returns every known FrameworkTypeResponseListEnumInteger value in schema order.
+func FrameworkTypeResponseListEnumIntegerValues() []FrameworkTypeResponseListEnumInteger {
+	return []FrameworkTypeResponseListEnumInteger{
+		FrameworkTypeResponseListEnumIntegerOne,
+		FrameworkTypeResponseListEnumIntegerTwo,
+	}
+}
 func (e *FrameworkTypeResponseListEnumInteger) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -98,6 +122,14 @@ const (
 
 func (e FrameworkTypeResponseListEnumString) ToPointer() *FrameworkTypeResponseListEnumString {
 	return &e
+}
+
+// FrameworkTypeResponseListEnumStringValues returns every known FrameworkTypeResponseListEnumString value in schema order.
+func FrameworkTypeResponseListEnumStringValues() []FrameworkTypeResponseListEnumString {
+	return []FrameworkTypeResponseListEnumString{
+		FrameworkTypeResponseListEnumStringValue1,
+		FrameworkTypeResponseListEnumStringValue2,
+	}
 }
 func (e *FrameworkTypeResponseListEnumString) UnmarshalJSON(data []byte) error {
 	var v string
@@ -438,6 +470,14 @@ const (
 func (e FrameworkTypeResponseListNullEnumString) ToPointer() *FrameworkTypeResponseListNullEnumString {
 	return &e
 }
+
+// FrameworkTypeResponseListNullEnumStringValues returns every known FrameworkTypeResponseListNullEnumString value in schema order.
+func FrameworkTypeResponseListNullEnumStringValues() []FrameworkTypeResponseListNullEnumString {
+	return []FrameworkTypeResponseListNullEnumString{
+		FrameworkTypeResponseListNullEnumStringValue1,
+		FrameworkTypeResponseListNullEnumStringValue2,
+	}
+}
 func (e *FrameworkTypeResponseListNullEnumString) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -570,6 +610,14 @@ const (
 
 func (e FrameworkTypeResponseListNullableEnumString) ToPointer() *FrameworkTypeResponseListNullableEnumString {
 	return &e
+}
+
+// FrameworkTypeResponseListNullableEnumStringValues returns every known FrameworkTypeResponseListNullableEnumString value in schema order.
+func FrameworkTypeResponseListNullableEnumStringValues() []FrameworkTypeResponseListNullableEnumString {
+	return []FrameworkTypeResponseListNullableEnumString{
+		FrameworkTypeResponseListNullableEnumStringValue1,
+		FrameworkTypeResponseListNullableEnumStringValue2,
+	}
 }
 func (e *FrameworkTypeResponseListNullableEnumString) UnmarshalJSON(data []byte) error {
 	var v string
@@ -1017,6 +1065,14 @@ const (
 func (e FrameworkTypeResponseSetEnumInt32) ToPointer() *FrameworkTypeResponseSetEnumInt32 {
 	return &e
 }
+
+// FrameworkTypeResponseSetEnumInt32Values returns every known FrameworkTypeResponseSetEnumInt32 value in schema order.
+func FrameworkTypeResponseSetEnumInt32Values() []FrameworkTypeResponseSetEnumInt32 {
+	return []FrameworkTypeResponseSetEnumInt32{
+		FrameworkTypeResponseSetEnumInt32One,
+		FrameworkTypeResponseSetEnumInt32Two,
+	}
+}
 func (e *FrameworkTypeResponseSetEnumInt32) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1042,6 +1098,14 @@ const (
 
 func (e FrameworkTypeResponseSetEnumInt64) ToPointer() *FrameworkTypeResponseSetEnumInt64 {
 	return &e
+}
+
+// FrameworkTypeResponseSetEnumInt64Values returns every known FrameworkTypeResponseSetEnumInt64 value in schema order.
+func FrameworkTypeResponseSetEnumInt64Values() []FrameworkTypeResponseSetEnumInt64 {
+	return []FrameworkTypeResponseSetEnumInt64{
+		FrameworkTypeResponseSetEnumInt64One,
+		FrameworkTypeResponseSetEnumInt64Two,
+	}
 }
 func (e *FrameworkTypeResponseSetEnumInt64) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -1069,6 +1133,14 @@ const (
 func (e FrameworkTypeResponseSetEnumInteger) ToPointer() *FrameworkTypeResponseSetEnumInteger {
 	return &e
 }
+
+// FrameworkTypeResponseSetEnumIntegerValues returns every known FrameworkTypeResponseSetEnumInteger value in schema order.
+func FrameworkTypeResponseSetEnumIntegerValues() []FrameworkTypeResponseSetEnumInteger {
+	return []FrameworkTypeResponseSetEnumInteger{
+		FrameworkTypeResponseSetEnumIntegerOne,
+		FrameworkTypeResponseSetEnumIntegerTwo,
+	}
+}
 func (e *FrameworkTypeResponseSetEnumInteger) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1094,6 +1166,14 @@ const (
 
 func (e FrameworkTypeResponseSetEnumString) ToPointer() *FrameworkTypeResponseSetEnumString {
 	return &e
+}
+
+// FrameworkTypeResponseSetEnumStringValues returns every known FrameworkTypeResponseSetEnumString value in schema order.
+func FrameworkTypeResponseSetEnumStringValues() []FrameworkTypeResponseSetEnumString {
+	return []FrameworkTypeResponseSetEnumString{
+		FrameworkTypeResponseSetEnumStringValue1,
+		FrameworkTypeResponseSetEnumStringValue2,
+	}
 }
 func (e *FrameworkTypeResponseSetEnumString) UnmarshalJSON(data []byte) error {
 	var v string
@@ -1434,6 +1514,14 @@ const (
 func (e FrameworkTypeResponseSetNullEnumString) ToPointer() *FrameworkTypeResponseSetNullEnumString {
 	return &e
 }
+
+// FrameworkTypeResponseSetNullEnumStringValues returns every known FrameworkTypeResponseSetNullEnumString value in schema order.
+func FrameworkTypeResponseSetNullEnumStringValues() []FrameworkTypeResponseSetNullEnumString {
+	return []FrameworkTypeResponseSetNullEnumString{
+		FrameworkTypeResponseSetNullEnumStringValue1,
+		FrameworkTypeResponseSetNullEnumStringValue2,
+	}
+}
 func (e *FrameworkTypeResponseSetNullEnumString) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1566,6 +1654,14 @@ const (
 
 func (e FrameworkTypeResponseSetNullableEnumString) ToPointer() *FrameworkTypeResponseSetNullableEnumString {
 	return &e
+}
+
+// FrameworkTypeResponseSetNullableEnumStringValues returns every known FrameworkTypeResponseSetNullableEnumString value in schema order.
+func FrameworkTypeResponseSetNullableEnumStringValues() []FrameworkTypeResponseSetNullableEnumString {
+	return []FrameworkTypeResponseSetNullableEnumString{
+		FrameworkTypeResponseSetNullableEnumStringValue1,
+		FrameworkTypeResponseSetNullableEnumStringValue2,
+	}
 }
 func (e *FrameworkTypeResponseSetNullableEnumString) UnmarshalJSON(data []byte) error {
 	var v string

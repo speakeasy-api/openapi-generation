@@ -4,6 +4,7 @@ features:
 targets:
     - go
     - cli
+    - terraform
 type: feat
 bump: patch
 description: add Values helpers that list every known value of a generated Go enum

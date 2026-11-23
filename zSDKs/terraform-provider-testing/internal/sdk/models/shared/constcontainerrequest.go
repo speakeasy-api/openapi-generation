@@ -19,6 +19,15 @@ const (
 func (e ConstContainerRequestFixedList) ToPointer() *ConstContainerRequestFixedList {
 	return &e
 }
+
+// ConstContainerRequestFixedListValues returns every known ConstContainerRequestFixedList value in schema order.
+func ConstContainerRequestFixedListValues() []ConstContainerRequestFixedList {
+	return []ConstContainerRequestFixedList{
+		ConstContainerRequestFixedListRead,
+		ConstContainerRequestFixedListWrite,
+		ConstContainerRequestFixedListAdmin,
+	}
+}
 func (e *ConstContainerRequestFixedList) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

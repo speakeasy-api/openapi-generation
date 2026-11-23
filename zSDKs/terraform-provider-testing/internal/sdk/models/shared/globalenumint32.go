@@ -17,6 +17,14 @@ const (
 func (e GlobalEnumInt32) ToPointer() *GlobalEnumInt32 {
 	return &e
 }
+
+// GlobalEnumInt32Values returns every known GlobalEnumInt32 value in schema order.
+func GlobalEnumInt32Values() []GlobalEnumInt32 {
+	return []GlobalEnumInt32{
+		GlobalEnumInt32One,
+		GlobalEnumInt32Two,
+	}
+}
 func (e *GlobalEnumInt32) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {

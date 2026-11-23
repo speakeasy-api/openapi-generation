@@ -20,6 +20,14 @@ const (
 func (e DeleteImportDefaultedIDTier) ToPointer() *DeleteImportDefaultedIDTier {
 	return &e
 }
+
+// DeleteImportDefaultedIDTierValues returns every known DeleteImportDefaultedIDTier value in schema order.
+func DeleteImportDefaultedIDTierValues() []DeleteImportDefaultedIDTier {
+	return []DeleteImportDefaultedIDTier{
+		DeleteImportDefaultedIDTierBasic,
+		DeleteImportDefaultedIDTierPremium,
+	}
+}
 func (e *DeleteImportDefaultedIDTier) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

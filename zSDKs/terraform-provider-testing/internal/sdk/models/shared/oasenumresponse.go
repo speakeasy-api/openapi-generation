@@ -18,6 +18,14 @@ const (
 func (e OASEnumResponseInt32EnumRequestInt32EnumResponse) ToPointer() *OASEnumResponseInt32EnumRequestInt32EnumResponse {
 	return &e
 }
+
+// OASEnumResponseInt32EnumRequestInt32EnumResponseValues returns every known OASEnumResponseInt32EnumRequestInt32EnumResponse value in schema order.
+func OASEnumResponseInt32EnumRequestInt32EnumResponseValues() []OASEnumResponseInt32EnumRequestInt32EnumResponse {
+	return []OASEnumResponseInt32EnumRequestInt32EnumResponse{
+		OASEnumResponseInt32EnumRequestInt32EnumResponseOne,
+		OASEnumResponseInt32EnumRequestInt32EnumResponseTwo,
+	}
+}
 func (e *OASEnumResponseInt32EnumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -44,6 +52,14 @@ const (
 
 func (e OASEnumResponseInt32EnumRequestInt64EnumResponse) ToPointer() *OASEnumResponseInt32EnumRequestInt64EnumResponse {
 	return &e
+}
+
+// OASEnumResponseInt32EnumRequestInt64EnumResponseValues returns every known OASEnumResponseInt32EnumRequestInt64EnumResponse value in schema order.
+func OASEnumResponseInt32EnumRequestInt64EnumResponseValues() []OASEnumResponseInt32EnumRequestInt64EnumResponse {
+	return []OASEnumResponseInt32EnumRequestInt64EnumResponse{
+		OASEnumResponseInt32EnumRequestInt64EnumResponseOne,
+		OASEnumResponseInt32EnumRequestInt64EnumResponseTwo,
+	}
 }
 func (e *OASEnumResponseInt32EnumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -72,6 +88,14 @@ const (
 func (e OASEnumResponseInt32EnumRequestIntegerEnumResponse) ToPointer() *OASEnumResponseInt32EnumRequestIntegerEnumResponse {
 	return &e
 }
+
+// OASEnumResponseInt32EnumRequestIntegerEnumResponseValues returns every known OASEnumResponseInt32EnumRequestIntegerEnumResponse value in schema order.
+func OASEnumResponseInt32EnumRequestIntegerEnumResponseValues() []OASEnumResponseInt32EnumRequestIntegerEnumResponse {
+	return []OASEnumResponseInt32EnumRequestIntegerEnumResponse{
+		OASEnumResponseInt32EnumRequestIntegerEnumResponseOne,
+		OASEnumResponseInt32EnumRequestIntegerEnumResponseTwo,
+	}
+}
 func (e *OASEnumResponseInt32EnumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -98,6 +122,14 @@ const (
 
 func (e Int32NoenumRequestInt32EnumResponse) ToPointer() *Int32NoenumRequestInt32EnumResponse {
 	return &e
+}
+
+// Int32NoenumRequestInt32EnumResponseValues returns every known Int32NoenumRequestInt32EnumResponse value in schema order.
+func Int32NoenumRequestInt32EnumResponseValues() []Int32NoenumRequestInt32EnumResponse {
+	return []Int32NoenumRequestInt32EnumResponse{
+		Int32NoenumRequestInt32EnumResponseOne,
+		Int32NoenumRequestInt32EnumResponseTwo,
+	}
 }
 func (e *Int32NoenumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
@@ -126,6 +158,14 @@ const (
 func (e Int32NoenumRequestInt64EnumResponse) ToPointer() *Int32NoenumRequestInt64EnumResponse {
 	return &e
 }
+
+// Int32NoenumRequestInt64EnumResponseValues returns every known Int32NoenumRequestInt64EnumResponse value in schema order.
+func Int32NoenumRequestInt64EnumResponseValues() []Int32NoenumRequestInt64EnumResponse {
+	return []Int32NoenumRequestInt64EnumResponse{
+		Int32NoenumRequestInt64EnumResponseOne,
+		Int32NoenumRequestInt64EnumResponseTwo,
+	}
+}
 func (e *Int32NoenumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -152,6 +192,14 @@ const (
 
 func (e Int32NoenumRequestIntegerEnumResponse) ToPointer() *Int32NoenumRequestIntegerEnumResponse {
 	return &e
+}
+
+// Int32NoenumRequestIntegerEnumResponseValues returns every known Int32NoenumRequestIntegerEnumResponse value in schema order.
+func Int32NoenumRequestIntegerEnumResponseValues() []Int32NoenumRequestIntegerEnumResponse {
+	return []Int32NoenumRequestIntegerEnumResponse{
+		Int32NoenumRequestIntegerEnumResponseOne,
+		Int32NoenumRequestIntegerEnumResponseTwo,
+	}
 }
 func (e *Int32NoenumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -180,6 +228,14 @@ const (
 func (e OASEnumResponseInt64EnumRequestInt32EnumResponse) ToPointer() *OASEnumResponseInt64EnumRequestInt32EnumResponse {
 	return &e
 }
+
+// OASEnumResponseInt64EnumRequestInt32EnumResponseValues returns every known OASEnumResponseInt64EnumRequestInt32EnumResponse value in schema order.
+func OASEnumResponseInt64EnumRequestInt32EnumResponseValues() []OASEnumResponseInt64EnumRequestInt32EnumResponse {
+	return []OASEnumResponseInt64EnumRequestInt32EnumResponse{
+		OASEnumResponseInt64EnumRequestInt32EnumResponseOne,
+		OASEnumResponseInt64EnumRequestInt32EnumResponseTwo,
+	}
+}
 func (e *OASEnumResponseInt64EnumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -206,6 +262,14 @@ const (
 
 func (e OASEnumResponseInt64EnumRequestInt64EnumResponse) ToPointer() *OASEnumResponseInt64EnumRequestInt64EnumResponse {
 	return &e
+}
+
+// OASEnumResponseInt64EnumRequestInt64EnumResponseValues returns every known OASEnumResponseInt64EnumRequestInt64EnumResponse value in schema order.
+func OASEnumResponseInt64EnumRequestInt64EnumResponseValues() []OASEnumResponseInt64EnumRequestInt64EnumResponse {
+	return []OASEnumResponseInt64EnumRequestInt64EnumResponse{
+		OASEnumResponseInt64EnumRequestInt64EnumResponseOne,
+		OASEnumResponseInt64EnumRequestInt64EnumResponseTwo,
+	}
 }
 func (e *OASEnumResponseInt64EnumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -234,6 +298,14 @@ const (
 func (e OASEnumResponseInt64EnumRequestIntegerEnumResponse) ToPointer() *OASEnumResponseInt64EnumRequestIntegerEnumResponse {
 	return &e
 }
+
+// OASEnumResponseInt64EnumRequestIntegerEnumResponseValues returns every known OASEnumResponseInt64EnumRequestIntegerEnumResponse value in schema order.
+func OASEnumResponseInt64EnumRequestIntegerEnumResponseValues() []OASEnumResponseInt64EnumRequestIntegerEnumResponse {
+	return []OASEnumResponseInt64EnumRequestIntegerEnumResponse{
+		OASEnumResponseInt64EnumRequestIntegerEnumResponseOne,
+		OASEnumResponseInt64EnumRequestIntegerEnumResponseTwo,
+	}
+}
 func (e *OASEnumResponseInt64EnumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -260,6 +332,14 @@ const (
 
 func (e Int64NoenumRequestInt32EnumResponse) ToPointer() *Int64NoenumRequestInt32EnumResponse {
 	return &e
+}
+
+// Int64NoenumRequestInt32EnumResponseValues returns every known Int64NoenumRequestInt32EnumResponse value in schema order.
+func Int64NoenumRequestInt32EnumResponseValues() []Int64NoenumRequestInt32EnumResponse {
+	return []Int64NoenumRequestInt32EnumResponse{
+		Int64NoenumRequestInt32EnumResponseOne,
+		Int64NoenumRequestInt32EnumResponseTwo,
+	}
 }
 func (e *Int64NoenumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
@@ -288,6 +368,14 @@ const (
 func (e Int64NoenumRequestInt64EnumResponse) ToPointer() *Int64NoenumRequestInt64EnumResponse {
 	return &e
 }
+
+// Int64NoenumRequestInt64EnumResponseValues returns every known Int64NoenumRequestInt64EnumResponse value in schema order.
+func Int64NoenumRequestInt64EnumResponseValues() []Int64NoenumRequestInt64EnumResponse {
+	return []Int64NoenumRequestInt64EnumResponse{
+		Int64NoenumRequestInt64EnumResponseOne,
+		Int64NoenumRequestInt64EnumResponseTwo,
+	}
+}
 func (e *Int64NoenumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -315,6 +403,14 @@ const (
 func (e Int64NoenumRequestIntegerEnumResponse) ToPointer() *Int64NoenumRequestIntegerEnumResponse {
 	return &e
 }
+
+// Int64NoenumRequestIntegerEnumResponseValues returns every known Int64NoenumRequestIntegerEnumResponse value in schema order.
+func Int64NoenumRequestIntegerEnumResponseValues() []Int64NoenumRequestIntegerEnumResponse {
+	return []Int64NoenumRequestIntegerEnumResponse{
+		Int64NoenumRequestIntegerEnumResponseOne,
+		Int64NoenumRequestIntegerEnumResponseTwo,
+	}
+}
 func (e *Int64NoenumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -340,6 +436,14 @@ const (
 
 func (e OASEnumResponseListInt32EnumRequestInt32EnumResponse) ToPointer() *OASEnumResponseListInt32EnumRequestInt32EnumResponse {
 	return &e
+}
+
+// OASEnumResponseListInt32EnumRequestInt32EnumResponseValues returns every known OASEnumResponseListInt32EnumRequestInt32EnumResponse value in schema order.
+func OASEnumResponseListInt32EnumRequestInt32EnumResponseValues() []OASEnumResponseListInt32EnumRequestInt32EnumResponse {
+	return []OASEnumResponseListInt32EnumRequestInt32EnumResponse{
+		OASEnumResponseListInt32EnumRequestInt32EnumResponseOne,
+		OASEnumResponseListInt32EnumRequestInt32EnumResponseTwo,
+	}
 }
 func (e *OASEnumResponseListInt32EnumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
@@ -367,6 +471,14 @@ const (
 func (e OASEnumResponseListInt32EnumRequestInt32EnumResponseNullable) ToPointer() *OASEnumResponseListInt32EnumRequestInt32EnumResponseNullable {
 	return &e
 }
+
+// OASEnumResponseListInt32EnumRequestInt32EnumResponseNullableValues returns every known OASEnumResponseListInt32EnumRequestInt32EnumResponseNullable value in schema order.
+func OASEnumResponseListInt32EnumRequestInt32EnumResponseNullableValues() []OASEnumResponseListInt32EnumRequestInt32EnumResponseNullable {
+	return []OASEnumResponseListInt32EnumRequestInt32EnumResponseNullable{
+		OASEnumResponseListInt32EnumRequestInt32EnumResponseNullableOne,
+		OASEnumResponseListInt32EnumRequestInt32EnumResponseNullableTwo,
+	}
+}
 func (e *OASEnumResponseListInt32EnumRequestInt32EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -392,6 +504,14 @@ const (
 
 func (e OASEnumResponseListInt32EnumRequestInt64EnumResponse) ToPointer() *OASEnumResponseListInt32EnumRequestInt64EnumResponse {
 	return &e
+}
+
+// OASEnumResponseListInt32EnumRequestInt64EnumResponseValues returns every known OASEnumResponseListInt32EnumRequestInt64EnumResponse value in schema order.
+func OASEnumResponseListInt32EnumRequestInt64EnumResponseValues() []OASEnumResponseListInt32EnumRequestInt64EnumResponse {
+	return []OASEnumResponseListInt32EnumRequestInt64EnumResponse{
+		OASEnumResponseListInt32EnumRequestInt64EnumResponseOne,
+		OASEnumResponseListInt32EnumRequestInt64EnumResponseTwo,
+	}
 }
 func (e *OASEnumResponseListInt32EnumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -419,6 +539,14 @@ const (
 func (e OASEnumResponseListInt32EnumRequestInt64EnumResponseNullable) ToPointer() *OASEnumResponseListInt32EnumRequestInt64EnumResponseNullable {
 	return &e
 }
+
+// OASEnumResponseListInt32EnumRequestInt64EnumResponseNullableValues returns every known OASEnumResponseListInt32EnumRequestInt64EnumResponseNullable value in schema order.
+func OASEnumResponseListInt32EnumRequestInt64EnumResponseNullableValues() []OASEnumResponseListInt32EnumRequestInt64EnumResponseNullable {
+	return []OASEnumResponseListInt32EnumRequestInt64EnumResponseNullable{
+		OASEnumResponseListInt32EnumRequestInt64EnumResponseNullableOne,
+		OASEnumResponseListInt32EnumRequestInt64EnumResponseNullableTwo,
+	}
+}
 func (e *OASEnumResponseListInt32EnumRequestInt64EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -444,6 +572,14 @@ const (
 
 func (e OASEnumResponseListInt32EnumRequestIntegerEnumResponse) ToPointer() *OASEnumResponseListInt32EnumRequestIntegerEnumResponse {
 	return &e
+}
+
+// OASEnumResponseListInt32EnumRequestIntegerEnumResponseValues returns every known OASEnumResponseListInt32EnumRequestIntegerEnumResponse value in schema order.
+func OASEnumResponseListInt32EnumRequestIntegerEnumResponseValues() []OASEnumResponseListInt32EnumRequestIntegerEnumResponse {
+	return []OASEnumResponseListInt32EnumRequestIntegerEnumResponse{
+		OASEnumResponseListInt32EnumRequestIntegerEnumResponseOne,
+		OASEnumResponseListInt32EnumRequestIntegerEnumResponseTwo,
+	}
 }
 func (e *OASEnumResponseListInt32EnumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -471,6 +607,14 @@ const (
 func (e OASEnumResponseListInt32EnumRequestIntegerEnumResponseNullable) ToPointer() *OASEnumResponseListInt32EnumRequestIntegerEnumResponseNullable {
 	return &e
 }
+
+// OASEnumResponseListInt32EnumRequestIntegerEnumResponseNullableValues returns every known OASEnumResponseListInt32EnumRequestIntegerEnumResponseNullable value in schema order.
+func OASEnumResponseListInt32EnumRequestIntegerEnumResponseNullableValues() []OASEnumResponseListInt32EnumRequestIntegerEnumResponseNullable {
+	return []OASEnumResponseListInt32EnumRequestIntegerEnumResponseNullable{
+		OASEnumResponseListInt32EnumRequestIntegerEnumResponseNullableOne,
+		OASEnumResponseListInt32EnumRequestIntegerEnumResponseNullableTwo,
+	}
+}
 func (e *OASEnumResponseListInt32EnumRequestIntegerEnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -496,6 +640,14 @@ const (
 
 func (e ListInt32NoenumRequestInt32EnumResponse) ToPointer() *ListInt32NoenumRequestInt32EnumResponse {
 	return &e
+}
+
+// ListInt32NoenumRequestInt32EnumResponseValues returns every known ListInt32NoenumRequestInt32EnumResponse value in schema order.
+func ListInt32NoenumRequestInt32EnumResponseValues() []ListInt32NoenumRequestInt32EnumResponse {
+	return []ListInt32NoenumRequestInt32EnumResponse{
+		ListInt32NoenumRequestInt32EnumResponseOne,
+		ListInt32NoenumRequestInt32EnumResponseTwo,
+	}
 }
 func (e *ListInt32NoenumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
@@ -523,6 +675,14 @@ const (
 func (e ListInt32NoenumRequestInt32EnumResponseNullable) ToPointer() *ListInt32NoenumRequestInt32EnumResponseNullable {
 	return &e
 }
+
+// ListInt32NoenumRequestInt32EnumResponseNullableValues returns every known ListInt32NoenumRequestInt32EnumResponseNullable value in schema order.
+func ListInt32NoenumRequestInt32EnumResponseNullableValues() []ListInt32NoenumRequestInt32EnumResponseNullable {
+	return []ListInt32NoenumRequestInt32EnumResponseNullable{
+		ListInt32NoenumRequestInt32EnumResponseNullableOne,
+		ListInt32NoenumRequestInt32EnumResponseNullableTwo,
+	}
+}
 func (e *ListInt32NoenumRequestInt32EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -548,6 +708,14 @@ const (
 
 func (e ListInt32NoenumRequestInt64EnumResponse) ToPointer() *ListInt32NoenumRequestInt64EnumResponse {
 	return &e
+}
+
+// ListInt32NoenumRequestInt64EnumResponseValues returns every known ListInt32NoenumRequestInt64EnumResponse value in schema order.
+func ListInt32NoenumRequestInt64EnumResponseValues() []ListInt32NoenumRequestInt64EnumResponse {
+	return []ListInt32NoenumRequestInt64EnumResponse{
+		ListInt32NoenumRequestInt64EnumResponseOne,
+		ListInt32NoenumRequestInt64EnumResponseTwo,
+	}
 }
 func (e *ListInt32NoenumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -575,6 +743,14 @@ const (
 func (e ListInt32NoenumRequestInt64EnumResponseNullable) ToPointer() *ListInt32NoenumRequestInt64EnumResponseNullable {
 	return &e
 }
+
+// ListInt32NoenumRequestInt64EnumResponseNullableValues returns every known ListInt32NoenumRequestInt64EnumResponseNullable value in schema order.
+func ListInt32NoenumRequestInt64EnumResponseNullableValues() []ListInt32NoenumRequestInt64EnumResponseNullable {
+	return []ListInt32NoenumRequestInt64EnumResponseNullable{
+		ListInt32NoenumRequestInt64EnumResponseNullableOne,
+		ListInt32NoenumRequestInt64EnumResponseNullableTwo,
+	}
+}
 func (e *ListInt32NoenumRequestInt64EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -600,6 +776,14 @@ const (
 
 func (e ListInt32NoenumRequestIntegerEnumResponse) ToPointer() *ListInt32NoenumRequestIntegerEnumResponse {
 	return &e
+}
+
+// ListInt32NoenumRequestIntegerEnumResponseValues returns every known ListInt32NoenumRequestIntegerEnumResponse value in schema order.
+func ListInt32NoenumRequestIntegerEnumResponseValues() []ListInt32NoenumRequestIntegerEnumResponse {
+	return []ListInt32NoenumRequestIntegerEnumResponse{
+		ListInt32NoenumRequestIntegerEnumResponseOne,
+		ListInt32NoenumRequestIntegerEnumResponseTwo,
+	}
 }
 func (e *ListInt32NoenumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -627,6 +811,14 @@ const (
 func (e ListInt32NoenumRequestIntegerEnumResponseNullable) ToPointer() *ListInt32NoenumRequestIntegerEnumResponseNullable {
 	return &e
 }
+
+// ListInt32NoenumRequestIntegerEnumResponseNullableValues returns every known ListInt32NoenumRequestIntegerEnumResponseNullable value in schema order.
+func ListInt32NoenumRequestIntegerEnumResponseNullableValues() []ListInt32NoenumRequestIntegerEnumResponseNullable {
+	return []ListInt32NoenumRequestIntegerEnumResponseNullable{
+		ListInt32NoenumRequestIntegerEnumResponseNullableOne,
+		ListInt32NoenumRequestIntegerEnumResponseNullableTwo,
+	}
+}
 func (e *ListInt32NoenumRequestIntegerEnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -652,6 +844,14 @@ const (
 
 func (e OASEnumResponseListInt64EnumRequestInt32EnumResponse) ToPointer() *OASEnumResponseListInt64EnumRequestInt32EnumResponse {
 	return &e
+}
+
+// OASEnumResponseListInt64EnumRequestInt32EnumResponseValues returns every known OASEnumResponseListInt64EnumRequestInt32EnumResponse value in schema order.
+func OASEnumResponseListInt64EnumRequestInt32EnumResponseValues() []OASEnumResponseListInt64EnumRequestInt32EnumResponse {
+	return []OASEnumResponseListInt64EnumRequestInt32EnumResponse{
+		OASEnumResponseListInt64EnumRequestInt32EnumResponseOne,
+		OASEnumResponseListInt64EnumRequestInt32EnumResponseTwo,
+	}
 }
 func (e *OASEnumResponseListInt64EnumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
@@ -679,6 +879,14 @@ const (
 func (e OASEnumResponseListInt64EnumRequestInt32EnumResponseNullable) ToPointer() *OASEnumResponseListInt64EnumRequestInt32EnumResponseNullable {
 	return &e
 }
+
+// OASEnumResponseListInt64EnumRequestInt32EnumResponseNullableValues returns every known OASEnumResponseListInt64EnumRequestInt32EnumResponseNullable value in schema order.
+func OASEnumResponseListInt64EnumRequestInt32EnumResponseNullableValues() []OASEnumResponseListInt64EnumRequestInt32EnumResponseNullable {
+	return []OASEnumResponseListInt64EnumRequestInt32EnumResponseNullable{
+		OASEnumResponseListInt64EnumRequestInt32EnumResponseNullableOne,
+		OASEnumResponseListInt64EnumRequestInt32EnumResponseNullableTwo,
+	}
+}
 func (e *OASEnumResponseListInt64EnumRequestInt32EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -704,6 +912,14 @@ const (
 
 func (e OASEnumResponseListInt64EnumRequestInt64EnumResponse) ToPointer() *OASEnumResponseListInt64EnumRequestInt64EnumResponse {
 	return &e
+}
+
+// OASEnumResponseListInt64EnumRequestInt64EnumResponseValues returns every known OASEnumResponseListInt64EnumRequestInt64EnumResponse value in schema order.
+func OASEnumResponseListInt64EnumRequestInt64EnumResponseValues() []OASEnumResponseListInt64EnumRequestInt64EnumResponse {
+	return []OASEnumResponseListInt64EnumRequestInt64EnumResponse{
+		OASEnumResponseListInt64EnumRequestInt64EnumResponseOne,
+		OASEnumResponseListInt64EnumRequestInt64EnumResponseTwo,
+	}
 }
 func (e *OASEnumResponseListInt64EnumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -731,6 +947,14 @@ const (
 func (e OASEnumResponseListInt64EnumRequestInt64EnumResponseNullable) ToPointer() *OASEnumResponseListInt64EnumRequestInt64EnumResponseNullable {
 	return &e
 }
+
+// OASEnumResponseListInt64EnumRequestInt64EnumResponseNullableValues returns every known OASEnumResponseListInt64EnumRequestInt64EnumResponseNullable value in schema order.
+func OASEnumResponseListInt64EnumRequestInt64EnumResponseNullableValues() []OASEnumResponseListInt64EnumRequestInt64EnumResponseNullable {
+	return []OASEnumResponseListInt64EnumRequestInt64EnumResponseNullable{
+		OASEnumResponseListInt64EnumRequestInt64EnumResponseNullableOne,
+		OASEnumResponseListInt64EnumRequestInt64EnumResponseNullableTwo,
+	}
+}
 func (e *OASEnumResponseListInt64EnumRequestInt64EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -756,6 +980,14 @@ const (
 
 func (e OASEnumResponseListInt64EnumRequestIntegerEnumResponse) ToPointer() *OASEnumResponseListInt64EnumRequestIntegerEnumResponse {
 	return &e
+}
+
+// OASEnumResponseListInt64EnumRequestIntegerEnumResponseValues returns every known OASEnumResponseListInt64EnumRequestIntegerEnumResponse value in schema order.
+func OASEnumResponseListInt64EnumRequestIntegerEnumResponseValues() []OASEnumResponseListInt64EnumRequestIntegerEnumResponse {
+	return []OASEnumResponseListInt64EnumRequestIntegerEnumResponse{
+		OASEnumResponseListInt64EnumRequestIntegerEnumResponseOne,
+		OASEnumResponseListInt64EnumRequestIntegerEnumResponseTwo,
+	}
 }
 func (e *OASEnumResponseListInt64EnumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -783,6 +1015,14 @@ const (
 func (e OASEnumResponseListInt64EnumRequestIntegerEnumResponseNullable) ToPointer() *OASEnumResponseListInt64EnumRequestIntegerEnumResponseNullable {
 	return &e
 }
+
+// OASEnumResponseListInt64EnumRequestIntegerEnumResponseNullableValues returns every known OASEnumResponseListInt64EnumRequestIntegerEnumResponseNullable value in schema order.
+func OASEnumResponseListInt64EnumRequestIntegerEnumResponseNullableValues() []OASEnumResponseListInt64EnumRequestIntegerEnumResponseNullable {
+	return []OASEnumResponseListInt64EnumRequestIntegerEnumResponseNullable{
+		OASEnumResponseListInt64EnumRequestIntegerEnumResponseNullableOne,
+		OASEnumResponseListInt64EnumRequestIntegerEnumResponseNullableTwo,
+	}
+}
 func (e *OASEnumResponseListInt64EnumRequestIntegerEnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -808,6 +1048,14 @@ const (
 
 func (e ListInt64NoenumRequestInt32EnumResponse) ToPointer() *ListInt64NoenumRequestInt32EnumResponse {
 	return &e
+}
+
+// ListInt64NoenumRequestInt32EnumResponseValues returns every known ListInt64NoenumRequestInt32EnumResponse value in schema order.
+func ListInt64NoenumRequestInt32EnumResponseValues() []ListInt64NoenumRequestInt32EnumResponse {
+	return []ListInt64NoenumRequestInt32EnumResponse{
+		ListInt64NoenumRequestInt32EnumResponseOne,
+		ListInt64NoenumRequestInt32EnumResponseTwo,
+	}
 }
 func (e *ListInt64NoenumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
@@ -835,6 +1083,14 @@ const (
 func (e ListInt64NoenumRequestInt32EnumResponseNullable) ToPointer() *ListInt64NoenumRequestInt32EnumResponseNullable {
 	return &e
 }
+
+// ListInt64NoenumRequestInt32EnumResponseNullableValues returns every known ListInt64NoenumRequestInt32EnumResponseNullable value in schema order.
+func ListInt64NoenumRequestInt32EnumResponseNullableValues() []ListInt64NoenumRequestInt32EnumResponseNullable {
+	return []ListInt64NoenumRequestInt32EnumResponseNullable{
+		ListInt64NoenumRequestInt32EnumResponseNullableOne,
+		ListInt64NoenumRequestInt32EnumResponseNullableTwo,
+	}
+}
 func (e *ListInt64NoenumRequestInt32EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -860,6 +1116,14 @@ const (
 
 func (e ListInt64NoenumRequestInt64EnumResponse) ToPointer() *ListInt64NoenumRequestInt64EnumResponse {
 	return &e
+}
+
+// ListInt64NoenumRequestInt64EnumResponseValues returns every known ListInt64NoenumRequestInt64EnumResponse value in schema order.
+func ListInt64NoenumRequestInt64EnumResponseValues() []ListInt64NoenumRequestInt64EnumResponse {
+	return []ListInt64NoenumRequestInt64EnumResponse{
+		ListInt64NoenumRequestInt64EnumResponseOne,
+		ListInt64NoenumRequestInt64EnumResponseTwo,
+	}
 }
 func (e *ListInt64NoenumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -887,6 +1151,14 @@ const (
 func (e ListInt64NoenumRequestInt64EnumResponseNullable) ToPointer() *ListInt64NoenumRequestInt64EnumResponseNullable {
 	return &e
 }
+
+// ListInt64NoenumRequestInt64EnumResponseNullableValues returns every known ListInt64NoenumRequestInt64EnumResponseNullable value in schema order.
+func ListInt64NoenumRequestInt64EnumResponseNullableValues() []ListInt64NoenumRequestInt64EnumResponseNullable {
+	return []ListInt64NoenumRequestInt64EnumResponseNullable{
+		ListInt64NoenumRequestInt64EnumResponseNullableOne,
+		ListInt64NoenumRequestInt64EnumResponseNullableTwo,
+	}
+}
 func (e *ListInt64NoenumRequestInt64EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -912,6 +1184,14 @@ const (
 
 func (e ListInt64NoenumRequestIntegerEnumResponse) ToPointer() *ListInt64NoenumRequestIntegerEnumResponse {
 	return &e
+}
+
+// ListInt64NoenumRequestIntegerEnumResponseValues returns every known ListInt64NoenumRequestIntegerEnumResponse value in schema order.
+func ListInt64NoenumRequestIntegerEnumResponseValues() []ListInt64NoenumRequestIntegerEnumResponse {
+	return []ListInt64NoenumRequestIntegerEnumResponse{
+		ListInt64NoenumRequestIntegerEnumResponseOne,
+		ListInt64NoenumRequestIntegerEnumResponseTwo,
+	}
 }
 func (e *ListInt64NoenumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -939,6 +1219,14 @@ const (
 func (e ListInt64NoenumRequestIntegerEnumResponseNullable) ToPointer() *ListInt64NoenumRequestIntegerEnumResponseNullable {
 	return &e
 }
+
+// ListInt64NoenumRequestIntegerEnumResponseNullableValues returns every known ListInt64NoenumRequestIntegerEnumResponseNullable value in schema order.
+func ListInt64NoenumRequestIntegerEnumResponseNullableValues() []ListInt64NoenumRequestIntegerEnumResponseNullable {
+	return []ListInt64NoenumRequestIntegerEnumResponseNullable{
+		ListInt64NoenumRequestIntegerEnumResponseNullableOne,
+		ListInt64NoenumRequestIntegerEnumResponseNullableTwo,
+	}
+}
 func (e *ListInt64NoenumRequestIntegerEnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -964,6 +1252,14 @@ const (
 
 func (e OASEnumResponseListIntegerRequestAndResponse) ToPointer() *OASEnumResponseListIntegerRequestAndResponse {
 	return &e
+}
+
+// OASEnumResponseListIntegerRequestAndResponseValues returns every known OASEnumResponseListIntegerRequestAndResponse value in schema order.
+func OASEnumResponseListIntegerRequestAndResponseValues() []OASEnumResponseListIntegerRequestAndResponse {
+	return []OASEnumResponseListIntegerRequestAndResponse{
+		OASEnumResponseListIntegerRequestAndResponseOne,
+		OASEnumResponseListIntegerRequestAndResponseTwo,
+	}
 }
 func (e *OASEnumResponseListIntegerRequestAndResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -991,6 +1287,14 @@ const (
 func (e ListIntegerResponse) ToPointer() *ListIntegerResponse {
 	return &e
 }
+
+// ListIntegerResponseValues returns every known ListIntegerResponse value in schema order.
+func ListIntegerResponseValues() []ListIntegerResponse {
+	return []ListIntegerResponse{
+		ListIntegerResponseOne,
+		ListIntegerResponseTwo,
+	}
+}
 func (e *ListIntegerResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1016,6 +1320,14 @@ const (
 
 func (e OASEnumResponseListStringRequestAndResponse) ToPointer() *OASEnumResponseListStringRequestAndResponse {
 	return &e
+}
+
+// OASEnumResponseListStringRequestAndResponseValues returns every known OASEnumResponseListStringRequestAndResponse value in schema order.
+func OASEnumResponseListStringRequestAndResponseValues() []OASEnumResponseListStringRequestAndResponse {
+	return []OASEnumResponseListStringRequestAndResponse{
+		OASEnumResponseListStringRequestAndResponseOne,
+		OASEnumResponseListStringRequestAndResponseTwo,
+	}
 }
 func (e *OASEnumResponseListStringRequestAndResponse) UnmarshalJSON(data []byte) error {
 	var v string
@@ -1043,6 +1355,14 @@ const (
 func (e ListStringResponse) ToPointer() *ListStringResponse {
 	return &e
 }
+
+// ListStringResponseValues returns every known ListStringResponse value in schema order.
+func ListStringResponseValues() []ListStringResponse {
+	return []ListStringResponse{
+		ListStringResponseOne,
+		ListStringResponseTwo,
+	}
+}
 func (e *ListStringResponse) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1069,6 +1389,14 @@ const (
 func (e OASEnumResponseListNestedRequestAndResponseListNestedInteger) ToPointer() *OASEnumResponseListNestedRequestAndResponseListNestedInteger {
 	return &e
 }
+
+// OASEnumResponseListNestedRequestAndResponseListNestedIntegerValues returns every known OASEnumResponseListNestedRequestAndResponseListNestedInteger value in schema order.
+func OASEnumResponseListNestedRequestAndResponseListNestedIntegerValues() []OASEnumResponseListNestedRequestAndResponseListNestedInteger {
+	return []OASEnumResponseListNestedRequestAndResponseListNestedInteger{
+		OASEnumResponseListNestedRequestAndResponseListNestedIntegerOne,
+		OASEnumResponseListNestedRequestAndResponseListNestedIntegerTwo,
+	}
+}
 func (e *OASEnumResponseListNestedRequestAndResponseListNestedInteger) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1094,6 +1422,14 @@ const (
 
 func (e OASEnumResponseListNestedRequestAndResponseListNestedString) ToPointer() *OASEnumResponseListNestedRequestAndResponseListNestedString {
 	return &e
+}
+
+// OASEnumResponseListNestedRequestAndResponseListNestedStringValues returns every known OASEnumResponseListNestedRequestAndResponseListNestedString value in schema order.
+func OASEnumResponseListNestedRequestAndResponseListNestedStringValues() []OASEnumResponseListNestedRequestAndResponseListNestedString {
+	return []OASEnumResponseListNestedRequestAndResponseListNestedString{
+		OASEnumResponseListNestedRequestAndResponseListNestedStringOne,
+		OASEnumResponseListNestedRequestAndResponseListNestedStringTwo,
+	}
 }
 func (e *OASEnumResponseListNestedRequestAndResponseListNestedString) UnmarshalJSON(data []byte) error {
 	var v string
@@ -1159,6 +1495,14 @@ const (
 func (e ListNestedResponseListNestedInteger) ToPointer() *ListNestedResponseListNestedInteger {
 	return &e
 }
+
+// ListNestedResponseListNestedIntegerValues returns every known ListNestedResponseListNestedInteger value in schema order.
+func ListNestedResponseListNestedIntegerValues() []ListNestedResponseListNestedInteger {
+	return []ListNestedResponseListNestedInteger{
+		ListNestedResponseListNestedIntegerOne,
+		ListNestedResponseListNestedIntegerTwo,
+	}
+}
 func (e *ListNestedResponseListNestedInteger) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1184,6 +1528,14 @@ const (
 
 func (e ListNestedResponseListNestedString) ToPointer() *ListNestedResponseListNestedString {
 	return &e
+}
+
+// ListNestedResponseListNestedStringValues returns every known ListNestedResponseListNestedString value in schema order.
+func ListNestedResponseListNestedStringValues() []ListNestedResponseListNestedString {
+	return []ListNestedResponseListNestedString{
+		ListNestedResponseListNestedStringOne,
+		ListNestedResponseListNestedStringTwo,
+	}
 }
 func (e *ListNestedResponseListNestedString) UnmarshalJSON(data []byte) error {
 	var v string
@@ -1230,6 +1582,14 @@ const (
 func (e OASEnumResponseObjectRequestAndResponseObjectInteger) ToPointer() *OASEnumResponseObjectRequestAndResponseObjectInteger {
 	return &e
 }
+
+// OASEnumResponseObjectRequestAndResponseObjectIntegerValues returns every known OASEnumResponseObjectRequestAndResponseObjectInteger value in schema order.
+func OASEnumResponseObjectRequestAndResponseObjectIntegerValues() []OASEnumResponseObjectRequestAndResponseObjectInteger {
+	return []OASEnumResponseObjectRequestAndResponseObjectInteger{
+		OASEnumResponseObjectRequestAndResponseObjectIntegerOne,
+		OASEnumResponseObjectRequestAndResponseObjectIntegerTwo,
+	}
+}
 func (e *OASEnumResponseObjectRequestAndResponseObjectInteger) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1255,6 +1615,14 @@ const (
 
 func (e OASEnumResponseObjectRequestAndResponseObjectString) ToPointer() *OASEnumResponseObjectRequestAndResponseObjectString {
 	return &e
+}
+
+// OASEnumResponseObjectRequestAndResponseObjectStringValues returns every known OASEnumResponseObjectRequestAndResponseObjectString value in schema order.
+func OASEnumResponseObjectRequestAndResponseObjectStringValues() []OASEnumResponseObjectRequestAndResponseObjectString {
+	return []OASEnumResponseObjectRequestAndResponseObjectString{
+		OASEnumResponseObjectRequestAndResponseObjectStringOne,
+		OASEnumResponseObjectRequestAndResponseObjectStringTwo,
+	}
 }
 func (e *OASEnumResponseObjectRequestAndResponseObjectString) UnmarshalJSON(data []byte) error {
 	var v string
@@ -1322,6 +1690,14 @@ const (
 func (e ObjectResponseObjectInteger) ToPointer() *ObjectResponseObjectInteger {
 	return &e
 }
+
+// ObjectResponseObjectIntegerValues returns every known ObjectResponseObjectInteger value in schema order.
+func ObjectResponseObjectIntegerValues() []ObjectResponseObjectInteger {
+	return []ObjectResponseObjectInteger{
+		ObjectResponseObjectIntegerOne,
+		ObjectResponseObjectIntegerTwo,
+	}
+}
 func (e *ObjectResponseObjectInteger) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1347,6 +1723,14 @@ const (
 
 func (e ObjectResponseObjectString) ToPointer() *ObjectResponseObjectString {
 	return &e
+}
+
+// ObjectResponseObjectStringValues returns every known ObjectResponseObjectString value in schema order.
+func ObjectResponseObjectStringValues() []ObjectResponseObjectString {
+	return []ObjectResponseObjectString{
+		ObjectResponseObjectStringOne,
+		ObjectResponseObjectStringTwo,
+	}
 }
 func (e *ObjectResponseObjectString) UnmarshalJSON(data []byte) error {
 	var v string
@@ -1394,6 +1778,14 @@ const (
 func (e OASEnumResponseSetInt32EnumRequestInt32EnumResponse) ToPointer() *OASEnumResponseSetInt32EnumRequestInt32EnumResponse {
 	return &e
 }
+
+// OASEnumResponseSetInt32EnumRequestInt32EnumResponseValues returns every known OASEnumResponseSetInt32EnumRequestInt32EnumResponse value in schema order.
+func OASEnumResponseSetInt32EnumRequestInt32EnumResponseValues() []OASEnumResponseSetInt32EnumRequestInt32EnumResponse {
+	return []OASEnumResponseSetInt32EnumRequestInt32EnumResponse{
+		OASEnumResponseSetInt32EnumRequestInt32EnumResponseOne,
+		OASEnumResponseSetInt32EnumRequestInt32EnumResponseTwo,
+	}
+}
 func (e *OASEnumResponseSetInt32EnumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1419,6 +1811,14 @@ const (
 
 func (e OASEnumResponseSetInt32EnumRequestInt32EnumResponseNullable) ToPointer() *OASEnumResponseSetInt32EnumRequestInt32EnumResponseNullable {
 	return &e
+}
+
+// OASEnumResponseSetInt32EnumRequestInt32EnumResponseNullableValues returns every known OASEnumResponseSetInt32EnumRequestInt32EnumResponseNullable value in schema order.
+func OASEnumResponseSetInt32EnumRequestInt32EnumResponseNullableValues() []OASEnumResponseSetInt32EnumRequestInt32EnumResponseNullable {
+	return []OASEnumResponseSetInt32EnumRequestInt32EnumResponseNullable{
+		OASEnumResponseSetInt32EnumRequestInt32EnumResponseNullableOne,
+		OASEnumResponseSetInt32EnumRequestInt32EnumResponseNullableTwo,
+	}
 }
 func (e *OASEnumResponseSetInt32EnumRequestInt32EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int
@@ -1446,6 +1846,14 @@ const (
 func (e OASEnumResponseSetInt32EnumRequestInt64EnumResponse) ToPointer() *OASEnumResponseSetInt32EnumRequestInt64EnumResponse {
 	return &e
 }
+
+// OASEnumResponseSetInt32EnumRequestInt64EnumResponseValues returns every known OASEnumResponseSetInt32EnumRequestInt64EnumResponse value in schema order.
+func OASEnumResponseSetInt32EnumRequestInt64EnumResponseValues() []OASEnumResponseSetInt32EnumRequestInt64EnumResponse {
+	return []OASEnumResponseSetInt32EnumRequestInt64EnumResponse{
+		OASEnumResponseSetInt32EnumRequestInt64EnumResponseOne,
+		OASEnumResponseSetInt32EnumRequestInt64EnumResponseTwo,
+	}
+}
 func (e *OASEnumResponseSetInt32EnumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1471,6 +1879,14 @@ const (
 
 func (e OASEnumResponseSetInt32EnumRequestInt64EnumResponseNullable) ToPointer() *OASEnumResponseSetInt32EnumRequestInt64EnumResponseNullable {
 	return &e
+}
+
+// OASEnumResponseSetInt32EnumRequestInt64EnumResponseNullableValues returns every known OASEnumResponseSetInt32EnumRequestInt64EnumResponseNullable value in schema order.
+func OASEnumResponseSetInt32EnumRequestInt64EnumResponseNullableValues() []OASEnumResponseSetInt32EnumRequestInt64EnumResponseNullable {
+	return []OASEnumResponseSetInt32EnumRequestInt64EnumResponseNullable{
+		OASEnumResponseSetInt32EnumRequestInt64EnumResponseNullableOne,
+		OASEnumResponseSetInt32EnumRequestInt64EnumResponseNullableTwo,
+	}
 }
 func (e *OASEnumResponseSetInt32EnumRequestInt64EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -1498,6 +1914,14 @@ const (
 func (e OASEnumResponseSetInt32EnumRequestIntegerEnumResponse) ToPointer() *OASEnumResponseSetInt32EnumRequestIntegerEnumResponse {
 	return &e
 }
+
+// OASEnumResponseSetInt32EnumRequestIntegerEnumResponseValues returns every known OASEnumResponseSetInt32EnumRequestIntegerEnumResponse value in schema order.
+func OASEnumResponseSetInt32EnumRequestIntegerEnumResponseValues() []OASEnumResponseSetInt32EnumRequestIntegerEnumResponse {
+	return []OASEnumResponseSetInt32EnumRequestIntegerEnumResponse{
+		OASEnumResponseSetInt32EnumRequestIntegerEnumResponseOne,
+		OASEnumResponseSetInt32EnumRequestIntegerEnumResponseTwo,
+	}
+}
 func (e *OASEnumResponseSetInt32EnumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1523,6 +1947,14 @@ const (
 
 func (e OASEnumResponseSetInt32EnumRequestIntegerEnumResponseNullable) ToPointer() *OASEnumResponseSetInt32EnumRequestIntegerEnumResponseNullable {
 	return &e
+}
+
+// OASEnumResponseSetInt32EnumRequestIntegerEnumResponseNullableValues returns every known OASEnumResponseSetInt32EnumRequestIntegerEnumResponseNullable value in schema order.
+func OASEnumResponseSetInt32EnumRequestIntegerEnumResponseNullableValues() []OASEnumResponseSetInt32EnumRequestIntegerEnumResponseNullable {
+	return []OASEnumResponseSetInt32EnumRequestIntegerEnumResponseNullable{
+		OASEnumResponseSetInt32EnumRequestIntegerEnumResponseNullableOne,
+		OASEnumResponseSetInt32EnumRequestIntegerEnumResponseNullableTwo,
+	}
 }
 func (e *OASEnumResponseSetInt32EnumRequestIntegerEnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -1550,6 +1982,14 @@ const (
 func (e SetInt32NoenumRequestInt32EnumResponse) ToPointer() *SetInt32NoenumRequestInt32EnumResponse {
 	return &e
 }
+
+// SetInt32NoenumRequestInt32EnumResponseValues returns every known SetInt32NoenumRequestInt32EnumResponse value in schema order.
+func SetInt32NoenumRequestInt32EnumResponseValues() []SetInt32NoenumRequestInt32EnumResponse {
+	return []SetInt32NoenumRequestInt32EnumResponse{
+		SetInt32NoenumRequestInt32EnumResponseOne,
+		SetInt32NoenumRequestInt32EnumResponseTwo,
+	}
+}
 func (e *SetInt32NoenumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1575,6 +2015,14 @@ const (
 
 func (e SetInt32NoenumRequestInt32EnumResponseNullable) ToPointer() *SetInt32NoenumRequestInt32EnumResponseNullable {
 	return &e
+}
+
+// SetInt32NoenumRequestInt32EnumResponseNullableValues returns every known SetInt32NoenumRequestInt32EnumResponseNullable value in schema order.
+func SetInt32NoenumRequestInt32EnumResponseNullableValues() []SetInt32NoenumRequestInt32EnumResponseNullable {
+	return []SetInt32NoenumRequestInt32EnumResponseNullable{
+		SetInt32NoenumRequestInt32EnumResponseNullableOne,
+		SetInt32NoenumRequestInt32EnumResponseNullableTwo,
+	}
 }
 func (e *SetInt32NoenumRequestInt32EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int
@@ -1602,6 +2050,14 @@ const (
 func (e SetInt32NoenumRequestInt64EnumResponse) ToPointer() *SetInt32NoenumRequestInt64EnumResponse {
 	return &e
 }
+
+// SetInt32NoenumRequestInt64EnumResponseValues returns every known SetInt32NoenumRequestInt64EnumResponse value in schema order.
+func SetInt32NoenumRequestInt64EnumResponseValues() []SetInt32NoenumRequestInt64EnumResponse {
+	return []SetInt32NoenumRequestInt64EnumResponse{
+		SetInt32NoenumRequestInt64EnumResponseOne,
+		SetInt32NoenumRequestInt64EnumResponseTwo,
+	}
+}
 func (e *SetInt32NoenumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1627,6 +2083,14 @@ const (
 
 func (e SetInt32NoenumRequestInt64EnumResponseNullable) ToPointer() *SetInt32NoenumRequestInt64EnumResponseNullable {
 	return &e
+}
+
+// SetInt32NoenumRequestInt64EnumResponseNullableValues returns every known SetInt32NoenumRequestInt64EnumResponseNullable value in schema order.
+func SetInt32NoenumRequestInt64EnumResponseNullableValues() []SetInt32NoenumRequestInt64EnumResponseNullable {
+	return []SetInt32NoenumRequestInt64EnumResponseNullable{
+		SetInt32NoenumRequestInt64EnumResponseNullableOne,
+		SetInt32NoenumRequestInt64EnumResponseNullableTwo,
+	}
 }
 func (e *SetInt32NoenumRequestInt64EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -1654,6 +2118,14 @@ const (
 func (e SetInt32NoenumRequestIntegerEnumResponse) ToPointer() *SetInt32NoenumRequestIntegerEnumResponse {
 	return &e
 }
+
+// SetInt32NoenumRequestIntegerEnumResponseValues returns every known SetInt32NoenumRequestIntegerEnumResponse value in schema order.
+func SetInt32NoenumRequestIntegerEnumResponseValues() []SetInt32NoenumRequestIntegerEnumResponse {
+	return []SetInt32NoenumRequestIntegerEnumResponse{
+		SetInt32NoenumRequestIntegerEnumResponseOne,
+		SetInt32NoenumRequestIntegerEnumResponseTwo,
+	}
+}
 func (e *SetInt32NoenumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1679,6 +2151,14 @@ const (
 
 func (e SetInt32NoenumRequestIntegerEnumResponseNullable) ToPointer() *SetInt32NoenumRequestIntegerEnumResponseNullable {
 	return &e
+}
+
+// SetInt32NoenumRequestIntegerEnumResponseNullableValues returns every known SetInt32NoenumRequestIntegerEnumResponseNullable value in schema order.
+func SetInt32NoenumRequestIntegerEnumResponseNullableValues() []SetInt32NoenumRequestIntegerEnumResponseNullable {
+	return []SetInt32NoenumRequestIntegerEnumResponseNullable{
+		SetInt32NoenumRequestIntegerEnumResponseNullableOne,
+		SetInt32NoenumRequestIntegerEnumResponseNullableTwo,
+	}
 }
 func (e *SetInt32NoenumRequestIntegerEnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -1706,6 +2186,14 @@ const (
 func (e OASEnumResponseSetInt64EnumRequestInt32EnumResponse) ToPointer() *OASEnumResponseSetInt64EnumRequestInt32EnumResponse {
 	return &e
 }
+
+// OASEnumResponseSetInt64EnumRequestInt32EnumResponseValues returns every known OASEnumResponseSetInt64EnumRequestInt32EnumResponse value in schema order.
+func OASEnumResponseSetInt64EnumRequestInt32EnumResponseValues() []OASEnumResponseSetInt64EnumRequestInt32EnumResponse {
+	return []OASEnumResponseSetInt64EnumRequestInt32EnumResponse{
+		OASEnumResponseSetInt64EnumRequestInt32EnumResponseOne,
+		OASEnumResponseSetInt64EnumRequestInt32EnumResponseTwo,
+	}
+}
 func (e *OASEnumResponseSetInt64EnumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1731,6 +2219,14 @@ const (
 
 func (e OASEnumResponseSetInt64EnumRequestInt32EnumResponseNullable) ToPointer() *OASEnumResponseSetInt64EnumRequestInt32EnumResponseNullable {
 	return &e
+}
+
+// OASEnumResponseSetInt64EnumRequestInt32EnumResponseNullableValues returns every known OASEnumResponseSetInt64EnumRequestInt32EnumResponseNullable value in schema order.
+func OASEnumResponseSetInt64EnumRequestInt32EnumResponseNullableValues() []OASEnumResponseSetInt64EnumRequestInt32EnumResponseNullable {
+	return []OASEnumResponseSetInt64EnumRequestInt32EnumResponseNullable{
+		OASEnumResponseSetInt64EnumRequestInt32EnumResponseNullableOne,
+		OASEnumResponseSetInt64EnumRequestInt32EnumResponseNullableTwo,
+	}
 }
 func (e *OASEnumResponseSetInt64EnumRequestInt32EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int
@@ -1758,6 +2254,14 @@ const (
 func (e OASEnumResponseSetInt64EnumRequestInt64EnumResponse) ToPointer() *OASEnumResponseSetInt64EnumRequestInt64EnumResponse {
 	return &e
 }
+
+// OASEnumResponseSetInt64EnumRequestInt64EnumResponseValues returns every known OASEnumResponseSetInt64EnumRequestInt64EnumResponse value in schema order.
+func OASEnumResponseSetInt64EnumRequestInt64EnumResponseValues() []OASEnumResponseSetInt64EnumRequestInt64EnumResponse {
+	return []OASEnumResponseSetInt64EnumRequestInt64EnumResponse{
+		OASEnumResponseSetInt64EnumRequestInt64EnumResponseOne,
+		OASEnumResponseSetInt64EnumRequestInt64EnumResponseTwo,
+	}
+}
 func (e *OASEnumResponseSetInt64EnumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1783,6 +2287,14 @@ const (
 
 func (e OASEnumResponseSetInt64EnumRequestInt64EnumResponseNullable) ToPointer() *OASEnumResponseSetInt64EnumRequestInt64EnumResponseNullable {
 	return &e
+}
+
+// OASEnumResponseSetInt64EnumRequestInt64EnumResponseNullableValues returns every known OASEnumResponseSetInt64EnumRequestInt64EnumResponseNullable value in schema order.
+func OASEnumResponseSetInt64EnumRequestInt64EnumResponseNullableValues() []OASEnumResponseSetInt64EnumRequestInt64EnumResponseNullable {
+	return []OASEnumResponseSetInt64EnumRequestInt64EnumResponseNullable{
+		OASEnumResponseSetInt64EnumRequestInt64EnumResponseNullableOne,
+		OASEnumResponseSetInt64EnumRequestInt64EnumResponseNullableTwo,
+	}
 }
 func (e *OASEnumResponseSetInt64EnumRequestInt64EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -1810,6 +2322,14 @@ const (
 func (e OASEnumResponseSetInt64EnumRequestIntegerEnumResponse) ToPointer() *OASEnumResponseSetInt64EnumRequestIntegerEnumResponse {
 	return &e
 }
+
+// OASEnumResponseSetInt64EnumRequestIntegerEnumResponseValues returns every known OASEnumResponseSetInt64EnumRequestIntegerEnumResponse value in schema order.
+func OASEnumResponseSetInt64EnumRequestIntegerEnumResponseValues() []OASEnumResponseSetInt64EnumRequestIntegerEnumResponse {
+	return []OASEnumResponseSetInt64EnumRequestIntegerEnumResponse{
+		OASEnumResponseSetInt64EnumRequestIntegerEnumResponseOne,
+		OASEnumResponseSetInt64EnumRequestIntegerEnumResponseTwo,
+	}
+}
 func (e *OASEnumResponseSetInt64EnumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1835,6 +2355,14 @@ const (
 
 func (e OASEnumResponseSetInt64EnumRequestIntegerEnumResponseNullable) ToPointer() *OASEnumResponseSetInt64EnumRequestIntegerEnumResponseNullable {
 	return &e
+}
+
+// OASEnumResponseSetInt64EnumRequestIntegerEnumResponseNullableValues returns every known OASEnumResponseSetInt64EnumRequestIntegerEnumResponseNullable value in schema order.
+func OASEnumResponseSetInt64EnumRequestIntegerEnumResponseNullableValues() []OASEnumResponseSetInt64EnumRequestIntegerEnumResponseNullable {
+	return []OASEnumResponseSetInt64EnumRequestIntegerEnumResponseNullable{
+		OASEnumResponseSetInt64EnumRequestIntegerEnumResponseNullableOne,
+		OASEnumResponseSetInt64EnumRequestIntegerEnumResponseNullableTwo,
+	}
 }
 func (e *OASEnumResponseSetInt64EnumRequestIntegerEnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -1862,6 +2390,14 @@ const (
 func (e SetInt64NoenumRequestInt32EnumResponse) ToPointer() *SetInt64NoenumRequestInt32EnumResponse {
 	return &e
 }
+
+// SetInt64NoenumRequestInt32EnumResponseValues returns every known SetInt64NoenumRequestInt32EnumResponse value in schema order.
+func SetInt64NoenumRequestInt32EnumResponseValues() []SetInt64NoenumRequestInt32EnumResponse {
+	return []SetInt64NoenumRequestInt32EnumResponse{
+		SetInt64NoenumRequestInt32EnumResponseOne,
+		SetInt64NoenumRequestInt32EnumResponseTwo,
+	}
+}
 func (e *SetInt64NoenumRequestInt32EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1887,6 +2423,14 @@ const (
 
 func (e SetInt64NoenumRequestInt32EnumResponseNullable) ToPointer() *SetInt64NoenumRequestInt32EnumResponseNullable {
 	return &e
+}
+
+// SetInt64NoenumRequestInt32EnumResponseNullableValues returns every known SetInt64NoenumRequestInt32EnumResponseNullable value in schema order.
+func SetInt64NoenumRequestInt32EnumResponseNullableValues() []SetInt64NoenumRequestInt32EnumResponseNullable {
+	return []SetInt64NoenumRequestInt32EnumResponseNullable{
+		SetInt64NoenumRequestInt32EnumResponseNullableOne,
+		SetInt64NoenumRequestInt32EnumResponseNullableTwo,
+	}
 }
 func (e *SetInt64NoenumRequestInt32EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int
@@ -1914,6 +2458,14 @@ const (
 func (e SetInt64NoenumRequestInt64EnumResponse) ToPointer() *SetInt64NoenumRequestInt64EnumResponse {
 	return &e
 }
+
+// SetInt64NoenumRequestInt64EnumResponseValues returns every known SetInt64NoenumRequestInt64EnumResponse value in schema order.
+func SetInt64NoenumRequestInt64EnumResponseValues() []SetInt64NoenumRequestInt64EnumResponse {
+	return []SetInt64NoenumRequestInt64EnumResponse{
+		SetInt64NoenumRequestInt64EnumResponseOne,
+		SetInt64NoenumRequestInt64EnumResponseTwo,
+	}
+}
 func (e *SetInt64NoenumRequestInt64EnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1939,6 +2491,14 @@ const (
 
 func (e SetInt64NoenumRequestInt64EnumResponseNullable) ToPointer() *SetInt64NoenumRequestInt64EnumResponseNullable {
 	return &e
+}
+
+// SetInt64NoenumRequestInt64EnumResponseNullableValues returns every known SetInt64NoenumRequestInt64EnumResponseNullable value in schema order.
+func SetInt64NoenumRequestInt64EnumResponseNullableValues() []SetInt64NoenumRequestInt64EnumResponseNullable {
+	return []SetInt64NoenumRequestInt64EnumResponseNullable{
+		SetInt64NoenumRequestInt64EnumResponseNullableOne,
+		SetInt64NoenumRequestInt64EnumResponseNullableTwo,
+	}
 }
 func (e *SetInt64NoenumRequestInt64EnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -1966,6 +2526,14 @@ const (
 func (e SetInt64NoenumRequestIntegerEnumResponse) ToPointer() *SetInt64NoenumRequestIntegerEnumResponse {
 	return &e
 }
+
+// SetInt64NoenumRequestIntegerEnumResponseValues returns every known SetInt64NoenumRequestIntegerEnumResponse value in schema order.
+func SetInt64NoenumRequestIntegerEnumResponseValues() []SetInt64NoenumRequestIntegerEnumResponse {
+	return []SetInt64NoenumRequestIntegerEnumResponse{
+		SetInt64NoenumRequestIntegerEnumResponseOne,
+		SetInt64NoenumRequestIntegerEnumResponseTwo,
+	}
+}
 func (e *SetInt64NoenumRequestIntegerEnumResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -1991,6 +2559,14 @@ const (
 
 func (e SetInt64NoenumRequestIntegerEnumResponseNullable) ToPointer() *SetInt64NoenumRequestIntegerEnumResponseNullable {
 	return &e
+}
+
+// SetInt64NoenumRequestIntegerEnumResponseNullableValues returns every known SetInt64NoenumRequestIntegerEnumResponseNullable value in schema order.
+func SetInt64NoenumRequestIntegerEnumResponseNullableValues() []SetInt64NoenumRequestIntegerEnumResponseNullable {
+	return []SetInt64NoenumRequestIntegerEnumResponseNullable{
+		SetInt64NoenumRequestIntegerEnumResponseNullableOne,
+		SetInt64NoenumRequestIntegerEnumResponseNullableTwo,
+	}
 }
 func (e *SetInt64NoenumRequestIntegerEnumResponseNullable) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -2018,6 +2594,14 @@ const (
 func (e OASEnumResponseSetIntegerRequestAndResponse) ToPointer() *OASEnumResponseSetIntegerRequestAndResponse {
 	return &e
 }
+
+// OASEnumResponseSetIntegerRequestAndResponseValues returns every known OASEnumResponseSetIntegerRequestAndResponse value in schema order.
+func OASEnumResponseSetIntegerRequestAndResponseValues() []OASEnumResponseSetIntegerRequestAndResponse {
+	return []OASEnumResponseSetIntegerRequestAndResponse{
+		OASEnumResponseSetIntegerRequestAndResponseOne,
+		OASEnumResponseSetIntegerRequestAndResponseTwo,
+	}
+}
 func (e *OASEnumResponseSetIntegerRequestAndResponse) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -2043,6 +2627,14 @@ const (
 
 func (e SetIntegerResponse) ToPointer() *SetIntegerResponse {
 	return &e
+}
+
+// SetIntegerResponseValues returns every known SetIntegerResponse value in schema order.
+func SetIntegerResponseValues() []SetIntegerResponse {
+	return []SetIntegerResponse{
+		SetIntegerResponseOne,
+		SetIntegerResponseTwo,
+	}
 }
 func (e *SetIntegerResponse) UnmarshalJSON(data []byte) error {
 	var v int64
@@ -2070,6 +2662,14 @@ const (
 func (e OASEnumResponseSetStringRequestAndResponse) ToPointer() *OASEnumResponseSetStringRequestAndResponse {
 	return &e
 }
+
+// OASEnumResponseSetStringRequestAndResponseValues returns every known OASEnumResponseSetStringRequestAndResponse value in schema order.
+func OASEnumResponseSetStringRequestAndResponseValues() []OASEnumResponseSetStringRequestAndResponse {
+	return []OASEnumResponseSetStringRequestAndResponse{
+		OASEnumResponseSetStringRequestAndResponseOne,
+		OASEnumResponseSetStringRequestAndResponseTwo,
+	}
+}
 func (e *OASEnumResponseSetStringRequestAndResponse) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -2095,6 +2695,14 @@ const (
 
 func (e SetStringResponse) ToPointer() *SetStringResponse {
 	return &e
+}
+
+// SetStringResponseValues returns every known SetStringResponse value in schema order.
+func SetStringResponseValues() []SetStringResponse {
+	return []SetStringResponse{
+		SetStringResponseOne,
+		SetStringResponseTwo,
+	}
 }
 func (e *SetStringResponse) UnmarshalJSON(data []byte) error {
 	var v string
@@ -2122,6 +2730,14 @@ const (
 func (e OASEnumResponseSetNestedRequestAndResponseSetNestedInteger) ToPointer() *OASEnumResponseSetNestedRequestAndResponseSetNestedInteger {
 	return &e
 }
+
+// OASEnumResponseSetNestedRequestAndResponseSetNestedIntegerValues returns every known OASEnumResponseSetNestedRequestAndResponseSetNestedInteger value in schema order.
+func OASEnumResponseSetNestedRequestAndResponseSetNestedIntegerValues() []OASEnumResponseSetNestedRequestAndResponseSetNestedInteger {
+	return []OASEnumResponseSetNestedRequestAndResponseSetNestedInteger{
+		OASEnumResponseSetNestedRequestAndResponseSetNestedIntegerOne,
+		OASEnumResponseSetNestedRequestAndResponseSetNestedIntegerTwo,
+	}
+}
 func (e *OASEnumResponseSetNestedRequestAndResponseSetNestedInteger) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -2147,6 +2763,14 @@ const (
 
 func (e OASEnumResponseSetNestedRequestAndResponseSetNestedString) ToPointer() *OASEnumResponseSetNestedRequestAndResponseSetNestedString {
 	return &e
+}
+
+// OASEnumResponseSetNestedRequestAndResponseSetNestedStringValues returns every known OASEnumResponseSetNestedRequestAndResponseSetNestedString value in schema order.
+func OASEnumResponseSetNestedRequestAndResponseSetNestedStringValues() []OASEnumResponseSetNestedRequestAndResponseSetNestedString {
+	return []OASEnumResponseSetNestedRequestAndResponseSetNestedString{
+		OASEnumResponseSetNestedRequestAndResponseSetNestedStringOne,
+		OASEnumResponseSetNestedRequestAndResponseSetNestedStringTwo,
+	}
 }
 func (e *OASEnumResponseSetNestedRequestAndResponseSetNestedString) UnmarshalJSON(data []byte) error {
 	var v string
@@ -2212,6 +2836,14 @@ const (
 func (e SetNestedResponseSetNestedInteger) ToPointer() *SetNestedResponseSetNestedInteger {
 	return &e
 }
+
+// SetNestedResponseSetNestedIntegerValues returns every known SetNestedResponseSetNestedInteger value in schema order.
+func SetNestedResponseSetNestedIntegerValues() []SetNestedResponseSetNestedInteger {
+	return []SetNestedResponseSetNestedInteger{
+		SetNestedResponseSetNestedIntegerOne,
+		SetNestedResponseSetNestedIntegerTwo,
+	}
+}
 func (e *SetNestedResponseSetNestedInteger) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -2237,6 +2869,14 @@ const (
 
 func (e SetNestedResponseSetNestedString) ToPointer() *SetNestedResponseSetNestedString {
 	return &e
+}
+
+// SetNestedResponseSetNestedStringValues returns every known SetNestedResponseSetNestedString value in schema order.
+func SetNestedResponseSetNestedStringValues() []SetNestedResponseSetNestedString {
+	return []SetNestedResponseSetNestedString{
+		SetNestedResponseSetNestedStringOne,
+		SetNestedResponseSetNestedStringTwo,
+	}
 }
 func (e *SetNestedResponseSetNestedString) UnmarshalJSON(data []byte) error {
 	var v string
@@ -2284,6 +2924,14 @@ const (
 func (e OASEnumResponseStringRequestAndResponse) ToPointer() *OASEnumResponseStringRequestAndResponse {
 	return &e
 }
+
+// OASEnumResponseStringRequestAndResponseValues returns every known OASEnumResponseStringRequestAndResponse value in schema order.
+func OASEnumResponseStringRequestAndResponseValues() []OASEnumResponseStringRequestAndResponse {
+	return []OASEnumResponseStringRequestAndResponse{
+		OASEnumResponseStringRequestAndResponseOne,
+		OASEnumResponseStringRequestAndResponseTwo,
+	}
+}
 func (e *OASEnumResponseStringRequestAndResponse) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -2310,6 +2958,14 @@ const (
 
 func (e StringResponse) ToPointer() *StringResponse {
 	return &e
+}
+
+// StringResponseValues returns every known StringResponse value in schema order.
+func StringResponseValues() []StringResponse {
+	return []StringResponse{
+		StringResponseOne,
+		StringResponseTwo,
+	}
 }
 func (e *StringResponse) UnmarshalJSON(data []byte) error {
 	var v string

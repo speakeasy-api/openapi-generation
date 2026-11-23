@@ -17,6 +17,14 @@ const (
 func (e GlobalEnumString) ToPointer() *GlobalEnumString {
 	return &e
 }
+
+// GlobalEnumStringValues returns every known GlobalEnumString value in schema order.
+func GlobalEnumStringValues() []GlobalEnumString {
+	return []GlobalEnumString{
+		GlobalEnumStringValue1,
+		GlobalEnumStringValue2,
+	}
+}
 func (e *GlobalEnumString) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

@@ -14,8 +14,9 @@ func (e {{$enumType}}) ToPointer() *{{$enumType}} {
     return &e
 }
 
-// {{$enumType}}Values returns every known {{$enumType}} value in schema order.
-func {{$enumType}}Values() []{{$enumType}} {
+{{- $valuesFunc := templateEnumValuesFuncName .Local.Type $enumType }}
+// {{$valuesFunc}} returns every known {{$enumType}} value in schema order.
+func {{$valuesFunc}}() []{{$enumType}} {
     return []{{$enumType}}{
         {{templateEnumValueNames .Local.Type}}
     }

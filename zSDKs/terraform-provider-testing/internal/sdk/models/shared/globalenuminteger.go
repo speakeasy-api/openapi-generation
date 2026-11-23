@@ -17,6 +17,14 @@ const (
 func (e GlobalEnumInteger) ToPointer() *GlobalEnumInteger {
 	return &e
 }
+
+// GlobalEnumIntegerValues returns every known GlobalEnumInteger value in schema order.
+func GlobalEnumIntegerValues() []GlobalEnumInteger {
+	return []GlobalEnumInteger{
+		GlobalEnumIntegerFive,
+		GlobalEnumIntegerSix,
+	}
+}
 func (e *GlobalEnumInteger) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {

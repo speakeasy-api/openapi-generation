@@ -19,6 +19,15 @@ func (e XUnknownValuesRequestRequiredOpenEnumString) ToPointer() *XUnknownValues
 	return &e
 }
 
+// XUnknownValuesRequestRequiredOpenEnumStringValues returns every known XUnknownValuesRequestRequiredOpenEnumString value in schema order.
+func XUnknownValuesRequestRequiredOpenEnumStringValues() []XUnknownValuesRequestRequiredOpenEnumString {
+	return []XUnknownValuesRequestRequiredOpenEnumString{
+		XUnknownValuesRequestRequiredOpenEnumStringAlpha,
+		XUnknownValuesRequestRequiredOpenEnumStringBeta,
+		XUnknownValuesRequestRequiredOpenEnumStringGamma,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *XUnknownValuesRequestRequiredOpenEnumString) IsExact() bool {
 	if e != nil {
@@ -40,6 +49,15 @@ const (
 
 func (e OptionalOpenEnumString) ToPointer() *OptionalOpenEnumString {
 	return &e
+}
+
+// OptionalOpenEnumStringValues returns every known OptionalOpenEnumString value in schema order.
+func OptionalOpenEnumStringValues() []OptionalOpenEnumString {
+	return []OptionalOpenEnumString{
+		OptionalOpenEnumStringRed,
+		OptionalOpenEnumStringGreen,
+		OptionalOpenEnumStringBlue,
+	}
 }
 
 // IsExact returns true if the value matches a known enum value, false otherwise.
@@ -65,6 +83,15 @@ func (e XUnknownValuesRequestOptionalComputedOpenEnumString) ToPointer() *XUnkno
 	return &e
 }
 
+// XUnknownValuesRequestOptionalComputedOpenEnumStringValues returns every known XUnknownValuesRequestOptionalComputedOpenEnumString value in schema order.
+func XUnknownValuesRequestOptionalComputedOpenEnumStringValues() []XUnknownValuesRequestOptionalComputedOpenEnumString {
+	return []XUnknownValuesRequestOptionalComputedOpenEnumString{
+		XUnknownValuesRequestOptionalComputedOpenEnumStringSmall,
+		XUnknownValuesRequestOptionalComputedOpenEnumStringMedium,
+		XUnknownValuesRequestOptionalComputedOpenEnumStringLarge,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *XUnknownValuesRequestOptionalComputedOpenEnumString) IsExact() bool {
 	if e != nil {
@@ -88,6 +115,15 @@ func (e XUnknownValuesRequestOptionalComputedOpenEnumInt64) ToPointer() *XUnknow
 	return &e
 }
 
+// XUnknownValuesRequestOptionalComputedOpenEnumInt64Values returns every known XUnknownValuesRequestOptionalComputedOpenEnumInt64 value in schema order.
+func XUnknownValuesRequestOptionalComputedOpenEnumInt64Values() []XUnknownValuesRequestOptionalComputedOpenEnumInt64 {
+	return []XUnknownValuesRequestOptionalComputedOpenEnumInt64{
+		XUnknownValuesRequestOptionalComputedOpenEnumInt64One,
+		XUnknownValuesRequestOptionalComputedOpenEnumInt64Two,
+		XUnknownValuesRequestOptionalComputedOpenEnumInt64Three,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *XUnknownValuesRequestOptionalComputedOpenEnumInt64) IsExact() bool {
 	if e != nil {
@@ -109,6 +145,14 @@ const (
 
 func (e XUnknownValuesRequestClosedEnumString) ToPointer() *XUnknownValuesRequestClosedEnumString {
 	return &e
+}
+
+// XUnknownValuesRequestClosedEnumStringValues returns every known XUnknownValuesRequestClosedEnumString value in schema order.
+func XUnknownValuesRequestClosedEnumStringValues() []XUnknownValuesRequestClosedEnumString {
+	return []XUnknownValuesRequestClosedEnumString{
+		XUnknownValuesRequestClosedEnumStringOn,
+		XUnknownValuesRequestClosedEnumStringOff,
+	}
 }
 func (e *XUnknownValuesRequestClosedEnumString) UnmarshalJSON(data []byte) error {
 	var v string
