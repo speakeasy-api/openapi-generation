@@ -75,6 +75,13 @@ func testUsage(lang, group string, all bool) {
 				usageFile, numCodes, expected))
 		}
 
+		if lang == "csharpv2" {
+			logger.Debug(fmt.Sprintf("Running %d usage example(s) from %s in one native build", numCodes, usageFile))
+			writeCsharpUsageProgram(testUsagePath, exampleCodes)
+			runCommand(testUsagePath, buildCmd)
+			return
+		}
+
 		// TODO: enable usage example execution for PHP
 		if lang != "php" {
 			logger.Debug(fmt.Sprintf("Running %d usage example(s) from %s", numCodes, usageFile))
@@ -88,6 +95,36 @@ func testUsage(lang, group string, all bool) {
 			}
 		}
 	}
+}
+
+var csharpUsingDirectiveRegex = regexp.MustCompile(`^using (static )?[A-Za-z_][\w.]*( = [\w.<>, ]+)?;$`)
+
+// C# allows top-level statements in one file only.
+func writeCsharpUsageProgram(testUsagePath string, exampleCodes []string) {
+	var program strings.Builder
+	for i, exampleCode := range exampleCodes {
+		className := fmt.Sprintf("Usage%d", i)
+
+		lines := strings.Split(exampleCode, "\n")
+		bodyStart := 0
+		for bodyStart < len(lines) {
+			line := strings.TrimSpace(lines[bodyStart])
+			if line != "" && !csharpUsingDirectiveRegex.MatchString(line) {
+				break
+			}
+			bodyStart++
+		}
+
+		var usage strings.Builder
+		usage.WriteString(strings.Join(lines[:bodyStart], "\n"))
+		fmt.Fprintf(&usage, "\ninternal static class %s\n{\n    internal static async System.Threading.Tasks.Task RunAsync()\n    {\n", className)
+		usage.WriteString(strings.Join(lines[bodyStart:], "\n"))
+		usage.WriteString("\n    }\n}\n")
+		writeExampleCode(fmt.Sprintf("%s/%s", testUsagePath, getOutputFile("csharpv2", className)), usage.String())
+
+		fmt.Fprintf(&program, "await %s.RunAsync();\n", className)
+	}
+	writeExampleCode(fmt.Sprintf("%s/%s", testUsagePath, getOutputFile("csharpv2", "Program")), program.String())
 }
 
 func collectUsageExampleCodes(file string) []string {
@@ -297,10 +334,15 @@ func buildCommand(lang, group string, run bool) string {
 	command := ""
 
 	switch lang {
-	case "csharp", "csharpv2":
+	case "csharp":
 		command = "dotnet build"
 		if run {
 			command += " && dotnet run"
+		}
+	case "csharpv2":
+		command = "dotnet build"
+		if run {
+			command = "dotnet publish -c Release --use-current-runtime -o bin/native -nodeReuse:false && ./bin/native/testusage"
 		}
 	case "go":
 		command = "export GOROOT= && go build"

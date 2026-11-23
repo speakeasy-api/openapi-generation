@@ -301,6 +301,87 @@ jobs:
     uses: ./.github/workflows/test-csharp.yml
     with:
       test-group: "review"
+  test-csharpv2-primary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "primary"
+      template-version: "v2"
+      timeout-minutes: 20
+  test-csharpv2-secondary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "secondary"
+      template-version: "v2"
+      timeout-minutes: 20
+  test-csharpv2-tertiary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "tertiary"
+      template-version: "v2"
+      timeout-minutes: 20
+  test-csharpv2-quaternary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "quaternary"
+      template-version: "v2"
+      timeout-minutes: 20
+  test-csharpv2-client-credentials:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "client-credentials"
+      template-version: "v2"
+      timeout-minutes: 20
+  test-csharpv2-client-credentials-basic:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "client-credentials-basic"
+      template-version: "v2"
+      timeout-minutes: 20
+  test-csharpv2-review:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "review"
+      template-version: "v2"
+      timeout-minutes: 20
+  test-csharpv2-basic-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "basic-http"
+      template-version: "v2"
+      timeout-minutes: 20
+  test-csharpv2-security-options:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "security-options"
+      template-version: "v2"
+      timeout-minutes: 20
+  test-csharpv2-primary-netstandard2:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "primary"
+      template-version: "v2"
+      timeout-minutes: 20
+      make-target: "build-csharpv2-netstandard2"
   test-csharp:
     if: always() && needs.detect-targets.outputs.run-csharp == 'true'
     needs:
@@ -316,6 +397,16 @@ jobs:
       # - test-csharp-custom-http
       # - test-csharp-oauth2-password
       - test-csharp-review
+      - test-csharpv2-primary
+      - test-csharpv2-secondary
+      - test-csharpv2-tertiary
+      - test-csharpv2-quaternary
+      - test-csharpv2-client-credentials
+      - test-csharpv2-client-credentials-basic
+      - test-csharpv2-review
+      - test-csharpv2-basic-http
+      - test-csharpv2-security-options
+      - test-csharpv2-primary-netstandard2
     uses: ./.github/workflows/check-variants.yml
     with:
       needs-json: ${{ toJSON(needs) }}

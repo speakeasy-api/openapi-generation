@@ -35,6 +35,7 @@ jobs:
       matrix:
         template:
           - csharp
+          - csharpv2
           - go
           - javav2
           - mcp-typescript

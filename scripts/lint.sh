@@ -87,7 +87,7 @@ echo ""
 echo "===================================="
 echo "7. Running tsgo on all templates..."
 echo "===================================="
-TEMPLATES=(cli csharp go javav2 mcp-typescript mockserver php postman pythonv2 ruby terraform typescriptv2 unity)
+TEMPLATES=(cli csharp csharpv2 go javav2 mcp-typescript mockserver php postman pythonv2 ruby terraform typescriptv2 unity)
 for template in "${TEMPLATES[@]}"; do
     echo "Checking TypeScript in templates/$template..."
     if ! npx tsgo --project "$ROOT_DIR/templates/templates/$template"; then

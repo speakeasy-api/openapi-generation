@@ -5,12 +5,26 @@ on:
       test-group:
         required: true
         type: string
+      template-version:
+        required: false
+        type: string
+        default: v1
+      timeout-minutes:
+        required: false
+        type: number
+        default: 15
+      make-target:
+        description: "Make target replacing test-csharp (v1) or test-csharpv2-aot (v2); no test report is uploaded when set"
+        required: false
+        type: string
+        default: ""
 env:
   SPEAKEASY_DEBUG: "true"
+  CSHARP_TARGET: ${{ inputs.template-version == 'v2' && 'csharpv2' || 'csharp' }}
 jobs:
   test-csharp:
-    timeout-minutes: 15
-    name: Test CSharp - ${{ inputs.test-group }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    name: Test CSharp${{ inputs.template-version == 'v2' && ' v2' || '' }} - ${{ inputs.test-group }}${{ inputs.make-target != '' && format(' ({0})', inputs.make-target) || '' }}
     runs-on: ubicloud-standard-4-ubuntu-2404
     permissions:
       contents: "read"
@@ -25,7 +39,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y wget
-          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4_amd64.deb
+          wget -4 --timeout=30 http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4_amd64.deb
           sudo dpkg -i libssl1.1_1.1.0g-2ubuntu4_amd64.deb
           rm libssl1.1_1.1.0g-2ubuntu4_amd64.deb
       - name: Setup dotnet
@@ -53,13 +67,17 @@ jobs:
       - name: Test
         env:
           SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only
-        run: USAGE_GROUP=all TARGET=${{ inputs.test-group }} make test-csharp
+          USAGE_GROUP: ${{ inputs.template-version != 'v2' && 'all' || '' }}
+        run: TARGET=${{ inputs.test-group }} make ${{ inputs.make-target || (inputs.template-version == 'v2' && 'test-csharpv2-aot' || 'test-csharp') }}
+      - name: Test compile commands without enableFormatting
+        if: inputs.template-version == 'v2' && inputs.test-group == 'secondary'
+        run: go test -tags dotnet -count=1 ./internal/targetconfig/
       - name: git diff
         run: ./scripts/check-generated-diff.sh
       - name: Upload test report
-        if: inputs.test-group != 'review'
+        if: inputs.test-group != 'review' && inputs.make-target == ''
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: sdk-csharp-${{ inputs.test-group }}-test-report
-          path: ./testSDKs/sdk-csharp-${{ inputs.test-group }}/**/test-csharp-record.txt
+          name: sdk-${{ env.CSHARP_TARGET }}-${{ inputs.test-group }}-test-report
+          path: ./testSDKs/sdk-${{ env.CSHARP_TARGET }}-${{ inputs.test-group }}/**/test-csharp-record.txt
           if-no-files-found: error
