@@ -404,10 +404,18 @@ func canonicalNumber(n json.Number) interface{} {
 	return json.Number(shortest)
 }
 
+// The frame's wire object is preferred: re-encoding the decoded model drops
+// undeclared members that error classification reads.
 func streamErrorEvent(item interface{}, raw []byte) (json.RawMessage, bool) {
 	u, ok := errorUnionValue(reflect.ValueOf(item))
 	if !ok {
 		return nil, false
+	}
+	var frame map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &frame); err == nil {
+		if data := frame["data"]; strings.HasPrefix(strings.TrimSpace(string(data)), "{") {
+			return data, true
+		}
 	}
 	if data, err := marshalJSON(u.Interface()); err == nil {
 		return data, true
@@ -416,11 +424,7 @@ func streamErrorEvent(item interface{}, raw []byte) (json.RawMessage, bool) {
 		data, err := json.Marshal(wireStreamItem(item, raw, nil, false))
 		return data, err == nil
 	}
-	var frame map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &frame); err != nil || len(frame["data"]) == 0 {
-		return nil, false
-	}
-	return frame["data"], true
+	return nil, false
 }
 
 func errorUnionValue(v reflect.Value) (reflect.Value, bool) {

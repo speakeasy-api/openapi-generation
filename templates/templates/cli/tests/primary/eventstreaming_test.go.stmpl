@@ -519,6 +519,28 @@ func TestEventStreamErrorEventAgentModeFallbackIsAPIError(t *testing.T) {
 	assert.NotContains(t, stderr, "Check network connectivity")
 }
 
+// Members the error schema does not declare reach the error envelope and
+// classification: the body comes from the event's wire JSON, not the decoded model.
+func TestEventStreamErrorEventKeepsUndeclaredMembers(t *testing.T) {
+	server := newSSEServer(t,
+		`{"event_type":"error","error":{"code":"SOMETHING_ODD","message":"key revoked","retry_hint":"rotate","links":[{"href":"https://example.com/help"}]}}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--agent-mode"})
+	require.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
+	errObj, ok := envelope["error"].(map[string]interface{})
+	require.True(t, ok, "expected the event's error object in the envelope: %s", stderr)
+	assert.Equal(t, "rotate", errObj["retry_hint"], stderr)
+	assert.NotNil(t, errObj["links"], stderr)
+	assert.Equal(t, "key revoked", errObj["message"], stderr)
+}
+
 // Negative case: an undiscriminated oneOf with an error-shaped variant
 // carries no wire discriminator declaring an error, so every event is data
 // and the command exits 0 — generator variant naming never fails a command.
