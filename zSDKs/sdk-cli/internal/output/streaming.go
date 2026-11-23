@@ -5,6 +5,7 @@
 package output
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -404,8 +405,10 @@ func canonicalNumber(n json.Number) interface{} {
 	return json.Number(shortest)
 }
 
-// The frame's wire object is preferred: re-encoding the decoded model drops
-// undeclared members that error classification reads.
+// The frame's wire data object is preferred over the decoded model, whose
+// re-encoding drops undeclared members that error classification reads. A
+// union of whole envelopes keeps the envelope level, with only its data
+// replaced.
 func streamErrorEvent(item interface{}, raw []byte) (json.RawMessage, bool) {
 	u, ok := errorUnionValue(reflect.ValueOf(item))
 	if !ok {
@@ -413,22 +416,73 @@ func streamErrorEvent(item interface{}, raw []byte) (json.RawMessage, bool) {
 	}
 	var frame map[string]json.RawMessage
 	frameErr := json.Unmarshal(raw, &frame)
-	if frameErr == nil {
-		if data := frame["data"]; strings.HasPrefix(strings.TrimSpace(string(data)), "{") {
-			return data, true
-		}
+	var wireData json.RawMessage
+	if frameErr == nil && strings.HasPrefix(strings.TrimSpace(string(frame["data"])), "{") {
+		wireData = frame["data"]
 	}
+	envelopeUnion := isUnionStruct(derefValue(reflect.ValueOf(item)).Type())
+	if wireData != nil && !envelopeUnion {
+		return wireData, true
+	}
+	var body json.RawMessage
 	if data, err := marshalJSON(u.Interface()); err == nil {
-		return data, true
-	}
-	if isUnionStruct(derefValue(reflect.ValueOf(item)).Type()) {
+		body = data
+	} else if envelopeUnion {
 		data, err := json.Marshal(wireStreamItem(item, raw, nil, false))
-		return data, err == nil
+		if err != nil {
+			return nil, false
+		}
+		body = data
+	} else {
+		if frameErr != nil || len(frame["data"]) == 0 {
+			return nil, false
+		}
+		return frame["data"], true
 	}
-	if frameErr != nil || len(frame["data"]) == 0 {
-		return nil, false
+	if wireData != nil {
+		return replaceEnvelopeData(body, wireData), true
 	}
-	return frame["data"], true
+	return body, true
+}
+
+// replaceEnvelopeData swaps the top-level data member of an encoded envelope,
+// keeping the other members in order. Without such a member the envelope is
+// returned unchanged.
+func replaceEnvelopeData(envelope, data json.RawMessage) json.RawMessage {
+	decoder := json.NewDecoder(bytes.NewReader(envelope))
+	if token, err := decoder.Token(); err != nil || token != json.Delim('{') {
+		return envelope
+	}
+	var out bytes.Buffer
+	out.WriteByte('{')
+	replaced := false
+	for decoder.More() {
+		token, err := decoder.Token()
+		if err != nil {
+			return envelope
+		}
+		key, _ := token.(string)
+		var value json.RawMessage
+		if err := decoder.Decode(&value); err != nil {
+			return envelope
+		}
+		if key == "data" {
+			value = data
+			replaced = true
+		}
+		if out.Len() > 1 {
+			out.WriteByte(',')
+		}
+		encodedKey, _ := json.Marshal(key)
+		out.Write(encodedKey)
+		out.WriteByte(':')
+		out.Write(value)
+	}
+	if !replaced {
+		return envelope
+	}
+	out.WriteByte('}')
+	return out.Bytes()
 }
 
 func errorUnionValue(v reflect.Value) (reflect.Value, bool) {
