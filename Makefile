@@ -159,6 +159,14 @@ TARGETS := postman terraform
 $(foreach TARGET,$(TARGETS),\
 	$(eval $(call target-rules,$(TARGET),$(BUILD_VARIANTS))))
 
+# test-csharpv2 plus the NativeAOT publish of the usage testproject, which only runs with a usage group.
+test-csharpv2-aot:
+	@USAGE_GROUP=all $(MAKE) test-csharpv2
+
+# Generates csharpv2 variants with targetFramework netstandard2.0 and builds the SDK for every target framework, without tests.
+build-csharpv2-netstandard2:
+	@./scripts/build-csharpv2-netstandard2.sh $(VARIANTS)
+
 include unity.mk # defines build-unity and test-unity targets
 $(eval $(call check-template-rule,unity))
 

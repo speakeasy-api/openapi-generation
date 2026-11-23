@@ -95,6 +95,11 @@ jobs:
           # Convert comma-separated list to bash array
           IFS=',' read -ra TARGETS <<< "$AFFECTED_TARGETS"
 
+          # csharpv2 jobs are gated and aggregated under run-csharp
+          if [[ ",$AFFECTED_TARGETS," == *",csharpv2,"* ]]; then
+            TARGETS+=("csharp")
+          fi
+
           # Check each target and set output
           for target in cli csharp go javav2 mcp-typescript php pythonv2 ruby terraform typescriptv2 postman unity; do
             found=false
