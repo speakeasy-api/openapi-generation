@@ -16,6 +16,28 @@ func (r *OASOneOfDataSourceModel) RefreshFromSharedOASOneOfResponse(ctx context.
 
 	if resp != nil {
 		r.ID = types.StringPointerValue(resp.ID)
+		if resp.OptionalConstDiscriminatorRequestAndResponse != nil {
+			r.OptionalConstDiscriminatorRequestAndResponse = &tfTypes.OASOneOfResponseOptionalConstDiscriminatorRequestAndResponse{}
+			if resp.OptionalConstDiscriminatorRequestAndResponse.OASOneOfConstDiscriminatorAlpha != nil {
+				r.OptionalConstDiscriminatorRequestAndResponse.Alpha = &tfTypes.OASOneOfConstDiscriminatorAlpha{}
+				r.OptionalConstDiscriminatorRequestAndResponse.Alpha.AlphaValue = types.StringPointerValue(resp.OptionalConstDiscriminatorRequestAndResponse.OASOneOfConstDiscriminatorAlpha.AlphaValue)
+			}
+			if resp.OptionalConstDiscriminatorRequestAndResponse.OASOneOfConstDiscriminatorBeta != nil {
+				r.OptionalConstDiscriminatorRequestAndResponse.Beta = &tfTypes.OASOneOfConstDiscriminatorBeta{}
+				r.OptionalConstDiscriminatorRequestAndResponse.Beta.BetaValue = types.Float64PointerValue(resp.OptionalConstDiscriminatorRequestAndResponse.OASOneOfConstDiscriminatorBeta.BetaValue)
+			}
+		}
+		if resp.OptionalConstDiscriminatorRequestAndResponseRepeat != nil {
+			r.OptionalConstDiscriminatorRequestAndResponseRepeat = &tfTypes.OASOneOfResponseOptionalConstDiscriminatorRequestAndResponseRepeat{}
+			if resp.OptionalConstDiscriminatorRequestAndResponseRepeat.OASOneOfConstDiscriminatorAlpha != nil {
+				r.OptionalConstDiscriminatorRequestAndResponseRepeat.Alpha = &tfTypes.OASOneOfConstDiscriminatorAlpha{}
+				r.OptionalConstDiscriminatorRequestAndResponseRepeat.Alpha.AlphaValue = types.StringPointerValue(resp.OptionalConstDiscriminatorRequestAndResponseRepeat.OASOneOfConstDiscriminatorAlpha.AlphaValue)
+			}
+			if resp.OptionalConstDiscriminatorRequestAndResponseRepeat.OASOneOfConstDiscriminatorBeta != nil {
+				r.OptionalConstDiscriminatorRequestAndResponseRepeat.Beta = &tfTypes.OASOneOfConstDiscriminatorBeta{}
+				r.OptionalConstDiscriminatorRequestAndResponseRepeat.Beta.BetaValue = types.Float64PointerValue(resp.OptionalConstDiscriminatorRequestAndResponseRepeat.OASOneOfConstDiscriminatorBeta.BetaValue)
+			}
+		}
 		if resp.OptionalDiscriminatorRequestAndResponse != nil {
 			r.OptionalDiscriminatorRequestAndResponse = &tfTypes.OASOneOfResponseOptionalDiscriminatorRequestAndResponse{}
 			if resp.OptionalDiscriminatorRequestAndResponse.OASOneOfResponseOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf != nil {

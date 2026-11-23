@@ -16881,6 +16881,33 @@ components:
             - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectString'
             - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
             - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+        optional_const_discriminator_request_and_response:
+          type: object
+          description: >-
+            Discriminated oneOf whose members declare the discriminator property as a const.
+            The same member schemas are referenced again by the next property, so Terraform
+            schema assembly reaches each shared member type twice within one entity.
+          discriminator:
+            propertyName: kind
+            mapping:
+              alpha: '#/components/schemas/OASOneOfConstDiscriminatorAlpha'
+              beta: '#/components/schemas/OASOneOfConstDiscriminatorBeta'
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfConstDiscriminatorAlpha'
+            - $ref: '#/components/schemas/OASOneOfConstDiscriminatorBeta'
+        optional_const_discriminator_request_and_response_repeat:
+          type: object
+          description: >-
+            Second reference to the const-discriminated members above; generation must keep the
+            const discriminator property on the shared member models.
+          discriminator:
+            propertyName: kind
+            mapping:
+              alpha: '#/components/schemas/OASOneOfConstDiscriminatorAlpha'
+              beta: '#/components/schemas/OASOneOfConstDiscriminatorBeta'
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfConstDiscriminatorAlpha'
+            - $ref: '#/components/schemas/OASOneOfConstDiscriminatorBeta'
         optional_discriminator_request_required_response:
           type: object
           description: optional_discriminator_request_required_response oneOf level description
@@ -17164,6 +17191,33 @@ components:
             - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectString'
             - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
             - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+        optional_const_discriminator_request_and_response:
+          type: object
+          description: >-
+            Discriminated oneOf whose members declare the discriminator property as a const.
+            The same member schemas are referenced again by the next property, so Terraform
+            schema assembly reaches each shared member type twice within one entity.
+          discriminator:
+            propertyName: kind
+            mapping:
+              alpha: '#/components/schemas/OASOneOfConstDiscriminatorAlpha'
+              beta: '#/components/schemas/OASOneOfConstDiscriminatorBeta'
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfConstDiscriminatorAlpha'
+            - $ref: '#/components/schemas/OASOneOfConstDiscriminatorBeta'
+        optional_const_discriminator_request_and_response_repeat:
+          type: object
+          description: >-
+            Second reference to the const-discriminated members above; generation must keep the
+            const discriminator property on the shared member models.
+          discriminator:
+            propertyName: kind
+            mapping:
+              alpha: '#/components/schemas/OASOneOfConstDiscriminatorAlpha'
+              beta: '#/components/schemas/OASOneOfConstDiscriminatorBeta'
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfConstDiscriminatorAlpha'
+            - $ref: '#/components/schemas/OASOneOfConstDiscriminatorBeta'
         optional_discriminator_request_required_response:
           type: object
           description: optional_discriminator_request_required_response oneOf level description
@@ -17470,6 +17524,26 @@ components:
           type: string
         object_number:
           type: number
+    OASOneOfConstDiscriminatorAlpha:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: alpha
+        alpha_value:
+          type: string
+      required:
+        - kind
+    OASOneOfConstDiscriminatorBeta:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: beta
+        beta_value:
+          type: number
+      required:
+        - kind
     OASOneOfObjectString:
       type: object
       properties:
