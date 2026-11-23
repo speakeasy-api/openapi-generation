@@ -2,8 +2,13 @@
 namespace {{getModelNamespace ""}}
 {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Globalization;
+    using System.IO;
+    using System.Numerics;
+    using System.Text;
     using System.Text.Json;
     using System.Text.Json.Serialization.Metadata;
 
@@ -62,6 +67,21 @@ namespace {{getModelNamespace ""}}
     }
 
     /// <summary>
+    /// The variant a union value holds, or no <see cref="Type"/> when it holds none.
+    /// </summary>
+    internal readonly struct UnionMember
+    {
+        public readonly global::System.Type? Type;
+        public readonly object? Value;
+
+        public UnionMember(global::System.Type type, object? value)
+        {
+            Type = type;
+            Value = value;
+        }
+    }
+
+    /// <summary>
     /// Structural scoring helper for undiscriminated-union deserialization. Recurses through
     /// nested objects and array/collection elements, accumulating a <see cref="UnionScore"/>
     /// against a candidate variant's source-generated metadata. Lower scores mean a tighter fit,
@@ -70,19 +90,33 @@ namespace {{getModelNamespace ""}}
     /// </summary>
     internal static class UnionScoring
     {
-        // Maps a union CLR type to its variant CLR types, so a nested union (whose own
-        // JsonTypeInfo is converter-based, not Object-kind) can be scored by its variants.
+        // Maps an undiscriminated union CLR type to the member its converter selected, so a nested
+        // union (whose own JsonTypeInfo is converter-based, not Object-kind) can be scored by that
+        // member. Populated by each union's converter factory.
+        private static readonly ConcurrentDictionary<global::System.Type, Func<object, UnionMember>> UnionMembers =
+            new ConcurrentDictionary<global::System.Type, Func<object, UnionMember>>();
+
+        // Discriminator property and variant per discriminator value of each discriminated union.
         // Populated by each union's converter factory.
-        private static readonly ConcurrentDictionary<global::System.Type, global::System.Type[]> UnionVariants =
-            new ConcurrentDictionary<global::System.Type, global::System.Type[]>();
+        private static readonly ConcurrentDictionary<global::System.Type, (string Property, (string Value, global::System.Type Variant)[] Mapping)> Discriminators =
+            new ConcurrentDictionary<global::System.Type, (string Property, (string Value, global::System.Type Variant)[] Mapping)>();
 
         // Non-nullable open unions, which read JSON null as Unknown.
         private static readonly ConcurrentDictionary<global::System.Type, bool> NullReadsAsUnknown =
             new ConcurrentDictionary<global::System.Type, bool>();
 
-        public static void RegisterUnion(global::System.Type unionType, global::System.Type[] variantTypes)
+        public static void RegisterUnion(global::System.Type unionType, Func<object, UnionMember> selectMember)
         {
-            UnionVariants[unionType] = variantTypes;
+            UnionMembers[unionType] = selectMember;
+        }
+
+        public static void RegisterDiscriminator(
+            global::System.Type unionType,
+            string property,
+            (string Value, global::System.Type Variant)[] mapping
+        )
+        {
+            Discriminators[unionType] = (property, mapping);
         }
 
         public static void RegisterNullAsUnknown(global::System.Type unionType)
@@ -93,16 +127,18 @@ namespace {{getModelNamespace ""}}
         public static UnionScore Score(
             JsonElement element,
             JsonTypeInfo? typeInfo,
-            JsonSerializerOptions options
+            JsonSerializerOptions options,
+            object? value = null
         )
         {
-            return Score(element, typeInfo, options, 0);
+            return Score(element, typeInfo, options, value, 0);
         }
 
         private static UnionScore Score(
             JsonElement element,
             JsonTypeInfo? typeInfo,
             JsonSerializerOptions options,
+            object? value,
             int depth
         )
         {
@@ -117,24 +153,25 @@ namespace {{getModelNamespace ""}}
                 return new UnionScore(0, 0, 1);
             }
 
-            // Nested union: score by its tightest-fitting variant, not its opaque metadata.
-            if (UnionVariants.TryGetValue(typeInfo.Type, out var variantTypes))
+            // Nested union: score by the variant its converter selected, not its opaque metadata.
+            if (UnionMembers.TryGetValue(typeInfo.Type, out var selectMember))
             {
-                UnionScore? best = null;
-                foreach (var variantType in variantTypes)
+                if (value == null || element.ValueKind == JsonValueKind.Null)
                 {
-                    var score = Score(
-                        element,
-                        ResolveTypeInfo(variantType, options),
-                        options,
-                        depth + 1
-                    );
-                    if (best == null || score.CompareTo(best.Value) < 0)
-                    {
-                        best = score;
-                    }
+                    return UnionScore.Zero;
                 }
-                return best ?? UnionScore.Zero;
+                var member = selectMember(value);
+                if (member.Type == null)
+                {
+                    return new UnionScore(0, 0, 1);
+                }
+                return Score(
+                    element,
+                    ResolveTypeInfo(member.Type, options),
+                    options,
+                    member.Value,
+                    depth + 1
+                );
             }
 
             switch (element.ValueKind)
@@ -153,10 +190,14 @@ namespace {{getModelNamespace ""}}
                         {
                             values[entry.Name] = entry.Value;
                         }
+                        var dictionary = value as IDictionary;
                         var valuesScore = UnionScore.Zero;
-                        foreach (var value in values.Values)
+                        foreach (var entry in values)
                         {
-                            valuesScore += Score(value, valueTypeInfo, options, depth + 1);
+                            var entryValue = dictionary != null && dictionary.Contains(entry.Key)
+                                ? dictionary[entry.Key]
+                                : null;
+                            valuesScore += Score(entry.Value, valueTypeInfo, options, entryValue, depth + 1);
                         }
                         return valuesScore;
                     }
@@ -169,19 +210,7 @@ namespace {{getModelNamespace ""}}
                         return UnionScore.Zero;
                     }
 
-                    var propertyNameComparer = typeInfo.Options.PropertyNameCaseInsensitive
-                        ? StringComparer.OrdinalIgnoreCase
-                        : StringComparer.Ordinal;
-                    var known = new Dictionary<string, JsonPropertyInfo>(propertyNameComparer);
-                    foreach (var prop in typeInfo.Properties)
-                    {
-                        if (prop.IsExtensionData || (prop.Get is null && prop.Set is null))
-                        {
-                            continue;
-                        }
-                        known[prop.Name] = prop;
-                    }
-
+                    var known = DeclaredProperties(typeInfo);
                     if (known.Count == 0)
                     {
                         return UnionScore.Zero;
@@ -203,10 +232,18 @@ namespace {{getModelNamespace ""}}
 
                     foreach (var entry in matched)
                     {
+                        var propertyType = entry.Key.PropertyType;
+                        var boundType = Unwrap(propertyType);
+                        // A wrapper reads JSON null itself, without the wrapped type's converter.
+                        if (boundType != propertyType && entry.Value.ValueKind == JsonValueKind.Null)
+                        {
+                            continue;
+                        }
                         result += Score(
                             entry.Value,
-                            ResolveTypeInfo(entry.Key.PropertyType, options),
+                            ResolveTypeInfo(boundType, options),
                             options,
+                            value != null && entry.Key.Get is { } get ? Unwrap(get(value)) : null,
                             depth + 1
                         );
                     }
@@ -222,10 +259,14 @@ namespace {{getModelNamespace ""}}
                         return UnionScore.Zero;
                     }
                     var elementTypeInfo = ResolveTypeInfo(elementType, options);
+                    var list = value as IList;
                     var sum = UnionScore.Zero;
+                    var index = 0;
                     foreach (var item in element.EnumerateArray())
                     {
-                        sum += Score(item, elementTypeInfo, options, depth + 1);
+                        var itemValue = list != null && index < list.Count ? list[index] : null;
+                        sum += Score(item, elementTypeInfo, options, itemValue, depth + 1);
+                        index++;
                     }
                     return sum;
 
@@ -233,6 +274,277 @@ namespace {{getModelNamespace ""}}
                     return UnionScore.Zero;
             }
         }
+
+        /// <summary>
+        /// Checks a candidate variant's JSON against the schema constants of every typed object the
+        /// serializer binds from it, and returns the JSON to bind: null when the candidate binds
+        /// unchanged, or a copy in which settable integral constants use their canonical spelling,
+        /// which the integer converters require. Throws <see cref="JsonException"/> when a present
+        /// constant has a different JSON value.
+        /// </summary>
+        public static string? PrepareCandidate(JsonElement element, JsonTypeInfo typeInfo)
+        {
+            if (!PrepareNode(element, typeInfo, null))
+            {
+                return null;
+            }
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream))
+            {
+                PrepareNode(element, typeInfo, writer);
+            }
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
+
+        // Validates the node, or copies it to the writer when one is given; returns whether the
+        // copy differs from the original.
+        private static bool PrepareNode(JsonElement element, JsonTypeInfo typeInfo, Utf8JsonWriter? writer)
+        {
+            var bound = BoundTypeInfo(element, typeInfo);
+            if (bound == null)
+            {
+                writer?.WriteRawValue(element.GetRawText(), skipInputValidation: true);
+                return false;
+            }
+            var options = bound.Options;
+            var rewritten = false;
+
+            if (element.ValueKind == JsonValueKind.Object && bound.Kind == JsonTypeInfoKind.Dictionary)
+            {
+                var valueType = GetDictionaryValueType(bound.Type);
+                var valueTypeInfo = valueType == null ? null : options.GetTypeInfo(Unwrap(valueType));
+                writer?.WriteStartObject();
+                foreach (var entry in element.EnumerateObject())
+                {
+                    writer?.WritePropertyName(entry.Name);
+                    rewritten |= PrepareChild(entry.Value, valueTypeInfo, writer);
+                }
+                writer?.WriteEndObject();
+                return rewritten;
+            }
+
+            if (element.ValueKind == JsonValueKind.Object && bound.Kind == JsonTypeInfoKind.Object)
+            {
+                var known = DeclaredProperties(bound);
+                global::{{getJsonContextNamespace ""}}.JsonOptions.ConstFields.TryGetValue(bound.Type, out var constants);
+                writer?.WriteStartObject();
+                foreach (var property in element.EnumerateObject())
+                {
+                    writer?.WritePropertyName(property.Name);
+                    if (!known.TryGetValue(property.Name, out var info))
+                    {
+                        rewritten |= PrepareChild(property.Value, null, writer);
+                        continue;
+                    }
+                    var constant = FindConstant(constants, info.Name);
+                    if (constant == null)
+                    {
+                        var childTypeInfo = info.Set == null ? null : options.GetTypeInfo(Unwrap(info.PropertyType));
+                        rewritten |= PrepareChild(property.Value, childTypeInfo, writer);
+                        continue;
+                    }
+                    if (!ConstEquals(property.Value, constant.Value.Value))
+                    {
+                        throw new JsonException($"Property '{info.Name}' does not have its constant value.");
+                    }
+                    var token = constant.Value.IntegralToken;
+                    if (info.Set != null && token != null && property.Value.GetRawText() != token)
+                    {
+                        writer?.WriteRawValue(token);
+                        rewritten = true;
+                        continue;
+                    }
+                    rewritten |= PrepareChild(property.Value, null, writer);
+                }
+                writer?.WriteEndObject();
+                return rewritten;
+            }
+
+            if (element.ValueKind == JsonValueKind.Array && bound.Kind == JsonTypeInfoKind.Enumerable)
+            {
+                var elementType = GetElementType(bound.Type);
+                var elementTypeInfo = elementType == null ? null : options.GetTypeInfo(Unwrap(elementType));
+                writer?.WriteStartArray();
+                foreach (var item in element.EnumerateArray())
+                {
+                    rewritten |= PrepareChild(item, elementTypeInfo, writer);
+                }
+                writer?.WriteEndArray();
+                return rewritten;
+            }
+
+            writer?.WriteRawValue(element.GetRawText(), skipInputValidation: true);
+            return false;
+        }
+
+        private static bool PrepareChild(JsonElement element, JsonTypeInfo? typeInfo, Utf8JsonWriter? writer)
+        {
+            if (typeInfo == null)
+            {
+                writer?.WriteRawValue(element.GetRawText(), skipInputValidation: true);
+                return false;
+            }
+            return PrepareNode(element, typeInfo, writer);
+        }
+
+        // The metadata the serializer binds at this JSON node, following a discriminated union to
+        // the variant its discriminator selects. Null when no constant can apply: an
+        // undiscriminated union checks its own candidates, and a discriminated union without a
+        // known discriminator value keeps its converter's Unknown or failure behavior.
+        private static JsonTypeInfo? BoundTypeInfo(JsonElement element, JsonTypeInfo typeInfo)
+        {
+            for (var redirects = 0; redirects <= Discriminators.Count; redirects++)
+            {
+                if (UnionMembers.ContainsKey(typeInfo.Type))
+                {
+                    return null;
+                }
+                if (!Discriminators.TryGetValue(typeInfo.Type, out var discriminator))
+                {
+                    return typeInfo;
+                }
+                var variant = SelectDiscriminatedVariant(element, discriminator.Property, discriminator.Mapping);
+                if (variant == null)
+                {
+                    return null;
+                }
+                typeInfo = typeInfo.Options.GetTypeInfo(Unwrap(variant));
+            }
+            throw new JsonException($"Discriminated union variants of {typeInfo.Type} form a cycle.");
+        }
+
+        private static global::System.Type? SelectDiscriminatedVariant(
+            JsonElement element,
+            string property,
+            (string Value, global::System.Type Variant)[] mapping
+        )
+        {
+            if (element.ValueKind != JsonValueKind.Object
+                || !element.TryGetProperty(property, out var discriminator)
+                || discriminator.ValueKind != JsonValueKind.String)
+            {
+                return null;
+            }
+            var value = discriminator.GetString();
+            foreach (var entry in mapping)
+            {
+                if (string.Equals(entry.Value, value, StringComparison.Ordinal))
+                {
+                    return entry.Variant;
+                }
+            }
+            return null;
+        }
+
+        private static (JsonElement Value, string? IntegralToken)? FindConstant(
+            (string JsonName, JsonElement Value, string? IntegralToken)[]? constants,
+            string name
+        )
+        {
+            if (constants == null)
+            {
+                return null;
+            }
+            foreach (var constant in constants)
+            {
+                if (constant.JsonName == name)
+                {
+                    return (constant.Value, constant.IntegralToken);
+                }
+            }
+            return null;
+        }
+
+        // JSON Schema equality: kinds must match, strings compare decoded and ordinally, and
+        // numbers compare by mathematical value whatever their spelling.
+        private static bool ConstEquals(JsonElement actual, JsonElement expected)
+        {
+            if (actual.ValueKind != expected.ValueKind)
+            {
+                return false;
+            }
+            switch (actual.ValueKind)
+            {
+                case JsonValueKind.String:
+                    return actual.ValueEquals(expected.GetString());
+                case JsonValueKind.Number:
+                    var left = NormalizeNumber(actual.GetRawText());
+                    var right = NormalizeNumber(expected.GetRawText());
+                    return left.Negative == right.Negative && left.Digits == right.Digits && left.Exponent == right.Exponent;
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                case JsonValueKind.Null:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        // Sign, significant digits and the decimal exponent of the last significant digit.
+        // Every zero normalizes to an unsigned zero with no digits.
+        private static (bool Negative, string Digits, BigInteger Exponent) NormalizeNumber(string json)
+        {
+            var negative = json[0] == '-';
+            var start = negative ? 1 : 0;
+            var exponentAt = json.IndexOfAny(ExponentMarkers);
+            var mantissa = exponentAt < 0 ? json.Substring(start) : json.Substring(start, exponentAt - start);
+            var exponent = exponentAt < 0
+                ? BigInteger.Zero
+                : BigInteger.Parse(json.Substring(exponentAt + 1), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+            var point = mantissa.IndexOf('.');
+            var digits = point < 0 ? mantissa : mantissa.Remove(point, 1);
+            if (point >= 0)
+            {
+                exponent -= mantissa.Length - point - 1;
+            }
+            digits = digits.TrimStart('0');
+            var significant = digits.TrimEnd('0');
+            if (significant.Length == 0)
+            {
+                return (false, "", BigInteger.Zero);
+            }
+            exponent += digits.Length - significant.Length;
+            return (negative, significant, exponent);
+        }
+
+        private static readonly char[] ExponentMarkers = { 'e', 'E' };
+
+        private static Dictionary<string, JsonPropertyInfo> DeclaredProperties(JsonTypeInfo typeInfo)
+        {
+            var propertyNameComparer = typeInfo.Options.PropertyNameCaseInsensitive
+                ? StringComparer.OrdinalIgnoreCase
+                : StringComparer.Ordinal;
+            var known = new Dictionary<string, JsonPropertyInfo>(propertyNameComparer);
+            foreach (var prop in typeInfo.Properties)
+            {
+                if (prop.IsExtensionData || (prop.Get is null && prop.Set is null))
+                {
+                    continue;
+                }
+                known[prop.Name] = prop;
+            }
+            return known;
+        }
+
+        private static global::System.Type Unwrap(global::System.Type type)
+        {
+            while (true)
+            {
+                var underlying = Nullable.GetUnderlyingType(type);
+                if (underlying == null && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(OptionalNullable<>))
+                {
+                    underlying = type.GetGenericArguments()[0];
+                }
+                if (underlying == null)
+                {
+                    return type;
+                }
+                type = underlying;
+            }
+        }
+
+        private static object? Unwrap(object? value) =>
+            value is IOptionalNullable optional ? optional.UnwrappedValue : value;
 
         private static JsonTypeInfo? ResolveTypeInfo(global::System.Type type, JsonSerializerOptions options)
         {

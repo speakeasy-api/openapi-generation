@@ -3,6 +3,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Version>{{.Global.Config.SDKVersion}}</Version>
+    <Authors>{{.Global.Config.Author}}</Authors>
+    <Copyright>{{getCopyright}}</Copyright>
 {{- if isNetstandard2}}
     <TargetFrameworks>netstandard2.0;{{.Global.Config.DotnetVersion}}</TargetFrameworks>
     <LangVersion>10.0</LangVersion>

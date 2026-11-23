@@ -42,3 +42,4 @@ csharp:
   httpClientPrefix: Default
   enableCancellationToken: true
   useNodatime: false
+  bodyVariantOverloads: true

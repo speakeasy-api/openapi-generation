@@ -73,7 +73,7 @@
 
         [FormField()]
         {{- range .DiscriminatorValues}}
-        [DiscriminatorValue({{sanitizeEnumValue . "string"}})]
+        [DiscriminatorValue({{sanitizeEnumValue . "string"}}, Factory = "Create{{sanitizeClassName .}}")]
         {{- end}}
         public {{.FieldType}}? {{.FieldName}} { get; set; }
       {{- end}}
@@ -142,10 +142,16 @@
   {{- if and $unknownMember (not $nullable)}}
             global::{{getModelNamespace ""}}.UnionScoring.RegisterNullAsUnknown(typeof({{$className}}));
   {{- end}}
+            global::{{getModelNamespace ""}}.UnionScoring.RegisterDiscriminator(typeof({{$className}}), {{sanitizeEnumValue $discriminator.TypePropertyName "string"}}, new (string, System.Type)[] {
+              {{- range $v := getUnionVariants .Local.Type}}
+                {{- range $v.DiscriminatorValues}}
+                ({{sanitizeEnumValue . "string"}}, typeof({{$v.CsType}})),
+                {{- end}}
+              {{- end}} });
             return new {{$className}}Converter(
               {{- range $i, $v := getUnionVariants .Local.Type}}
                 {{- if $i}},{{end}}
-                (System.Text.Json.Serialization.Metadata.JsonTypeInfo<{{$v.CsType}}>)options.GetTypeInfo(typeof({{$v.CsType}}))!
+                {{$v.TypeInfo}}
               {{- end}});
         }
     }

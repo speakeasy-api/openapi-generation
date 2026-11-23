@@ -79,12 +79,16 @@ function templateJSONHandler(
   ): string {
     const errorMessage = `Failed to deserialize response body into ${targetType}.`;
     const typeInfoRef = jsonTypeInfoRef(typeDef);
+    const deserialize = `JsonSerializer.Deserialize(httpResponseBody, ${typeInfoRef})`;
+    const assignment = isValueType(typeDef)
+      ? deserialize
+      : `${deserialize} ?? throw new JsonException("Deserialization error: ${targetType} cannot be null.")`;
 
     return `var httpResponseBody = ${templateReadAsString()};
 ${targetType} ${varName};
 try
 {
-    ${varName} = JsonSerializer.Deserialize(httpResponseBody, ${typeInfoRef})!;
+    ${varName} = ${assignment};
 }
 catch (Exception ex)
 {
@@ -211,7 +215,10 @@ function templateEventStreamHandler(
   const sseDataRequired = isSSEDataRequired(content.Content.Type.ItemType);
   const dataRequiredArg = sseDataRequired ? "" : ", dataRequired: false";
   const typeInfoRef = jsonTypeInfoRef(content.Content.Type.ItemType);
-  const eventStreamInit = `httpResponse.AsAsyncEnumerable<${resultType}>(${typeInfoRef}, ${sentinel}${dataRequiredArg});`;
+  const cancellationArg = context.Global.Config.EnableCancellationToken
+    ? ", cancellationToken: cancellationToken ?? default"
+    : "";
+  const eventStreamInit = `httpResponse.AsAsyncEnumerable<${resultType}>(${typeInfoRef}, ${sentinel}${dataRequiredArg}${cancellationArg});`;
 
   const buildResponse = (extra?: ResponseBodyContent) =>
     templateResponseBuilder(

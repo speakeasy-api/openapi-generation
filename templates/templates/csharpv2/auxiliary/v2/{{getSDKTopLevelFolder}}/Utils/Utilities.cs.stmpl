@@ -115,6 +115,27 @@ namespace {{getScopeNamespace "utils"}}
             return value.ToString() ?? "";
         }
 
+        public static string? UnknownPrimitiveToString(System.Text.Json.JsonElement? raw)
+        {
+            if (raw == null)
+            {
+                return null;
+            }
+
+            var element = raw.Value;
+            switch (element.ValueKind)
+            {
+                case System.Text.Json.JsonValueKind.String:
+                    return element.GetString();
+                case System.Text.Json.JsonValueKind.Number:
+                case System.Text.Json.JsonValueKind.True:
+                case System.Text.Json.JsonValueKind.False:
+                    return element.GetRawText();
+                default:
+                    return null;
+            }
+        }
+
         public static string ToString(object? obj)
         {
             if (obj == null)

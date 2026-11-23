@@ -148,23 +148,8 @@ public class SecurityGenerator : IIncrementalGenerator
         if (options.Count == 0) return string.Empty;
 
         var lines = new System.Text.StringBuilder();
-        lines.AppendLine("        if (allowedFields != null)");
-        lines.AppendLine("        {");
-        lines.AppendLine("            foreach (var __af in allowedFields)");
-        lines.AppendLine("            {");
-        lines.AppendLine("                switch (__af)");
-        lines.AppendLine("                {");
-        foreach (var prop in options)
-        {
-            lines.AppendLine($"                    case \"{prop.PropName}\":");
-            lines.AppendLine($"                        if (security.{prop.PropName} != null)");
-            lines.AppendLine($"                            return {prop.PropTypeName}Applier.Apply(() => security.{prop.PropName}, request);");
-            lines.AppendLine("                        break;");
-        }
-        lines.AppendLine("                }");
-        lines.AppendLine("            }");
-        lines.AppendLine("            return request;");
-        lines.AppendLine("        }");
+        AppendAllowedFieldsSwitch(lines, options, p => p.PropName, (b, p) =>
+            b.AppendLine($"                            return {p.PropTypeName}Applier.Apply(() => security.{p.PropName}, request);"));
         foreach (var prop in options)
         {
             lines.AppendLine($"        if (security.{prop.PropName} != null)");
@@ -203,27 +188,14 @@ public class SecurityGenerator : IIncrementalGenerator
             .ToList();
         if (emittable.Count == 0) return string.Empty;
 
-        sb.AppendLine("        if (allowedFields != null)");
-        sb.AppendLine("        {");
-        sb.AppendLine("            foreach (var __af in allowedFields)");
-        sb.AppendLine("            {");
-        sb.AppendLine("                switch (__af)");
-        sb.AppendLine("                {");
-        foreach (var (prop, inner) in emittable)
+        AppendAllowedFieldsSwitch(sb, emittable, t => t.Prop.PropName, (b, t) =>
         {
-            sb.AppendLine($"                    case \"{prop.PropName}\":");
-            sb.AppendLine($"                        if (security.{prop.PropName} != null)");
-            sb.AppendLine("                        {");
-            sb.Append(inner);
-            if (!inner.EndsWith("\n")) sb.AppendLine();
-            sb.AppendLine("                            return request;");
-            sb.AppendLine("                        }");
-            sb.AppendLine("                        break;");
-        }
-        sb.AppendLine("                }");
-        sb.AppendLine("            }");
-        sb.AppendLine("            return request;");
-        sb.AppendLine("        }");
+            b.AppendLine("                        {");
+            b.Append(t.Inner);
+            if (!t.Inner.EndsWith("\n")) b.AppendLine();
+            b.AppendLine("                            return request;");
+            b.AppendLine("                        }");
+        });
 
         var first = true;
         foreach (var prop in schemeProps)
@@ -238,6 +210,32 @@ public class SecurityGenerator : IIncrementalGenerator
             first = false;
         }
         return sb.ToString();
+    }
+
+    private static void AppendAllowedFieldsSwitch<T>(
+        System.Text.StringBuilder sb,
+        System.Collections.Generic.IEnumerable<T> cases,
+        System.Func<T, string> propName,
+        System.Action<System.Text.StringBuilder, T> appendCase)
+    {
+        sb.AppendLine("        if (allowedFields != null)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            foreach (var __af in allowedFields)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                switch (__af)");
+        sb.AppendLine("                {");
+        foreach (var c in cases)
+        {
+            var name = propName(c);
+            sb.AppendLine($"                    case \"{name}\":");
+            sb.AppendLine($"                        if (security.{name} != null)");
+            appendCase(sb, c);
+            sb.AppendLine("                        break;");
+        }
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
+        sb.AppendLine("            return request;");
+        sb.AppendLine("        }");
     }
 
     private static string GenerateBasicAuthBody(System.Collections.Generic.List<SecurityPropModel> props)

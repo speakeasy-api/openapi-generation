@@ -2,14 +2,51 @@ function getJsonContextBucketPrefix(
   outputLocation: string,
   modelNamespace: string = "",
 ): string {
-  if (outputLocation) {
-    const lastSegment = outputLocation.split("/").pop();
-    if (lastSegment) {
-      return sanitizeClassName(lastSegment);
-    }
+  const prefix = outputLocation
+    ? getJsonContextBucketPrefixes().get(outputLocation) ??
+      leafBucketPrefix(outputLocation)
+    : "";
+  return prefix || modelNamespace.split(".").pop() || getScopePath("models");
+}
+
+function leafBucketPrefix(outputLocation: string): string {
+  const lastSegment = outputLocation.split("/").pop();
+  return lastSegment ? sanitizeClassName(lastSegment) : "";
+}
+
+// Every JsonTypeInfo name shares the JsonTypeInfos class, so output locations
+// whose last segment sanitizes to the same prefix fall back to their full path.
+let _jsonContextBucketPrefixes: Map<string, string> | undefined;
+function getJsonContextBucketPrefixes(): Map<string, string> {
+  if (_jsonContextBucketPrefixes) return _jsonContextBucketPrefixes;
+
+  const locationsByLeaf = new Map<string, string[]>();
+  for (const [outputLocation] of sequencedMapEntries(
+    context.Global.AST.BucketedTypes,
+  )) {
+    if (!outputLocation) continue;
+    const leaf = leafBucketPrefix(outputLocation);
+    if (!leaf) continue;
+    const locations = locationsByLeaf.get(leaf) ?? [];
+    locations.push(outputLocation);
+    locationsByLeaf.set(leaf, locations);
   }
 
-  return modelNamespace.split(".").pop() || getScopePath("models");
+  const prefixes = new Map<string, string>();
+  for (const [leaf, locations] of locationsByLeaf) {
+    for (const outputLocation of locations) {
+      prefixes.set(
+        outputLocation,
+        locations.length > 1
+          ? sanitizeClassName(
+              outputLocation.split("/").filter(Boolean).join(" "),
+            )
+          : leaf,
+      );
+    }
+  }
+  _jsonContextBucketPrefixes = prefixes;
+  return prefixes;
 }
 
 function getJsonContextClassName(outputLocation: string): string {
@@ -267,41 +304,46 @@ function collectFormJsonContextTypes(
 // serialized as JSON, collecting primitive / array / map / empty-location
 // shapes that don't otherwise live in BucketedTypes. Result is keyed by
 // target output-location (the bucket whose JsonContext should register the
-// shape), so the registration ends up where `jsonTypeInfoRef` will look for
-// it at the call site.
+// shape).
 function collectOperationJsonShapes(
   sdk: SDK,
   perBucket: Map<string, Map<string, { Type: string; Name: string }>>,
   visited: Set<string>,
 ): void {
+  for (const typeDef of collectOperationJsonTypeDefs(sdk)) {
+    recordOperationShape(typeDef, perBucket, visited);
+  }
+}
+
+function collectOperationJsonTypeDefs(
+  sdk: SDK,
+  typeDefs: TypeDef[] = [],
+): TypeDef[] {
   for (const op of sdk.Operations ?? []) {
     if (
       `${op.SerializationMethod ?? ""}` === "json" &&
       op.Request?.RequestBody?.Type
     ) {
-      recordOperationShape(op.Request.RequestBody.Type, perBucket, visited);
+      typeDefs.push(op.Request.RequestBody.Type);
     }
     for (const response of op.Response?.Responses ?? []) {
       for (const content of response.Content ?? []) {
         const method = `${content.SerializationMethod ?? ""}`;
         if (method === "json" && content.Content?.Type) {
-          recordOperationShape(content.Content.Type, perBucket, visited);
+          typeDefs.push(content.Content.Type);
         } else if (
           method === "eventstream" &&
           content.Content?.Type?.ItemType
         ) {
-          recordOperationShape(
-            content.Content.Type.ItemType,
-            perBucket,
-            visited,
-          );
+          typeDefs.push(content.Content.Type.ItemType);
         }
       }
     }
   }
   for (const subSDK of sdk.SubSDKs ?? []) {
-    collectOperationJsonShapes(subSDK, perBucket, visited);
+    collectOperationJsonTypeDefs(subSDK, typeDefs);
   }
+  return typeDefs;
 }
 
 function bucketKeyForShape(typeDef: TypeDef): string {
@@ -371,6 +413,10 @@ function recordOperationShape(
   record("");
 }
 
+function getObjectJsonConverterType(): string {
+  return `global::${getJsonContextNamespace()}.ObjectJsonConverter`;
+}
+
 // Source-gen contexts need our runtime converters baked into their `.Default`
 // options so each generated JsonTypeInfo<T> resolves property-level converters
 // against them. In particular, `object`-typed properties pick up
@@ -378,13 +424,15 @@ function recordOperationShape(
 // JsonElement. The same list is mirrored at runtime in JsonOptions.SerializerOptions
 // so direct callsites and the resolver chain agree on conversion behavior.
 function getJsonContextConverters(): string[] {
-  const rootNs = getJsonContextNamespace();
   const utilsNs = getScopeNamespace("utils", true);
   return [
-    `global::${rootNs}.ObjectJsonConverter`,
+    getObjectJsonConverterType(),
     `global::${utilsNs}.BigIntegerJsonConverterFactory`,
     `global::${utilsNs}.DecimalJsonConverterFactory`,
     `global::${utilsNs}.DateTimeJsonConverterFactory`,
+    ...(requiresNodatime()
+      ? [`global::${utilsNs}.LocalDateJsonConverter`]
+      : []),
   ];
 }
 
@@ -404,30 +452,24 @@ function collectOpShapesForMainSDK(): Map<
   return opShapesPerBucket;
 }
 
-// @ts-ignore
-function getJsonContextJobs(): Job[] {
-  const jobs: Job[] = [];
+const JSON_NUMBER_HANDLING = "AllowReadingFromString";
 
-  const pushContextJob = (
-    outputLocation: string,
-    types: { Type: string; Name: string }[],
-  ) => {
-    const className = getJsonContextClassName(outputLocation);
-    jobs.push(
-      createTemplateFileJob(
-        "json-context.cs.stmpl",
-        `${getSDKTopLevelFolder()}/${getJsonContextLocation(
-          outputLocation,
-        )}/${className}.cs`,
-        {
-          Types: types,
-          Namespace: getJsonContextNamespace(outputLocation),
-          ClassName: className,
-          Converters: getJsonContextConverters(),
-        },
-      ),
-    );
-  };
+interface JsonContextRegistration {
+  OutputLocation: string;
+  Types: { Type: string; Name: string }[];
+}
+
+function uniqueByType<T extends { Type: string }>(refs: T[]): T[] {
+  const seen = new Set<string>();
+  return refs.filter((ref) => {
+    if (seen.has(ref.Type)) return false;
+    seen.add(ref.Type);
+    return true;
+  });
+}
+
+function collectJsonContextRegistrations(): JsonContextRegistration[] {
+  const registrations: JsonContextRegistration[] = [];
 
   const opShapesPerBucket = collectOpShapesForMainSDK();
 
@@ -465,6 +507,7 @@ function getJsonContextJobs(): Job[] {
           formVisited,
         );
         collectUnionVariantTypes(typeDef, crossNsDeps);
+        collectAdditionalPropertiesValueTypes(typeDef, crossNsDeps);
       }
     }
 
@@ -477,12 +520,14 @@ function getJsonContextJobs(): Job[] {
 
     // Pull operation-driven primitive / array / map shapes that should live
     // on this scope's context. Dedupe against existing typeRefs by Type.
-    const existingTypes = new Set(typeRefs.map((r) => r.Type));
     for (const dep of opShapesPerBucket.get(outputLocation)?.values() ?? []) {
-      if (!existingTypes.has(dep.Type)) typeRefs.push(dep);
+      typeRefs.push(dep);
     }
 
-    pushContextJob(outputLocation, typeRefs);
+    registrations.push({
+      OutputLocation: outputLocation,
+      Types: uniqueByType(typeRefs),
+    });
 
     bucketsWithRefs.add(outputLocation);
   }
@@ -495,39 +540,221 @@ function getJsonContextJobs(): Job[] {
   for (const [outputLocation, deps] of opShapesPerBucket) {
     if (bucketsWithRefs.has(outputLocation)) continue;
     if (deps.size === 0) continue;
-    pushContextJob(outputLocation, [...deps.values()]);
+    registrations.push({
+      OutputLocation: outputLocation,
+      Types: [...deps.values()],
+    });
   }
 
-  return jobs;
+  return registrations;
 }
 
-// @ts-ignore
-function getJsonOptionsJobs(): Job[] {
-  const contexts: { Namespace: string; ClassName: string }[] = [];
-  const bucketedTypes = sequencedMapEntries(context.Global.AST.BucketedTypes);
-
-  const seenLocations = new Set<string>();
-  for (const [outputLocation] of bucketedTypes) {
-    contexts.push({
-      Namespace: getJsonContextNamespace(outputLocation),
-      ClassName: getJsonContextClassName(outputLocation),
-    });
-    seenLocations.add(outputLocation);
+function collectJsonTypeInfos(
+  registrations: JsonContextRegistration[],
+): { Type: string; Name: string }[] {
+  const byName = new Map<string, { Type: string; Name: string }>();
+  for (const registration of registrations) {
+    for (const ref of registration.Types) {
+      const existing = byName.get(ref.Name);
+      if (!existing) {
+        byName.set(ref.Name, ref);
+        continue;
+      }
+      const normalize = (t: string) => t.replaceAll("global::", "");
+      if (normalize(existing.Type) !== normalize(ref.Type)) {
+        throw new Error(
+          `JsonTypeInfo name ${ref.Name} maps to both ${existing.Type} and ${ref.Type}`,
+        );
+      }
+    }
   }
+  return [...byName.values()];
+}
 
-  // Operation-driven primitives / array / map shapes may produce additional
-  // contexts (most notably the top-level ModelsJsonContext for empty bucket).
-  // Register them as resolvers too so JsonOptions.SerializerOptions can find
-  // their JsonTypeInfo<T> entries at runtime.
-  const opShapesPerBucket = collectOpShapesForMainSDK();
-  for (const [outputLocation, deps] of opShapesPerBucket) {
-    if (deps.size === 0 || seenLocations.has(outputLocation)) continue;
-    contexts.push({
-      Namespace: getJsonContextNamespace(outputLocation),
-      ClassName: getJsonContextClassName(outputLocation),
-    });
-    seenLocations.add(outputLocation);
+interface NullCheckedType {
+  Type: string;
+  Fields: { JsonName: string; Required: boolean }[];
+}
+
+function forEachJsonObjectType(
+  visitObject: (t: TypeDef, type: string) => void,
+): void {
+  const visited = new Set<string>();
+
+  const visit = (t: TypeDef | undefined) => {
+    while (t?.Type?.toString() === "array" || t?.Type?.toString() === "map") {
+      t = t.ItemType;
+    }
+    if (!t || t.Truncated) return;
+    const kind = t.Type?.toString() ?? "";
+    if (!SERIALIZABLE_TYPES.includes(kind)) return;
+    const type = csharpTypeForJsonContext(t);
+    if (visited.has(type)) return;
+    visited.add(type);
+
+    if (kind === "class" || kind === "error") visitObject(t, type);
+
+    for (const field of t.Fields ?? []) visit(field.Type);
+    for (const assoc of t.AssociatedTypes ?? []) visit(assoc);
+    for (const m of t.Discriminator?.Mapping ?? []) visit(m.Type);
+  };
+
+  for (const [, buckets] of sequencedMapEntries(
+    context.Global.AST.BucketedTypes,
+  )) {
+    for (const [, typeDefs] of sequencedMapEntries(buckets)) {
+      for (const typeDef of typeDefs) visit(typeDef);
+    }
   }
+  for (const typeDef of collectOperationJsonTypeDefs(
+    context.Global.AST.MainSDK,
+  )) {
+    visit(typeDef);
+  }
+}
+
+function collectNullCheckedTypes(): NullCheckedType[] {
+  const result: NullCheckedType[] = [];
+  forEachJsonObjectType((t, type) => {
+    const fields = (t.Fields ?? [])
+      .filter((f) => {
+        const state = requiredState(f);
+        return (
+          (state === "DisallowNull" ||
+            (state === "Always" && !isValueType(f.Type))) &&
+          v2RequiredEligible(f)
+        );
+      })
+      .map((f) => ({
+        JsonName: jsonFieldNameLiteral(getJsonAnnotation(f)!),
+        Required: requiredState(f) === "Always",
+      }));
+    if (fields.length > 0) result.push({ Type: type, Fields: fields });
+  });
+  return result;
+}
+
+interface ConstFieldsType {
+  Type: string;
+  Fields: { JsonName: string; Value: string; IntegralToken: string }[];
+}
+
+const STRING_WIRE_CONST_TYPES = ["string", "date", "date-time"];
+const NUMBER_WIRE_CONST_TYPES = [
+  "integer",
+  "int32",
+  "bigint",
+  "number",
+  "float32",
+  "decimal",
+];
+const INTEGRAL_CONST_TYPES = ["integer", "int32", "bigint"];
+const JSON_NUMBER = /^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/;
+
+function csharpStringLiteralContent(value: string): string {
+  return value.replace(/[\\"\u0000-\u001f\u0085\u2028\u2029]/g, (c) =>
+    c === "\\" || c === '"'
+      ? `\\${c}`
+      : `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
+  );
+}
+
+function constWireToken(field: FieldDef): { json: string; integral: string } {
+  const value = field.Const!.Value;
+  if (value === null || value === undefined)
+    return { json: "null", integral: "" };
+
+  let kind = field.Type.Type?.toString() ?? "";
+  if (kind === "enum") kind = field.Type.Enum?.Type?.Type?.toString() ?? "";
+  if (kind === "any") {
+    kind =
+      typeof value === "boolean"
+        ? "boolean"
+        : typeof value === "number"
+        ? "number"
+        : "string";
+  }
+  const stringWire =
+    STRING_WIRE_CONST_TYPES.includes(kind) ||
+    ((kind === "bigint" || kind === "decimal") &&
+      field.Type.Format === "string");
+
+  if (stringWire && typeof value !== "object") {
+    return { json: JSON.stringify(`${value}`), integral: "" };
+  }
+  if (kind === "boolean" && typeof value === "boolean") {
+    return { json: `${value}`, integral: "" };
+  }
+  if (NUMBER_WIRE_CONST_TYPES.includes(kind) && typeof value !== "object") {
+    const json = `${value}`;
+    if (JSON_NUMBER.test(json)) {
+      const integral =
+        INTEGRAL_CONST_TYPES.includes(kind) && /^-?\d+$/.test(json)
+          ? json.replace(/^-0$/, "0")
+          : "";
+      return { json, integral };
+    }
+  }
+  throw new Error(
+    `unsupported const value '${JSON.stringify(
+      value,
+    )}' of type '${kind}' for field '${field.OriginalName}'`,
+  );
+}
+
+function collectConstFieldsTypes(): ConstFieldsType[] {
+  const result: ConstFieldsType[] = [];
+  forEachJsonObjectType((t, type) => {
+    const fields = (t.Fields ?? [])
+      .filter((f) => {
+        const annotation = getJsonAnnotation(f);
+        return (
+          f.Const !== undefined &&
+          f.Const !== null &&
+          annotation !== undefined &&
+          !annotation.Ignore &&
+          !f.IsAdditionalProperties
+        );
+      })
+      .map((f) => {
+        const token = constWireToken(f);
+        return {
+          JsonName: jsonFieldNameLiteral(getJsonAnnotation(f)!),
+          Value: csharpStringLiteralContent(token.json),
+          IntegralToken: token.integral ? `"${token.integral}"` : "null",
+        };
+      });
+    if (fields.length > 0) result.push({ Type: type, Fields: fields });
+  });
+  return result;
+}
+
+function getJsonContextJobs(registrations: JsonContextRegistration[]): Job[] {
+  return registrations.map(({ OutputLocation, Types }) => {
+    const className = getJsonContextClassName(OutputLocation);
+    return createTemplateFileJob(
+      "json-context.cs.stmpl",
+      `${getSDKTopLevelFolder()}/${getJsonContextLocation(
+        OutputLocation,
+      )}/${className}.cs`,
+      {
+        Types,
+        Namespace: getJsonContextNamespace(OutputLocation),
+        ClassName: className,
+        Converters: getJsonContextConverters(),
+        NumberHandling: JSON_NUMBER_HANDLING,
+      },
+    );
+  });
+}
+
+function getJsonOptionsJobs(registrations: JsonContextRegistration[]): Job[] {
+  const resolvers = registrations.map(
+    ({ OutputLocation }) =>
+      `${getJsonContextNamespace(OutputLocation)}.${getJsonContextClassName(
+        OutputLocation,
+      )}.Default`,
+  );
 
   const rootLocation = getJsonContextLocation("");
   const rootNamespace = getJsonContextNamespace();
@@ -537,10 +764,25 @@ function getJsonOptionsJobs(): Job[] {
       "json-options.cs.stmpl",
       `${getSDKTopLevelFolder()}/${rootLocation}/JsonOptions.cs`,
       {
-        Contexts: contexts,
-        Resolvers: contexts
-          .map((ctx) => `${ctx.Namespace}.${ctx.ClassName}.Default`)
-          .join(",\n            "),
+        Resolvers: resolvers.join(",\n            "),
+        Namespace: rootNamespace,
+        Converters: getJsonContextConverters().map((c) =>
+          c === getObjectJsonConverterType()
+            ? "_objectConverter"
+            : `new ${c}()`,
+        ),
+        NumberHandling: JSON_NUMBER_HANDLING,
+        NullCheckedTypes: collectNullCheckedTypes(),
+        ConstFieldsTypes: collectConstFieldsTypes(),
+        AdditionalPropertiesTypes: collectAdditionalPropertiesTypes(),
+        HasOpenUnion: hasAnyOpenUnion(),
+      },
+    ),
+    createTemplateFileJob(
+      "json-type-infos.cs.stmpl",
+      `${getSDKTopLevelFolder()}/${rootLocation}/JsonTypeInfos.cs`,
+      {
+        Types: collectJsonTypeInfos(registrations),
         Namespace: rootNamespace,
       },
     ),
@@ -565,17 +807,30 @@ interface UnionVariant {
   FieldName: string; // PascalCase property name (+ "Payload" for errors)
   FieldType: string; // C# type expression for property declaration
   CsType: string; // FQN for JsonTypeInfo<T> generic arg
+  TypeInfo: string; // JsonTypeInfo<CsType> expression over the factory's `options`
   DiscriminatorValues: string[]; // disc-mapping names that resolve to this variant; empty for undiscriminated
+}
+
+// A union variant has no property to carry a string-wire converter attribute, so
+// `format: string` bigint/decimal variants get a JsonTypeInfo built over the
+// string-wire converter instead of the options' default number-wire one.
+function unionVariantTypeInfo(variantType: TypeDef, csType: string): string {
+  const factory = getStjConverterFactory(variantType);
+  if (!factory.endsWith("StringJsonConverterFactory")) {
+    return `(System.Text.Json.Serialization.Metadata.JsonTypeInfo<${csType}>)options.GetTypeInfo(typeof(${csType}))!`;
+  }
+  return `System.Text.Json.Serialization.Metadata.JsonMetadataServices.CreateValueInfo<${csType}>(options, new ${factory}().CreateConverter(typeof(${csType}), options)!)`;
 }
 
 // Single source of truth for union-variant derivation. Consumed by
 // union-discr.cs.stmpl / union-undiscr.cs.stmpl for property + factory-param
 // emission.
 //
-// csharpTypeForJsonContext returns class/union/error FQNs already
-// qualified with `global::` but emits non-aliased primitives bare
-// (e.g. `BigInteger`, `DateTime`). The JsonOptions template adds
-// matching `using` directives so bare names resolve.
+// csharpTypeForJsonContext returns class/union/error names qualified with
+// their model namespace (no `global::`) but emits non-aliased primitives
+// bare (e.g. `BigInteger`, `DateTime`). The JsonOptions template adds
+// matching `using` directives so bare names resolve. Variant types keep
+// nullable reference items (`List<Pet?>`) to match the model property type.
 // @ts-ignore
 function getUnionVariants(typeDef: TypeDef): UnionVariant[] {
   const isErr = isUnionOfErrors(typeDef);
@@ -595,10 +850,12 @@ function getUnionVariants(typeDef: TypeDef): UnionVariant[] {
     }
     let entry = byField.get(fieldName);
     if (!entry) {
+      const csType = csharpTypeForJsonContext(variantType, true);
       entry = {
         FieldName: fieldName,
         FieldType: fieldType,
-        CsType: csharpTypeForJsonContext(variantType),
+        CsType: csType,
+        TypeInfo: unionVariantTypeInfo(variantType, csType),
         DiscriminatorValues: [],
       };
       byField.set(fieldName, entry);

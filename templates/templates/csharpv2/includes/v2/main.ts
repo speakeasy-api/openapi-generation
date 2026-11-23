@@ -32,5 +32,9 @@ function getModelJobs(types: BucketedTypes, path: string): Job[] {
 }
 
 function getCsharpV2Jobs(): Job[] {
-  return [...getJsonContextJobs(), ...getJsonOptionsJobs()];
+  const registrations = collectJsonContextRegistrations();
+  return [
+    ...getJsonContextJobs(registrations),
+    ...getJsonOptionsJobs(registrations),
+  ];
 }

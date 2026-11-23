@@ -12,32 +12,44 @@ function templatePreprocessRequestBody(op: Operation): string {
   return "";
 }
 
+interface BodyDispatch {
+  bodyExpr: string;
+  mkSerializeCall: (bodyVar: string) => string;
+  nullable: boolean;
+  optional: boolean;
+  valueTypeBody: boolean;
+  jsonNullLiteral?: boolean;
+  unwrapValueType?: boolean;
+}
+
 // Codegen-time null/required/nullable/optional policy. The emitted block
 // ends with a `var serializedBody = ...;` declaration so the outer
 // method.cs.stmpl wrapper
 // `if (serializedBody != null) httpRequest.Content = serializedBody;`
 // works unchanged. `mkSerializeCall(bodyVar)` produces the typed serialize
 // expression given the local that holds the (now non-null) body.
-function emitBodyDispatch(
-  bodyExpr: string,
-  mkSerializeCall: (bodyVar: string) => string,
-  nullable: boolean,
-  optional: boolean,
-  jsonNullLiteral: boolean,
-  valueTypeBody: boolean,
-): string {
+function emitBodyDispatch({
+  bodyExpr,
+  mkSerializeCall,
+  nullable,
+  optional,
+  valueTypeBody,
+  jsonNullLiteral,
+  unwrapValueType,
+}: BodyDispatch): string {
   const hoist = `var __body = ${bodyExpr};`;
+  const guardedBody = unwrapValueType ? "__body.Value" : "__body";
   if (nullable && jsonNullLiteral) {
     return `${hoist}
             var serializedBody = __body == null
                 ? RequestBodySerializer.NullJsonBody()
-                : ${mkSerializeCall("__body")};`;
+                : ${mkSerializeCall(guardedBody)};`;
   }
   if (optional || nullable) {
     return `${hoist}
             HttpContent? serializedBody = __body == null
                 ? null
-                : ${mkSerializeCall("__body")};`;
+                : ${mkSerializeCall(guardedBody)};`;
   }
   if (valueTypeBody) {
     // Non-nullable value type: caller can't pass null, runtime check is dead.
@@ -106,26 +118,19 @@ function templateSerializeRequestBody(op: Operation): string {
 
   const bodyTypeDef = hasWrapperField ? req.RequestBody!.Type! : requestType!;
   const valueTypeBody = !!bodyTypeDef && !canTypeBeNull(bodyTypeDef);
+  const policy = { bodyExpr, nullable, optional, valueTypeBody };
 
   if (method === "raw") {
-    return emitBodyDispatch(
-      bodyExpr,
-      (b) => `RequestBodySerializer.SerializeRaw(${b})`,
-      nullable,
-      optional,
-      false,
-      valueTypeBody,
-    );
+    return emitBodyDispatch({
+      ...policy,
+      mkSerializeCall: (b) => `RequestBodySerializer.SerializeRaw(${b})`,
+    });
   }
   if (method === "string") {
-    return emitBodyDispatch(
-      bodyExpr,
-      (b) => `RequestBodySerializer.SerializeString(${b})`,
-      nullable,
-      optional,
-      false,
-      valueTypeBody,
-    );
+    return emitBodyDispatch({
+      ...policy,
+      mkSerializeCall: (b) => `RequestBodySerializer.SerializeString(${b})`,
+    });
   }
 
   if (method !== "json") {
@@ -134,47 +139,21 @@ function templateSerializeRequestBody(op: Operation): string {
     );
   }
 
-  // JSON: typed path when body shape is registered in a source-gen
-  // JsonSerializerContext. Top-level nullable primitives (DateOnly?,
-  // DateTime?, long?, …) need Nullable<T> registrations that don't yet
-  // exist (P1a-followup); fall back to SerializeJsonBodyUntyped for those.
-  const bodyKind = bodyTypeDef?.Type?.toString() ?? "";
-  const isPrimitiveValueType =
-    !!bodyTypeDef &&
-    bodyKind !== "class" &&
-    bodyKind !== "enum" &&
-    bodyKind !== "union" &&
-    bodyKind !== "error" &&
-    bodyKind !== "array" &&
-    bodyKind !== "map";
-  const nullablePrimitive = isPrimitiveValueType && nullable;
-
-  if (!bodyTypeDef || nullablePrimitive) {
-    const formatArg = format ? `, "${format}"` : "";
-    return emitBodyDispatch(
-      bodyExpr === "request" ? "(object?)request" : `(object?)${bodyExpr}`,
-      (b) =>
-        `RequestBodySerializer.SerializeJsonBodyUntyped(${b}!${formatArg})`,
-      nullable,
-      optional,
-      true,
-      false,
-    );
-  }
-
-  const typeInfoRef = jsonTypeInfoRef(bodyTypeDef);
   const bodyTypeName = sanitizeType(bodyTypeDef, false);
-  const helper =
-    format === "string" ? "SerializeJsonBodyAsString" : "SerializeJsonBody";
-  return emitBodyDispatch(
-    bodyExpr,
-    (b) =>
-      `RequestBodySerializer.${helper}<${bodyTypeName}>(${b}, ${typeInfoRef})`,
-    nullable,
-    optional,
-    true,
-    valueTypeBody,
-  );
+  const call =
+    format === "string"
+      ? (b: string) =>
+          `RequestBodySerializer.SerializeJsonBodyAsString<${bodyTypeName}>(${b})`
+      : (b: string) =>
+          `RequestBodySerializer.SerializeJsonBody<${bodyTypeName}>(${b}, ${jsonTypeInfoRef(
+            bodyTypeDef,
+          )})`;
+  return emitBodyDispatch({
+    ...policy,
+    mkSerializeCall: call,
+    jsonNullLiteral: true,
+    unwrapValueType: isValueType(bodyTypeDef),
+  });
 }
 
 unregisterTemplateFunc("templateSerializeRequestBody");

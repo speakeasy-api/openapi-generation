@@ -1,0 +1,63 @@
+{{- if eq .Global.AST.MainSDK.TestGroup "primary" -}}
+#nullable enable
+using Openapi.Models.Errors;
+using Openapi.Models.Shared;
+using Openapi.Utils.Json;
+using System;
+using System.Runtime.CompilerServices;
+using System.Text.Json.Nodes;
+
+// Program.cs is written by the usage test, so these checks run from a module initializer.
+internal static class NativeUnionChecks
+{
+    [ModuleInitializer]
+    internal static void Run()
+    {
+        Check(
+            JsonSerialization.Deserialize<KindChoice>("{\"kind\":\"b\",\"name\":\"n\"}")!.KindB != null,
+            "const selects its variant"
+        );
+        Check(
+            JsonSerialization.Deserialize<KindHolderChoice>("{\"entries\":{\"x\":{\"kind\":\"a\"}}}")!.KindHolderA != null,
+            "map value const selects its variant"
+        );
+        Check(
+            JsonSerialization.Deserialize<KindHolderChoice>("{\"maybe\":{\"kind\":\"b\"}}")!.KindHolderB != null,
+            "OptionalNullable value const selects its variant"
+        );
+        Check(
+            JsonSerialization.Deserialize<WrapperChoice>("{\"value\":{\"name\":\"item\",\"meta\":{\"a\":\"q\",\"b\":\"r\"}},\"alive\":true}")!.TypedWrapper != null,
+            "nested union scored by its selected fallback"
+        );
+        Check(
+            JsonSerialization.Deserialize<ListHolderChoice>("{\"kinds\":[{\"kind\":\"a\",\"name\":\"n\",\"note\":\"x\"}]}")!.KindChoiceListHolder != null,
+            "list item union scored by its selected variant"
+        );
+        Check(
+            JsonSerialization.Deserialize<MapHolderChoice>("{\"kinds\":{\"x\":{\"kind\":\"a\",\"name\":\"n\",\"note\":\"x\"}}}")!.KindChoiceMapHolder != null,
+            "map value union scored by its selected variant"
+        );
+        Check(
+            JsonSerialization.Deserialize<TaggedLevelHolderOrMap>("{\"item\":{\"tag\":\"a\",\"level\":2}}")!.MapOfAny != null,
+            "discriminated variant const rejects its holder"
+        );
+        var failure = JsonSerialization.Deserialize<ConstUnionChoicesGetResponseBody>("{\"code\":7e0,\"detail\":{\"level\":2}}")!;
+        Check(failure.CodedFailureBPayload?.Code == 7, "settable integral const binds an equivalent number");
+        Check(
+            JsonNode.DeepEquals(
+                JsonNode.Parse(JsonSerialization.Serialize(failure)),
+                JsonNode.Parse("{\"code\":7,\"detail\":{\"level\":2}}")
+            ),
+            "settable integral const round-trips canonically"
+        );
+    }
+
+    private static void Check(bool condition, string description)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException("Native union check failed: " + description);
+        }
+    }
+}
+{{- end}}

@@ -135,12 +135,26 @@
 {{- end}}
 
   <ItemGroup>
-    <ProjectReference Include="{{getModelsProjectReference}}" />
+    <ProjectReference Include="{{getModelsProjectReference}}" PrivateAssets="all" />
     <ProjectReference Include="{{getGeneratorsProjectReference}}"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
                       SkipGetTargetFrameworkProperties="true"
                       UndefineProperties="TargetFramework;RuntimeIdentifier;SelfContained;PublishAot;NoWarn" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeModelsBuildOutput</TargetsForTfmSpecificBuildOutput>
+    <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
+  </PropertyGroup>
+
+  <Target Name="IncludeModelsBuildOutput" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <_ModelsAssembly Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('Filename', '{{getModelsPackageId}}')->WithMetadataValue('Extension', '.dll'))" />
+      <_ModelsRelatedFile Include="@(_ModelsAssembly->'%(RootDir)%(Directory)%(Filename).xml');@(_ModelsAssembly->'%(RootDir)%(Directory)%(Filename).pdb')" />
+      <BuildOutputInPackage Include="@(_ModelsAssembly)" />
+      <BuildOutputInPackage Include="@(_ModelsRelatedFile)" Condition="Exists('%(FullPath)')" />
+    </ItemGroup>
+  </Target>
 
 </Project>

@@ -19,7 +19,7 @@ function multipartWireName(
   annotation: MultipartFormAnnotation | null,
 ): string {
   return escapeString(
-    annotation?.Name || getJsonAnnotationName(field) || field.Name,
+    annotation?.Name || getJsonAnnotation(field)?.FieldName || field.Name,
   );
 }
 
@@ -106,7 +106,15 @@ function emitMultipartField(
 
   switch (field.Type.Type.toString()) {
     case "array":
-      return [`${ms}.AddListScalar(${formVar}, "${name}", ${prop});`];
+      return [
+        `${ms}.AddListScalar(${formVar}, "${name}", ${formValueExpr(
+          prop,
+          field.Type,
+          true,
+        )});`,
+      ];
+    case "union":
+      return emitMultipartUnion(formVar, prop, field.Type, name);
     default:
       return [
         `${ms}.AddScalar(${formVar}, "${name}", ${scalarValueExpr(
@@ -115,6 +123,46 @@ function emitMultipartField(
         )});`,
       ];
   }
+}
+
+function emitMultipartUnion(
+  formVar: string,
+  sourceExpr: string,
+  typeDef: TypeDef,
+  name: string,
+  guarded = false,
+): string[] {
+  const ms = `global::${getScopeNamespace("utils", true)}.MultipartSerializer`;
+  return emitUnionVariants(
+    sourceExpr,
+    typeDef,
+    (access, variant) => {
+      switch (variant.Type.toString()) {
+        case "array":
+          return [
+            `${ms}.AddListScalar(${formVar}, "${name}", ${formValueExpr(
+              access,
+              variant,
+              false,
+            )});`,
+          ];
+        case "union":
+          return emitMultipartUnion(formVar, access, variant, name, true);
+        default:
+          return [
+            `${ms}.AddScalar(${formVar}, "${name}", ${wireValueExpr(
+              access,
+              variant,
+              true,
+            )});`,
+          ];
+      }
+    },
+    (unknownExpr) => [
+      `${ms}.AddScalar(${formVar}, "${name}", ${unknownExpr});`,
+    ],
+    guarded,
+  );
 }
 
 function emitMultipartFields(
@@ -134,6 +182,7 @@ function emitMultipartFields(
 // @ts-ignore
 function templateApplyMultipartBody(op: Operation): string {
   if (!op.Request?.RequestBody) return "";
+  resetUnionLocals();
 
   const request = op.Request;
   const bodyField = request.RequestBody;

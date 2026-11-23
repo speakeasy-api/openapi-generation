@@ -1,7 +1,6 @@
 #nullable enable
 namespace {{getScopeNamespace "utils"}}
 {
-    using System.Diagnostics.CodeAnalysis;
     using System.Net.Http;
     using System.Text;
     using System.Text.Json;
@@ -24,24 +23,9 @@ namespace {{getScopeNamespace "utils"}}
 
         // Wire-format=string for top-level decimal/BigInteger. Re-resolves the
         // typeinfo against options that prepend the string-wire factories.
-        // The re-resolve uses runtime type lookup, so this stays AOT-hostile
-        // and is quarantined here. P1b will replace this with per-T
-        // string-format contexts and the attribute can drop.
-{{- if isNetstandard2}}
-#if NET5_0_OR_GREATER
-{{- end}}
-        [RequiresUnreferencedCode("format=\"string\" re-resolves JsonTypeInfo<T> at runtime. Avoid under trim.")]
-{{- if isNetstandard2}}
-#endif
-#if NET7_0_OR_GREATER
-{{- end}}
-        [RequiresDynamicCode("format=\"string\" re-resolves JsonTypeInfo<T> at runtime. Avoid under AOT.")]
-{{- if isNetstandard2}}
-#endif
-{{- end}}
-        public static HttpContent SerializeJsonBodyAsString<T>(T body, JsonTypeInfo<T> typeInfo)
+        public static HttpContent SerializeJsonBodyAsString<T>(T body)
         {
-            var stringTypeInfo = (JsonTypeInfo<T>)_stringFormatOptions.GetTypeInfo(typeof(T));
+            var stringTypeInfo = (JsonTypeInfo<T>)StringFormatOptions.GetTypeInfo(typeof(T));
             var json = JsonSerializer.Serialize(body, stringTypeInfo);
             return new StringContent(json, Encoding.UTF8, JsonMediaType);
         }
@@ -57,30 +41,7 @@ namespace {{getScopeNamespace "utils"}}
         public static HttpContent SerializeString(object body) =>
             StringRequestSerializer.Serialize(body);
 
-        // Reflection fallback for JSON body shapes not yet registered in a
-        // source-gen JsonSerializerContext (top-level nullable primitives:
-        // DateOnly?, DateTime?, long?, …). P1a-followup will register
-        // Nullable<T> permutations and remove this entry point.
-{{- if isNetstandard2}}
-#if NET5_0_OR_GREATER
-{{- end}}
-        [RequiresUnreferencedCode("Untyped JSON request body uses runtime reflection over the body's concrete type. Register the body type in a source-gen JsonSerializerContext to remove this warning.")]
-{{- if isNetstandard2}}
-#endif
-#if NET7_0_OR_GREATER
-{{- end}}
-        [RequiresDynamicCode("Untyped JSON request body uses runtime reflection over the body's concrete type. Register the body type in a source-gen JsonSerializerContext to remove this warning.")]
-{{- if isNetstandard2}}
-#endif
-{{- end}}
-        public static HttpContent SerializeJsonBodyUntyped(object body, string format = "")
-        {
-            var options = format == "string" ? _stringFormatOptions : {{getJsonContextNamespace ""}}.JsonOptions.SerializerOptions;
-            var json = JsonSerializer.Serialize(body, body.GetType(), options);
-            return new StringContent(json, Encoding.UTF8, JsonMediaType);
-        }
-
-        private static readonly JsonSerializerOptions _stringFormatOptions = BuildStringFormatOptions();
+        public static readonly JsonSerializerOptions StringFormatOptions = BuildStringFormatOptions();
 
         private static JsonSerializerOptions BuildStringFormatOptions()
         {

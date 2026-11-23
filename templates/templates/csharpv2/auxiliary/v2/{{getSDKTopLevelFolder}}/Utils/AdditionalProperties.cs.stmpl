@@ -1,0 +1,389 @@
+{{- if hasAdditionalProperties -}}
+#nullable enable
+namespace {{getScopeNamespace "utils" true}};
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+
+/// <summary>
+/// Reads and writes the additional properties of a model as properties of the model's own JSON object.
+/// </summary>
+/// <remarks>
+/// Keys equal to a declared property's JSON name, ignoring case, are neither read nor written. Values are read and
+/// written with the JSON contract of the dictionary's value type.
+/// </remarks>
+internal static class AdditionalProperties
+{
+    internal static readonly IJsonTypeInfoResolver Resolver = new SinkResolver();
+
+    public static void Install<TModel, TValue>(
+        JsonTypeInfo typeInfo,
+        string member,
+        Func<TModel, Dictionary<string, TValue>?> get,
+        Action<TModel, Dictionary<string, TValue>> set,
+        JsonConverterFactory? valueConverterFactory = null)
+    {
+        if (typeInfo.Kind != JsonTypeInfoKind.Object)
+        {
+            return;
+        }
+        var storageName = typeInfo.Options.PropertyNamingPolicy?.ConvertName(member) ?? member;
+        var declared = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = typeInfo.Properties.Count - 1; i >= 0; i--)
+        {
+            var property = typeInfo.Properties[i];
+            if (property.Get is null && property.Set is null)
+            {
+                if (property.Name == storageName)
+                {
+                    typeInfo.Properties.RemoveAt(i);
+                }
+                continue;
+            }
+            if (!property.IsExtensionData)
+            {
+                declared.Add(property.Name);
+            }
+        }
+        var codec = new Codec<TValue>(valueConverterFactory);
+        typeInfo.Properties.Add(JsonMetadataServices.CreatePropertyInfo(
+            typeInfo.Options,
+            new JsonPropertyInfoValues<Sink>
+            {
+                IsProperty = true,
+                IsPublic = true,
+                IsExtensionData = true,
+                DeclaringType = typeof(TModel),
+                PropertyName = member,
+                Getter = model => new Sink<TValue>(() => get((TModel)model), value => set((TModel)model, value), codec, declared),
+                Setter = static (_, _) => throw new InvalidOperationException("Additional properties are set through the model's dictionary."),
+            }));
+    }
+
+    /// <summary>
+    /// Reads <paramref name="value"/> into the additional property <paramref name="key"/> of <paramref name="model"/>
+    /// when <paramref name="extensionData"/> holds its additional properties; returns false and adds nothing when
+    /// the key is declared or the value does not convert.
+    /// </summary>
+    public static bool TryRead(JsonPropertyInfo extensionData, object model, string key, JsonElement value, JsonSerializerOptions options)
+    {
+        if (extensionData.Get?.Invoke(model) is not Sink sink)
+        {
+            return false;
+        }
+        try
+        {
+            return sink.TryAdd(key, new Json(value, options));
+        }
+        catch (Exception e) when (e is not NotSupportedException)
+        {
+            return false;
+        }
+    }
+
+    internal sealed class Codec<T>
+    {
+        private readonly JsonConverterFactory? _factory;
+        private readonly ConditionalWeakTable<JsonSerializerOptions, JsonTypeInfo<T>> _typeInfos =
+            new ConditionalWeakTable<JsonSerializerOptions, JsonTypeInfo<T>>();
+
+        public Codec(JsonConverterFactory? factory)
+        {
+            _factory = factory;
+        }
+
+        public JsonTypeInfo<T> TypeInfo(JsonSerializerOptions options) =>
+            _factory == null ? (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T)) : _typeInfos.GetValue(options, Create);
+
+        private JsonTypeInfo<T> Create(JsonSerializerOptions options) =>
+            JsonMetadataServices.CreateValueInfo<T>(options, _factory!.CreateConverter(typeof(T), options)!);
+    }
+
+    internal sealed class Json
+    {
+        public Json(JsonElement element, JsonSerializerOptions options)
+        {
+            Element = element;
+            Options = options;
+        }
+
+        public JsonElement Element { get; }
+
+        public JsonSerializerOptions Options { get; }
+    }
+
+    internal abstract class Entry
+    {
+        public abstract void Write(Utf8JsonWriter writer, JsonSerializerOptions options);
+    }
+
+    internal abstract class Sink : IDictionary<string, object?>
+    {
+        public abstract object? this[string key] { get; set; }
+
+        public abstract ICollection<string> Keys { get; }
+
+        public abstract ICollection<object?> Values { get; }
+
+        public abstract int Count { get; }
+
+        public bool IsReadOnly => false;
+
+        public abstract void Add(string key, object? value);
+
+        public void Add(KeyValuePair<string, object?> item) => Add(item.Key, item.Value);
+
+        public abstract void Clear();
+
+        public bool Contains(KeyValuePair<string, object?> item) =>
+            TryGetValue(item.Key, out var value) && Equals(value, item.Value);
+
+        public abstract bool ContainsKey(string key);
+
+        public void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
+        {
+            foreach (var item in this)
+            {
+                array[arrayIndex++] = item;
+            }
+        }
+
+        public abstract bool Remove(string key);
+
+        public bool Remove(KeyValuePair<string, object?> item) => Contains(item) && Remove(item.Key);
+
+        public abstract bool TryGetValue(string key, out object? value);
+
+        public abstract IEnumerator<KeyValuePair<string, object?>> GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public abstract bool TryAdd(string key, object? value);
+    }
+
+    private sealed class Sink<T> : Sink
+    {
+        private readonly Func<Dictionary<string, T>?> _get;
+        private readonly Action<Dictionary<string, T>> _set;
+        private readonly Codec<T> _codec;
+        private readonly ISet<string> _declared;
+
+        public Sink(Func<Dictionary<string, T>?> get, Action<Dictionary<string, T>> set, Codec<T> codec, ISet<string> declared)
+        {
+            _get = get;
+            _set = set;
+            _codec = codec;
+            _declared = declared;
+        }
+
+        public override object? this[string key]
+        {
+            get => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException(key);
+            set => TryAdd(key, value);
+        }
+
+        public override ICollection<string> Keys
+        {
+            get
+            {
+                var keys = new List<string>();
+                foreach (var entry in Written())
+                {
+                    keys.Add(entry.Key);
+                }
+                return keys;
+            }
+        }
+
+        public override ICollection<object?> Values
+        {
+            get
+            {
+                var values = new List<object?>();
+                foreach (var entry in Written())
+                {
+                    values.Add(Wrap(entry.Value));
+                }
+                return values;
+            }
+        }
+
+        public override int Count
+        {
+            get
+            {
+                var count = 0;
+                foreach (var _ in Written())
+                {
+                    count++;
+                }
+                return count;
+            }
+        }
+
+        public override void Add(string key, object? value)
+        {
+            if (ContainsKey(key))
+            {
+                throw new ArgumentException($"An additional property with the key '{key}' already exists.", nameof(key));
+            }
+            TryAdd(key, value);
+        }
+
+        public override void Clear()
+        {
+            foreach (var key in Keys)
+            {
+                Remove(key);
+            }
+        }
+
+        public override bool ContainsKey(string key) => !_declared.Contains(key) && (_get()?.ContainsKey(key) ?? false);
+
+        public override bool Remove(string key) => !_declared.Contains(key) && (_get()?.Remove(key) ?? false);
+
+        public override bool TryGetValue(string key, out object? value)
+        {
+            var inner = _get();
+            if (!_declared.Contains(key) && inner != null && inner.TryGetValue(key, out var typed))
+            {
+                value = Wrap(typed);
+                return true;
+            }
+            value = null;
+            return false;
+        }
+
+        public override IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
+        {
+            foreach (var entry in Written())
+            {
+                yield return new KeyValuePair<string, object?>(entry.Key, Wrap(entry.Value));
+            }
+        }
+
+        public override bool TryAdd(string key, object? value)
+        {
+            if (_declared.Contains(key))
+            {
+                return false;
+            }
+            var converted = Convert(key, value);
+            var inner = _get();
+            if (inner == null)
+            {
+                inner = new Dictionary<string, T>();
+                _set(inner);
+            }
+            inner[key] = converted;
+            return true;
+        }
+
+        private IEnumerable<KeyValuePair<string, T>> Written()
+        {
+            var inner = _get();
+            if (inner == null)
+            {
+                yield break;
+            }
+            foreach (var entry in inner)
+            {
+                if (!_declared.Contains(entry.Key))
+                {
+                    yield return entry;
+                }
+            }
+        }
+
+        private object? Wrap(T value) => value is null ? null : new TypedEntry(value, _codec);
+
+        private T Convert(string key, object? value)
+        {
+            switch (value)
+            {
+                case Json json when json.Element.ValueKind != JsonValueKind.Null || typeof(T) == typeof(JsonElement):
+                    return json.Element.Deserialize(_codec.TypeInfo(json.Options))!;
+                case TypedEntry entry:
+                    return entry.Value;
+                case T typed:
+                    return typed;
+                case null when typeof(T) == typeof(JsonElement):
+                    return (T)(object)JsonNull;
+                case null:
+                case Json:
+                    if (default(T) is null)
+                    {
+                        return default!;
+                    }
+                    throw new JsonException($"Additional property '{key}' expects a non-null value.");
+                default:
+                    throw new JsonException($"Additional property '{key}' expects a value of type {typeof(T)}.");
+            }
+        }
+
+        private sealed class TypedEntry : Entry
+        {
+            private readonly Codec<T> _codec;
+
+            public TypedEntry(T value, Codec<T> codec)
+            {
+                Value = value;
+                _codec = codec;
+            }
+
+            public T Value { get; }
+
+            public override void Write(Utf8JsonWriter writer, JsonSerializerOptions options) =>
+                JsonSerializer.Serialize(writer, Value, _codec.TypeInfo(options));
+
+            public override bool Equals(object? obj) => obj is TypedEntry other && EqualityComparer<T>.Default.Equals(Value, other.Value);
+
+            public override int GetHashCode() => Value is null ? 0 : EqualityComparer<T>.Default.GetHashCode(Value);
+        }
+    }
+
+    private static readonly JsonElement JsonNull = CreateJsonNull();
+
+    private static JsonElement CreateJsonNull()
+    {
+        using var document = JsonDocument.Parse("null");
+        return document.RootElement.Clone();
+    }
+
+    private sealed class ValueConverter : JsonConverter<object?>
+    {
+        public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+            new Json(JsonElement.ParseValue(ref reader), options);
+
+        public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
+        {
+            if (value is not Entry entry)
+            {
+                throw new JsonException($"Unexpected additional property value of type {value?.GetType()}.");
+            }
+            entry.Write(writer, options);
+        }
+    }
+
+    private sealed class SinkResolver : IJsonTypeInfoResolver
+    {
+        private static readonly ValueConverter Converter = new ValueConverter();
+
+        public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) =>
+            type == typeof(Sink)
+                ? JsonMetadataServices.CreateIDictionaryInfo<Sink, string, object?>(
+                    options,
+                    new JsonCollectionInfoValues<Sink>
+                    {
+                        KeyInfo = JsonMetadataServices.CreateValueInfo<string>(options, JsonMetadataServices.StringConverter),
+                        ElementInfo = JsonMetadataServices.CreateValueInfo<object?>(options, Converter),
+                    })
+                : null;
+    }
+}
+{{- end}}

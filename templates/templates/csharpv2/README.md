@@ -466,6 +466,47 @@ string? name = anything["name"] as string;
 
 What to do: replace `JObject` / `JArray` casts and JSON-text parsing of array items with dictionary / list access.
 
+#### Additional properties
+
+What changed: a schema with free-form `additionalProperties` (`true` or `{}`) generates
+`Dictionary<string, JsonElement>? AdditionalProperties` (was `Dictionary<string, object>`). A typed
+`additionalProperties` schema keeps its `Dictionary<string, T>?` type. Entries are still read from and written to the
+model's own JSON object, next to the declared properties:
+
+- a key equal to a declared property's JSON name, ignoring case, is never an additional property: on read it is
+  dropped (v1 bound a case-variant key such as `NormalField` to the declared `normalField`), on write the declared
+  property wins;
+- each value is read and written with the JSON contract of `T`: a value that does not match `T` fails the read, and a
+  JSON `null` is kept for reference and `Nullable<T>` types and rejected for other value types; a free-form `null` is
+  a `JsonElement` of kind `Null`;
+- the property is `[JsonIgnore]` on the model: `JsonSerialization` and the SDK's requests and responses handle it,
+  a `JsonSerializer` call with your own options and resolver does not;
+- a `default(JsonElement)` entry cannot be written.
+
+```csharp
+// v1
+var metadata = new Metadata { AdditionalProperties = new Dictionary<string, object> { ["count"] = 1 } };
+long count = (long)metadata.AdditionalProperties["count"];
+```
+
+```csharp
+// v2
+using System.Text.Json;
+
+using var count1 = JsonDocument.Parse("1");
+var metadata = new Metadata
+{
+    AdditionalProperties = new Dictionary<string, JsonElement> { ["count"] = count1.RootElement.Clone() },
+};
+long count = metadata.AdditionalProperties["count"].GetInt64();
+```
+
+What to do: build free-form values as `JsonElement` and read them through the `JsonElement` API.
+
+Known limitation: when a union variant declares typed additional properties, union selection counts each additional
+key as one undeclared property without scoring its value against `T`. A value that does not match `T` still fails
+when that variant is deserialized.
+
 #### `presenceAwareJsonSerialization` is always on
 
 What changed: v2 forces `presenceAwareJsonSerialization: true`. SDKs generated with `false` (the default for SDKs

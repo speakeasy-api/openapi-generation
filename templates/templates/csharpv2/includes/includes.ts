@@ -7,6 +7,7 @@ require("./v2/dependencies.ts");
 require("./v2/namespaces.ts");
 require("./v2/models.ts");
 require("./v2/annotations.ts");
+require("./v2/additionalproperties.ts");
 require("./v2/sanitization.ts");
 require("./v2/imports.ts");
 require("./v2/urlbuilder.ts");

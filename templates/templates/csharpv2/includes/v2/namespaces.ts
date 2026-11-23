@@ -19,6 +19,12 @@ function getModelsFilePath(): string {
 
 registerTemplateFunc("getModelsFilePath", getModelsFilePath);
 
+function getUsageModelsFilePath(sourceDir: string): string {
+  return `${sourceDir.replaceAll("/", "\\")}\\${getModelsFilePath()}`;
+}
+
+registerTemplateFunc("getUsageModelsFilePath", getUsageModelsFilePath);
+
 // @ts-ignore
 function getModelsProjectReference(): string {
   const modelsFolder = getModelsTopLevelFolder().split("/").slice(-1)[0];
@@ -27,16 +33,19 @@ function getModelsProjectReference(): string {
 
 registerTemplateFunc("getModelsProjectReference", getModelsProjectReference);
 
-// Tests bind the netstandard2.0 asset of both SDK and Models; referencing Models
-// only transitively would resolve it for the Tests TFM instead. That asset's
+// Under netstandard2, Tests bind the netstandard2.0 asset of both SDK and Models,
+// so both references carry the same SetTargetFramework. That asset's
 // IAsyncEnumerable<T> comes from Microsoft.Bcl.AsyncInterfaces, which the Tests
 // restore does not pull in transitively: it flows the SDK's netX dependencies.
 // @ts-ignore
 function templateTestProjectReferences(): string {
+  const projectFilePaths = [getProjectFilePath(), getModelsFilePath()];
   if (!isNetstandard2()) {
-    return `<ProjectReference Include="..\\${getProjectFilePath()}" />`;
+    return projectFilePaths
+      .map((path) => `<ProjectReference Include="..\\${path}" />`)
+      .join("\n    ");
   }
-  const references = [getProjectFilePath(), getModelsFilePath()].map(
+  const references = projectFilePaths.map(
     (path) =>
       `<ProjectReference Include="..\\${path}">
       <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>

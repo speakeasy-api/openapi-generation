@@ -136,6 +136,576 @@ actions:
         oneOf:
           - $ref: "#/components/schemas/CountedItemContainer"
           - $ref: "#/components/schemas/NamedItemContainer"
+      KindA:
+        type: object
+        required:
+          - kind
+        properties:
+          kind:
+            type: string
+            const: a
+          name:
+            type: string
+          mode:
+            type: string
+            default: fast
+      KindB:
+        type: object
+        required:
+          - kind
+        properties:
+          kind:
+            type: string
+            const: b
+          name:
+            type: string
+      KindChoice:
+        oneOf:
+          - $ref: "#/components/schemas/KindA"
+          - $ref: "#/components/schemas/KindB"
+          - type: string
+      KindChoiceReversed:
+        oneOf:
+          - $ref: "#/components/schemas/KindB"
+          - $ref: "#/components/schemas/KindA"
+          - type: string
+      ClosedKindChoice:
+        oneOf:
+          - title: ClosedKindA
+            type: object
+            required:
+              - kind
+            properties:
+              kind:
+                type: string
+                const: a
+          - title: ClosedKindB
+            type: object
+            required:
+              - kind
+            properties:
+              kind:
+                type: string
+                const: b
+          - type: string
+        x-speakeasy-unknown-values: disallow
+      KindOrMap:
+        oneOf:
+          - $ref: "#/components/schemas/KindA"
+          - $ref: "#/components/schemas/KindB"
+          - type: object
+            additionalProperties: true
+      OptionalKind:
+        type: object
+        properties:
+          kind:
+            type: string
+            const: c
+          name:
+            type: string
+      DefaultedKind:
+        type: object
+        required:
+          - kind
+        properties:
+          kind:
+            type: string
+            const: d
+            default: d
+      ConflictingDefaultKind:
+        type: object
+        required:
+          - kind
+        properties:
+          kind:
+            type: string
+            const: e
+            default: z
+      ConflictingDefaultKindOrMap:
+        oneOf:
+          - $ref: "#/components/schemas/ConflictingDefaultKind"
+          - type: object
+            additionalProperties: true
+      QuotedText:
+        type: object
+        required:
+          - text
+        properties:
+          text:
+            type: string
+            const: "say \"hi\" \\ é"
+      QuotedTextOrMap:
+        oneOf:
+          - $ref: "#/components/schemas/QuotedText"
+          - type: object
+            additionalProperties: true
+      FlagOn:
+        type: object
+        required:
+          - flag
+        properties:
+          flag:
+            type: boolean
+            const: true
+      FlagOff:
+        type: object
+        required:
+          - flag
+        properties:
+          flag:
+            type: boolean
+            const: false
+      FlagChoice:
+        oneOf:
+          - $ref: "#/components/schemas/FlagOn"
+          - $ref: "#/components/schemas/FlagOff"
+          - type: object
+            additionalProperties: true
+      LevelZero:
+        type: object
+        required:
+          - level
+        properties:
+          level:
+            type: integer
+            const: 0
+      LevelOne:
+        type: object
+        required:
+          - level
+        properties:
+          level:
+            type: integer
+            const: 1
+      LevelChoice:
+        oneOf:
+          - $ref: "#/components/schemas/LevelZero"
+          - $ref: "#/components/schemas/LevelOne"
+          - type: object
+            additionalProperties: true
+      RatioLow:
+        type: object
+        required:
+          - ratio
+        properties:
+          ratio:
+            type: number
+            const: 1.5
+      RatioHigh:
+        type: object
+        required:
+          - ratio
+        properties:
+          ratio:
+            type: number
+            const: 2.5
+      RatioChoice:
+        oneOf:
+          - $ref: "#/components/schemas/RatioLow"
+          - $ref: "#/components/schemas/RatioHigh"
+          - type: object
+            additionalProperties: true
+      KindHolderA:
+        type: object
+        properties:
+          child:
+            $ref: "#/components/schemas/KindA"
+          items:
+            type: array
+            items:
+              $ref: "#/components/schemas/KindA"
+          entries:
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/KindA"
+          maybe:
+            oneOf:
+              - type: "null"
+              - $ref: "#/components/schemas/KindA"
+      KindHolderB:
+        type: object
+        properties:
+          child:
+            $ref: "#/components/schemas/KindB"
+          items:
+            type: array
+            items:
+              $ref: "#/components/schemas/KindB"
+          entries:
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/KindB"
+          maybe:
+            oneOf:
+              - type: "null"
+              - $ref: "#/components/schemas/KindB"
+      KindHolderChoice:
+        oneOf:
+          - $ref: "#/components/schemas/KindHolderA"
+          - $ref: "#/components/schemas/KindHolderB"
+          - type: object
+            additionalProperties: true
+      KindNodeA:
+        type: object
+        required:
+          - kind
+        properties:
+          kind:
+            type: string
+            const: a
+          next:
+            $ref: "#/components/schemas/KindNodeA"
+      KindNodeB:
+        type: object
+        required:
+          - kind
+        properties:
+          kind:
+            type: string
+            const: b
+          next:
+            $ref: "#/components/schemas/KindNodeB"
+      KindNodeChoice:
+        oneOf:
+          - $ref: "#/components/schemas/KindNodeA"
+          - $ref: "#/components/schemas/KindNodeB"
+          - type: object
+            additionalProperties: true
+      RichKindA:
+        type: object
+        required:
+          - kind
+        properties:
+          kind:
+            type: string
+            const: a
+          name:
+            type: string
+          note:
+            type: string
+      LeanKindB:
+        type: object
+        required:
+          - kind
+        properties:
+          kind:
+            type: string
+            const: b
+      InnerKindChoice:
+        oneOf:
+          - $ref: "#/components/schemas/RichKindA"
+          - $ref: "#/components/schemas/LeanKindB"
+          - type: string
+      InnerKindWrapper:
+        type: object
+        required:
+          - value
+        properties:
+          value:
+            $ref: "#/components/schemas/InnerKindChoice"
+      LooseNote:
+        type: object
+        properties:
+          name:
+            type: string
+          note:
+            type: string
+      LooseNoteWrapper:
+        type: object
+        required:
+          - value
+        properties:
+          value:
+            $ref: "#/components/schemas/LooseNote"
+          alive:
+            type: boolean
+      WrappedKindChoice:
+        oneOf:
+          - $ref: "#/components/schemas/InnerKindWrapper"
+          - $ref: "#/components/schemas/LooseNoteWrapper"
+      TagData:
+        type: object
+        properties:
+          a:
+            type: string
+          b:
+            type: string
+      Rich:
+        type: object
+        required:
+          - id
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          meta:
+            $ref: "#/components/schemas/TagData"
+      RichOrMap:
+        oneOf:
+          - $ref: "#/components/schemas/Rich"
+          - type: object
+            additionalProperties: true
+      FallbackWrapper:
+        type: object
+        required:
+          - value
+        properties:
+          value:
+            $ref: "#/components/schemas/RichOrMap"
+      Loose:
+        type: object
+        required:
+          - name
+        properties:
+          name:
+            type: string
+          meta:
+            type: object
+            additionalProperties: true
+      TypedWrapper:
+        type: object
+        required:
+          - value
+        properties:
+          value:
+            $ref: "#/components/schemas/Loose"
+          alive:
+            type: boolean
+      WrapperChoice:
+        oneOf:
+          - $ref: "#/components/schemas/FallbackWrapper"
+          - $ref: "#/components/schemas/TypedWrapper"
+      OpenKindHolder:
+        type: object
+        required:
+          - value
+        properties:
+          value:
+            $ref: "#/components/schemas/KindChoice"
+      OpenKindHolderOrMap:
+        oneOf:
+          - $ref: "#/components/schemas/OpenKindHolder"
+          - type: object
+            additionalProperties: true
+      TaggedLevelA:
+        type: object
+        required:
+          - tag
+          - level
+        properties:
+          tag:
+            type: string
+          level:
+            type: integer
+            const: 1
+      TaggedLevelB:
+        type: object
+        required:
+          - tag
+          - level
+        properties:
+          tag:
+            type: string
+          level:
+            type: integer
+            const: 2
+      TaggedLevel:
+        oneOf:
+          - $ref: "#/components/schemas/TaggedLevelA"
+          - $ref: "#/components/schemas/TaggedLevelB"
+        discriminator:
+          propertyName: tag
+          mapping:
+            a: "#/components/schemas/TaggedLevelA"
+            b: "#/components/schemas/TaggedLevelB"
+      TaggedLevelHolder:
+        type: object
+        required:
+          - item
+        properties:
+          item:
+            $ref: "#/components/schemas/TaggedLevel"
+      TaggedLevelHolderOrMap:
+        oneOf:
+          - $ref: "#/components/schemas/TaggedLevelHolder"
+          - type: object
+            additionalProperties: true
+      LevelDetailOne:
+        type: object
+        required:
+          - level
+        properties:
+          level:
+            type: integer
+            const: 1
+      LevelDetailTwo:
+        type: object
+        required:
+          - level
+        properties:
+          level:
+            type: integer
+            const: 2
+      KindChoiceListHolder:
+        type: object
+        properties:
+          kinds:
+            type: array
+            items:
+              $ref: "#/components/schemas/InnerKindChoice"
+          riches:
+            type: array
+            items:
+              $ref: "#/components/schemas/RichOrMap"
+      LooseListHolder:
+        type: object
+        properties:
+          kinds:
+            type: array
+            items:
+              $ref: "#/components/schemas/LooseNote"
+          riches:
+            type: array
+            items:
+              $ref: "#/components/schemas/Loose"
+          alive:
+            type: boolean
+      ListHolderChoice:
+        oneOf:
+          - $ref: "#/components/schemas/KindChoiceListHolder"
+          - $ref: "#/components/schemas/LooseListHolder"
+      KindChoiceMapHolder:
+        type: object
+        properties:
+          kinds:
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/InnerKindChoice"
+          riches:
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/RichOrMap"
+      LooseMapHolder:
+        type: object
+        properties:
+          kinds:
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/LooseNote"
+          riches:
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/Loose"
+          alive:
+            type: boolean
+      MapHolderChoice:
+        oneOf:
+          - $ref: "#/components/schemas/KindChoiceMapHolder"
+          - $ref: "#/components/schemas/LooseMapHolder"
+      Stamped:
+        type: object
+        required:
+          - at
+        properties:
+          at:
+            type: string
+            format: date-time
+            const: "2020-01-01T00:00:00Z"
+          day:
+            type: string
+            format: date
+            const: "2020-01-02"
+      StampedOrMap:
+        oneOf:
+          - $ref: "#/components/schemas/Stamped"
+          - type: object
+            additionalProperties: true
+      CodedFailureA:
+        type: object
+        required:
+          - code
+          - detail
+        properties:
+          code:
+            type: integer
+            const: 7
+          detail:
+            $ref: "#/components/schemas/LevelDetailOne"
+      CodedFailureB:
+        type: object
+        required:
+          - code
+          - detail
+        properties:
+          code:
+            type: integer
+            const: 7
+          detail:
+            $ref: "#/components/schemas/LevelDetailTwo"
+      ConstUnionChoices:
+        type: object
+        properties:
+          kind:
+            $ref: "#/components/schemas/KindChoice"
+          kindReversed:
+            $ref: "#/components/schemas/KindChoiceReversed"
+          closedKind:
+            $ref: "#/components/schemas/ClosedKindChoice"
+          kindOrMap:
+            $ref: "#/components/schemas/KindOrMap"
+          optionalKind:
+            $ref: "#/components/schemas/OptionalKind"
+          defaultedKind:
+            $ref: "#/components/schemas/DefaultedKind"
+          conflictingDefault:
+            $ref: "#/components/schemas/ConflictingDefaultKindOrMap"
+          quotedText:
+            $ref: "#/components/schemas/QuotedTextOrMap"
+          flag:
+            $ref: "#/components/schemas/FlagChoice"
+          level:
+            $ref: "#/components/schemas/LevelChoice"
+          ratio:
+            $ref: "#/components/schemas/RatioChoice"
+          holder:
+            $ref: "#/components/schemas/KindHolderChoice"
+          node:
+            $ref: "#/components/schemas/KindNodeChoice"
+          wrappedKind:
+            $ref: "#/components/schemas/WrappedKindChoice"
+          wrapper:
+            $ref: "#/components/schemas/WrapperChoice"
+          openHolder:
+            $ref: "#/components/schemas/OpenKindHolderOrMap"
+          taggedLevel:
+            $ref: "#/components/schemas/TaggedLevelHolderOrMap"
+          listHolder:
+            $ref: "#/components/schemas/ListHolderChoice"
+          mapHolder:
+            $ref: "#/components/schemas/MapHolderChoice"
+          stamped:
+            $ref: "#/components/schemas/StampedOrMap"
+      WorkItemStatus:
+        type: string
+        description: A closed enum whose wire values differ from their member names.
+        enum:
+          - in-progress
+          - done
+      WorkItemPriority:
+        type: string
+        description: An open enum whose wire values differ from their member names.
+        x-speakeasy-unknown-values: allow
+        enum:
+          - low-priority
+          - high-priority
+      WorkItemFilter:
+        type: object
+        properties:
+          statuses:
+            type: array
+            items:
+              $ref: "#/components/schemas/WorkItemStatus"
       WidgetUpload:
         type: object
         properties:
@@ -151,8 +721,191 @@ actions:
             type: string
           count:
             type: integer
+      ConstKindWithIntegerExtras:
+        type: object
+        description: Integer additional properties next to a constant declared property.
+        properties:
+          kind:
+            type: string
+            const: widget
+        additionalProperties:
+          type: integer
+      DecimalExtras:
+        type: object
+        description: Additional properties typed as decimal numbers.
+        properties:
+          label:
+            type: string
+        additionalProperties:
+          type: number
+          format: decimal
+      BigIntStringListExtras:
+        type: object
+        description: Additional properties typed as lists of big integers sent as JSON strings.
+        properties:
+          label:
+            type: string
+        additionalProperties:
+          type: array
+          items:
+            type: string
+            format: bigint
+      StringMapExtras:
+        type: object
+        description: Additional properties typed as maps of strings.
+        properties:
+          label:
+            type: string
+        additionalProperties:
+          type: object
+          additionalProperties:
+            type: string
+      AnyMapExtras:
+        type: object
+        description: Additional properties typed as maps of free-form values.
+        properties:
+          label:
+            type: string
+        additionalProperties:
+          type: object
+          additionalProperties: true
+      UntypedExtras:
+        type: object
+        description: Free-form additional properties next to a declared property.
+        properties:
+          normalField:
+            type: string
+        additionalProperties: true
+      ExtrasNode:
+        type: object
+        description: Additional properties typed as the containing schema, next to a declared child of the same schema.
+        properties:
+          label:
+            type: string
+          child:
+            $ref: "#/components/schemas/ExtrasNode"
+        additionalProperties:
+          $ref: "#/components/schemas/ExtrasNode"
+      ExtrasListNode:
+        type: object
+        description: Additional properties typed as lists of the containing schema.
+        properties:
+          label:
+            type: string
+        additionalProperties:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExtrasListNode"
+      ExtrasUnionNode:
+        type: object
+        description: Additional properties typed as a union whose object member is the containing schema.
+        properties:
+          label:
+            type: string
+        additionalProperties:
+          $ref: "#/components/schemas/ExtrasUnionValue"
+      ExtrasUnionValue:
+        description: Either an object of the schema holding it as additional properties, or a string.
+        anyOf:
+          - $ref: "#/components/schemas/ExtrasUnionNode"
+          - type: string
+      AdditionalPropertiesShapes:
+        type: object
+        description: Holds one object of each additional-properties shape.
+        properties:
+          constKind:
+            $ref: "#/components/schemas/ConstKindWithIntegerExtras"
+          decimals:
+            $ref: "#/components/schemas/DecimalExtras"
+          bigIntLists:
+            $ref: "#/components/schemas/BigIntStringListExtras"
+          stringMaps:
+            $ref: "#/components/schemas/StringMapExtras"
+          anyMaps:
+            $ref: "#/components/schemas/AnyMapExtras"
+          untyped:
+            $ref: "#/components/schemas/UntypedExtras"
+          node:
+            $ref: "#/components/schemas/ExtrasNode"
+          listNode:
+            $ref: "#/components/schemas/ExtrasListNode"
+          unionNode:
+            $ref: "#/components/schemas/ExtrasUnionNode"
   - target: $.paths
     update:
+      /anything/additionalPropertiesShapes:
+        post:
+          operationId: additionalPropertiesShapesPost
+          description: >
+            Sends objects whose schemas declare additional properties of several value shapes and reads the echoed
+            objects back. Additional properties are sent and read as properties of each object.
+          tags:
+            - requestBodies
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/AdditionalPropertiesShapes"
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      json:
+                        $ref: "#/components/schemas/AdditionalPropertiesShapes"
+      /anything/optionalEnumListParams:
+        get:
+          operationId: optionalEnumListParamsGet
+          description: >
+            Every parameter is optional, so the request object is optional too.
+            Enum arrays and an enum-valued map are sent in query and header
+            parameters and must be serialized as enum wire values.
+          tags:
+            - parameters
+          parameters:
+            - name: statuses
+              in: query
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkItemStatus"
+            - name: priorities
+              in: query
+              explode: false
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkItemPriority"
+            - name: statusByKey
+              in: query
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: "#/components/schemas/WorkItemStatus"
+            - name: filter
+              in: query
+              style: deepObject
+              schema:
+                $ref: "#/components/schemas/WorkItemFilter"
+            - name: X-Statuses
+              in: header
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkItemStatus"
+            - name: X-Priorities
+              in: header
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkItemPriority"
+          responses:
+            "200":
+              description: OK
       /anything/openEnumUnion:
         post:
           operationId: openEnumUnionPost
@@ -215,6 +968,27 @@ actions:
                 application/json:
                   schema:
                     $ref: "#/components/schemas/ItemContainerChoice"
+      /anything/constUnionChoices:
+        get:
+          operationId: constUnionChoicesGet
+          description: Returns unions whose object variants differ by constant property values.
+          tags:
+            - unions
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/ConstUnionChoices"
+            "400":
+              description: Bad Request
+              content:
+                application/json:
+                  schema:
+                    oneOf:
+                      - $ref: "#/components/schemas/CodedFailureA"
+                      - $ref: "#/components/schemas/CodedFailureB"
       /anything/widgets/{widgetId}/optionalMultipart:
         put:
           operationId: optionalWrappedMultipartBody
@@ -303,3 +1077,48 @@ actions:
           responses:
             "200":
               description: OK
+      /auth/customsecurity/customSchemeTypedFields:
+        get:
+          operationId: customSchemeTypedFields
+          description: >
+            A custom security scheme whose required fields are an integer, an enum, a boolean and a string, with an
+            optional integer field that has no default.
+          tags:
+            - authNew
+          servers:
+            - url: http://localhost:35456
+          security:
+            - customSchemeTypedFields: []
+          responses:
+            "200":
+              description: OK
+            "401":
+              description: Unsuccessful authentication.
+  - target: $.components.securitySchemes
+    update:
+      customSchemeTypedFields:
+        type: http
+        scheme: custom
+        x-speakeasy-custom-security-scheme:
+          usesScopes: false
+          schema:
+            type: object
+            properties:
+              accountId:
+                type: integer
+              accessLevel:
+                type: string
+                enum:
+                  - reader
+                  - editor
+              active:
+                type: boolean
+              token:
+                type: string
+              quota:
+                type: integer
+            required:
+              - accountId
+              - accessLevel
+              - active
+              - token

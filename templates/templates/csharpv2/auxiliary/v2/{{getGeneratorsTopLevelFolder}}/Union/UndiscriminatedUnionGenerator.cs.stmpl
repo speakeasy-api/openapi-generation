@@ -18,10 +18,11 @@ public class UndiscriminatedUnionGenerator : UnionGeneratorBase
     private protected override string GenerateReadVariantLogic(UnionModel model)
     {
         // For each candidate variant:
-        // - Optionally guard deserialization with a structural hint (presence of a distinctive JSON property).
-        //   The hint is the first [JsonPropertyName]-annotated property on the type — this is a heuristic.
-        //   IMPROVEMENT: using any [JsonPropertyName] property as a "distinctive" marker is fragile.
-        //   A more reliable approach would be a dedicated attribute to mark the key discriminating field.
+        // - Optionally guard deserialization with a structural hint (presence of every [JsonRequired] JSON property).
+        //   The hint is the set of [JsonRequired]-annotated properties on the type; it may only skip variants
+        //   that strict deserialization rejects (case-sensitive names, [JsonRequired] enforced).
+        // - Reject a variant whose JSON disagrees with a schema constant, binding settable integral
+        //   constants from their canonical spelling (see UnionScoring.PrepareCandidate).
         // - Attempt deserialization; swallow JsonException (type mismatch).
         // - On success, record the structural score.
         var tryBlocksList = model.Properties
@@ -29,16 +30,21 @@ public class UndiscriminatedUnionGenerator : UnionGeneratorBase
             {
                 var index = i + 1;
 
-                string distinctiveCheck = "";
-                string distinctiveCheckClose = "";
-                if (prop.DistinctiveJsonPropertyName != null)
+                string requiredGuard = "";
+                string requiredGuardClose = "";
+                // The STJ source generator emits a name with '"', '\' or a control character raw on some
+                // target frameworks and escaped on others, so no probed literal matches both: no guard.
+                if (prop.RequiredJsonPropertyNames.Length > 0
+                    && !prop.RequiredJsonPropertyNames.Any(name => name.Any(c => c == '"' || c == '\\' || char.IsControl(c))))
                 {
                     // Guard the property probe behind a ValueKind check —
                     // TryGetProperty throws InvalidOperationException when the
                     // root is not an Object (mixed-primitive / array-variant
                     // unions hit this on Number/Array/String roots).
-                    distinctiveCheck = $"if (jsonDoc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object && jsonDoc.RootElement.TryGetProperty(\"{prop.DistinctiveJsonPropertyName}\", out _))\n" + "{\n";
-                    distinctiveCheckClose = "}\n";
+                    var presenceChecks = string.Concat(prop.RequiredJsonPropertyNames.Select(name =>
+                        $" && jsonDoc.RootElement.TryGetProperty({Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(name, quote: true)}, out _)"));
+                    requiredGuard = $"if (jsonDoc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object{presenceChecks})\n" + "{\n";
+                    requiredGuardClose = "}\n";
                 }
 
                 // Score variants by structural fit against the variant's metadata, recursing
@@ -49,7 +55,7 @@ public class UndiscriminatedUnionGenerator : UnionGeneratorBase
                 // whose roots have no properties. Missing favors the narrower variant when the
                 // other counts tie.
                 var overflowLine =
-                    $"var score{index} = global::{{getModelNamespace ""}}.UnionScoring.Score(jsonDoc.RootElement, _ti{prop.Name}, options);";
+                    $"var score{index} = global::{{getModelNamespace ""}}.UnionScoring.Score(jsonDoc.RootElement, _ti{prop.Name}, options, value{index});";
 
                 // Value-type variants: JsonTypeInfo<T> Deserialize returns T
                 // (non-nullable). JSON null throws JsonException — caught
@@ -67,16 +73,16 @@ public class UndiscriminatedUnionGenerator : UnionGeneratorBase
 
                 // clang-format off
                 var blockCode = $$"""
-                {{interp "distinctiveCheck"}}
+                {{interp "requiredGuard"}}
                 try
                 {
-                    var value{{interp "index"}} = System.Text.Json.JsonSerializer.Deserialize(jsonText, _ti{{interp "prop.Name"}});
+                    var value{{interp "index"}} = System.Text.Json.JsonSerializer.Deserialize(global::{{getModelNamespace ""}}.UnionScoring.PrepareCandidate(jsonDoc.RootElement, _ti{{interp "prop.Name"}}) ?? jsonText, _ti{{interp "prop.Name"}});
                     {{interp "addCandidate"}}
                 }
                 catch (System.Text.Json.JsonException)
                 {
                 }
-                {{interp "distinctiveCheckClose"}}
+                {{interp "requiredGuardClose"}}
                 """;
                 // clang-format on
                 return blockCode;

@@ -37,6 +37,11 @@ function templateSDKImports(sdk: SDK, main: boolean): string {
       }
 
       imports = getTypeImports(imports, op.Request.Field.Type, "", false);
+
+      for (const c of bodyVariantOverloadTargets(op).conversions) {
+        imports = getTypeImports(imports, c.Member, "", false);
+      }
+
       imports = addImport(imports, "System.Net.Http.Headers", false);
     }
 

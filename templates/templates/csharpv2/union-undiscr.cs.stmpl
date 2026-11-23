@@ -125,15 +125,23 @@
   {{- if and $unknownMember (not $nullable)}}
             global::{{getModelNamespace ""}}.UnionScoring.RegisterNullAsUnknown(typeof({{$className}}));
   {{- end}}
-            global::{{getModelNamespace ""}}.UnionScoring.RegisterUnion(typeof({{$className}}), new System.Type[] {
-              {{- range $i, $v := getUnionVariants .Local.Type}}
-                {{- if $i}},{{end}}
-                typeof({{$v.CsType}})
-              {{- end}} });
+            global::{{getModelNamespace ""}}.UnionScoring.RegisterUnion(typeof({{$className}}), SelectMember);
             return new {{$className}}Converter(
               {{- range $i, $v := getUnionVariants .Local.Type}}
                 {{- if $i}},{{end}}
-                (System.Text.Json.Serialization.Metadata.JsonTypeInfo<{{$v.CsType}}>)options.GetTypeInfo(typeof({{$v.CsType}}))!
+                {{$v.TypeInfo}}
               {{- end}});
+        }
+
+        private static global::{{getModelNamespace ""}}.UnionMember SelectMember(object value)
+        {
+            var union = ({{$className}})value;
+          {{- range getUnionVariants .Local.Type}}
+            if (union.{{.FieldName}} != null)
+            {
+                return new global::{{getModelNamespace ""}}.UnionMember(typeof({{.CsType}}), union.{{.FieldName}});
+            }
+          {{- end}}
+            return default;
         }
     }
