@@ -33,34 +33,6 @@ var usageSnippetFileName = map[string]string{
 	"unity":      "Example.cs",
 }
 
-func directoryExists(baseDir, dir string) bool {
-	_, err := fs.ReadDir(templates.TemplateFS, path.Join(baseDir, dir))
-	return err == nil
-}
-
-func getDirectoryFiles(baseDir, dir string) ([]string, error) {
-	paths := []string{}
-
-	files, err := fs.ReadDir(templates.TemplateFS, path.Join(baseDir, dir))
-	if err != nil {
-		return nil, err
-	}
-	for _, file := range files {
-		if file.IsDir() {
-			subPaths, err := getDirectoryFiles(baseDir, path.Join(dir, file.Name()))
-			if err != nil {
-				return nil, err
-			}
-
-			paths = append(paths, subPaths...)
-		} else {
-			paths = append(paths, path.Join(dir, file.Name()))
-		}
-	}
-
-	return paths, nil
-}
-
 func getWriteFileFunc(ctx context.Context, target types.Target, cfg Config) func(string, []byte) error {
 	return func(outFile string, data []byte) error {
 		var err error
