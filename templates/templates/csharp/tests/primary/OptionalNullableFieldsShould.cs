@@ -258,7 +258,7 @@ public class OptionalNullableFieldsShould
         public bool ShouldSerializeField() => Field.IsSet;
     }
 
-    // ── Free-form object fields: null token reaches AnyDeserializer ─────────
+    // ── Free-form object fields: explicit null with and without NullValueHandling.Include ──
 
     [Fact]
     public void NullableFreeForm_ExplicitNull_DeserializesToNull()
@@ -286,6 +286,14 @@ public class OptionalNullableFieldsShould
     }
 
     [Fact]
+    public void RequiredNullableFreeForm_ExplicitNull_DeserializesToNull()
+    {
+        var model = JsonConvert.DeserializeObject<RequiredNullableFreeFormModel>("{\"field\":null}", Utilities.GetDefaultJsonDeserializerSettings());
+        Assert.NotNull(model);
+        Assert.Null(model!.Field);
+    }
+
+    [Fact]
     public void WrappedFreeForm_ExplicitNull_IsSetAndNull()
     {
         var model = JsonConvert.DeserializeObject<WrappedFreeFormModel>("{\"field\":null}", Utilities.GetDefaultJsonDeserializerSettings());
@@ -305,6 +313,12 @@ public class OptionalNullableFieldsShould
     private class NullableFreeFormModel
     {
         [JsonProperty("field", Required = Newtonsoft.Json.Required.Default, NullValueHandling = NullValueHandling.Include)]
+        public Dictionary<string, object>? Field { get; set; }
+    }
+
+    private class RequiredNullableFreeFormModel
+    {
+        [JsonProperty("field", Required = Newtonsoft.Json.Required.AllowNull, NullValueHandling = NullValueHandling.Include)]
         public Dictionary<string, object>? Field { get; set; }
     }
 
