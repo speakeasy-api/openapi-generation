@@ -1946,7 +1946,7 @@ func (d *cliManifestDecoder) linkAsyncErrorBindings(cmdKey string, recipe *CLICo
 func (d *cliManifestDecoder) asyncErrorItemViews(views []*cliResolvedSchema) ([]*cliResolvedSchema, error) {
 	out := make([]*cliResolvedSchema, 0, len(views))
 	for _, view := range views {
-		items, isArray := cliArraySchemaItems(view.raw)
+		items, isArray := d.cliArraySchemaItems(view.raw, nil)
 		if !isArray {
 			out = append(out, view)
 			continue
@@ -1960,17 +1960,43 @@ func (d *cliManifestDecoder) asyncErrorItemViews(views []*cliResolvedSchema) ([]
 	return out, nil
 }
 
-func cliArraySchemaItems(raw map[string]any) (any, bool) {
-	if raw == nil || raw["items"] == nil {
+// cliArraySchemaItems returns the items schema of an array schema, looking
+// through $ref (with or without siblings) and allOf. An items keyword without
+// a declared type is an array, as OpenAPI 3.1 allows.
+func (d *cliManifestDecoder) cliArraySchemaItems(raw map[string]any, seen []string) (any, bool) {
+	if raw == nil {
 		return nil, false
 	}
-	switch declared := raw["type"].(type) {
-	case string:
-		return raw["items"], declared == "array"
-	case []any:
-		for _, member := range declared {
-			if member == "array" {
-				return raw["items"], true
+	if items := raw["items"]; items != nil {
+		switch declared := raw["type"].(type) {
+		case nil:
+			return items, true
+		case string:
+			return items, declared == "array"
+		case []any:
+			for _, member := range declared {
+				if member == "array" {
+					return items, true
+				}
+			}
+			return nil, false
+		}
+	}
+	if ref, ok := raw["$ref"].(string); ok && strings.HasPrefix(ref, cliComponentRefPrefix) {
+		name := strings.TrimPrefix(ref, cliComponentRefPrefix)
+		if !slices.Contains(seen, name) {
+			if component, ok := d.schemaIndex.components[name].(map[string]any); ok {
+				if items, isArray := d.cliArraySchemaItems(component, append(seen, name)); isArray {
+					return items, true
+				}
+			}
+		}
+	}
+	if allOf, ok := raw["allOf"].([]any); ok {
+		for _, branch := range allOf {
+			branchMap, _ := branch.(map[string]any)
+			if items, isArray := d.cliArraySchemaItems(branchMap, seen); isArray {
+				return items, true
 			}
 		}
 	}

@@ -749,11 +749,30 @@ func TestCLICommands_AsyncErrorBindings(t *testing.T) {
       properties:
         id:
           type: string
-`, `    TaskResult:
+`, `    FailureList:
+      type: array
+      items:
+        type: object
+        properties:
+          detail:
+            type: string
+    TaskResult:
       type: object
       properties:
         id:
           type: string
+        refFailures:
+          $ref: '#/components/schemas/FailureList'
+          description: Failures behind a reference with a sibling keyword.
+        allOfFailures:
+          allOf:
+            - $ref: '#/components/schemas/FailureList'
+        untypedFailures:
+          items:
+            type: object
+            properties:
+              detail:
+                type: string
         failure:
           type: object
           properties:
@@ -818,6 +837,13 @@ func TestCLICommands_AsyncErrorBindings(t *testing.T) {
 	_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: failures\n      errorMessageField: detial\n"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `async.errorMessageField: property "detial" does not resolve inside the "failures" member`)
+	for _, field := range []string{"refFailures", "allOfFailures", "untypedFailures"} {
+		_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: "+field+"\n      errorMessageField: detail\n"))
+		require.NoError(t, err, field)
+		_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: "+field+"\n      errorMessageField: detial\n"))
+		require.Error(t, err, field)
+		assert.Contains(t, err.Error(), `property "detial" does not resolve inside the "`+field+`" member`)
+	}
 
 	// Declaring only errorField still validates the defaulted message member.
 	_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: failure\n"))
