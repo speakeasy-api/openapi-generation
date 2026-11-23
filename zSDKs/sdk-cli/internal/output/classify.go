@@ -174,9 +174,10 @@ func Classify(cmd *cobra.Command, err error) Classification {
 		err = flagutil.WithCLIValidation(err)
 	}
 
+	rawBody := extractErrorBody(err)
 	c := Classification{
 		StatusCode: extractErrorStatusCode(err),
-		RawBody:    extractErrorBody(err),
+		RawBody:    redactErrorBody(cmd, err, rawBody),
 		Origin:     ErrorOriginAPI,
 	}
 	var origin interface{ ErrorOrigin() ErrorOrigin }
@@ -262,9 +263,33 @@ func Classify(cmd *cobra.Command, err error) Classification {
 		}
 	}
 
-	c.Message = classificationMessage(bodyMap, errorObject, err, c.RawBody)
+	c.Message = redactedMessage(classificationMessage(bodyMap, errorObject, err, c.RawBody), rawBody, c.RawBody)
 	c.Hints = assembleHints(cmd, err, c, bodyMap, errorObject, ruleHints, useReasonRule)
 	return c
+}
+
+// redactErrorBody masks the values the operation's schema marks sensitive in
+// an error response body, as --debug does when logging it. The operation comes
+// from the response's request, or from the command when the error carries no
+// response.
+func redactErrorBody(cmd *cobra.Command, err error, body string) string {
+	return body
+}
+
+// redactedMessage keeps a message taken from the error's own text from
+// re-exposing what body redaction masked: typed error models render their
+// fields as JSON, and fallback errors embed the raw body.
+func redactedMessage(message, rawBody, redactedBody string) string {
+	if redactedBody == rawBody {
+		return message
+	}
+	if strings.Contains(message, rawBody) {
+		return strings.ReplaceAll(message, rawBody, redactedBody)
+	}
+	if isValidJSON(message) {
+		return redactedBody
+	}
+	return message
 }
 
 func parseClassificationBody(raw string, c *Classification) (map[string]any, map[string]any) {

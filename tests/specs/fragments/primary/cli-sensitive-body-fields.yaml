@@ -278,12 +278,19 @@ paths:
       description: >-
         Response body with a field marked sensitive beside an unmarked one.
         Debug output must redact the marked value in the logged response while
-        keeping its sibling readable.
+        keeping its sibling readable. The error response reuses the schema so
+        error output is held to the same redaction.
       tags:
         - responseBodies
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CliSensitiveResponse"
+        "400":
+          description: Rejected request echoing the sensitive field
           content:
             application/json:
               schema:

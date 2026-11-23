@@ -751,6 +751,25 @@ func TestAsyncFailureScrubsResolvedCredentials(t *testing.T) {
 	}
 }
 
+func TestRedactedMessageDropsMaskedValues(t *testing.T) {
+	raw := `{"name":"n","value":"secret-value"}`
+	redacted := `{"name":"n","value":"(sensitive)"}`
+	for name, tc := range map[string]struct {
+		message, redacted, want string
+	}{
+		"embedded raw body":       {message: "API error occurred: Status 400\n" + raw, redacted: redacted, want: "API error occurred: Status 400\n" + redacted},
+		"typed model JSON":        {message: `{"value":"secret-value","name":"n"}`, redacted: redacted, want: redacted},
+		"message from body field": {message: "request rejected", redacted: redacted, want: "request rejected"},
+		"nothing masked":          {message: raw, redacted: raw, want: raw},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if got := redactedMessage(tc.message, raw, tc.redacted); got != tc.want {
+				t.Fatalf("got %q; want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestScrubJSONDocumentMasksDecodedValues(t *testing.T) {
 	t.Cleanup(config.Reset)
 	config.RegisterSecret(`example"secret`)

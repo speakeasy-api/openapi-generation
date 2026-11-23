@@ -274,7 +274,7 @@ trackedFiles:
   internal/output/binary.go:
     last_write_checksum: sha1:6fd77172cad1bd29dc9f157b931345f96a172223
   internal/output/classify.go:
-    last_write_checksum: sha1:cc4f38eeacdf495b1ae8b35a84a85f11a073cc5f
+    last_write_checksum: sha1:e7e061022aa2d0c66f1a0641860ff9420d281639
   internal/output/color.go:
     last_write_checksum: sha1:c6f41f9691f6209f480d153c15c3424d8ca5883d
   internal/output/errortable.go:
@@ -290,7 +290,7 @@ trackedFiles:
   internal/output/output.go:
     last_write_checksum: sha1:13f7704704fd7026b9127d8e82b229c2eed5570c
   internal/output/output_test.go:
-    last_write_checksum: sha1:bacc361dd459c538ad644813313e47cae16032ce
+    last_write_checksum: sha1:acaecfb6bc5066632cda572db32252484c9db88e
   internal/output/outputitems.go:
     last_write_checksum: sha1:d327eee8d9a395821fef201257e033bae50cda51
   internal/output/paginated.go:
