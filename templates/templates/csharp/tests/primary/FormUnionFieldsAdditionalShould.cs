@@ -121,6 +121,48 @@ public class FormUnionFieldsAdditionalShould
         Assert.Equal(4, form.Count);
     }
 
+    [Theory]
+    [InlineData("\"raw\"", "raw")]
+    [InlineData("7", "7")]
+    [InlineData("true", "true")]
+    public async Task SendPrimitiveUnknownValueOfOpenUnion(string rawJson, string expected)
+    {
+        var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
+
+        var res = await sdk.RequestBodies.RequestBodyPostFormUnionFieldsAsync(new FormUnionFields()
+        {
+            ScalarUnion = FormUnionStringOrInteger.CreateStr("abc"),
+            OpenUnion = FormUnionOpenStringOrInteger.CreateUnknown(JToken.Parse(rawJson)),
+        });
+
+        Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
+        var form = res.FormUnionEcho!.Form!;
+
+        Assert.Equal(expected, form["openUnion"]);
+        Assert.Equal(2, form.Count);
+    }
+
+    [Theory]
+    [InlineData("{\"label\":\"x\"}")]
+    [InlineData("[1,2]")]
+    [InlineData("null")]
+    public async Task OmitNonPrimitiveUnknownValueOfOpenUnion(string rawJson)
+    {
+        var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
+
+        var res = await sdk.RequestBodies.RequestBodyPostFormUnionFieldsAsync(new FormUnionFields()
+        {
+            ScalarUnion = FormUnionStringOrInteger.CreateStr("abc"),
+            OpenUnion = FormUnionOpenStringOrInteger.CreateUnknown(JToken.Parse(rawJson)),
+        });
+
+        Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
+        var form = res.FormUnionEcho!.Form!;
+
+        Assert.False(form.ContainsKey("openUnion"));
+        Assert.Equal(1, form.Count);
+    }
+
     [Fact]
     public async Task SendUnionPropertyOfWholeBodyUnionVariant()
     {

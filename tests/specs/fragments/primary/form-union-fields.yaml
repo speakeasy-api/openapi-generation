@@ -18,8 +18,9 @@ paths:
         Each field is encoded as if it had been declared with the type of its
         active variant: scalar, enum and array variants, an array of unions, a
         union whose array variant holds unions, a nullable union holding null,
-        an optional union left unset, and a union with an object variant
-        encoded as JSON.
+        an optional union left unset, a union with an object variant
+        encoded as JSON, and an open union holding an unknown value, encoded
+        as the raw value when it is a primitive and omitted otherwise.
       requestBody:
         required: true
         content:
@@ -115,7 +116,14 @@ components:
           $ref: "#/components/schemas/FormUnionStringOrInteger"
         jsonUnion:
           $ref: "#/components/schemas/FormUnionObjectOrString"
+        openUnion:
+          $ref: "#/components/schemas/FormUnionOpenStringOrInteger"
     FormUnionStringOrInteger:
+      oneOf:
+        - type: string
+        - type: integer
+    FormUnionOpenStringOrInteger:
+      x-speakeasy-unknown-values: allow
       oneOf:
         - type: string
         - type: integer

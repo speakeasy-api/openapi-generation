@@ -15,6 +15,7 @@ namespace Speakeasy.OpenAPI.Utils
     using System.Net.Http;
     using System.Reflection;
     using System.Text;
+    using Newtonsoft.Json.Linq;
 
     internal class RequestBodySerializer
     {
@@ -200,7 +201,7 @@ namespace Speakeasy.OpenAPI.Utils
                         form.Add(key, new List<string>());
                     }
 
-                    form[key].Add(Utilities.ValueToString(((IDictionary)request)[key]));
+                    form[key].Add(Utilities.ValueToString(UnwrapUnion(((IDictionary)request)[key])));
                 }
             }
             else if (Utilities.IsList(request))
@@ -568,10 +569,22 @@ namespace Speakeasy.OpenAPI.Utils
 
         private static object? GetUnionVariantValue(object union)
         {
+            object? unknownValue = null;
+
             foreach (var prop in union.GetType().GetProperties())
             {
                 var metadata = prop.GetCustomAttribute<SpeakeasyMetadata>()?.GetFormMetadata();
-                if (metadata == null || metadata.Name != "")
+                if (metadata == null)
+                {
+                    if (prop.PropertyType == typeof(JToken) && prop.GetValue(union) is JValue raw)
+                    {
+                        unknownValue = raw.Value;
+                    }
+
+                    continue;
+                }
+
+                if (metadata.Name != "")
                 {
                     continue;
                 }
@@ -583,7 +596,7 @@ namespace Speakeasy.OpenAPI.Utils
                 }
             }
 
-            return null;
+            return unknownValue;
         }
 
         private static (string fileName, byte[] content) ExtractFileProperties(PropertyInfo[] fileProps, object fileObject)
