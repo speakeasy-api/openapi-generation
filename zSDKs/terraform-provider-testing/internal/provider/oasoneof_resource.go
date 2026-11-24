@@ -40,46 +40,48 @@ type OASOneOfResource struct {
 
 // OASOneOfResourceModel describes the resource data model.
 type OASOneOfResourceModel struct {
-	ID                                           types.String                                                         `tfsdk:"id"`
-	OptionalDiscriminatorRequestAndResponse      *tfTypes.OASOneOfRequestOptionalDiscriminatorRequestAndResponse      `tfsdk:"optional_discriminator_request_and_response"`
-	OptionalDiscriminatorRequestOnly             *tfTypes.OptionalDiscriminatorRequestOnly                            `tfsdk:"optional_discriminator_request_only"`
-	OptionalDiscriminatorRequestRequiredResponse *tfTypes.OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse `tfsdk:"optional_discriminator_request_required_response"`
-	OptionalDiscriminatorResponseOnly            *tfTypes.OptionalDiscriminatorResponseOnly                           `tfsdk:"optional_discriminator_response_only"`
-	OptionalInlineObjectRequestAndResponse       *tfTypes.OASOneOfRequestOptionalInlineObjectRequestAndResponseUnion  `tfsdk:"optional_inline_object_request_and_response"`
-	OptionalInlineObjectRequestOnly              *tfTypes.OptionalInlineObjectRequestOnlyUnion                        `tfsdk:"optional_inline_object_request_only"`
-	OptionalInlineObjectResponseOnly             *tfTypes.OptionalInlineObjectResponseOnlyUnion                       `tfsdk:"optional_inline_object_response_only"`
-	OptionalInlinePrimitivesRequestAndResponse   *tfTypes.OASOneOfRequestOptionalInlinePrimitivesRequestAndResponse   `tfsdk:"optional_inline_primitives_request_and_response"`
-	OptionalInlinePrimitivesRequestOnly          *tfTypes.OptionalInlinePrimitivesRequestOnly                         `tfsdk:"optional_inline_primitives_request_only"`
-	OptionalInlinePrimitivesResponseOnly         *tfTypes.OptionalInlinePrimitivesResponseOnly                        `tfsdk:"optional_inline_primitives_response_only"`
-	OptionalInlineStringsRequestAndResponse      types.String                                                         `tfsdk:"optional_inline_strings_request_and_response"`
-	OptionalInlineStringsRequestOnly             types.String                                                         `tfsdk:"optional_inline_strings_request_only"`
-	OptionalInlineStringsResponseOnly            types.String                                                         `tfsdk:"optional_inline_strings_response_only"`
-	OptionalListDiscriminator                    []tfTypes.DiscriminatedObject                                        `tfsdk:"optional_list_discriminator"`
-	OptionalRefObjectRequestAndResponse          *tfTypes.OASOneOfRequestOptionalRefObjectRequestAndResponse          `tfsdk:"optional_ref_object_request_and_response"`
-	OptionalRefObjectRequestOnly                 *tfTypes.OptionalRefObjectRequestOnly                                `tfsdk:"optional_ref_object_request_only"`
-	OptionalRefObjectResponseOnly                *tfTypes.OptionalRefObjectResponseOnly                               `tfsdk:"optional_ref_object_response_only"`
-	OptionalRefPrimitivesRequestAndResponse      *tfTypes.OASOneOfRequestOptionalRefPrimitivesRequestAndResponse      `tfsdk:"optional_ref_primitives_request_and_response"`
-	OptionalRefPrimitivesRequestOnly             *tfTypes.OptionalRefPrimitivesRequestOnly                            `tfsdk:"optional_ref_primitives_request_only"`
-	OptionalRefPrimitivesResponseOnly            *tfTypes.OptionalRefPrimitivesResponseOnly                           `tfsdk:"optional_ref_primitives_response_only"`
-	OptionalSetDiscriminator                     []tfTypes.DiscriminatedObject                                        `tfsdk:"optional_set_discriminator"`
-	RequiredDiscriminatorRequestAndResponse      *tfTypes.OASOneOfRequestRequiredDiscriminatorRequestAndResponse      `tfsdk:"required_discriminator_request_and_response"`
-	RequiredDiscriminatorRequestOnly             *tfTypes.RequiredDiscriminatorRequestOnly                            `tfsdk:"required_discriminator_request_only"`
-	RequiredDiscriminatorRequestOptionalResponse *tfTypes.OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse `tfsdk:"required_discriminator_request_optional_response"`
-	RequiredDiscriminatorResponseOnly            *tfTypes.RequiredDiscriminatorResponseOnly                           `tfsdk:"required_discriminator_response_only"`
-	RequiredInlineObjectRequestAndResponse       *tfTypes.OASOneOfRequestRequiredInlineObjectRequestAndResponseUnion  `tfsdk:"required_inline_object_request_and_response"`
-	RequiredInlineObjectRequestOnly              *tfTypes.RequiredInlineObjectRequestOnlyUnion                        `tfsdk:"required_inline_object_request_only"`
-	RequiredInlineObjectResponseOnly             *tfTypes.RequiredInlineObjectResponseOnlyUnion                       `tfsdk:"required_inline_object_response_only"`
-	RequiredInlinePrimitivesRequestAndResponse   *tfTypes.OASOneOfRequestRequiredInlinePrimitivesRequestAndResponse   `tfsdk:"required_inline_primitives_request_and_response"`
-	RequiredInlinePrimitivesRequestOnly          *tfTypes.RequiredInlinePrimitivesRequestOnly                         `tfsdk:"required_inline_primitives_request_only"`
-	RequiredInlinePrimitivesResponseOnly         *tfTypes.RequiredInlinePrimitivesResponseOnly                        `tfsdk:"required_inline_primitives_response_only"`
-	RequiredListDiscriminator                    []tfTypes.DiscriminatedObject                                        `tfsdk:"required_list_discriminator"`
-	RequiredRefObjectRequestAndResponse          *tfTypes.OASOneOfRequestRequiredRefObjectRequestAndResponse          `tfsdk:"required_ref_object_request_and_response"`
-	RequiredRefObjectRequestOnly                 *tfTypes.RequiredRefObjectRequestOnly                                `tfsdk:"required_ref_object_request_only"`
-	RequiredRefObjectResponseOnly                *tfTypes.RequiredRefObjectResponseOnly                               `tfsdk:"required_ref_object_response_only"`
-	RequiredRefPrimitivesRequestAndResponse      *tfTypes.OASOneOfRequestRequiredRefPrimitivesRequestAndResponse      `tfsdk:"required_ref_primitives_request_and_response"`
-	RequiredRefPrimitivesRequestOnly             *tfTypes.RequiredRefPrimitivesRequestOnly                            `tfsdk:"required_ref_primitives_request_only"`
-	RequiredRefPrimitivesResponseOnly            *tfTypes.RequiredRefPrimitivesResponseOnly                           `tfsdk:"required_ref_primitives_response_only"`
-	RequiredSetDiscriminator                     []tfTypes.DiscriminatedObject                                        `tfsdk:"required_set_discriminator"`
+	ID                                                 types.String                                                               `tfsdk:"id"`
+	OptionalConstDiscriminatorRequestAndResponse       *tfTypes.OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse       `tfsdk:"optional_const_discriminator_request_and_response"`
+	OptionalConstDiscriminatorRequestAndResponseRepeat *tfTypes.OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat `tfsdk:"optional_const_discriminator_request_and_response_repeat"`
+	OptionalDiscriminatorRequestAndResponse            *tfTypes.OASOneOfRequestOptionalDiscriminatorRequestAndResponse            `tfsdk:"optional_discriminator_request_and_response"`
+	OptionalDiscriminatorRequestOnly                   *tfTypes.OptionalDiscriminatorRequestOnly                                  `tfsdk:"optional_discriminator_request_only"`
+	OptionalDiscriminatorRequestRequiredResponse       *tfTypes.OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse       `tfsdk:"optional_discriminator_request_required_response"`
+	OptionalDiscriminatorResponseOnly                  *tfTypes.OptionalDiscriminatorResponseOnly                                 `tfsdk:"optional_discriminator_response_only"`
+	OptionalInlineObjectRequestAndResponse             *tfTypes.OASOneOfRequestOptionalInlineObjectRequestAndResponseUnion        `tfsdk:"optional_inline_object_request_and_response"`
+	OptionalInlineObjectRequestOnly                    *tfTypes.OptionalInlineObjectRequestOnlyUnion                              `tfsdk:"optional_inline_object_request_only"`
+	OptionalInlineObjectResponseOnly                   *tfTypes.OptionalInlineObjectResponseOnlyUnion                             `tfsdk:"optional_inline_object_response_only"`
+	OptionalInlinePrimitivesRequestAndResponse         *tfTypes.OASOneOfRequestOptionalInlinePrimitivesRequestAndResponse         `tfsdk:"optional_inline_primitives_request_and_response"`
+	OptionalInlinePrimitivesRequestOnly                *tfTypes.OptionalInlinePrimitivesRequestOnly                               `tfsdk:"optional_inline_primitives_request_only"`
+	OptionalInlinePrimitivesResponseOnly               *tfTypes.OptionalInlinePrimitivesResponseOnly                              `tfsdk:"optional_inline_primitives_response_only"`
+	OptionalInlineStringsRequestAndResponse            types.String                                                               `tfsdk:"optional_inline_strings_request_and_response"`
+	OptionalInlineStringsRequestOnly                   types.String                                                               `tfsdk:"optional_inline_strings_request_only"`
+	OptionalInlineStringsResponseOnly                  types.String                                                               `tfsdk:"optional_inline_strings_response_only"`
+	OptionalListDiscriminator                          []tfTypes.DiscriminatedObject                                              `tfsdk:"optional_list_discriminator"`
+	OptionalRefObjectRequestAndResponse                *tfTypes.OASOneOfRequestOptionalRefObjectRequestAndResponse                `tfsdk:"optional_ref_object_request_and_response"`
+	OptionalRefObjectRequestOnly                       *tfTypes.OptionalRefObjectRequestOnly                                      `tfsdk:"optional_ref_object_request_only"`
+	OptionalRefObjectResponseOnly                      *tfTypes.OptionalRefObjectResponseOnly                                     `tfsdk:"optional_ref_object_response_only"`
+	OptionalRefPrimitivesRequestAndResponse            *tfTypes.OASOneOfRequestOptionalRefPrimitivesRequestAndResponse            `tfsdk:"optional_ref_primitives_request_and_response"`
+	OptionalRefPrimitivesRequestOnly                   *tfTypes.OptionalRefPrimitivesRequestOnly                                  `tfsdk:"optional_ref_primitives_request_only"`
+	OptionalRefPrimitivesResponseOnly                  *tfTypes.OptionalRefPrimitivesResponseOnly                                 `tfsdk:"optional_ref_primitives_response_only"`
+	OptionalSetDiscriminator                           []tfTypes.DiscriminatedObject                                              `tfsdk:"optional_set_discriminator"`
+	RequiredDiscriminatorRequestAndResponse            *tfTypes.OASOneOfRequestRequiredDiscriminatorRequestAndResponse            `tfsdk:"required_discriminator_request_and_response"`
+	RequiredDiscriminatorRequestOnly                   *tfTypes.RequiredDiscriminatorRequestOnly                                  `tfsdk:"required_discriminator_request_only"`
+	RequiredDiscriminatorRequestOptionalResponse       *tfTypes.OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse       `tfsdk:"required_discriminator_request_optional_response"`
+	RequiredDiscriminatorResponseOnly                  *tfTypes.RequiredDiscriminatorResponseOnly                                 `tfsdk:"required_discriminator_response_only"`
+	RequiredInlineObjectRequestAndResponse             *tfTypes.OASOneOfRequestRequiredInlineObjectRequestAndResponseUnion        `tfsdk:"required_inline_object_request_and_response"`
+	RequiredInlineObjectRequestOnly                    *tfTypes.RequiredInlineObjectRequestOnlyUnion                              `tfsdk:"required_inline_object_request_only"`
+	RequiredInlineObjectResponseOnly                   *tfTypes.RequiredInlineObjectResponseOnlyUnion                             `tfsdk:"required_inline_object_response_only"`
+	RequiredInlinePrimitivesRequestAndResponse         *tfTypes.OASOneOfRequestRequiredInlinePrimitivesRequestAndResponse         `tfsdk:"required_inline_primitives_request_and_response"`
+	RequiredInlinePrimitivesRequestOnly                *tfTypes.RequiredInlinePrimitivesRequestOnly                               `tfsdk:"required_inline_primitives_request_only"`
+	RequiredInlinePrimitivesResponseOnly               *tfTypes.RequiredInlinePrimitivesResponseOnly                              `tfsdk:"required_inline_primitives_response_only"`
+	RequiredListDiscriminator                          []tfTypes.DiscriminatedObject                                              `tfsdk:"required_list_discriminator"`
+	RequiredRefObjectRequestAndResponse                *tfTypes.OASOneOfRequestRequiredRefObjectRequestAndResponse                `tfsdk:"required_ref_object_request_and_response"`
+	RequiredRefObjectRequestOnly                       *tfTypes.RequiredRefObjectRequestOnly                                      `tfsdk:"required_ref_object_request_only"`
+	RequiredRefObjectResponseOnly                      *tfTypes.RequiredRefObjectResponseOnly                                     `tfsdk:"required_ref_object_response_only"`
+	RequiredRefPrimitivesRequestAndResponse            *tfTypes.OASOneOfRequestRequiredRefPrimitivesRequestAndResponse            `tfsdk:"required_ref_primitives_request_and_response"`
+	RequiredRefPrimitivesRequestOnly                   *tfTypes.RequiredRefPrimitivesRequestOnly                                  `tfsdk:"required_ref_primitives_request_only"`
+	RequiredRefPrimitivesResponseOnly                  *tfTypes.RequiredRefPrimitivesResponseOnly                                 `tfsdk:"required_ref_primitives_response_only"`
+	RequiredSetDiscriminator                           []tfTypes.DiscriminatedObject                                              `tfsdk:"required_set_discriminator"`
 }
 
 func (r *OASOneOfResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -92,6 +94,76 @@ func (r *OASOneOfResource) Schema(ctx context.Context, req resource.SchemaReques
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
+			},
+			"optional_const_discriminator_request_and_response": schema.SingleNestedAttribute{
+				Computed: true,
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"alpha": schema.SingleNestedAttribute{
+						Optional: true,
+						Attributes: map[string]schema.Attribute{
+							"alpha_value": schema.StringAttribute{
+								Computed: true,
+								Optional: true,
+							},
+						},
+						Validators: []validator.Object{
+							objectvalidator.ConflictsWith(path.Expressions{
+								path.MatchRelative().AtParent().AtName("beta"),
+							}...),
+						},
+					},
+					"beta": schema.SingleNestedAttribute{
+						Optional: true,
+						Attributes: map[string]schema.Attribute{
+							"beta_value": schema.Float64Attribute{
+								Computed: true,
+								Optional: true,
+							},
+						},
+						Validators: []validator.Object{
+							objectvalidator.ConflictsWith(path.Expressions{
+								path.MatchRelative().AtParent().AtName("alpha"),
+							}...),
+						},
+					},
+				},
+				Description: `Discriminated oneOf whose members declare the discriminator property as a const. The same member schemas are referenced again by the next property, so Terraform schema assembly reaches each shared member type twice within one entity.`,
+			},
+			"optional_const_discriminator_request_and_response_repeat": schema.SingleNestedAttribute{
+				Computed: true,
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"alpha": schema.SingleNestedAttribute{
+						Optional: true,
+						Attributes: map[string]schema.Attribute{
+							"alpha_value": schema.StringAttribute{
+								Computed: true,
+								Optional: true,
+							},
+						},
+						Validators: []validator.Object{
+							objectvalidator.ConflictsWith(path.Expressions{
+								path.MatchRelative().AtParent().AtName("beta"),
+							}...),
+						},
+					},
+					"beta": schema.SingleNestedAttribute{
+						Optional: true,
+						Attributes: map[string]schema.Attribute{
+							"beta_value": schema.Float64Attribute{
+								Computed: true,
+								Optional: true,
+							},
+						},
+						Validators: []validator.Object{
+							objectvalidator.ConflictsWith(path.Expressions{
+								path.MatchRelative().AtParent().AtName("alpha"),
+							}...),
+						},
+					},
+				},
+				Description: `Second reference to the const-discriminated members above; generation must keep the const discriminator property on the shared member models.`,
 			},
 			"optional_discriminator_request_and_response": schema.SingleNestedAttribute{
 				Computed: true,
@@ -641,6 +713,7 @@ func (r *OASOneOfResource) Schema(ctx context.Context, req resource.SchemaReques
 						Optional: true,
 						Attributes: map[string]schema.Attribute{
 							"object_number": schema.Float64Attribute{
+								Computed: true,
 								Optional: true,
 							},
 						},
@@ -654,6 +727,7 @@ func (r *OASOneOfResource) Schema(ctx context.Context, req resource.SchemaReques
 						Optional: true,
 						Attributes: map[string]schema.Attribute{
 							"object_string": schema.StringAttribute{
+								Computed: true,
 								Optional: true,
 							},
 						},
