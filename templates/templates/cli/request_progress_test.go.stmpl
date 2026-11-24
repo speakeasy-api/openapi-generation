@@ -5,6 +5,7 @@ package tests
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"os"
 	"strings"
@@ -54,6 +55,29 @@ func newProgressTestCommand(t *testing.T, ctx context.Context) (*cobra.Command, 
 	cmd.SetContext(ctx)
 	_ = cmd.InheritedFlags()
 	return cmd, fd, slave
+}
+
+func TestStructuredErrorColorFollowsStderrNotStdout(t *testing.T) {
+	for _, key := range []string{"NO_COLOR", "FORCE_COLOR"} {
+		if value, ok := os.LookupEnv(key); ok {
+			require.NoError(t, os.Unsetenv(key))
+			t.Cleanup(func() { _ = os.Setenv(key, value) })
+		}
+	}
+	cmd, _, terminal := newProgressTestCommand(t, context.Background())
+	cmd.Root().PersistentFlags().String("color", "auto", "")
+	require.NoError(t, cmd.Root().PersistentFlags().Set("output-format", "json"))
+	_ = cmd.InheritedFlags()
+	stdout := os.Stdout
+	os.Stdout = terminal
+	t.Cleanup(func() { os.Stdout = stdout })
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+
+	_ = output.Error(cmd, errors.New("request failed"))
+
+	require.Contains(t, stderr.String(), "request failed")
+	require.NotContains(t, stderr.String(), "\x1b[", "stderr is not a terminal, so its JSON must not be colorized")
 }
 
 func readProgressOutput(fd int, wait time.Duration) string {
