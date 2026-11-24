@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.968.14] - 2026-11-24
+### :bug: Bug Fixes
+- [`8e1506b`](https://github.com/speakeasy-api/openapi-generation/commit/8e1506bf3c96d89a7c0c285af954a3c1300f6273) - **cli**: mask sensitive values in API error output ([#232](https://github.com/speakeasy-api/openapi-generation/pull/232)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.968.13] - 2026-11-24
 ### :bug: Bug Fixes
 - [`e91bcf8`](https://github.com/speakeasy-api/openapi-generation/commit/e91bcf8711f3edff901b960207d9df34ae2f07ec) - **csharp**: send union-typed fields in form-urlencoded and multipart request bodies ([#240](https://github.com/speakeasy-api/openapi-generation/pull/240)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -21169,3 +21174,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.968.11]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.10...v2.968.11
 [v2.968.12]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.11...v2.968.12
 [v2.968.13]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.12...v2.968.13
+[v2.968.14]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.13...v2.968.14
