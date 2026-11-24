@@ -1,0 +1,107 @@
+{{- if eq .Global.AST.MainSDK.TestGroup "tertiary" -}}
+#nullable enable
+using No_Security.API;
+using No_Security.API.Models.Errors;
+using No_Security.API.Models.Operations;
+using No_Security.API.Models.Shared;
+using No_Security.API.Utils;
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading.Tasks;
+
+// Program.cs is written by the usage test, so these checks run from a module initializer.
+internal static class NativeLenientChecks
+{
+    [ModuleInitializer]
+    internal static void Run() => RunAsync().GetAwaiter().GetResult();
+
+    private static async Task RunAsync()
+    {
+        var sdk = new SDK();
+
+        var wrongType = await sdk.Errors.GetMalformedErrorResponseAsync(Shape.WrongType, 200);
+        Check(wrongType.Object?.Count == 0, "wrong-typed field of a success body is skipped");
+
+        var missingRequired = await sdk.Errors.GetMalformedErrorResponseAsync(Shape.MissingRequired, 200);
+        Check(missingRequired.Object?.Count == 0, "missing required field of a success body is defaulted");
+
+        try
+        {
+            await sdk.Errors.GetMalformedErrorResponseAsync(Shape.WrongTypeError, 400);
+            Check(false, "wrong-typed error body throws its typed error");
+        }
+        catch (Error error)
+        {
+            Check(
+                error.Payload.Message == "degraded error" && error.Payload.Code == null && error.DeserializationException != null,
+                "wrong-typed field of an error body is skipped"
+            );
+        }
+
+        try
+        {
+            await sdk.Errors.GetMalformedErrorUnionResponseAsync();
+            Check(false, "invalid error union variant throws its typed error");
+        }
+        catch (TaggedError1 error)
+        {
+            Check(
+                No_Security.API.Models.Errors.Tag.Tag1.Equals(error.Payload.Tag) && error.Payload.Error == null && error.DeserializationException != null,
+                "invalid payload of a discriminated error variant keeps the variant"
+            );
+        }
+
+        var stream = await sdk.Eventstreams.MalformedStreamAsync();
+        var contents = new List<string?>();
+        await foreach (var e in stream.JsonEvent!)
+        {
+            contents.Add(e.Data.Content);
+        }
+        Check(
+            contents.Count == 2 && contents[0] == "Hello" && contents[1] == null,
+            "event data missing a required field is constructed"
+        );
+
+        var list = await new SDK(client: new FixedResponseClient("[{\"str\":\"a\"},5]"))
+            .RequestBodies.RequestBodyPostApplicationJsonArrayAsync(new List<SimpleObject>());
+        Check(list.Res?.Count == 1 && list.Res[0].Str == "a", "wrong-typed list element is dropped");
+
+        var numbers = await new SDK(client: new FixedResponseClient("{\"json\":{\"decimalStrArray\":[\"1.5\",{\"x\":1},\"2.5\"]}}"))
+            .RequestBodies.RequestBodyPostJsonDataTypesComplexNumberArraysAsync(new ComplexNumberArrays());
+        Check(
+            numbers.Res?.Json.DecimalStrArray is [1.5m, 2.5m],
+            "wrong-typed element of a converter-read list is dropped"
+        );
+    }
+
+    private sealed class FixedResponseClient : ISDKHttpClient
+    {
+        private readonly string _body;
+
+        internal FixedResponseClient(string body) => _body = body;
+
+        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request) =>
+            Task.FromResult(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(_body, Encoding.UTF8, "application/json"),
+                    RequestMessage = request,
+                }
+            );
+
+        public Task<HttpRequestMessage> CloneAsync(HttpRequestMessage request) => Task.FromResult(request);
+    }
+
+    private static void Check(bool condition, string description)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException("Native lenient check failed: " + description);
+        }
+    }
+}
+{{- end}}

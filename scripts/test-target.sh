@@ -153,6 +153,11 @@ function test_target() {
         test_usage_file "${target}" quaternary
     fi
 
+    # csharpv2 tertiary validates responses leniently: run its native checks
+    if [[ "${target}" == "csharpv2" && " ${variants[@]} " =~ " tertiary " && "${skip_primary_usage}" != "true" ]]; then
+        test_usage_file "${target}" tertiary
+    fi
+
     # Run standalone usage tests if not skipped
     if [[ " ${variants[@]} " =~ " review " ]]; then
         if [[ "${skip_standalone_usage}" == "true" ]]; then

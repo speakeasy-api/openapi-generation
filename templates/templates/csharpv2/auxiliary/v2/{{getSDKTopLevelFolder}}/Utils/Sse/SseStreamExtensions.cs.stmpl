@@ -119,31 +119,67 @@ namespace {{getScopeNamespace "utils"}}.Sse
                 value = DeserializeEvent(ev, typeInfo, dataIsPlainText: false);
                 return value != null;
             }
-            catch (JsonException)
+            catch ({{if schemaValidationLenient}}Exception{{else}}JsonException{{end}})
             {
                 try
                 {
                     value = DeserializeEvent(ev, typeInfo, dataIsPlainText: true);
                     return value != null;
                 }
-                catch (JsonException ex)
+                catch ({{if schemaValidationLenient}}Exception{{else}}JsonException ex{{end}})
                 {
                     if (typeof(T) == typeof(string))
                     {
                         value = (T)(object)(ev.Data ?? string.Empty);
                         return true;
                     }
+{{- if schemaValidationLenient}}
+                    return TryConstructEvent(ev, typeInfo, out value);
+{{- else}}
                     throw new InvalidOperationException(
                         $"Failed to deserialize SSE event (event={ev.Event ?? "unknown"}) " +
                         $"as {typeof(T).Name}. Data: {Truncate(ev.Data, 200)}",
                         ex);
+{{- end}}
                 }
             }
         }
+{{- if schemaValidationLenient}}
+
+        private static bool TryConstructEvent<T>(SseEvent ev, JsonTypeInfo<T> typeInfo, out T? value)
+        {
+            value = default;
+            try
+            {
+                using var ms = WriteEvent(ev, dataIsPlainText: false);
+                using var document = JsonDocument.Parse(ms);
+                if (!global::{{getModelNamespace ""}}.ResponseBodyDeserializer.TryConstructUnvalidated(document.RootElement, typeInfo, out var constructed))
+                {
+                    return false;
+                }
+                value = constructed;
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+{{- end}}
 
         private static T? DeserializeEvent<T>(SseEvent ev, JsonTypeInfo<T> typeInfo, bool dataIsPlainText)
         {
+{{- if schemaValidationLenient}}
+            using var ms = WriteEvent(ev, dataIsPlainText);
+            return JsonSerializer.Deserialize(ms, typeInfo);
+        }
+
+        private static MemoryStream WriteEvent(SseEvent ev, bool dataIsPlainText)
+        {
+            var ms = new MemoryStream();
+{{- else}}
             using var ms = new MemoryStream();
+{{- end}}
             using (var writer = new Utf8JsonWriter(ms))
             {
                 writer.WriteStartObject();
@@ -178,7 +214,11 @@ namespace {{getScopeNamespace "utils"}}.Sse
             }
 
             ms.Position = 0;
+{{- if schemaValidationLenient}}
+            return ms;
+{{- else}}
             return JsonSerializer.Deserialize(ms, typeInfo);
+{{- end}}
         }
 
         private static string Truncate(string? value, int maxLength)

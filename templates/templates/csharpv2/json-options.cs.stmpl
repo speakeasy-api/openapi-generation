@@ -23,8 +23,11 @@ internal static class JsonOptions
     // in SerializerOptions.Converters. WithAddedModifier walks each TypeInfo
     // returned by the chain and swaps the per-property CustomConverter for
     // `object`-typed slots, restoring native CLR type round-trips under AOT.
-    private static readonly IJsonTypeInfoResolver _resolverChain =
+    private static readonly IJsonTypeInfoResolver _baseResolverChain =
         JsonTypeInfoResolver.Combine(
+{{- if .Local.AdditionalPropertiesTypes}}
+            global::{{getScopeNamespace "utils" true}}.AdditionalProperties.Resolver,
+{{- end}}
             {{.Local.Resolvers}}
         ).WithAddedModifier(static typeInfo =>
         {
@@ -35,7 +38,10 @@ internal static class JsonOptions
                     prop.CustomConverter = _objectConverter;
                 }
             }
-        }).WithAddedModifier(RejectExplicitNull);
+        }){{if .Local.AdditionalPropertiesTypes}}.WithAddedModifier(InstallAdditionalProperties){{end}};
+
+    private static readonly IJsonTypeInfoResolver _resolverChain =
+        _baseResolverChain.WithAddedModifier(RejectExplicitNull);
 
     internal static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
     {
@@ -48,6 +54,24 @@ internal static class JsonOptions
 {{- end}}
         }
     };
+{{- if schemaValidationLenient}}
+
+    internal static readonly JsonSerializerOptions LenientSerializerOptions =
+        global::{{getModelNamespace ""}}.ResponseBodyDeserializer.RegisterLenientOptions(
+            SerializerOptions,
+            new JsonSerializerOptions(SerializerOptions)
+            {
+                TypeInfoResolver = _baseResolverChain.WithAddedModifier(ClearRequired).WithAddedModifier(IgnoreExplicitNull),
+            });
+
+    private static void ClearRequired(JsonTypeInfo typeInfo)
+    {
+        foreach (var prop in typeInfo.Properties)
+        {
+            prop.IsRequired = false;
+        }
+    }
+{{- end}}
 
     private static readonly Dictionary<Type, (string JsonName, bool Required)[]> _nullCheckedFields =
         new Dictionary<Type, (string JsonName, bool Required)[]>
@@ -65,13 +89,38 @@ internal static class JsonOptions
 {{- end}}
         };
 
+{{- if .Local.AdditionalPropertiesTypes}}
+
+    private static readonly Dictionary<Type, Action<JsonTypeInfo>> _additionalProperties =
+        new Dictionary<Type, Action<JsonTypeInfo>>
+        {
+{{- range .Local.AdditionalPropertiesTypes}}
+            [typeof({{.Type}})] = static typeInfo => global::{{getScopeNamespace "utils" true}}.AdditionalProperties.Install(typeInfo, "{{.Member}}", static ({{.Type}} model) => model.{{.Member}}, static (model, value) => model.{{.Member}} = value{{if .ValueConverterFactory}}, {{.ValueConverterFactory}}{{end}}),
+{{- end}}
+        };
+
+    private static void InstallAdditionalProperties(JsonTypeInfo typeInfo)
+    {
+        if (_additionalProperties.TryGetValue(typeInfo.Type, out var install))
+        {
+            install(typeInfo);
+        }
+    }
+{{- end}}
+
     private static JsonElement ConstValue(string json)
     {
         using var document = JsonDocument.Parse(json);
         return document.RootElement.Clone();
     }
 
-    private static void RejectExplicitNull(JsonTypeInfo typeInfo)
+    private static void RejectExplicitNull(JsonTypeInfo typeInfo) => GuardExplicitNull(typeInfo, reject: true);
+{{- if schemaValidationLenient}}
+
+    private static void IgnoreExplicitNull(JsonTypeInfo typeInfo) => GuardExplicitNull(typeInfo, reject: false);
+{{- end}}
+
+    private static void GuardExplicitNull(JsonTypeInfo typeInfo, bool reject)
     {
         if (!_nullCheckedFields.TryGetValue(typeInfo.Type, out var fields)) return;
         foreach (var prop in typeInfo.Properties)
@@ -86,7 +135,11 @@ internal static class JsonOptions
                     : $"Required property '{jsonName}' expects a non-null value.";
                 prop.Set = (obj, value) =>
                 {
-                    if (IsJsonNull(value)) throw new JsonException(message);
+                    if (IsJsonNull(value))
+                    {
+                        if (reject) throw new JsonException(message);
+                        return;
+                    }
                     set(obj, value);
                 };
                 break;

@@ -1,11 +1,26 @@
 {{- /* v1-only: v2 Compat lives in csharpv2/tests/Common/Compat.cs.stmpl. */ -}}
 {{- if not isCsharpV2 -}}
 #nullable enable
+using System.IO;
+using System.Text;
+using No_Security.API.Utils;
 using No_Security.API.Utils.Sse;
 
 // v1 counterpart of templates/csharpv2/tests/Common/Compat.cs.stmpl for the tertiary group.
 public static class Compat
 {
+    public const string SerializerNamespace = "Newtonsoft.Json";
+
+    public static T DeserializeJson<T>(string json) => ResponseBodyDeserializer.DeserializeNotNull<T>(json);
+
+    public static T? ConstructUnvalidated<T>(string json) => ResponseBodyDeserializer.ConstructUnvalidated<T>(json);
+
+    public static bool TryConstructUnvalidated<T>(string json, out T value) =>
+        ResponseBodyDeserializer.TryConstructUnvalidated<T>(json, out value);
+
     public static EventStream<T>? Events<T>(EventStream<T>? stream) => stream;
+
+    public static EventStream<T> EventsFromSse<T>(string sse) =>
+        new EventStream<T>(new MemoryStream(Encoding.UTF8.GetBytes(sse)));
 }
 {{ end -}}

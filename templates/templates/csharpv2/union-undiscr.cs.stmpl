@@ -76,6 +76,15 @@
       {{- end}}
 
         public {{$unionType}} {{$typeFieldName}} { get; set; }
+{{- if and schemaValidationLenient $isUnionOfErrors}}
+
+        /// <summary>
+        ///  The schema validation error for this variant's payload, or null if the
+        ///  payload matched the expected schema.
+        /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        public System.Exception? ValidationFailure { get; set; }
+{{- end}}
 {{- if $unknownMember}}
   {{- templateString "union-open.cs.stmpl" (dict "Block" "members" "Open" $open)}}
 {{- end}}
@@ -122,6 +131,9 @@
 
         public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
         {
+{{- if schemaValidationLenient}}
+            options = global::{{getModelNamespace ""}}.ResponseBodyDeserializer.StrictOptionsFor(options);
+{{- end}}
   {{- if and $unknownMember (not $nullable)}}
             global::{{getModelNamespace ""}}.UnionScoring.RegisterNullAsUnknown(typeof({{$className}}));
   {{- end}}

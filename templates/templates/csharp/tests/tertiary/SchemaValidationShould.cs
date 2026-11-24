@@ -1,17 +1,11 @@
-{{- /* v1-only: until v2 supports schemaValidation: lenient. */ -}}
-{{- if not isCsharpV2 -}}
 #nullable enable
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using No_Security.API;
 using No_Security.API.Models.Errors;
 using No_Security.API.Models.Operations;
 using No_Security.API.Models.Shared;
-using No_Security.API.Utils;
-using No_Security.API.Utils.Sse;
 
 // Round-trip tests for `schemaValidation: lenient`: schema mismatches degrade
 // gracefully instead of raising ResponseValidationException. The strict
@@ -73,7 +67,7 @@ public class SchemaValidationShould
         Assert.NotEmpty(ex.Body);
         // The underlying deserialization failure is preserved as InnerException.
         Assert.NotNull(ex.InnerException);
-        Assert.StartsWith("Newtonsoft.Json", ex.InnerException!.GetType().FullName!);
+        Assert.StartsWith(Compat.SerializerNamespace, ex.InnerException!.GetType().FullName!);
     }
 
     [Theory]
@@ -116,7 +110,7 @@ public class SchemaValidationShould
         Assert.Equal(rawBody, ex.DeserializationException.Body);
         Assert.NotNull(ex.DeserializationException.InnerException);
         Assert.StartsWith(
-            "Newtonsoft.Json",
+            Compat.SerializerNamespace,
             ex.DeserializationException.InnerException!.GetType().FullName!
         );
     }
@@ -145,7 +139,7 @@ public class SchemaValidationShould
         var res = await sdk.Eventstreams.MalformedStreamAsync();
 
         var events = new List<JsonEvent>();
-        using (var stream = res.JsonEvent)
+        using (var stream = Compat.Events(res.JsonEvent))
         {
             Assert.NotNull(stream);
             JsonEvent? e;
@@ -171,8 +165,7 @@ public class SchemaValidationShould
         // default-initialized frame indistinguishable from a genuine empty
         // object. Lenient skips it and the stream continues to the next frame.
         var sse = "data: not json at all\n\ndata: {\"content\":\"after\"}\n\n";
-        using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(sse)))
-        using (var events = new EventStream<JsonEvent>(stream))
+        using (var events = Compat.EventsFromSse<JsonEvent>(sse))
         {
             var e = await events.Next();
 
@@ -202,7 +195,7 @@ public class SchemaValidationShould
         Assert.NotNull(ex.DeserializationException);
         Assert.NotNull(ex.DeserializationException!.InnerException);
         Assert.StartsWith(
-            "Newtonsoft.Json",
+            Compat.SerializerNamespace,
             ex.DeserializationException.InnerException!.GetType().FullName!
         );
     }
@@ -214,7 +207,7 @@ public class SchemaValidationShould
         // mapped variant of this (non-error) response union instead of
         // degrading to the open-union Unknown fallback. Unlike error unions,
         // no ValidationFailure is recorded on the salvaged variant.
-        var result = ResponseBodyDeserializer.DeserializeNotNull<ConstDiscriminatedOneOf>(
+        var result = Compat.DeserializeJson<ConstDiscriminatedOneOf>(
             "{\"tag\":\"tag1\"}"
         );
 
@@ -227,7 +220,7 @@ public class SchemaValidationShould
     [Fact]
     public void DegradeToUnknownOnlyForUnknownDiscriminator()
     {
-        var result = ResponseBodyDeserializer.DeserializeNotNull<ConstDiscriminatedOneOf>(
+        var result = Compat.DeserializeJson<ConstDiscriminatedOneOf>(
             "{\"tag\":\"tag99\"}"
         );
 
@@ -243,7 +236,7 @@ public class SchemaValidationShould
         // carries error as an object, failing strict validation. Lenient keeps
         // the typed variant and records the failure on the union's
         // ValidationFailure so the error-union throw can surface it.
-        var result = ResponseBodyDeserializer.DeserializeNotNull<ErrorUnionDiscriminatedPostResponseBody>(
+        var result = Compat.DeserializeJson<ErrorUnionDiscriminatedPostResponseBody>(
             "{\"tag\":\"tag1\",\"error\":{\"message\":\"boom\"}}"
         );
 
@@ -252,7 +245,7 @@ public class SchemaValidationShould
         Assert.NotNull(result.TaggedError1Payload);
         Assert.NotNull(result.ValidationFailure);
         Assert.StartsWith(
-            "Newtonsoft.Json",
+            Compat.SerializerNamespace,
             result.ValidationFailure!.GetType().FullName!
         );
     }
@@ -283,7 +276,7 @@ public class SchemaValidationShould
         Assert.NotNull(ex.DeserializationException);
         Assert.NotNull(ex.DeserializationException!.InnerException);
         Assert.StartsWith(
-            "Newtonsoft.Json",
+            Compat.SerializerNamespace,
             ex.DeserializationException.InnerException!.GetType().FullName!
         );
     }
@@ -294,7 +287,7 @@ public class SchemaValidationShould
         // A nested scalar (`error.message`, declared string) carries an object.
         // Lenient must recurse: the outer object and sibling fields are kept and
         // only the deeply-nested wrong-typed field is skipped, not the whole body.
-        var obj = ResponseBodyDeserializer.ConstructUnvalidated<TaggedError2Payload>(
+        var obj = Compat.ConstructUnvalidated<TaggedError2Payload>(
             "{\"tag\":\"tag2\",\"error\":{\"message\":{\"deeply\":\"nested\"}}}"
         );
 
@@ -310,7 +303,7 @@ public class SchemaValidationShould
         // Inverse mismatch: `error` is declared an object but the body carries a
         // scalar. Lenient skips the field (leaving its default) and keeps the
         // sibling `tag`, rather than failing the whole construct.
-        var obj = ResponseBodyDeserializer.ConstructUnvalidated<TaggedError2Payload>(
+        var obj = Compat.ConstructUnvalidated<TaggedError2Payload>(
             "{\"tag\":\"tag2\",\"error\":\"boom\"}"
         );
 
@@ -325,7 +318,7 @@ public class SchemaValidationShould
         // A wrong-typed known field (`normalField`, declared string) forces the
         // lenient path; the sibling additionalProperties map must survive the
         // best-effort construct rather than being lost along with the bad field.
-        var obj = ResponseBodyDeserializer.ConstructUnvalidated<ObjWithStringAdditionalProperties>(
+        var obj = Compat.ConstructUnvalidated<ObjWithStringAdditionalProperties>(
             "{\"normalField\":{\"unexpected\":true},\"extra\":\"kept\"}"
         );
 
@@ -340,7 +333,7 @@ public class SchemaValidationShould
     {
         // Additional property values are converted to the declared item type (string);
         // a wrong-typed value is dropped while sibling extras and declared fields survive.
-        var obj = ResponseBodyDeserializer.ConstructUnvalidated<ObjWithStringAdditionalProperties>(
+        var obj = Compat.ConstructUnvalidated<ObjWithStringAdditionalProperties>(
             "{\"bad\":{\"unexpected\":true},\"extra\":\"kept\",\"normalField\":\"string\"}"
         );
 
@@ -358,7 +351,7 @@ public class SchemaValidationShould
     {
         // Phase-1 guard: a body that is not complete, parseable JSON has no
         // best-effort representation and must not yield a partial object.
-        var ok = ResponseBodyDeserializer.TryConstructUnvalidated<ErrorPayload>(body, out var value);
+        var ok = Compat.TryConstructUnvalidated<ErrorPayload>(body, out var value);
 
         Assert.False(ok);
         Assert.Null(value);
@@ -375,10 +368,140 @@ public class SchemaValidationShould
         // Phase-2 guard: parseable JSON whose root cannot map to the target
         // object (null, scalar, array) yields no instance either; the caller
         // degrades to the default error exactly as for unparseable bodies.
-        var ok = ResponseBodyDeserializer.TryConstructUnvalidated<ErrorPayload>(body, out var value);
+        var ok = Compat.TryConstructUnvalidated<ErrorPayload>(body, out var value);
 
         Assert.False(ok);
         Assert.Null(value);
     }
+
+    [Fact]
+    public void DropWrongTypedListElementDuringLenientConstruct()
+    {
+        var obj = Compat.ConstructUnvalidated<PaginationCursorDeepNestedOutputsResultData>(
+            "{\"items\":[\"a\",{\"x\":1},\"c\"]}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(new List<string> { "a", "c" }, obj!.Items);
+    }
+
+    [Fact]
+    public void KeepNullElementOfNullableListDuringLenientConstruct()
+    {
+        var obj = Compat.ConstructUnvalidated<SmartUnionArrayWithNullableItems>(
+            "{\"items\":[\"a\",null,{\"x\":1},\"c\"]}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(new List<string?> { "a", null, "c" }, obj!.Items);
+    }
+
+    [Fact]
+    public void KeepListObjectElementWithWrongTypedFieldDuringLenientConstruct()
+    {
+        // The object element keeps its valid fields, including one read by a
+        // custom converter; the scalar element is dropped.
+        var obj = Compat.ConstructUnvalidated<DeepObjectSmaller>(
+            "{\"arr\":[{\"int\":\"not a number\",\"bigintStr\":\"123\",\"str\":\"kept\"},5]}"
+        );
+
+        Assert.NotNull(obj);
+        var element = Assert.Single(obj!.Arr);
+        Assert.Equal(0, element.Int);
+        Assert.Equal(new System.Numerics.BigInteger(123), element.BigintStr);
+        Assert.Equal("kept", element.Str);
+    }
+
+    [Fact]
+    public void DropWrongTypedMapEntryDuringLenientConstruct()
+    {
+        var obj = Compat.ConstructUnvalidated<DeepObjectSmaller>(
+            "{\"map\":{\"k1\":{\"str\":\"a\"},\"k2\":5}}"
+        );
+
+        Assert.NotNull(obj);
+        var entry = Assert.Single(obj!.Map);
+        Assert.Equal("k1", entry.Key);
+        Assert.Equal("a", entry.Value.Str);
+    }
+
+    [Fact]
+    public void KeepPresenceAwareObjectWithWrongTypedFieldDuringLenientConstruct()
+    {
+        var obj = Compat.ConstructUnvalidated<ObjectWithOptionalNullableFields>(
+            "{\"optNullObj\":{\"innerReqStr\":{\"x\":1},\"innerOptNullStr\":\"keep\"},\"optNullStr\":\"s\"}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.True(obj!.OptNullObj.IsSet);
+        Assert.Equal("keep", obj.OptNullObj.Value!.InnerOptNullStr.Value);
+        Assert.Null(obj.OptNullObj.Value.InnerReqStr);
+        Assert.Equal("s", obj.OptNullStr.Value);
+    }
+
+    [Fact]
+    public void DropWrongTypedElementOfPresenceAwareCollectionsDuringLenientConstruct()
+    {
+        var obj = Compat.ConstructUnvalidated<ObjectWithOptionalNullableFields>(
+            "{\"optNullArr\":[\"a\",{\"x\":1},\"c\"],\"optNullMap\":{\"a\":\"x\",\"b\":{}}}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(new List<string> { "a", "c" }, obj!.OptNullArr.Value);
+        var entry = Assert.Single(obj.OptNullMap.Value!);
+        Assert.Equal("a", entry.Key);
+        Assert.Equal("x", entry.Value);
+    }
+
+    [Fact]
+    public void DropWrongTypedElementOfStringEncodedListDuringLenientConstruct()
+    {
+        var obj = Compat.ConstructUnvalidated<ComplexNumberArrays>(
+            "{\"decimalStrArray\":[\"1.5\",{\"x\":1},\"2.5\"]}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(new List<decimal> { 1.5m, 2.5m }, obj!.DecimalStrArray);
+    }
+
+    [Fact]
+    public void KeepDefaultForExplicitNullOnNonNullableFieldDuringLenientConstruct()
+    {
+        var obj = Compat.ConstructUnvalidated<DeepObjectSmaller>("{\"obj\":null,\"str\":\"a\"}");
+
+        Assert.NotNull(obj);
+        Assert.NotNull(obj!.Obj);
+        Assert.Equal("a", obj.Str);
+    }
+
+    [Fact]
+    public async Task KeepDefaultForExplicitNullFrameDataWithoutAbortingStream()
+    {
+        var sse = "data: null\n\ndata: {\"content\":\"after\"}\n\n";
+        using (var events = Compat.EventsFromSse<JsonEvent>(sse))
+        {
+            var first = await events.Next();
+            var second = await events.Next();
+
+            Assert.NotNull(first);
+            Assert.NotNull(first!.Data);
+            Assert.Null(first.Data.Content);
+            Assert.Equal("after", second!.Data.Content);
+        }
+    }
+
+    [Fact]
+    public void KeepUnionVariantWhenSiblingFieldIsMissingDuringLenientConstruct()
+    {
+        // A missing required sibling must not change which variant a valid union value resolves to.
+        var strict = Compat.DeserializeJson<DifferentDataSchemas>(
+            "{\"data\":{\"content\":null,\"id\":1,\"url\":\"u\"},\"event\":\"url\",\"id\":\"1\"}"
+        );
+        var lenient = Compat.ConstructUnvalidated<DifferentDataSchemas>(
+            "{\"data\":{\"content\":null,\"id\":1,\"url\":\"u\"}}"
+        );
+
+        Assert.NotNull(lenient);
+        Assert.Equal(strict.Data.Type, lenient!.Data.Type);
+    }
 }
-{{ end -}}

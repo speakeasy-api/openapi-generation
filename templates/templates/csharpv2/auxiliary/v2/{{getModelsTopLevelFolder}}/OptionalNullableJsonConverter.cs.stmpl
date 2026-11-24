@@ -23,6 +23,24 @@ namespace {{getModelNamespace ""}}
             }
 
             var info = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+{{- if schemaValidationLenient}}
+            if (ResponseBodyDeserializer.IsLenient(options))
+            {
+                using var document = JsonDocument.ParseValue(ref reader);
+                try
+                {
+                    return OptionalNullable<T>.Set(JsonSerializer.Deserialize(document.RootElement, info));
+                }
+                catch (global::System.Exception)
+                {
+                    if (!ResponseBodyDeserializer.TryConstructUnvalidated(document.RootElement, info, out var constructed))
+                    {
+                        throw;
+                    }
+                    return OptionalNullable<T>.Set(constructed);
+                }
+            }
+{{- end}}
             var value = JsonSerializer.Deserialize(ref reader, info);
             return OptionalNullable<T>.Set(value);
         }
@@ -62,6 +80,25 @@ namespace {{getModelNamespace ""}}
             {
                 return OptionalNullable<T>.Set(default);
             }
+{{- if schemaValidationLenient}}
+
+            if (ResponseBodyDeserializer.IsLenient(options))
+            {
+                using var document = JsonDocument.ParseValue(ref reader);
+                try
+                {
+                    return OptionalNullable<T>.Set(ReadInner(document.RootElement.GetRawText(), options));
+                }
+                catch (global::System.Exception)
+                {
+                    if (!ResponseBodyDeserializer.TryReadElementwise(document.RootElement, json => ReadInner(json, options), out var constructed))
+                    {
+                        throw;
+                    }
+                    return OptionalNullable<T>.Set((T)constructed!);
+                }
+            }
+{{- end}}
 
             return OptionalNullable<T>.Set(Inner(options).Read(ref reader, typeof(T), options));
         }
@@ -83,5 +120,14 @@ namespace {{getModelNamespace ""}}
 
         private JsonConverter<T> Inner(JsonSerializerOptions options) =>
             _inner ??= (JsonConverter<T>)new TFactory().CreateConverter(typeof(T), options)!;
+{{- if schemaValidationLenient}}
+
+        private T? ReadInner(string json, JsonSerializerOptions options)
+        {
+            var reader = new Utf8JsonReader(global::System.Text.Encoding.UTF8.GetBytes(json));
+            reader.Read();
+            return Inner(options).Read(ref reader, typeof(T), options);
+        }
+{{- end}}
     }
 }

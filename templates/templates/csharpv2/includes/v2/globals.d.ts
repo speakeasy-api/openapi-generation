@@ -61,6 +61,7 @@ declare global {
 
   // errors.ts
   function templateDefaultError(full?: boolean): string;
+  function schemaValidationLenient(): boolean;
 
   // compat.ts
   function isNetstandard2(): boolean;
