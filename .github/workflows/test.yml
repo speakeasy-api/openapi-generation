@@ -199,11 +199,30 @@ jobs:
         if: matrix.shell == 'pwsh'
         shell: pwsh
         run: ./scripts/test-windows-installer.ps1
+  test-cli-unix-installer:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    name: Test CLI - unix installer (${{ matrix.os }})
+    timeout-minutes: 10
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: "read"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test generated Unix installer
+        run: ./scripts/test-unix-installer.sh
   test-cli:
     if: always() && needs.detect-targets.outputs.run-cli == 'true'
     needs:
       - detect-targets
       - test-cli-windows-installer
+      - test-cli-unix-installer
       - test-cli-primary
       - test-cli-secondary
       - test-cli-tertiary

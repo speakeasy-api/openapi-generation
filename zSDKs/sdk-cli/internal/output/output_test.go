@@ -735,6 +735,31 @@ func TestUnclassifiedRenderersKeepPollHandle(t *testing.T) {
 	}
 }
 
+func TestAsyncFailureDetailReadsDeclaredErrorMember(t *testing.T) {
+	for name, tc := range map[string]struct {
+		cfg     asyncConfig
+		payload string
+		want    string
+	}{
+		"object":           {cfg: asyncConfig{ErrorField: "error", ErrorMessageField: "message"}, payload: `{"error":{"message":"quota exceeded"}}`, want: "quota exceeded"},
+		"array of objects": {cfg: asyncConfig{ErrorField: "errors", ErrorMessageField: "message"}, payload: `{"errors":[{"code":"x"},{"message":"unsafe prompt"},{"message":"second"}]}`, want: "unsafe prompt"},
+		"array of strings": {cfg: asyncConfig{ErrorField: "errors", ErrorMessageField: "message"}, payload: `{"errors":["  unsafe prompt  "]}`, want: "unsafe prompt"},
+		"custom message":   {cfg: asyncConfig{ErrorField: "errors", ErrorMessageField: "detail"}, payload: `{"errors":[{"detail":"rejected"}]}`, want: "rejected"},
+		"missing member":   {cfg: asyncConfig{ErrorField: "error", ErrorMessageField: "message"}, payload: `{"errors":[{"message":"elsewhere"}]}`, want: ""},
+		"empty array":      {cfg: asyncConfig{ErrorField: "errors", ErrorMessageField: "message"}, payload: `{"errors":[]}`, want: ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var payload interface{}
+			if err := json.Unmarshal([]byte(tc.payload), &payload); err != nil {
+				t.Fatal(err)
+			}
+			if got := asyncFailureDetail(&tc.cfg, payload); got != tc.want {
+				t.Fatalf("got %q; want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestAsyncFailureScrubsResolvedCredentials(t *testing.T) {
 	t.Cleanup(config.Reset)
 	config.RegisterSecret("example-secret")

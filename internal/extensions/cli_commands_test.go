@@ -749,11 +749,58 @@ func TestCLICommands_AsyncErrorBindings(t *testing.T) {
       properties:
         id:
           type: string
-`, `    TaskResult:
+`, `    FailureList:
+      type: array
+      items:
+        type: object
+        properties:
+          detail:
+            type: string
+    BareFailureList:
+      type: array
+      items:
+        type: object
+    TaskResult:
       type: object
       properties:
         id:
           type: string
+        splitFailures:
+          allOf:
+            - type: array
+              items:
+                type: object
+            - items:
+                properties:
+                  detail:
+                    type: string
+        splitFailuresSwapped:
+          allOf:
+            - items:
+                properties:
+                  detail:
+                    type: string
+            - type: array
+              items:
+                type: object
+        refSplitFailures:
+          $ref: '#/components/schemas/BareFailureList'
+          items:
+            properties:
+              detail:
+                type: string
+        refFailures:
+          $ref: '#/components/schemas/FailureList'
+          description: Failures behind a reference with a sibling keyword.
+        allOfFailures:
+          allOf:
+            - $ref: '#/components/schemas/FailureList'
+        untypedFailures:
+          items:
+            type: object
+            properties:
+              detail:
+                type: string
         failure:
           type: object
           properties:
@@ -761,6 +808,17 @@ func TestCLICommands_AsyncErrorBindings(t *testing.T) {
               type: string
             code:
               type: integer
+        failures:
+          type: array
+          items:
+            type: object
+            properties:
+              detail:
+                type: string
+        labels:
+          type: array
+          items:
+            type: string
 `, 1)
 	require.NotEqual(t, cliCommandsTestSpec, withFailure, "fixture replacement must apply")
 
@@ -793,10 +851,27 @@ func TestCLICommands_AsyncErrorBindings(t *testing.T) {
 	assert.Contains(t, err.Error(), `async.errorField: property "failur" does not resolve at the root of the 200 response of poll operation "GetTask"`)
 	assert.Contains(t, err.Error(), `did you mean "failure"?`)
 
-	// The bound member must be an object able to carry the message.
+	// The bound member must be an object, or an array of objects, able to
+	// carry the message.
 	_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: id\n"))
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `async.errorField: property "id" in the 200 response of poll operation "GetTask" is not an object`)
+	assert.Contains(t, err.Error(), `async.errorField: property "id" in the 200 response of poll operation "GetTask" is not an object or an array of objects`)
+	_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: labels\n"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `async.errorField: property "labels" in the 200 response of poll operation "GetTask" is not an object or an array of objects`)
+	manifest, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: failures\n      errorMessageField: detail\n"))
+	require.NoError(t, err)
+	assert.Equal(t, "failures", manifest.Commands[0].Async.ErrorField)
+	_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: failures\n      errorMessageField: detial\n"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `async.errorMessageField: property "detial" does not resolve inside the "failures" member`)
+	for _, field := range []string{"refFailures", "allOfFailures", "untypedFailures", "splitFailures", "splitFailuresSwapped", "refSplitFailures"} {
+		_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: "+field+"\n      errorMessageField: detail\n"))
+		require.NoError(t, err, field)
+		_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: "+field+"\n      errorMessageField: detial\n"))
+		require.Error(t, err, field)
+		assert.Contains(t, err.Error(), `property "detial" does not resolve inside the "`+field+`" member`)
+	}
 
 	// Declaring only errorField still validates the defaulted message member.
 	_, _, err = decodeCLIWithSpec(t, withFailure, withBindings("      errorField: failure\n"))

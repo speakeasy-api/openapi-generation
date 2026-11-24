@@ -652,8 +652,7 @@ func renderUnclassifiedPrettyAPIError(cmd *cobra.Command, out io.Writer, err err
 	if wantsHeaders(cmd) {
 		headers := extractErrorResponseHeaders(err)
 		if len(headers) > 0 {
-			colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
-			printResponseHeadersPretty(out, headers, ShouldColorize(colorFlag))
+			printResponseHeadersPretty(out, headers, stderrColorize(cmd))
 		}
 	}
 	if classification.RawBody != "" && classification.StatusCode != 0 {
@@ -734,16 +733,14 @@ func renderUnclassifiedStructuredAPIError(cmd *cobra.Command, out io.Writer, err
 	if marshalErr != nil {
 		jsonData, _ = json.MarshalIndent(map[string]interface{}{"error": redactedErrorText(err, classification), "exit_code": ExitCodeFor(classification)}, "", "  ")
 	}
-	colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
-	printScrubbedJSON(out, jsonData, ShouldColorize(colorFlag))
+	printScrubbedJSON(out, jsonData, stderrColorize(cmd))
 }
 
 func renderPrettyError(cmd *cobra.Command, out io.Writer, err error, classification Classification) {
 	if wantsHeaders(cmd) {
 		headers := extractErrorResponseHeaders(err)
 		if len(headers) > 0 {
-			colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
-			printResponseHeadersPretty(out, headers, ShouldColorize(colorFlag))
+			printResponseHeadersPretty(out, headers, stderrColorize(cmd))
 		}
 	}
 	fmt.Fprintf(out, "Error (%s): %s\n", classification.Type, classification.Message)
@@ -784,8 +781,7 @@ func renderStructuredError(cmd *cobra.Command, out io.Writer, err error, classif
 			"hints":      classification.Hints,
 		}, "", "  ")
 	}
-	colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
-	printScrubbedJSON(out, jsonData, ShouldColorize(colorFlag))
+	printScrubbedJSON(out, jsonData, stderrColorize(cmd))
 }
 
 func classifiedErrorEnvelope(err error, classification Classification) map[string]interface{} {
