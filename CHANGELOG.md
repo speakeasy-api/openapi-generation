@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.968.13] - 2026-11-24
+### :bug: Bug Fixes
+- [`e91bcf8`](https://github.com/speakeasy-api/openapi-generation/commit/e91bcf8711f3edff901b960207d9df34ae2f07ec) - **csharp**: send union-typed fields in form-urlencoded and multipart request bodies ([#240](https://github.com/speakeasy-api/openapi-generation/pull/240)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.968.12] - 2026-11-24
 ### :bug: Bug Fixes
 - [`09e7ee4`](https://github.com/speakeasy-api/openapi-generation/commit/09e7ee4cb37716cee7ce6e90a3c545ad2575589e) - **csharp**: deserialize an explicit null into a nullable free-form object field instead of throwing ([#236](https://github.com/speakeasy-api/openapi-generation/pull/236)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -21163,3 +21168,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.968.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.9...v2.968.10
 [v2.968.11]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.10...v2.968.11
 [v2.968.12]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.11...v2.968.12
+[v2.968.13]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.12...v2.968.13
