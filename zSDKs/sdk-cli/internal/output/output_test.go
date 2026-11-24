@@ -788,26 +788,35 @@ func TestRedactedMessageDropsMaskedValues(t *testing.T) {
 		"nothing masked":          {message: raw, redacted: raw, want: raw},
 	} {
 		t.Run(name, func(t *testing.T) {
-			if got := redactedMessage(tc.message, raw, tc.redacted); got != tc.want {
+			if got := newMessageRedaction(raw, tc.redacted).apply(tc.message); got != tc.want {
 				t.Fatalf("got %q; want %q", got, tc.want)
 			}
 		})
 	}
-	if got := redactedMessage("request failed", "", redacted); got != "request failed" {
+	if got := newMessageRedaction("", redacted).apply("request failed"); got != "request failed" {
 		t.Fatalf("a message with no source body must be kept, got %q", got)
 	}
-	if got := redactedMessage("secret-value", raw, redacted); got != "(sensitive)" {
+	if got := newMessageRedaction(raw, redacted).apply("secret-value"); got != "(sensitive)" {
 		t.Fatalf("a message that is a masked field must be masked, got %q", got)
+	}
+	if got := newMessageRedaction(raw, "(sensitive)").apply("secret-value"); got != "(sensitive)" {
+		t.Fatalf("a message from a wholly masked body must be the mask, got %q", got)
 	}
 	nested := `{"outer":{"token":"abc-secret","codes":[123456]}}`
 	nestedRedacted := `{"outer":"(sensitive)"}`
-	if got := redactedMessage("rejected abc-secret with 123456", nested, nestedRedacted); got != "rejected (sensitive) with (sensitive)" {
+	if got := newMessageRedaction(nested, nestedRedacted).apply("rejected abc-secret with 123456"); got != "rejected (sensitive) with (sensitive)" {
 		t.Fatalf("values under a masked subtree must be masked, got %q", got)
 	}
 	numbers := `{"id":9007199254740993,"rate":1.50,"name":"n"}`
 	numbersRedacted := `{"id":"(sensitive)","rate":"(sensitive)","name":"n"}`
-	if got := redactedMessage("id 9007199254740993 at 1.50", numbers, numbersRedacted); got != "id (sensitive) at (sensitive)" {
+
+	if got := newMessageRedaction(numbers, numbersRedacted).apply("id 9007199254740993 at 1.50"); got != "id (sensitive) at (sensitive)" {
 		t.Fatalf("masked numbers must keep their original spelling, got %q", got)
+	}
+	repeated := `{"message":"status failed","secrets":["s","s","s","s","s","s","s","s","s","s","s","s","s","s","s","s"]}`
+	repeatedRedacted := `{"message":"status failed","secrets":["(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)"]}`
+	if got := newMessageRedaction(repeated, repeatedRedacted).apply("status failed"); got != "(sensitive)tatu(sensitive) failed" {
+		t.Fatalf("each masked value must be replaced in a single pass, got %q", got)
 	}
 }
 

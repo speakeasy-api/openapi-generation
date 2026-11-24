@@ -314,6 +314,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CliSensitiveErrorMessage"
+  /anything/cli/sensitiveWholeError:
+    get:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveWholeErrorGet
+      description: >-
+        Error response whose entire schema is marked sensitive while one of its
+        fields is the designated error message. Error output must mask the
+        whole body and must not report that field's value as the message.
+      tags:
+        - responseBodies
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Rejected request whose whole body is sensitive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CliSensitiveWholeError"
   /anything/cli/sensitiveSplitResponse:
     post:
       x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
@@ -629,6 +648,16 @@ components:
           type: string
           x-speakeasy-error-message: true
           x-speakeasy-param-sensitive: true
+        name:
+          type: string
+    CliSensitiveWholeError:
+      type: object
+      x-speakeasy-param-sensitive: true
+      required: [detail, name]
+      properties:
+        detail:
+          type: string
+          x-speakeasy-error-message: true
         name:
           type: string
     CliSensitiveResponse:

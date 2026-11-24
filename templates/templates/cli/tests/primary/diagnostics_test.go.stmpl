@@ -711,6 +711,29 @@ func TestErrorOutputRedactsSensitiveErrorMessageField(t *testing.T) {
 	}
 }
 
+func TestErrorOutputMasksWhollySensitiveErrorBody(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"detail":"canary-whole","name":"canary-name"}`))
+	}))
+	defer s.Close()
+	for _, args := range [][]string{
+		{"--output-format", "pretty"},
+		{"--output-format", "json"},
+		{"--agent-mode"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, append(args, "response-bodies", "cli-sensitive-whole-error-get"))
+			require.Error(t, err)
+			assert.NotContains(t, h.GetStdout()+h.GetStderr(), "canary-whole")
+			assert.NotContains(t, h.GetStdout()+h.GetStderr(), "canary-name")
+			assert.Contains(t, h.GetStderr(), redact.Mask)
+		})
+	}
+}
+
 func TestErrorOutputRedactsSensitiveFieldsOfSplitOperation(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -719,12 +742,13 @@ func TestErrorOutputRedactsSensitiveFieldsOfSplitOperation(t *testing.T) {
 	}))
 	defer s.Close()
 	for name, command := range map[string][]string{
-		"form":      {"cli-sensitive-split-response-post-form", "--name", "n", "--value", "v"},
-		"multipart": {"cli-sensitive-split-response-post-multipart", "--label", "l"},
+		"form":      {"response-bodies", "cli-sensitive-split-response-post-form", "--name", "n", "--value", "v"},
+		"multipart": {"response-bodies", "cli-sensitive-split-response-post-multipart", "--label", "l"},
+		"intent":    {"submit-split", "--body", `{"name":"n","value":"v"}`},
 	} {
 		t.Run(name, func(t *testing.T) {
 			h := NewCLITestHarness(t)
-			err := h.RunWithServer(s.URL, append([]string{"--agent-mode", "response-bodies"}, command...))
+			err := h.RunWithServer(s.URL, append([]string{"--agent-mode"}, command...))
 			require.Error(t, err)
 			assert.NotContains(t, h.GetStdout()+h.GetStderr(), "canary-split")
 			assert.Contains(t, h.GetStderr(), "visible-name")

@@ -76,7 +76,7 @@ type Classification struct {
 	// because the request carried no credential; hints declared for the
 	// permission reason do not apply to that caller.
 	credentialsMissing bool
-	maskedValues       []maskedBodyValue
+	redaction          messageRedaction
 }
 
 type errorRule struct {
@@ -266,13 +266,13 @@ func Classify(cmd *cobra.Command, err error) Classification {
 		}
 	}
 
-	c.maskedValues = maskedBodyValues(rawBody, c.RawBody)
+	c.redaction = newMessageRedaction(rawBody, c.RawBody)
 	if rawBody == "" {
 		if model := errorModelJSON(err); model != "" {
-			c.maskedValues = maskedBodyValues(model, redactErrorBody(cmd, err, model))
+			c.redaction = newMessageRedaction(model, redactErrorBody(cmd, err, model))
 		}
 	}
-	c.Message = scrubMaskedValues(redactedMessage(classificationMessage(bodyMap, errorObject, err, c.RawBody), rawBody, c.RawBody), c.maskedValues)
+	c.Message = c.redaction.apply(classificationMessage(bodyMap, errorObject, err, c.RawBody))
 	c.Hints = assembleHints(cmd, err, c, bodyMap, errorObject, ruleHints, useReasonRule)
 	return c
 }
@@ -285,27 +285,60 @@ func redactErrorBody(cmd *cobra.Command, err error, body string) string {
 	return body
 }
 
-// redactedMessage keeps a message taken from the error's own text from
+// messageRedaction keeps a message taken from the error's own text from
 // re-exposing what body redaction masked: typed error models render their
 // fields as JSON or as a single field, and fallback errors embed the raw body.
-func redactedMessage(message, rawBody, redactedBody string) string {
-	if redactedBody == rawBody || rawBody == "" {
-		return message
-	}
-	if strings.Contains(message, rawBody) {
-		return strings.ReplaceAll(message, rawBody, redactedBody)
-	}
-	if isValidJSON(message) {
-		return redactedBody
-	}
-	return scrubMaskedValues(message, maskedBodyValues(rawBody, redactedBody))
+type messageRedaction struct {
+	raw, redacted string
+	scrubber      *strings.Replacer
 }
 
-func scrubMaskedValues(text string, masked []maskedBodyValue) string {
-	for _, value := range masked {
-		text = strings.ReplaceAll(text, value.raw, value.redacted)
+func newMessageRedaction(rawBody, redactedBody string) messageRedaction {
+	r := messageRedaction{raw: rawBody, redacted: redactedBody}
+	if rawBody == "" || rawBody == redactedBody {
+		return r
 	}
-	return text
+	seen := map[string]bool{}
+	var pairs []string
+	for _, value := range maskedBodyValues(rawBody, redactedBody) {
+		if !seen[value.raw] {
+			seen[value.raw] = true
+			pairs = append(pairs, value.raw, value.redacted)
+		}
+	}
+	if len(pairs) > 0 {
+		r.scrubber = strings.NewReplacer(pairs...)
+	}
+	return r
+}
+
+// apply must run once per message: a masked value can occur inside the mask
+// text that replaces it.
+func (r messageRedaction) apply(message string) string {
+	if r.raw == "" || r.raw == r.redacted {
+		return message
+	}
+	if !isValidJSON(r.redacted) {
+		return r.redacted
+	}
+	if strings.Contains(message, r.raw) {
+		parts := strings.Split(message, r.raw)
+		for i, part := range parts {
+			parts[i] = r.scrub(part)
+		}
+		return strings.Join(parts, r.redacted)
+	}
+	if isValidJSON(message) {
+		return r.redacted
+	}
+	return r.scrub(message)
+}
+
+func (r messageRedaction) scrub(text string) string {
+	if r.scrubber == nil {
+		return text
+	}
+	return r.scrubber.Replace(text)
 }
 
 // errorModelJSON encodes a generated error model that carries no response
@@ -410,7 +443,11 @@ func jsonScalarTexts(value any) []string {
 // redactedErrorText is err's own text with any response body it embeds
 // replaced by the classification's redacted copy.
 func redactedErrorText(err error, classification Classification) string {
-	return scrubMaskedValues(redactedMessage(err.Error(), extractErrorBody(err), classification.RawBody), classification.maskedValues)
+	redaction := classification.redaction
+	if redaction.raw == "" {
+		redaction = newMessageRedaction(extractErrorBody(err), classification.RawBody)
+	}
+	return redaction.apply(err.Error())
 }
 
 func parseClassificationBody(raw string, c *Classification) (map[string]any, map[string]any) {

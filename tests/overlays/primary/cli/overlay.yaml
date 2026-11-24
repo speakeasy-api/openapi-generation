@@ -451,6 +451,9 @@ actions:
           category: Create
           summary: Upload a multipart file using the operation flags
           op: requestBodyPutMultipartFile
+        submit-split:
+          summary: Submit a form to an operation split per request content type
+          op: cliSensitiveSplitResponsePost
         generate:
           category: Create
           summary: Generate a reply from a prompt
