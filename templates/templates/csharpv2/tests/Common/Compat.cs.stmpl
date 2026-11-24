@@ -21,8 +21,18 @@ using Xunit;
 // JsonTypeInfoResolver chain wired up via JsonOptions.
 public static class Compat
 {
+    public const string SerializerNamespace = "System.Text.Json";
+
     public static T DeserializeJson<T>(string json) =>
         JsonSerializer.Deserialize<T>(json, global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions)!;
+{{- if schemaValidationLenient}}
+
+    public static T? ConstructUnvalidated<T>(string json) =>
+        TryConstructUnvalidated<T>(json, out var value) ? value : default;
+
+    public static bool TryConstructUnvalidated<T>(string json, out T value) =>
+        global::{{getModelNamespace ""}}.ResponseBodyDeserializer.TryConstructUnvalidated(json, TypeInfo<T>(), out value);
+{{- end}}
 
     public static string SerializeJson(object? value) =>
         JsonSerializer.Serialize(value, global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions);
@@ -179,6 +189,20 @@ public static class Compat
 
     public static EventStreamReader<T>? Events<T>(IAsyncEnumerable<T>? stream) =>
         stream == null ? null : new EventStreamReader<T>(stream);
+{{- if isFeatureUsed "serverEvents"}}
+
+    public static EventStreamReader<T> EventsFromSse<T>(string sse)
+    {
+        var response = new HttpResponseMessage
+        {
+            Content = new StringContent(sse, System.Text.Encoding.UTF8, "text/event-stream"),
+        };
+        return new EventStreamReader<T>(global::{{getScopeNamespace "utils"}}.Sse.SseStreamExtensions.AsAsyncEnumerable(response, TypeInfo<T>()));
+    }
+{{- end}}
+
+    private static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> TypeInfo<T>() =>
+        (System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>)global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions.GetTypeInfo(typeof(T));
 
     // Exposes the v1 EventStream<T> pull API (Next/Dispose/IsClosed) over a v2 IAsyncEnumerable<T>.
     public sealed class EventStreamReader<T> : IDisposable, IAsyncDisposable, IAsyncEnumerable<T>

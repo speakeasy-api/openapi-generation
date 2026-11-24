@@ -18,6 +18,7 @@ csharp:
   clientServerStatusCodesAsErrors: true
   author: Speakeasy
   dotnetVersion: net8.0
+  schemaValidation: lenient
   imports:
     option: openapi
     paths:

@@ -24,7 +24,8 @@ public class DiscriminatedUnionGenerator : UnionGeneratorBase
             .Where(p =>
                 p.Type.NullableAnnotation == NullableAnnotation.Annotated
                 && p.Name != "Index"
-                && p.Name != "Type"
+                && p.Name != "Type"{{if schemaValidationLenient}}
+                && !IsJsonIgnored(p){{end}}
             );
     }
 
@@ -44,12 +45,19 @@ public class DiscriminatedUnionGenerator : UnionGeneratorBase
                     var methodName = factory.Length > 0
                         ? factory
                         : prop.FactoryMethodName ?? $"Create{ToPascalCase(discriminatorValue)}";
+{{- if schemaValidationLenient}}
+                    if (!prop.IsValueType)
+                        return $"\"{discriminatorValue}\" => ReadVariant(jsonText, root, _ti{prop.Name}, {model.FullyQualifiedName}.{methodName}),";
+{{- end}}
                     return $"\"{discriminatorValue}\" => {model.FullyQualifiedName}.{methodName}(System.Text.Json.JsonSerializer.Deserialize(jsonText, _ti{prop.Name})!),";
                 });
             })
             .ToList();
 
         var switchCases = string.Join($"\n{Indent(2)}", switchCasesList);
+{{- if schemaValidationLenient}}
+        var readVariant = model.Properties.Any(p => !p.IsValueType) ? GenerateLenientReadVariant(model) : "";
+{{- end}}
 
         if (model.Open)
         {
@@ -73,6 +81,10 @@ public class DiscriminatedUnionGenerator : UnionGeneratorBase
                     {{interp "switchCases"}}
                     _ => {{interp "model.FullyQualifiedName"}}.CreateUnknown(root.Clone())
                 };
+{{- if schemaValidationLenient}}
+
+                {{interp "readVariant"}}
+{{- end}}
                 """;
             // clang-format on
         }
@@ -99,7 +111,41 @@ public class DiscriminatedUnionGenerator : UnionGeneratorBase
                 {{interp "switchCases"}}
                 _ => throw new System.Text.Json.JsonException($"Unknown discriminator value: {discriminator}")
             };
+{{- if schemaValidationLenient}}
+
+            {{interp "readVariant"}}
+{{- end}}
             """;
         // clang-format on
     }
+{{- if schemaValidationLenient}}
+
+    private static string GenerateLenientReadVariant(UnionModel model)
+    {
+        var exception = model.HasValidationFailure ? " ex" : "";
+        var recordFailure = model.HasValidationFailure
+            ? "var result = create(value);\n        result.ValidationFailure = ex;\n        return result;"
+            : "return create(value);";
+
+        // clang-format off
+        return $$"""
+            static {{interp "model.FullyQualifiedName"}} ReadVariant<TVariant>(string jsonText, System.Text.Json.JsonElement root, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TVariant> typeInfo, System.Func<TVariant, {{interp "model.FullyQualifiedName"}}> create)
+            {
+                try
+                {
+                    return create(System.Text.Json.JsonSerializer.Deserialize(jsonText, typeInfo)!);
+                }
+                catch (System.Exception{{interp "exception"}})
+                {
+                    if (!global::{{getModelNamespace ""}}.ResponseBodyDeserializer.TryConstructUnvalidated(root, typeInfo, out var value))
+                    {
+                        throw;
+                    }
+                    {{interp "recordFailure"}}
+                }
+            }
+            """;
+        // clang-format on
+    }
+{{- end}}
 }

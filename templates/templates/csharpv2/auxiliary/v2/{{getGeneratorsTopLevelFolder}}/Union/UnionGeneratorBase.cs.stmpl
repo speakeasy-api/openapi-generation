@@ -103,7 +103,7 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
             ? $"global::{classSymbol.Name}"
             : $"global::{ns.ToDisplayString()}.{classSymbol.Name}";
 
-        return new UnionModel(classSymbol.Name, namespaceDecl, fqn, nullable, discriminatorField, open, unknownMember, properties);
+        return new UnionModel(classSymbol.Name, namespaceDecl, fqn, nullable, discriminatorField, open, unknownMember, properties{{if schemaValidationLenient}}, HasValidationFailure: classSymbol.GetMembers("ValidationFailure").OfType<IPropertySymbol>().Any(IsJsonIgnored){{end}});
     }
 
     /// <summary>Returns the JSON name of the first <c>[JsonPropertyName]</c>-annotated public
@@ -147,8 +147,13 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
         return classSymbol
             .GetMembers()
             .OfType<IPropertySymbol>()
-            .Where(p => p.Type.NullableAnnotation == NullableAnnotation.Annotated && p.Name != "Index");
+            .Where(p => p.Type.NullableAnnotation == NullableAnnotation.Annotated && p.Name != "Index"{{if schemaValidationLenient}} && !IsJsonIgnored(p){{end}});
     }
+{{- if schemaValidationLenient}}
+
+    private protected static bool IsJsonIgnored(IPropertySymbol property) =>
+        property.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "System.Text.Json.Serialization.JsonIgnoreAttribute");
+{{- end}}
 
     private void Emit(UnionModel model, SourceProductionContext spc)
     {
@@ -373,7 +378,8 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
         string DiscriminatorField,
         bool Open,
         string UnknownMember,
-        EquatableArray<UnionPropertyModel> Properties
+        EquatableArray<UnionPropertyModel> Properties{{if schemaValidationLenient}},
+        bool HasValidationFailure{{end}}
     );
 
     private protected static string ToPascalCase(string value)

@@ -76,6 +76,7 @@ function templateJSONHandler(
     varName: string,
     targetType: string,
     typeDef: TypeDef,
+    bodyType: "default" | "error" | "error-union" = "default",
   ): string {
     const errorMessage = `Failed to deserialize response body into ${targetType}.`;
     const typeInfoRef = jsonTypeInfoRef(typeDef);
@@ -84,15 +85,37 @@ function templateJSONHandler(
       ? deserialize
       : `${deserialize} ?? throw new JsonException("Deserialization error: ${targetType} cannot be null.")`;
 
+    let preamble = "";
+    let catchBody = `throw new ResponseValidationException("${errorMessage}", ${httpMetaArgs}, ex);`;
+    if (schemaValidationLenient()) {
+      const throwDefaultError = `throw new ${templateDefaultError(
+        false,
+      )}("${errorMessage}", ${httpMetaArgs}, ex);`;
+      catchBody =
+        bodyType === "error-union" || isValueType(typeDef)
+          ? throwDefaultError
+          : `if (!global::${getModelNamespace(
+              "",
+            )}.ResponseBodyDeserializer.TryConstructUnvalidated(httpResponseBody, ${typeInfoRef}, out ${varName}))
+    {
+        ${throwDefaultError}
+    }`;
+      if (bodyType === "error") {
+        preamble = `ResponseValidationException? deserializationException = null;\n`;
+        catchBody = `deserializationException = new ResponseValidationException("${errorMessage}", ${httpMetaArgs}, ex);
+    ${catchBody}`;
+      }
+    }
+
     return `var httpResponseBody = ${templateReadAsString()};
 ${targetType} ${varName};
-try
+${preamble}try
 {
     ${varName} = ${assignment};
 }
 catch (Exception ex)
 {
-    throw new ResponseValidationException("${errorMessage}", ${httpMetaArgs}, ex);
+    ${catchBody}
 }\n`;
   }
 
@@ -101,7 +124,12 @@ catch (Exception ex)
       return templateErrorUnion(
         content.Content.Type,
         responseFormat,
-        templateJSONDeserialization("obj", resultType, content.Content.Type),
+        templateJSONDeserialization(
+          "obj",
+          resultType,
+          content.Content.Type,
+          "error-union",
+        ),
       );
     }
 
@@ -109,6 +137,7 @@ catch (Exception ex)
       "payload",
       `${resultType}Payload`,
       content.Content.Type,
+      "error",
     );
     if (hasRawResponseField(content.Content.Type)) {
       switch (responseFormat) {
@@ -125,7 +154,13 @@ catch (Exception ex)
       }
     }
 
-    return handler + `\nthrow new ${resultType}(payload, ${httpMetaArgs});`;
+    const deserializationExceptionArg = schemaValidationLenient()
+      ? ", deserializationException"
+      : "";
+    return (
+      handler +
+      `\nthrow new ${resultType}(payload, ${httpMetaArgs}${deserializationExceptionArg});`
+    );
   }
 
   let handler = templateJSONDeserialization(
