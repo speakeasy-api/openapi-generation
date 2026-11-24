@@ -1,0 +1,10 @@
+id: 1794266812-8cefc478
+features:
+    - core
+targets:
+    - csharp
+type: fix
+bump: patch
+description: send union-typed fields in form-urlencoded and multipart request bodies
+author: 2ynn
+date: "2026-11-09"
