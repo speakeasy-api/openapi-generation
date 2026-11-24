@@ -43,7 +43,9 @@ function Get-LatestVersion {
 }
 
 function Get-Architecture {
-    $arch = $env:PROCESSOR_ARCHITECTURE
+    # A 32-bit PowerShell on 64-bit Windows reports x86 here and the native
+    # architecture in PROCESSOR_ARCHITEW6432.
+    $arch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
     switch ($arch) {
         "AMD64" { return "x86_64" }
         "ARM64" { return "arm64" }
@@ -88,6 +90,31 @@ function Install-CLI {
 
         Write-ColorOutput "Download complete" -Color Green
 
+        $checksumsUrl = "https://github.com/$Repo/releases/download/$Version/checksums.txt"
+        $checksumsPath = Join-Path $tempDir "checksums.txt"
+        try {
+            Invoke-WebRequest -Uri $checksumsUrl -OutFile $checksumsPath -UseBasicParsing
+        }
+        catch {
+            throw "Failed to download checksums from ${checksumsUrl}: $_"
+        }
+        $expected = $null
+        foreach ($line in Get-Content -LiteralPath $checksumsPath) {
+            $fields = $line.Trim() -split '\s+', 2
+            if ($fields.Count -eq 2 -and $fields[1].TrimStart('*') -eq $archiveName) {
+                $expected = $fields[0]
+                break
+            }
+        }
+        if (-not $expected) {
+            throw "checksums.txt has no entry for $archiveName"
+        }
+        $actual = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
+        if ($actual -ne $expected) {
+            throw "Checksum mismatch for ${archiveName}: expected $expected, got $actual"
+        }
+        Write-ColorOutput "Checksum verified" -Color Green
+
         # Extract archive
         Write-ColorOutput "Extracting archive..." -Color Cyan
         Expand-Archive -Path $archivePath -DestinationPath $tempDir -Force
@@ -113,11 +140,13 @@ function Install-CLI {
 
         # Add to PATH if not already there
         $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-        if ($userPath -notlike "*$InstallDir*") {
+        $pathEntries = @($userPath -split ';' | Where-Object { $_ } | ForEach-Object { $_.Trim().TrimEnd('\') })
+        if ($pathEntries -notcontains $InstallDir.TrimEnd('\')) {
             Write-ColorOutput "Adding $InstallDir to your PATH..." -Color Cyan
+            $newPath = if ($userPath) { "$userPath;$InstallDir" } else { $InstallDir }
             [Environment]::SetEnvironmentVariable(
                 "Path",
-                "$userPath;$InstallDir",
+                $newPath,
                 "User"
             )
             $env:Path = "$env:Path;$InstallDir"
