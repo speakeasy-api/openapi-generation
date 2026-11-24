@@ -790,9 +790,9 @@ func TestRedactedMessageDropsMaskedValues(t *testing.T) {
 	if got := newMessageRedaction(numbers, numbersRedacted).apply("id 9007199254740993 at 1.50"); got != "id (sensitive) at (sensitive)" {
 		t.Fatalf("masked numbers must keep their original spelling, got %q", got)
 	}
-	repeated := `{"message":"status failed","secrets":["s","s","s","s","s","s","s","s","s","s","s","s","s","s","s","s"]}`
-	repeatedRedacted := `{"message":"status failed","secrets":["(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)"]}`
-	if got := newMessageRedaction(repeated, repeatedRedacted).apply("status failed"); got != "(sensitive)tatu(sensitive) failed" {
+	repeated := `{"message":"rejected s","secrets":["s","s","s","s","s","s","s","s","s","s","s","s","s","s","s","s"]}`
+	repeatedRedacted := `{"message":"rejected s","secrets":["(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)"]}`
+	if got := newMessageRedaction(repeated, repeatedRedacted).apply("rejected s"); got != "rejected (sensitive)" {
 		t.Fatalf("each masked value must be replaced in a single pass, got %q", got)
 	}
 }

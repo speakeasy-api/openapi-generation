@@ -1302,7 +1302,7 @@ function collectIntentManifest(): IntentManifestCtx {
       RunFunc: sanitizeRunFuncName(sanitizeCommandName(found.op.GetID())),
       ExecuteFunc: `execute${sanitizeCommandName(found.op.GetID())}`,
       OpID: found.op.OriginalID,
-      SDKOpID: found.op.GetID() !== found.op.OriginalID ? found.op.GetID() : "",
+      SDKOpID: found.op.ID !== found.op.OriginalID ? found.op.ID : "",
       HasSchema: hasBodySchemaForOp(found.op),
       SchemaKey: intentBodySchemaKey(
         found.op,
