@@ -40,4 +40,5 @@
         {{- end -}} {{/* endwith $field */}}
       {{- end -}} {{/* endrange .Local.Fields */}}
       {{- templateAdditionalPropertiesMembers .Local $className $usageLocation 2}}
+      {{- templateUnknownFieldsMember $.Local 2}}
     }

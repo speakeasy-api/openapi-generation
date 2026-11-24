@@ -107,6 +107,15 @@ function getConfigFields(
       Description:
         "The version of .NET to target. net10.0 (default) or net8.0. AOT-safety requires net8.0+. https://learn.microsoft.com/en-us/dotnet/standard/frameworks",
     },
+    preserveUnknownFields: {
+      Name: "preserveUnknownFields",
+      Required: false,
+      DefaultValue: false,
+      Description:
+        "Preserve undeclared fields of JSON models: request and response bodies, webhook and callback payloads, nested models, error payloads, server-sent event data and JSON-encoded parameters, including schemas with additionalProperties: false. Each such model gets an UnknownFields dictionary that holds the undeclared fields it received (null when there are none) and writes them back when the model is serialized; a JSON null value is sent as null. Models whose schema declares additionalProperties keep their AdditionalProperties member and get no UnknownFields. Flattened operation arguments accept only declared fields, so undeclared top-level request fields require maxMethodParams: 0; nested models passed as arguments keep theirs. Requests for later pages of a paginated operation rebuild the top-level request body from its declared fields. The member name UnknownFields is reserved in generated models. Disabled by default.",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
   };
 }
 

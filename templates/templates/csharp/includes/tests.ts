@@ -325,8 +325,11 @@ function templateAssertion(
     typ === "map" || typ === "array" || typ === "class" || typ === "union";
 
   if (needsJsonComparison) {
+    const normalizeActual = preserveUnknownFields()
+      ? "NormalizeDeclaredJson"
+      : "NormalizeJson";
     lines.push(
-      `Assert.Equal(\n        CommonHelpers.NormalizeJson(${expected}),\n        CommonHelpers.NormalizeJson(${actual}));`,
+      `Assert.Equal(\n        CommonHelpers.NormalizeJson(${expected}),\n        CommonHelpers.${normalizeActual}(${actual}));`,
     );
   } else if (typ === "string") {
     // Normalize DateTime trailing zeros for string comparisons (C# uses 7 digits, Go uses minimal)

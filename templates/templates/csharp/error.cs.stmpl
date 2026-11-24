@@ -21,6 +21,7 @@
   {{- end }}
 {{- end}}
 {{- templateAdditionalPropertiesMembers .Local $className $usageLocation 2}}
+{{- templateUnknownFieldsMember $.Local 2}}
     }
 
     {{- templateComments .Local.Comments 1 "class"}}

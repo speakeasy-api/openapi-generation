@@ -241,6 +241,37 @@ public class CommonHelpers
         json = NormalizeDecimalPrecision(json);
         return SortJSONObjectKeys(json);
     }
+{{- if preserveUnknownFields}}
+
+    private static readonly JsonSerializerOptions DeclaredFieldsSerializerOptions =
+        new JsonSerializerOptions(global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions)
+        {
+            TypeInfoResolver = System.Text.Json.Serialization.Metadata.JsonTypeInfoResolver.WithAddedModifier(
+                global::{{getSDKNamespace}}.Utils.Json.JsonOptions.SerializerOptions.TypeInfoResolver!,
+                static typeInfo =>
+                {
+                    foreach (var property in typeInfo.Properties)
+                    {
+                        if (property.IsExtensionData && property.PropertyType == typeof(Dictionary<string, JsonElement>))
+                        {
+                            property.ShouldSerialize = static (_, _) => false;
+                        }
+                    }
+                }
+            ),
+        };
+
+    /// <summary>
+    /// Same as <see cref="NormalizeJson"/>, without the <c>UnknownFields</c> of models.
+    /// </summary>
+    public static string NormalizeDeclaredJson(object? obj)
+    {
+        var json = JsonSerializer.Serialize(obj, DeclaredFieldsSerializerOptions);
+        json = NormalizeDateTimeStrings(json);
+        json = NormalizeDecimalPrecision(json);
+        return SortJSONObjectKeys(json);
+    }
+{{- end}}
 
 {{- if isCsharpV2}}
 {{- /* Key sorting walks JsonNode in v2 and JToken in v1. */}}
