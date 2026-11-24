@@ -1879,8 +1879,8 @@ func cliLastPathSegmentName(path string) string {
 // bindings against a poll response schema. The errorField member must exist
 // at the root of at least one traversable variant (failure detail
 // legitimately lives on only the failure arm of a response union), and
-// everywhere it resolves it must be an object whose every object view
-// carries errorMessageField as a string — so a misspelled binding fails
+// everywhere it resolves it must be an object, or an array of objects, whose
+// every object view carries errorMessageField as a string — so a misspelled binding fails
 // generation with the member named instead of silently degrading every
 // failure message at runtime. Defaulted bindings are deliberately not
 // linked, keeping the v1 best-effort reads for undeclared recipes.
@@ -1904,6 +1904,9 @@ func (d *cliManifestDecoder) linkAsyncErrorBindings(cmdKey string, recipe *CLICo
 		}
 		resolved = true
 		errorViews, err := d.artifactExpand(prop, 0)
+		if err == nil {
+			errorViews, err = d.asyncErrorItemViews(errorViews)
+		}
 		if err != nil {
 			return fmt.Errorf("command %q async.errorField %q: %w", cmdKey, recipe.ErrorField, err)
 		}
@@ -1929,13 +1932,87 @@ func (d *cliManifestDecoder) linkAsyncErrorBindings(cmdKey string, recipe *CLICo
 			}
 		}
 		if !objectSeen {
-			return fmt.Errorf("command %q async.errorField: property %q in the %s response of poll operation %q is not an object; the failure-detail binding must name the object member that carries the %q message", cmdKey, recipe.ErrorField, responseCode, recipe.OperationID, recipe.ErrorMessageField)
+			return fmt.Errorf("command %q async.errorField: property %q in the %s response of poll operation %q is not an object or an array of objects; the failure-detail binding must name the member that carries the %q message", cmdKey, recipe.ErrorField, responseCode, recipe.OperationID, recipe.ErrorMessageField)
 		}
 	}
 	if !resolved {
 		return fmt.Errorf("command %q async.errorField: property %q does not resolve at the root of the %s response of poll operation %q%s", cmdKey, recipe.ErrorField, responseCode, recipe.OperationID, cliDidYouMean(recipe.ErrorField, cliSortedKeys(rootCandidates)))
 	}
 	return nil
+}
+
+// asyncErrorItemViews replaces array views of the bound failure-detail member
+// with the views of their items; the runtime reads the first message found.
+func (d *cliManifestDecoder) asyncErrorItemViews(views []*cliResolvedSchema) ([]*cliResolvedSchema, error) {
+	out := make([]*cliResolvedSchema, 0, len(views))
+	for _, view := range views {
+		items, isArray := d.cliArraySchemaItems(view.raw, nil)
+		if !isArray {
+			out = append(out, view)
+			continue
+		}
+		expanded, err := d.artifactExpand(items, 1)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, expanded...)
+	}
+	return out, nil
+}
+
+// cliArraySchemaItems returns the items schema of an array schema, looking
+// through $ref (with or without siblings) and allOf. Every items keyword found
+// is conjoined, so the result does not depend on branch order. An items
+// keyword without a declared type is an array, as OpenAPI 3.1 allows.
+func (d *cliManifestDecoder) cliArraySchemaItems(raw map[string]any, seen []string) (any, bool) {
+	if raw == nil {
+		return nil, false
+	}
+	switch declared := raw["type"].(type) {
+	case string:
+		if declared != "array" {
+			return nil, false
+		}
+	case []any:
+		if !slices.Contains(declared, any("array")) {
+			return nil, false
+		}
+	}
+	var items map[string]any
+	found := false
+	add := func(next any) {
+		nextMap, _ := next.(map[string]any)
+		items = cliConjoinSchemas(items, nextMap)
+		found = true
+	}
+	if own := raw["items"]; own != nil {
+		add(own)
+	}
+	if ref, ok := raw["$ref"].(string); ok && strings.HasPrefix(ref, cliComponentRefPrefix) {
+		name := strings.TrimPrefix(ref, cliComponentRefPrefix)
+		if !slices.Contains(seen, name) {
+			if component, ok := d.schemaIndex.components[name].(map[string]any); ok {
+				if refItems, isArray := d.cliArraySchemaItems(component, append(seen, name)); isArray {
+					add(refItems)
+				}
+			}
+		}
+	}
+	if allOf, ok := raw["allOf"].([]any); ok {
+		for _, branch := range allOf {
+			branchMap, _ := branch.(map[string]any)
+			if branchItems, isArray := d.cliArraySchemaItems(branchMap, seen); isArray {
+				add(branchItems)
+			}
+		}
+	}
+	if !found {
+		return nil, false
+	}
+	if items == nil {
+		return nil, true
+	}
+	return items, true
 }
 
 // cliAsyncErrorViewIsObject reports whether an expanded view of the bound

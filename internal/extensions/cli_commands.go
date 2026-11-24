@@ -421,8 +421,8 @@ type CLICommandAsyncID struct {
 // the API's enum value so overlays replace classifications instead of
 // appending duplicate set members. The failure-detail shape is
 // declaration-driven: ErrorField binds the poll-response root member holding
-// the failure detail object and ErrorMessageField the string member inside
-// it that carries the human message. Both default to the v1 shape
+// the failure detail object (or an array of them) and ErrorMessageField the
+// string member inside it that carries the human message. Both default to the v1 shape
 // ("error"/"message"), and only declaring either opts the pair into strict
 // linking against the poll response schema (a defaulted pair keeps the v1
 // best-effort runtime reads, so existing recipes cannot start failing

@@ -1,0 +1,10 @@
+id: 1795398430-3a9c51e2
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: allow async errorField to bind an array of error objects and read the failure message from it
+author: TristanSpeakEasy
+date: "2026-11-23"
