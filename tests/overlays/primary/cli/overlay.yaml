@@ -802,8 +802,6 @@ actions:
           type: string
         message:
           type: string
-        status:
-          type: string
         details:
           type: array
           items:
