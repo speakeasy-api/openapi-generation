@@ -756,6 +756,11 @@ func TestRedactedMessageDropsMaskedValues(t *testing.T) {
 	if got := redactedMessage("rejected abc-secret with 123456", nested, nestedRedacted); got != "rejected (sensitive) with (sensitive)" {
 		t.Fatalf("values under a masked subtree must be masked, got %q", got)
 	}
+	numbers := `{"id":9007199254740993,"rate":1.50,"name":"n"}`
+	numbersRedacted := `{"id":"(sensitive)","rate":"(sensitive)","name":"n"}`
+	if got := redactedMessage("id 9007199254740993 at 1.50", numbers, numbersRedacted); got != "id (sensitive) at (sensitive)" {
+		t.Fatalf("masked numbers must keep their original spelling, got %q", got)
+	}
 }
 
 func TestStructuredErrorEnvelopeRedactsNonObjectBodyErrorText(t *testing.T) {

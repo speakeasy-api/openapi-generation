@@ -332,8 +332,9 @@ type maskedBodyValue struct{ raw, redacted string }
 // maskedBodyValues lists the scalar values of rawBody that redaction replaced,
 // longest first so a value never shadows a longer one containing it.
 func maskedBodyValues(rawBody, redactedBody string) []maskedBodyValue {
-	var raw, redacted any
-	if json.Unmarshal([]byte(rawBody), &raw) != nil || json.Unmarshal([]byte(redactedBody), &redacted) != nil {
+	raw, rawOK := decodeJSONKeepingNumbers(rawBody)
+	redacted, redactedOK := decodeJSONKeepingNumbers(redactedBody)
+	if !rawOK || !redactedOK {
 		return nil
 	}
 	var out []maskedBodyValue
@@ -369,12 +370,26 @@ func maskedBodyValues(rawBody, redactedBody string) []maskedBodyValue {
 	return out
 }
 
+// decodeJSONKeepingNumbers keeps each number's original spelling, which is how
+// it appears in an error's text.
+func decodeJSONKeepingNumbers(body string) (any, bool) {
+	decoder := json.NewDecoder(strings.NewReader(body))
+	decoder.UseNumber()
+	var value any
+	if err := decoder.Decode(&value); err != nil {
+		return nil, false
+	}
+	return value, true
+}
+
 func jsonScalarTexts(value any) []string {
 	switch typed := value.(type) {
 	case nil:
 		return nil
 	case string:
 		return []string{typed}
+	case json.Number:
+		return []string{typed.String()}
 	case map[string]any:
 		var out []string
 		for _, member := range typed {
