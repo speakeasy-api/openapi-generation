@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.968.10] - 2026-11-24
+### :bug: Bug Fixes
+- [`adb246a`](https://github.com/speakeasy-api/openapi-generation/commit/adb246aaf70cb656a6e8035134eed0dda5891c8d) - **cli**: keep the full wire body of in-band stream error events ([#231](https://github.com/speakeasy-api/openapi-generation/pull/231)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.968.9] - 2026-11-24
 ### :bug: Bug Fixes
 - [`a3f8e9d`](https://github.com/speakeasy-api/openapi-generation/commit/a3f8e9d6dfe31a3e55fa33e11f6c7318d6aa2e96) - **cli**: decide error-output colouring from stderr ([#234](https://github.com/speakeasy-api/openapi-generation/pull/234)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21145,3 +21150,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.968.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.6...v2.968.7
 [v2.968.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.7...v2.968.8
 [v2.968.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.8...v2.968.9
+[v2.968.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.9...v2.968.10
