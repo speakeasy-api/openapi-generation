@@ -776,6 +776,60 @@ func TestAsyncFailureScrubsResolvedCredentials(t *testing.T) {
 	}
 }
 
+func TestRedactedMessageDropsMaskedValues(t *testing.T) {
+	raw := `{"name":"n","value":"secret-value"}`
+	redacted := `{"name":"n","value":"(sensitive)"}`
+	for name, tc := range map[string]struct {
+		message, redacted, want string
+	}{
+		"embedded raw body":       {message: "API error occurred: Status 400\n" + raw, redacted: redacted, want: "API error occurred: Status 400\n" + redacted},
+		"typed model JSON":        {message: `{"value":"secret-value","name":"n"}`, redacted: redacted, want: redacted},
+		"message from body field": {message: "request rejected", redacted: redacted, want: "request rejected"},
+		"nothing masked":          {message: raw, redacted: raw, want: raw},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if got := newMessageRedaction(raw, tc.redacted).apply(tc.message); got != tc.want {
+				t.Fatalf("got %q; want %q", got, tc.want)
+			}
+		})
+	}
+	if got := newMessageRedaction("", redacted).apply("request failed"); got != "request failed" {
+		t.Fatalf("a message with no source body must be kept, got %q", got)
+	}
+	if got := newMessageRedaction(raw, redacted).apply("secret-value"); got != "(sensitive)" {
+		t.Fatalf("a message that is a masked field must be masked, got %q", got)
+	}
+	if got := newMessageRedaction(raw, "(sensitive)").apply("secret-value"); got != "(sensitive)" {
+		t.Fatalf("a message from a wholly masked body must be the mask, got %q", got)
+	}
+	nested := `{"outer":{"token":"abc-secret","codes":[123456]}}`
+	nestedRedacted := `{"outer":"(sensitive)"}`
+	if got := newMessageRedaction(nested, nestedRedacted).apply("rejected abc-secret with 123456"); got != "rejected (sensitive) with (sensitive)" {
+		t.Fatalf("values under a masked subtree must be masked, got %q", got)
+	}
+	numbers := `{"id":9007199254740993,"rate":1.50,"name":"n"}`
+	numbersRedacted := `{"id":"(sensitive)","rate":"(sensitive)","name":"n"}`
+
+	if got := newMessageRedaction(numbers, numbersRedacted).apply("id 9007199254740993 at 1.50"); got != "id (sensitive) at (sensitive)" {
+		t.Fatalf("masked numbers must keep their original spelling, got %q", got)
+	}
+	repeated := `{"message":"rejected s","secrets":["s","s","s","s","s","s","s","s","s","s","s","s","s","s","s","s"]}`
+	repeatedRedacted := `{"message":"rejected s","secrets":["(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)"]}`
+	if got := newMessageRedaction(repeated, repeatedRedacted).apply("rejected s"); got != "rejected (sensitive)" {
+		t.Fatalf("each masked value must be replaced in a single pass, got %q", got)
+	}
+}
+
+func TestStructuredErrorEnvelopeRedactsNonObjectBodyErrorText(t *testing.T) {
+	raw := `["secret-value"]`
+	classification := Classification{RawBody: `["(sensitive)"]`, Body: []interface{}{"(sensitive)"}}
+	envelope := classifiedErrorEnvelope(errors.New(raw), classification)
+	text, _ := envelope["error"].(string)
+	if strings.Contains(text, "secret-value") || text != classification.RawBody {
+		t.Fatalf("error text = %q; want the redacted body", text)
+	}
+}
+
 func TestScrubJSONDocumentMasksDecodedValues(t *testing.T) {
 	t.Cleanup(config.Reset)
 	config.RegisterSecret(`example"secret`)
