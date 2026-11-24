@@ -66,6 +66,8 @@ func TestEnumValues(t *testing.T) {
 	require.Equal(t, []shared.Priority{shared.PriorityLow, shared.PriorityHigh}, shared.PriorityEnumValues())
 	require.Equal(t, []shared.PriorityEnum{shared.PriorityEnumUrgent, shared.PriorityEnumNormal}, shared.PriorityEnumEnumValues())
 
+	require.Equal(t, []shared.HeroWidth{480, 720, 1080}, shared.HeroWidthValues())
+
 	colors := shared.ColorValues()
 	require.Equal(t, []shared.Color{
 		shared.ColorRed,

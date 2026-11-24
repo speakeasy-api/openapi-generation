@@ -108,7 +108,22 @@ function packageIdentifiers(outputLocation: string): PackageIdentifiers {
     )) {
       const ids: PackageIdentifiers = { taken: new Set(), helpers: new Map() };
       const enums: string[] = [];
-      for (const [, types] of sequencedMapEntries(models)) {
+      for (const [model, types] of sequencedMapEntries(models)) {
+        if (
+          types.length == 0 ||
+          types.some((t) => t.Scope.toString() == "operations")
+        ) {
+          const servers = context.Global.AST.OperationServers.Get(model)[0];
+          if (servers) {
+            const modelName = sanitizeFieldName(model);
+            ids.taken.add(`${modelName}ServerList`);
+            if (servers.ServerMap) {
+              for (const s of servers.Servers) {
+                ids.taken.add(templateConstName(s.ID, `${modelName}Server`));
+              }
+            }
+          }
+        }
         for (const t of types) {
           const name = sanitizeClass(t, location, true, false);
           ids.taken.add(name);
