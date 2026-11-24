@@ -37,3 +37,4 @@ csharp:
   sourceDirectory: SDK
   defaultErrorName: SDKException
   useNodatime: true
+  preserveUnknownFields: true

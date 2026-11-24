@@ -1,0 +1,50 @@
+{{- if and preserveUnknownFields schemaValidationLenient -}}
+#nullable enable
+using {{getScopeNamespace "shared" true}};
+using Xunit;
+
+public class UnknownFieldsLenientShould
+{
+    [Fact]
+    public void KeepUndeclaredFieldsDuringLenientConstruct()
+    {
+        var envelope = Compat.ConstructUnvalidated<FieldEnvelope>(
+            "{\"label\":\"root\",\"future\":1,\"children\":5,\"child\":{\"displayName\":\"child\",\"nullable\":5,\"future\":{\"a\":[true]}}}"
+        );
+
+        Assert.NotNull(envelope);
+        Assert.Equal("root", envelope!.Label);
+        Assert.Null(envelope.Children);
+        var root = Assert.Single(envelope.UnknownFields!);
+        Assert.Equal("future", root.Key);
+        Assert.Equal("1", root.Value.GetRawText());
+        Assert.Equal("child", envelope.Child!.DisplayName);
+        var nested = Assert.Single(envelope.Child.UnknownFields!);
+        Assert.Equal("future", nested.Key);
+        UnknownFieldsShould.AssertJsonEqual("{\"a\":[true]}", nested.Value.GetRawText());
+    }
+
+    [Fact]
+    public void DoNotMoveInvalidKnownFieldIntoUnknownFields()
+    {
+        var node = Compat.ConstructUnvalidated<FieldNode>("{\"displayName\":\"child\",\"nullable\":5,\"future\":true}");
+
+        Assert.NotNull(node);
+        Assert.False(node!.Nullable.IsSet);
+        var entry = Assert.Single(node.UnknownFields!);
+        Assert.Equal("future", entry.Key);
+        UnknownFieldsShould.AssertJsonEqual("{\"displayName\":\"child\",\"future\":true}", Compat.SerializeJson(node));
+    }
+
+    [Fact]
+    public void BindStorageNamedWireKeyAsUndeclaredFieldDuringLenientConstruct()
+    {
+        var node = Compat.ConstructUnvalidated<FieldNode>("{\"displayName\":\"child\",\"nullable\":5,\"UnknownFields\":{\"a\":1}}");
+
+        Assert.NotNull(node);
+        var entry = Assert.Single(node!.UnknownFields!);
+        Assert.Equal("UnknownFields", entry.Key);
+        UnknownFieldsShould.AssertJsonEqual("{\"a\":1}", entry.Value.GetRawText());
+    }
+}
+{{ end -}}

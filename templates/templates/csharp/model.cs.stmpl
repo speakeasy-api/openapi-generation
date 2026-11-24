@@ -38,4 +38,5 @@
         {{- end -}} {{/* endif union */}}
         {{- end -}} {{/* endwith $field */}}
       {{- end -}} {{/* endrange .Local.Fields */}}
+      {{- templateUnknownFieldsMember $.Local 2}}
     }

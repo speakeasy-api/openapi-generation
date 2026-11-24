@@ -1,0 +1,269 @@
+{{- if preserveUnknownFields -}}
+#nullable enable
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Threading;
+using System.Threading.Tasks;
+using {{getSDKNamespace}};
+using {{getScopeNamespace "shared" true}};
+using {{getScopeNamespace "utils"}};
+using Xunit;
+using UnknownFieldsErrors = {{getScopeNamespace "errors" true}};
+using UnknownFieldsOperations = {{getScopeNamespace "operations" true}};
+
+public class UnknownFieldsShould
+{
+    [Theory]
+    [InlineData("\"future\":\"value\"")]
+    [InlineData("\"future\":false")]
+    [InlineData("\"future\":null")]
+    [InlineData("\"future\":0")]
+    [InlineData("\"future\":[]")]
+    [InlineData("\"future\":{\"nested\":[null,false,0,\"value\"]}")]
+    [InlineData("\"future\":123456789012345678901234567890")]
+    [InlineData("\"future\":0.1000000000000000055511151231257827")]
+    [InlineData("\"child\":{\"displayName\":\"child\",\"future\":true}")]
+    [InlineData("\"child\":{\"displayName\":\"child\",\"display_name\":\"unknown\"}")]
+    [InlineData("\"child\":{\"displayName\":\"child\",\"nullable\":null}")]
+    [InlineData("\"child\":{\"displayName\":\"child\",\"child\":{\"displayName\":\"grandchild\",\"future\":true}}")]
+    [InlineData("\"children\":[{\"displayName\":\"child\",\"future\":true}]")]
+    [InlineData("\"lookup\":{\"one\":{\"displayName\":\"child\",\"future\":true}}")]
+    [InlineData("\"empty\":{\"future\":true}")]
+    [InlineData("\"split\":{\"label\":\"split\",\"future\":true}")]
+    [InlineData("\"composed\":{\"displayName\":\"child\",\"category\":\"combined\",\"future\":true}")]
+    [InlineData("\"closed\":{\"label\":\"closed\",\"future\":true}")]
+    [InlineData("\"requiredOnly\":{\"label\":\"required\",\"future\":true}")]
+    [InlineData("\"plainChoice\":{\"text\":\"value\",\"label\":\"text\",\"future\":true}")]
+    [InlineData("\"plainChoice\":{\"number\":3,\"label\":\"number\",\"future\":true}")]
+    [InlineData("\"choice\":{\"kind\":\"text\",\"text\":\"value\",\"future\":true}")]
+    [InlineData("\"choice\":{\"kind\":\"number\",\"number\":3,\"future\":true}")]
+    public async Task RoundTripUndeclaredFields(string fields)
+    {
+        CommonHelpers.RecordTest("unknown-fields-json-round-trip");
+        var payload = "{\"label\":\"root\"," + fields + "}";
+
+        var (response, sent) = await EchoAsync(Compat.DeserializeJson<FieldEnvelope>(payload));
+
+        AssertJsonEqual(payload, sent);
+        var echoed = JsonNode.Parse(await response.RawResponse.Content.ReadAsStringAsync())!["json"]!.ToJsonString();
+        AssertJsonEqual(echoed, Compat.SerializeJson(response.Object!.Json));
+        Assert.True(response.Object.UnknownFields!.ContainsKey("headers"));
+    }
+
+    [Fact]
+    public async Task KeepUndeclaredFieldsOfNestedModelArgument()
+    {
+        var log = new List<CommonHelpers.RequestLogEntry>();
+        var sdk = CreateSdk(new CommonHelpers.RequestRecorderClient(log));
+        var child = Compat.DeserializeJson<FieldNode>("{\"displayName\":\"child\",\"future\":{\"enabled\":false}}");
+
+        var response = await sdk.EchoFlattenedUnknownFieldsAsync(new FlattenedFields { Label = "root", Child = child });
+
+        AssertJsonEqual(
+            "{\"label\":\"root\",\"child\":{\"displayName\":\"child\",\"future\":{\"enabled\":false}}}",
+            Assert.Single(log).RequestBody!
+        );
+        Assert.Null(response.Object!.Json.UnknownFields);
+        Assert.False(response.Object.Json.Child!.UnknownFields!["future"].GetProperty("enabled").GetBoolean());
+    }
+
+    [Fact]
+    public void LeaveUnknownFieldsNullWithoutUndeclaredFields()
+    {
+        var envelope = Compat.DeserializeJson<FieldEnvelope>("{\"label\":\"root\",\"child\":{\"displayName\":\"child\"}}");
+
+        Assert.Null(envelope.UnknownFields);
+        Assert.Null(envelope.Child!.UnknownFields);
+        AssertJsonEqual("{\"label\":\"root\",\"child\":{\"displayName\":\"child\"}}", Compat.SerializeJson(envelope));
+    }
+
+    [Fact]
+    public void SendCallerAddedUnknownFields()
+    {
+        var node = new FieldNode
+        {
+            DisplayName = "child",
+            UnknownFields = new Dictionary<string, JsonElement>
+            {
+                ["future"] = Compat.ParseRaw("null"),
+                ["count"] = Compat.ParseRaw("2"),
+            },
+        };
+
+        AssertJsonEqual("{\"displayName\":\"child\",\"future\":null,\"count\":2}", Compat.SerializeJson(node));
+    }
+
+    [Fact]
+    public async Task KeepUndeclaredFieldsOnErrorPayload()
+    {
+        var body = "{\"message\":\"invalid\",\"kind\":\"invalid\",\"future\":null,\"detail\":{\"displayName\":\"child\",\"future\":{\"flag\":true}}}";
+        var sdk = CreateSdk(new StubHttpClient(HttpStatusCode.BadRequest, "application/json", body));
+
+        var ex = await Assert.ThrowsAsync<UnknownFieldsErrors.EchoUnknownFieldsResponseBody>(
+            () => sdk.EchoUnknownFieldsAsync(new FieldEnvelope { Label = "root" })
+        );
+
+        Assert.Equal(JsonValueKind.Null, ex.Payload.UnknownFields!["future"].ValueKind);
+        Assert.True(ex.Payload.Detail!.UnknownFields!["future"].GetProperty("flag").GetBoolean());
+        AssertJsonEqual(body, Compat.SerializeJson(ex.Payload));
+    }
+
+    [Fact]
+    public async Task KeepUndeclaredFieldsOnSsePayload()
+    {
+        var events = Compat.EventsFromSse<JsonEvent>("id: 7\nretry: 100\ndata: {\"content\":\"hello\",\"future\":[1,2]}\n\n");
+
+        var ev = await events.Next();
+
+        Assert.NotNull(ev);
+        Assert.Equal("hello", ev!.Data.Content);
+        var unknown = Assert.Single(ev.Data.UnknownFields!);
+        Assert.Equal("future", unknown.Key);
+        Assert.Equal("[1,2]", unknown.Value.GetRawText());
+    }
+
+    [Fact]
+    public void SseEnvelopeHasNoUnknownFieldsMember()
+    {
+        Assert.Null(typeof(JsonEvent).GetProperty("UnknownFields"));
+        Assert.NotNull(typeof(JsonEventData).GetProperty("UnknownFields"));
+    }
+
+    [Fact]
+    public void RejectMissingOrNullRequiredFieldWithUndeclaredFields()
+    {
+        Assert.Throws<JsonException>(() => Compat.DeserializeJson<FieldNode>("{\"future\":1}"));
+        Assert.Throws<JsonException>(() => Compat.DeserializeJson<FieldNode>("{\"displayName\":null,\"future\":1}"));
+    }
+
+    [Fact]
+    public void SelectSameUnionVariantWithUndeclaredFields()
+    {
+        var text = Compat.DeserializeJson<PlainChoice>("{\"text\":\"value\",\"label\":\"text\",\"future\":true}");
+        var number = Compat.DeserializeJson<PlainChoice>("{\"number\":3,\"label\":\"number\",\"future\":true}");
+
+        Assert.Null(text.NumberFields);
+        Assert.True(text.TextFields!.UnknownFields!.ContainsKey("future"));
+        Assert.Null(number.TextFields);
+        Assert.True(number.NumberFields!.UnknownFields!.ContainsKey("future"));
+    }
+
+    [Fact]
+    public void UndeclaredFieldNamedLikeStorageMember()
+    {
+        var json = "{\"displayName\":\"child\",\"UnknownFields\":{\"a\":1}}";
+
+        var node = Compat.DeserializeJson<FieldNode>(json);
+
+        var entry = Assert.Single(node.UnknownFields!);
+        Assert.Equal("UnknownFields", entry.Key);
+        AssertJsonEqual(json, Compat.SerializeJson(node));
+    }
+
+    [Fact]
+    public void ModelsWithSchemaAdditionalPropertiesHaveNoUnknownFields()
+    {
+        Assert.Null(typeof(OpenFields).GetProperty("UnknownFields"));
+        Assert.Null(typeof(TypedFields).GetProperty("UnknownFields"));
+        Assert.Null(typeof(TypedNodes).GetProperty("UnknownFields"));
+    }
+
+    [Fact]
+    public void ExposeUnknownFieldsOnJsonModelsOnly()
+    {
+        Assert.NotNull(typeof(ClosedFields).GetProperty("UnknownFields"));
+        Assert.NotNull(typeof(EmptyFields).GetProperty("UnknownFields"));
+        Assert.NotNull(typeof(UnknownFieldsOperations.UnknownFieldsQueryFilter).GetProperty("UnknownFields"));
+        Assert.NotNull(typeof(UnknownFieldsErrors.EchoUnknownFieldsResponseBodyPayload).GetProperty("UnknownFields"));
+        Assert.Null(typeof(UnknownFieldsErrors.EchoUnknownFieldsResponseBody).GetProperty("UnknownFields"));
+        Assert.Null(typeof(UnknownFieldsOperations.EchoUnknownFieldsResponse).GetProperty("UnknownFields"));
+        Assert.Null(typeof(PlainChoice).GetProperty("UnknownFields"));
+    }
+{{- if isFeatureUsed "callbacks"}}
+
+    [Fact]
+    public void ExposeUnknownFieldsOnCallbackRequestBodies()
+    {
+        Assert.NotNull(typeof({{getScopeNamespace "callbacks" true}}.IgnoredGenerationGetNotIgnoredCallbackRequestBody).GetProperty("UnknownFields"));
+        Assert.Null(typeof({{getScopeNamespace "callbacks" true}}.IgnoredGenerationGetNotIgnoredCallbackResponse).GetProperty("UnknownFields"));
+    }
+{{- end}}
+{{- if isFeatureUsed "webhooks"}}
+
+    [Fact]
+    public void ExposeUnknownFieldsOnWebhookPayloads()
+    {
+        Assert.NotNull(typeof(WebhookRequestCreated).GetProperty("UnknownFields"));
+        Assert.NotNull(typeof(ObjectWithInvalidDefault).GetProperty("UnknownFields"));
+    }
+{{- end}}
+
+    [Fact]
+    public void IgnoreUnknownFieldsMemberWhenCountingMissingUnionVariantFields()
+    {
+        var union = Compat.DeserializeJson<CircularMultiLevelLeaf>("{\"level2\":{\"level3\":\"leaf\"}}");
+
+        Assert.Null(union.MapOfCircularMultiLevelMiddle);
+        Assert.Equal("leaf", union.CircularMultiLevelRoot!.Level2!.Level3!.Str);
+    }
+
+    [Fact]
+    public async Task SendUnknownFieldsOfJsonQueryParameter()
+    {
+        var log = new List<CommonHelpers.RequestLogEntry>();
+        var sdk = CreateSdk(new CommonHelpers.RequestRecorderClient(log));
+        var filter = new UnknownFieldsOperations.UnknownFieldsQueryFilter
+        {
+            Label = "root",
+            UnknownFields = new Dictionary<string, JsonElement> { ["future"] = Compat.ParseRaw("true") },
+        };
+
+        await sdk.EchoOptionalJsonQueryAsync(filter);
+
+        var query = System.Uri.UnescapeDataString(Assert.Single(log).RequestUri!.Query);
+        Assert.StartsWith("?filter=", query);
+        AssertJsonEqual("{\"label\":\"root\",\"future\":true}", query.Substring("?filter=".Length));
+    }
+
+    internal static void AssertJsonEqual(string expected, string actual) =>
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), JsonNode.Parse(actual)), $"Expected: {expected}\nActual:   {actual}");
+
+    private static SDK CreateSdk(I{{getDefaultHttpClient}} client) =>
+        new SDK(serverUrl: CommonHelpers.HttpBinUrl, client: client{{with getSecurityParam .Global.AST.MainSDK}}, {{.Source}}: () => default!{{end}});
+
+    internal static async Task<(UnknownFieldsOperations.EchoUnknownFieldsResponse Response, string Sent)> EchoAsync(FieldEnvelope request)
+    {
+        var log = new List<CommonHelpers.RequestLogEntry>();
+        var sdk = CreateSdk(new CommonHelpers.RequestRecorderClient(log));
+        var response = await sdk.EchoUnknownFieldsAsync(request);
+        return (response, Assert.Single(log).RequestBody!);
+    }
+
+    private sealed class StubHttpClient : I{{getDefaultHttpClient}}
+    {
+        private readonly HttpStatusCode _status;
+        private readonly string _contentType;
+        private readonly string _body;
+
+        public StubHttpClient(HttpStatusCode status, string contentType, string body)
+        {
+            _status = status;
+            _contentType = contentType;
+            _body = body;
+        }
+
+        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request{{if .Global.Config.EnableCancellationToken}}, CancellationToken? cancellationToken = null{{end}}) =>
+            Task.FromResult(new HttpResponseMessage(_status)
+            {
+                RequestMessage = request,
+                Content = new StringContent(_body, Encoding.UTF8, _contentType),
+            });
+
+        public Task<HttpRequestMessage> CloneAsync(HttpRequestMessage request) => Task.FromResult(request);
+    }
+}
+{{ end -}}

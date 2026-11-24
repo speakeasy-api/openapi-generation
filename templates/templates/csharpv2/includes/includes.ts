@@ -17,5 +17,6 @@ require("./v2/pagination.ts");
 require("./v2/responses.ts");
 require("./v2/security.ts");
 require("./v2/jsoncontext.ts");
+require("./v2/unknownfields.ts");
 require("./v2/hooks.ts");
 require("./v2/main.ts");

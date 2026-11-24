@@ -35,3 +35,4 @@ csharp:
   responseFormat: envelope
   useNodatime: true
   bodyVariantOverloads: true
+  preserveUnknownFields: true

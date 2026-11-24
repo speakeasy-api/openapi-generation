@@ -13,6 +13,26 @@ function templatePartialModifier(): string {
 registerTemplateFunc("templatePartialModifier", templatePartialModifier);
 
 // @ts-ignore
+function preserveUnknownFields(): boolean {
+  return false;
+}
+
+registerTemplateFunc("preserveUnknownFields", preserveUnknownFields);
+
+// @ts-ignore
+function templateUnknownFieldsMember(
+  _typeDef: TypeDef,
+  _indent: number,
+): string {
+  return "";
+}
+
+registerTemplateFunc(
+  "templateUnknownFieldsMember",
+  templateUnknownFieldsMember,
+);
+
+// @ts-ignore
 function sanitizeScopeName(name: string) {
   return caser().ToPascal(name);
 }

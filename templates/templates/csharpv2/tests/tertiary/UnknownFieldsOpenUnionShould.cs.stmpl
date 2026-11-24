@@ -1,0 +1,41 @@
+{{- if preserveUnknownFields -}}
+#nullable enable
+using System.Threading.Tasks;
+using {{getScopeNamespace "shared" true}};
+using Xunit;
+
+public class UnknownFieldsOpenUnionShould
+{
+    [Theory]
+    [InlineData("\"choice\":{\"kind\":\"future\",\"weight\":9000}")]
+    [InlineData("\"history\":[{\"kind\":\"note\",\"content\":[{\"kind\":\"text\",\"text\":\"t\"}]},{\"kind\":\"rewind\",\"steps\":2}]")]
+    [InlineData("\"nestedHistory\":[[{\"kind\":\"text\",\"text\":\"t\"},{\"kind\":\"future\",\"weight\":1}]]")]
+    [InlineData("\"historyByName\":{\"a\":{\"kind\":\"pause\",\"seconds\":1},\"b\":{\"kind\":\"later\"}}")]
+    public async Task RoundTripUnknownUnionVariant(string fields)
+    {
+        var payload = "{\"label\":\"root\"," + fields + "}";
+
+        var (response, sent) = await UnknownFieldsShould.EchoAsync(Compat.DeserializeJson<FieldEnvelope>(payload));
+
+        UnknownFieldsShould.AssertJsonEqual(payload, sent);
+        UnknownFieldsShould.AssertJsonEqual(payload, Compat.SerializeJson(response.Object!.Json));
+    }
+
+    [Fact]
+    public async Task RoundTripUnknownVariantInsideModelWithUnknownFields()
+    {
+        var payload = "{\"label\":\"root\",\"future\":\"x\",\"choices\":[{\"kind\":\"text\",\"text\":\"t\",\"future\":1},{\"kind\":\"future\",\"weight\":9000}]}";
+
+        var request = Compat.DeserializeJson<FieldEnvelope>(payload);
+        var (response, sent) = await UnknownFieldsShould.EchoAsync(request);
+
+        Assert.True(request.Choices![1].IsUnknown());
+        Assert.True(request.Choices[0].TextChoice!.UnknownFields!.ContainsKey("future"));
+        UnknownFieldsShould.AssertJsonEqual(payload, sent);
+        var echoed = response.Object!.Json;
+        Assert.True(echoed.Choices![1].IsUnknown());
+        Assert.Equal("x", echoed.UnknownFields!["future"].GetString());
+        UnknownFieldsShould.AssertJsonEqual(payload, Compat.SerializeJson(echoed));
+    }
+}
+{{ end -}}

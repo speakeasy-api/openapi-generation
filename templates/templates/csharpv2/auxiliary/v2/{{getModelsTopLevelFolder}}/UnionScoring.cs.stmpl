@@ -150,7 +150,11 @@ namespace {{getModelNamespace ""}}
                     // Only object-shaped metadata yields a property-fit signal.
                     // Dictionary / freeform objects declare no properties and must not
                     // be penalized — they legitimately accept arbitrary keys.
+{{- if preserveUnknownFields}}
+                    if (typeInfo.Kind != JsonTypeInfoKind.Object || DeclaredPropertyCount(typeInfo) == 0)
+{{- else}}
                     if (typeInfo.Kind != JsonTypeInfoKind.Object || typeInfo.Properties.Count == 0)
+{{- end}}
                     {
                         return UnionScore.Zero;
                     }
@@ -160,6 +164,12 @@ namespace {{getModelNamespace ""}}
                     );
                     foreach (var prop in typeInfo.Properties)
                     {
+{{- if preserveUnknownFields}}
+                        if (prop.IsExtensionData)
+                        {
+                            continue;
+                        }
+{{- end}}
                         known[prop.Name] = prop;
                     }
 
@@ -188,6 +198,12 @@ namespace {{getModelNamespace ""}}
                     int missing = 0;
                     foreach (var prop in typeInfo.Properties)
                     {
+{{- if preserveUnknownFields}}
+                        if (prop.IsExtensionData)
+                        {
+                            continue;
+                        }
+{{- end}}
                         if (!matched.Contains(prop.Name))
                         {
                             missing++;
@@ -213,6 +229,22 @@ namespace {{getModelNamespace ""}}
                     return UnionScore.Zero;
             }
         }
+
+{{- if preserveUnknownFields}}
+
+        private static int DeclaredPropertyCount(JsonTypeInfo typeInfo)
+        {
+            int count = 0;
+            foreach (var prop in typeInfo.Properties)
+            {
+                if (!prop.IsExtensionData)
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+{{- end}}
 
         private static JsonTypeInfo? ResolveTypeInfo(global::System.Type type, JsonSerializerOptions options)
         {

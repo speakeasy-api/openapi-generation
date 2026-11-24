@@ -25,3 +25,5 @@ Tests here run for both `csharp` (template version v1) and `csharpv2` (template 
   v1-only tests to an existing test class, declare it `partial` in both files.
 - **v2 only**: `../../csharpv2/tests/<group>/<Name>.cs`. Use a name that does not exist
   here; a file with the same path replaces the shared one for v2.
+- **v2 only, gated on an option, shared by every group that enables it**:
+  `../../csharpv2/tests/Common/<Name>.cs.stmpl` with a whole-file gate on the option.

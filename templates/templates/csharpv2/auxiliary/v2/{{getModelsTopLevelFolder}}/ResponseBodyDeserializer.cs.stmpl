@@ -258,8 +258,20 @@ namespace {{getModelNamespace ""}}
                 global::System.Text.Json.Serialization.Metadata.JsonTypeInfo typeInfo)
             {
                 var instance = typeInfo.CreateObject!();
+{{- if preserveUnknownFields}}
+                global::System.Text.Json.Serialization.Metadata.JsonPropertyInfo? extensionData = null;
+                var declared = new global::System.Collections.Generic.HashSet<string>(global::System.StringComparer.Ordinal);
+{{- end}}
                 foreach (var property in typeInfo.Properties)
                 {
+{{- if preserveUnknownFields}}
+                    if (property.IsExtensionData)
+                    {
+                        extensionData = property;
+                        continue;
+                    }
+                    declared.Add(property.Name);
+{{- end}}
                     if (property.Set == null || !element.TryGetProperty(property.Name, out var member))
                     {
                         continue;
@@ -276,6 +288,24 @@ namespace {{getModelNamespace ""}}
                     {
                     }
                 }
+{{- if preserveUnknownFields}}
+                if (extensionData?.Set != null
+                    && extensionData.PropertyType == typeof(global::System.Collections.Generic.Dictionary<string, global::System.Text.Json.JsonElement>))
+                {
+                    var unknownFields = new global::System.Collections.Generic.Dictionary<string, global::System.Text.Json.JsonElement>();
+                    foreach (var member in element.EnumerateObject())
+                    {
+                        if (!declared.Contains(member.Name))
+                        {
+                            unknownFields[member.Name] = member.Value.Clone();
+                        }
+                    }
+                    if (unknownFields.Count > 0)
+                    {
+                        extensionData.Set(instance, unknownFields);
+                    }
+                }
+{{- end}}
                 return instance;
             }
 

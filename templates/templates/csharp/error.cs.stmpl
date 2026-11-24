@@ -19,6 +19,7 @@
     {{- end }}
   {{- end }}
 {{- end}}
+{{- templateUnknownFieldsMember $.Local 2}}
     }
 
     {{- templateComments .Local.Comments 1 "class"}}
