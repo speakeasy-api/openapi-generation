@@ -75,7 +75,7 @@ Sources are shown as:
   [unset]   - Not configured
 
 Credential values are masked for security.`,
-		Annotations: map[string]string{"speakeasy_settings_command": "true"},
+		Annotations: map[string]string{"speakeasy_settings_command": "true", "speakeasy_config_optional": "true"},
 		Args:        cobra.NoArgs,
 		RunE:        runWhoamiCmd,
 	})
@@ -86,7 +86,7 @@ Credential values are masked for security.`,
 		Long: `Clear all stored authentication credentials from both the OS keychain and config file.
 
 This removes all credentials previously set via auth login or configure.`,
-		Annotations: map[string]string{"speakeasy_settings_command": "true"},
+		Annotations: map[string]string{"speakeasy_settings_command": "true", "speakeasy_config_optional": "true"},
 		Args:        cobra.NoArgs,
 		RunE:        runAuthLogoutCmd,
 	})

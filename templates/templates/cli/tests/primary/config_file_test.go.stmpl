@@ -1,0 +1,65 @@
+package tests
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/clierrors"
+)
+
+const unparseableConfig = "security: ["
+
+func TestUnparseableConfigFile(t *testing.T) {
+	setup := func(t *testing.T) (*CLITestHarness, string) {
+		home := t.TempDir()
+		path := cliConfigPath(home)
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(unparseableConfig), 0o600))
+		return NewCLITestHarness(t).WithEnv("HOME", home), path
+	}
+
+	for _, args := range [][]string{
+		{"version"},
+		{"help"},
+		{"completion", "bash"},
+		{"whoami", "--no-interactive"},
+	} {
+		t.Run("runs with a warning/"+args[0], func(t *testing.T) {
+			h, _ := setup(t)
+			require.NoError(t, h.RunBare(args), h.GetStderr())
+			assert.Contains(t, h.GetStderr(), "Warning: failed to parse config file")
+		})
+	}
+
+	t.Run("api commands still fail", func(t *testing.T) {
+		h, _ := setup(t)
+		err := h.RunBare([]string{"methods", "method-get"})
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		assert.Contains(t, err.Error(), "failed to parse config file")
+	})
+
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "configure", args: []string{"configure"}, want: "failed to parse config file"},
+		{name: "auth logout", args: []string{"auth", "logout"}, want: "fix or remove the file before saving settings"},
+	} {
+		t.Run(tc.name+" does not overwrite the file", func(t *testing.T) {
+			h, path := setup(t)
+			err := h.RunBare(tc.args)
+			require.Error(t, err)
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+			assert.Contains(t, err.Error(), tc.want)
+			data, readErr := os.ReadFile(path)
+			require.NoError(t, readErr)
+			assert.Equal(t, unparseableConfig, string(data))
+		})
+	}
+}
