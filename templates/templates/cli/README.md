@@ -1445,7 +1445,7 @@ cli response-headers response-headers --status-code 200 --include-headers --outp
 
 1. `wantsHeaders(cmd)` checks the `--include-headers` flag
 2. `extractResponseHeaders(res)` gets `http.Header` from the response's `HTTPMeta.Response.Header` via reflection
-3. `extractErrorResponseHeaders(err)` does the same for error types (via `RawResponse` field)
+3. `extractErrorResponseHeaders(err)` does the same for the error and each error it wraps, reading `HTTPMeta.Response` or a `RawResponse` field
 4. `flattenHeaders(headers)` converts `http.Header` to `map[string]interface{}` with single-value flattening
 5. `injectHeaders(data, headers)` merges flattened headers as `_response_headers` key into the output
 6. `outputWithHeaders()` unifies header injection for json, yaml, and jq output modes
