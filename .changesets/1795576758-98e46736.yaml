@@ -1,0 +1,10 @@
+id: 1795576758-98e46736
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: an unreadable config file no longer blocks version, help, completion, whoami and auth logout, and settings are never saved over it
+author: TristanSpeakEasy
+date: "2026-11-25"
