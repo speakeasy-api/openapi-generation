@@ -94,13 +94,12 @@ func (e *asyncRuntimeError) MachineErrorFields() map[string]interface{} {
 		if errorMember == "" {
 			errorMember = "error"
 		}
-		errorPayload := e.payload
-		if object, ok := e.payload.(map[string]interface{}); ok {
-			if member, exists := object[errorMember]; exists {
-				errorPayload = member
-			}
+		object, isObject := e.payload.(map[string]interface{})
+		if !isObject {
+			fields["error"] = e.payload
+		} else if member, exists := object[errorMember]; exists {
+			fields["error"] = member
 		}
-		fields["error"] = errorPayload
 	}
 	return fields
 }
