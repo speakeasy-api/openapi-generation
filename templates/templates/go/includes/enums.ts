@@ -97,17 +97,79 @@ function unionPackageIdentifiers(
   return names;
 }
 
+// sdkPackageIdentifiers lists the root package declarations an enum helper
+// could collide with: the SDK-level server constants and list, the server
+// variable setters, and the SDK option functions.
+function sdkPackageIdentifiers(): string[] {
+  const names = ["ServerList", ...Object.values(getOptionNames())];
+  const servers = context.Global.AST.MainSDK.Servers;
+  if (servers) {
+    if (servers.ServerMap) {
+      for (const s of servers.Servers) {
+        names.push(templateConstName(s.ID, "Server"));
+      }
+    }
+    for (const v of servers.GetVariables()) {
+      names.push(templateSDKOptionName(v.Name));
+    }
+  }
+  return names;
+}
+
+// optionsPackageIdentifiers lists what options.go and method_options.go
+// declare in the operations package: the shared option types and functions,
+// and the per-operation method argument options.
+function optionsPackageIdentifiers(): string[] {
+  const names = ["Options", "Option", ...Object.values(getOptionNames())];
+  if (!hasGoOptionalMethodArgumentOptions() && !hasGoMethodSpecificOptions()) {
+    return names;
+  }
+  const controls = [
+    "ServerURL",
+    "TemplatedServerURL",
+    "Timeout",
+    "SetHeaders",
+    "Retries",
+    "Polling",
+    "AcceptHeaderOverride",
+    "URLOverride",
+    "SkipDeserialization",
+  ];
+  for (const m of getGoOperationOptionMetadataList()) {
+    if (m.mode === "method-options") {
+      names.push(m.optionsType, m.optionType);
+      for (const c of controls) {
+        names.push(`With${m.prefix}${c}`);
+      }
+    }
+    for (const a of m.optionalArguments) {
+      names.push(a.name, a.supportedOptionName);
+    }
+  }
+  return names;
+}
+
 function packageIdentifiers(outputLocation: string): PackageIdentifiers {
   if (!context.GlobalComputed) {
     context.GlobalComputed = {};
   }
   if (!context.GlobalComputed._packageIdentifiers) {
     const byLocation = new Map<string, PackageIdentifiers>();
+    const enumsByLocation = new Map<string, string[]>();
+    const at = (location: string): PackageIdentifiers => {
+      let ids = byLocation.get(location);
+      if (!ids) {
+        ids = { taken: new Set(), helpers: new Map() };
+        byLocation.set(location, ids);
+        enumsByLocation.set(location, []);
+      }
+      return ids;
+    };
     for (const [location, models] of sequencedMapEntries(
       context.Global.AST.BucketedTypes,
     )) {
-      const ids: PackageIdentifiers = { taken: new Set(), helpers: new Map() };
-      const enums: string[] = [];
+      const ids = at(location ?? "");
+      const enums = enumsByLocation.get(location ?? "")!;
       for (const [model, types] of sequencedMapEntries(models)) {
         if (
           types.length == 0 ||
@@ -138,17 +200,23 @@ function packageIdentifiers(outputLocation: string): PackageIdentifiers {
           }
         }
       }
-      for (const name of enums.sort()) {
+    }
+    sdkPackageIdentifiers().forEach((n) => at("").taken.add(n));
+    const opsLocation = context.Global.Config.Imports.GetOperationsPath() ?? "";
+    optionsPackageIdentifiers().forEach((n) => at(opsLocation).taken.add(n));
+    for (const [location, ids] of byLocation) {
+      for (const name of enumsByLocation.get(location)!.sort()) {
         ids.helpers.set(name, allocateEnumValuesFuncName(name, ids.taken));
       }
-      byLocation.set(location, ids);
     }
     context.GlobalComputed._packageIdentifiers = byLocation;
   }
-  let ids = context.GlobalComputed._packageIdentifiers.get(outputLocation);
+  let ids = context.GlobalComputed._packageIdentifiers.get(
+    outputLocation ?? "",
+  );
   if (!ids) {
     ids = { taken: new Set(), helpers: new Map() };
-    context.GlobalComputed._packageIdentifiers.set(outputLocation, ids);
+    context.GlobalComputed._packageIdentifiers.set(outputLocation ?? "", ids);
   }
   return ids;
 }
