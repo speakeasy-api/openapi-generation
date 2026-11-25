@@ -126,8 +126,12 @@ func GetString(key string) string {
 
 // GetEnvValue returns the environment variable value for a flag name, or "".
 func GetEnvValue(key string) string {
-	envKey := envPrefix + "_" + strings.ToUpper(strings.ReplaceAll(key, "-", "_"))
-	return os.Getenv(envKey)
+	return os.Getenv(EnvVarName(key))
+}
+
+// EnvVarName returns the environment variable that sets a flag name.
+func EnvVarName(key string) string {
+	return envPrefix + "_" + strings.ToUpper(strings.ReplaceAll(key, "-", "_"))
 }
 
 // GetConfigValue returns the config file value for a flag name, or "".
