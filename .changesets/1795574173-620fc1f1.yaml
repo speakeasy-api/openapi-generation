@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: --jq halt and halt_error keep earlier output and follow jq semantics instead of failing the command
+description: --jq halt and halt_error keep earlier output and follow jq exit semantics, so halt and halt_error(0) succeed and other halt_error calls fail with the halted value
 author: TristanSpeakEasy
 date: "2026-11-25"

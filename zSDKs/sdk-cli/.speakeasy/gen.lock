@@ -282,13 +282,13 @@ trackedFiles:
   internal/output/exitcodes.go:
     last_write_checksum: sha1:2d7b297cdcaa356d3fd19e4ea639086cb312e715
   internal/output/jq.go:
-    last_write_checksum: sha1:888c35453e0f4763a29b1a00db1fdaecaf2be44c
+    last_write_checksum: sha1:64920ba996a31478e2be1e0ad34dc3df2a74e34a
   internal/output/number.go:
     last_write_checksum: sha1:7134750cc26632383479e8bf71b4ae79f0041140
   internal/output/outcome.go:
     last_write_checksum: sha1:0ea32db0867358ff91cd5fe6d24de400d09b4fc3
   internal/output/output.go:
-    last_write_checksum: sha1:e47974b66b47d0b811b02aa3bfaa368aab61ffe6
+    last_write_checksum: sha1:19b27aaa80ea7316ace7bfa07b2e98135efde2d7
   internal/output/output_test.go:
     last_write_checksum: sha1:8fbe483a74a4aa39b8faa4c5067c76ba29bfb7d9
   internal/output/outputitems.go:

@@ -656,6 +656,14 @@ func TestPaginationAllJqHalt(t *testing.T) {
 		require.NoError(t, err, h.GetStderr())
 		assert.Equal(t, "1", strings.TrimSpace(h.GetStdout()))
 		assert.Equal(t, "stopped\n", h.GetStderr())
+		assert.Equal(t, int32(1), pages.Load())
+	})
+
+	t.Run("halt_error with a null value fails with a generic message", func(t *testing.T) {
+		h, err := run(t, `.id, (null | halt_error(1))`)
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
+		assert.Equal(t, "jq halt_error", jsonGetString(h.GetStderr(), "message"))
 	})
 
 	t.Run("halt_error fails with its value as the message", func(t *testing.T) {

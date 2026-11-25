@@ -427,7 +427,7 @@ func result(cmd *cobra.Command, res interface{}, allowArtifact bool) error {
 	if failure != nil && allowArtifact && activeArtifact(cmd) != nil {
 		return Error(cmd, failure)
 	}
-	if err := renderResult(cmd, res, allowArtifact); err != nil {
+	if err := renderResult(cmd, res, allowArtifact); err != nil && (failure == nil || jqHalt(err) == nil) {
 		return err
 	}
 	if failure != nil {

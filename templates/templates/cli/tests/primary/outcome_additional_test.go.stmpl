@@ -144,6 +144,14 @@ func TestOutcomeDiscreteResponse(t *testing.T) {
 			require.Len(t, detail, 1)
 			assert.Equal(t, "content was blocked", detail[0].(map[string]interface{})["message"])
 		})
+		t.Run(name+"/jq-halt", func(t *testing.T) {
+			srv := newOutcomeServer(t, "failed", true)
+			defer srv.Close()
+			h, err := runOutcome(t, srv.URL, append(command, "--jq", ".status, halt")...)
+			assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+			assert.Contains(t, h.GetStdout(), "failed")
+			assert.Equal(t, "CLI_OUTCOME_FAILED", outcomeErrorEnvelope(t, h.GetStderr())["error_reason"])
+		})
 	}
 }
 

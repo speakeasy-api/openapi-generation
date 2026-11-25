@@ -102,8 +102,11 @@ func jqHalt(err error) *gojq.HaltError {
 // message.
 func jqHaltOutcome(stderr io.Writer, halt *gojq.HaltError) error {
 	value := halt.Value()
-	if value == nil && halt.ExitCode() == 0 {
-		return nil
+	if value == nil {
+		if halt.ExitCode() == 0 {
+			return nil
+		}
+		return errors.New("jq halt_error")
 	}
 	message, isString := value.(string)
 	if !isString {
