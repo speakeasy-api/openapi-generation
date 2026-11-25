@@ -59,10 +59,12 @@ export const Test2ResponseError$inboundSchema: z.ZodMiniType<
       body$: z.string(),
     }),
     z.transform((v) => {
-      return new Test2ResponseError(v, {
-        request: v.request$,
-        response: v.response$,
-        body: v.body$,
+      const { request$, response$, body$, ...data } = v;
+
+      return new Test2ResponseError(data, {
+        request: request$,
+        response: response$,
+        body: body$,
       });
     }),
   )

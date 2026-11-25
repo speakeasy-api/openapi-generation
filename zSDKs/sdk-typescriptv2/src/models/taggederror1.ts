@@ -55,10 +55,12 @@ export const TaggedError1$inboundSchema: z.ZodMiniType<TaggedError1, unknown> =
         body$: z.string(),
       }),
       z.transform((v) => {
-        return new TaggedError1(v, {
-          request: v.request$,
-          response: v.response$,
-          body: v.body$,
+        const { request$, response$, body$, ...data } = v;
+
+        return new TaggedError1(data, {
+          request: request$,
+          response: response$,
+          body: body$,
         });
       }),
     )

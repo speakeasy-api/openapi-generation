@@ -1,0 +1,10 @@
+id: 1795601106-05b9a3c4
+features:
+    - errors
+targets:
+    - typescriptv2
+type: fix
+bump: patch
+description: keep only declared response fields in typed error data$, so the authenticated Request no longer appears when the error is logged
+author: AshGodfrey
+date: "2026-11-25"
