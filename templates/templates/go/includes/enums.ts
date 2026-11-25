@@ -99,7 +99,7 @@ function unionPackageIdentifiers(
 
 // sdkPackageIdentifiers lists the root package declarations an enum helper
 // could collide with: the SDK-level server constants and list, the server
-// variable setters, and the SDK option functions.
+// variable and global parameter setters, and the SDK option functions.
 function sdkPackageIdentifiers(): string[] {
   const names = ["ServerList", ...Object.values(getOptionNames())];
   const servers = context.Global.AST.MainSDK.Servers;
@@ -111,6 +111,12 @@ function sdkPackageIdentifiers(): string[] {
     }
     for (const v of servers.GetVariables()) {
       names.push(templateSDKOptionName(v.Name));
+    }
+  }
+  const globals = context.Global.AST.MainSDK.Globals;
+  if (globals) {
+    for (const f of globals.Fields) {
+      names.push(templateSDKOptionName(f.Name));
     }
   }
   return names;
