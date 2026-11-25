@@ -1,0 +1,10 @@
+id: 1795574173-620fc1f1
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: --jq halt and halt_error keep earlier output and follow jq semantics instead of failing the command
+author: TristanSpeakEasy
+date: "2026-11-25"
