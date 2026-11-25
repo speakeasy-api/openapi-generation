@@ -36,6 +36,7 @@ namespace Speakeasy.OpenAPI.Utils
             ReadSerializer = JsonSerializer.Create(new JsonSerializerSettings() {
                 NullValueHandling = NullValueHandling.Ignore,
                 DateParseHandling = DateParseHandling.None,
+                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
                 Converters = readConverters,
             });
         }
@@ -52,7 +53,7 @@ namespace Speakeasy.OpenAPI.Utils
     /// so that additional properties are read from and written to the top level of the JSON object.
     /// </summary>
     /// <remarks>
-    /// Keys matching a declared property's JSON name (case-insensitively) are not written.
+    /// Keys matching a declared property's JSON name (case-insensitively) are neither read nor written.
     /// </remarks>
     internal sealed class AdditionalPropertiesAdapter<T> : IDictionary<string, object?>
     {
@@ -69,9 +70,13 @@ namespace Speakeasy.OpenAPI.Utils
 
         public object? this[string key]
         {
-            get => _get()![key];
+            get => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException(key);
             set
             {
+                if (IsDeclared(key))
+                {
+                    return;
+                }
                 var converted = Convert(value);
                 GetOrCreate()[key] = converted;
             }
@@ -87,17 +92,27 @@ namespace Speakeasy.OpenAPI.Utils
 
         public void Add(string key, object? value)
         {
+            if (IsDeclared(key))
+            {
+                return;
+            }
             var converted = Convert(value);
             GetOrCreate().Add(key, converted);
         }
 
         public void Add(KeyValuePair<string, object?> item) => Add(item.Key, item.Value);
 
-        public void Clear() => _get()?.Clear();
+        public void Clear()
+        {
+            foreach (var key in Keys)
+            {
+                Remove(key);
+            }
+        }
 
-        public bool Contains(KeyValuePair<string, object?> item) => ContainsKey(item.Key);
+        public bool Contains(KeyValuePair<string, object?> item) => TryGetValue(item.Key, out var value) && Equals(value, item.Value);
 
-        public bool ContainsKey(string key) => _get()?.ContainsKey(key) ?? false;
+        public bool ContainsKey(string key) => !IsDeclared(key) && (_get()?.ContainsKey(key) ?? false);
 
         public void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
         {
@@ -107,14 +122,14 @@ namespace Speakeasy.OpenAPI.Utils
             }
         }
 
-        public bool Remove(string key) => _get()?.Remove(key) ?? false;
+        public bool Remove(string key) => !IsDeclared(key) && (_get()?.Remove(key) ?? false);
 
-        public bool Remove(KeyValuePair<string, object?> item) => Remove(item.Key);
+        public bool Remove(KeyValuePair<string, object?> item) => Contains(item) && Remove(item.Key);
 
         public bool TryGetValue(string key, out object? value)
         {
             var inner = _get();
-            if (inner != null && inner.TryGetValue(key, out var typed))
+            if (!IsDeclared(key) && inner != null && inner.TryGetValue(key, out var typed))
             {
                 value = typed;
                 return true;
@@ -145,8 +160,10 @@ namespace Speakeasy.OpenAPI.Utils
             {
                 return Enumerable.Empty<KeyValuePair<string, T>>();
             }
-            return inner.Where(kv => !_options.DeclaredJsonNames.Contains(kv.Key));
+            return inner.Where(kv => !IsDeclared(kv.Key));
         }
+
+        private bool IsDeclared(string key) => _options.DeclaredJsonNames.Contains(key);
 
         private Dictionary<string, T> GetOrCreate()
         {
@@ -166,8 +183,8 @@ namespace Speakeasy.OpenAPI.Utils
             {
                 return (T)AnyDeserializer.ParseToken(token)!;
             }
-            // Extension data arrives pre-tokenized, with JSON numbers held as double. Converting
-            // through JSON text lets decimal targets parse the number text instead of a double.
+            // JToken.ToObject<decimal> rounds a double token to 15 significant digits; the token's
+            // JSON text keeps the double's round-trip digits.
             using (var reader = new JsonTextReader(new StringReader(token.ToString(Formatting.None))) { DateParseHandling = DateParseHandling.None })
             {
                 return _options.ReadSerializer.Deserialize<T>(reader)!;

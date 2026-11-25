@@ -5,6 +5,6 @@ targets:
     - csharp
 type: fix
 bump: patch
-description: spread additionalProperties at the top level of the JSON object behind the spreadAdditionalProperties fix flag
+description: spread additionalProperties at the top level of the JSON object on read and write behind the spreadAdditionalProperties fix flag, on by default for new SDKs
 author: 2ynn
 date: "2026-11-25"

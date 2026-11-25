@@ -20,7 +20,7 @@ namespace {{getScopeNamespace "utils"}}
 
         public static T? Deserialize<T>(string json, NullValueHandling nullValueHandling=NullValueHandling.Ignore, MissingMemberHandling missingMemberHandling=MissingMemberHandling.Ignore)
         {
-            return JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings(){ NullValueHandling = nullValueHandling, MissingMemberHandling = missingMemberHandling{{if dateParseHandlingNone}}, DateParseHandling = DateParseHandling.None{{end}}, Converters = Utilities.GetJsonDeserializers(typeof(T))});
+            return JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings(){ NullValueHandling = nullValueHandling, MissingMemberHandling = missingMemberHandling{{if dateParseHandlingNone}}, DateParseHandling = DateParseHandling.None{{end}}{{if spreadAdditionalProperties}}, MetadataPropertyHandling = MetadataPropertyHandling.Ignore{{end}}, Converters = Utilities.GetJsonDeserializers(typeof(T))});
         }
 
         public static T DeserializeNotNull<T>(string json, NullValueHandling nullValueHandling=NullValueHandling.Ignore, MissingMemberHandling missingMemberHandling=MissingMemberHandling.Ignore)
@@ -64,6 +64,9 @@ namespace {{getScopeNamespace "utils"}}
                     MaxDepth = 64,
                 {{- if dateParseHandlingNone}}
                     DateParseHandling = DateParseHandling.None,
+                {{- end}}
+                {{- if spreadAdditionalProperties}}
+                    MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
                 {{- end}}
                     Converters = Utilities.GetJsonDeserializers(typeof(T)),
                 });

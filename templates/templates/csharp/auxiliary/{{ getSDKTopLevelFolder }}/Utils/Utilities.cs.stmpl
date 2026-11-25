@@ -56,6 +56,9 @@ namespace {{getScopeNamespace "utils"}}
             {{- if dateParseHandlingNone}}
                 DateParseHandling = DateParseHandling.None,
             {{- end}}
+            {{- if spreadAdditionalProperties}}
+                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+            {{- end}}
                 Converters = GetDefaultJsonDeserializers()
             };
         }

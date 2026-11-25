@@ -7,6 +7,7 @@ using Openapi;
 using Openapi.Models.Shared;
 using Openapi.Utils;
 using System.Net;
+using Newtonsoft.Json;
 
 public class ResponseBodiesShould
 {
@@ -301,5 +302,70 @@ public class ResponseBodiesShould
         obj.AdditionalProperties = new Dictionary<string, object>() { { "self", obj } };
 
         Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => Utilities.SerializeJSON(obj));
+    }
+
+    [Fact]
+    public void AdditionalPropertiesSkipReadOnlyDeclaredJsonNamesOnRead()
+    {
+        var obj = ResponseBodyDeserializer.Deserialize<ConstKindWithIntExtras>(
+            "{\"kind\":\"widget\",\"Kind\":\"widget\",\"count\":5}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(new Dictionary<string, long>() { { "count", 5 } }, obj.AdditionalProperties);
+        Assert.Equal("{\"kind\":\"widget\",\"count\":5}", Utilities.SerializeJSON(obj));
+    }
+
+    [Fact]
+    public void AdditionalPropertiesKeepMetadataPropertyNames()
+    {
+        var obj = ResponseBodyDeserializer.Deserialize<ObjWithAnyAdditionalProperties>(
+            "{\"items\":{\"$ref\":\"#/$defs/Widget\",\"description\":\"d\"},\"node\":{\"$id\":\"1\"},\"list\":{\"$values\":[1]}}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(
+            "{\"items\":{\"$ref\":\"#/$defs/Widget\",\"description\":\"d\"},\"node\":{\"$id\":\"1\"},\"list\":{\"$values\":[1]}}",
+            Utilities.SerializeJSON(obj)
+        );
+    }
+
+    [Fact]
+    public void AdditionalPropertiesAcceptedByStrictMemberMatching()
+    {
+        var obj = ResponseBodyDeserializer.DeserializeUndiscriminatedUnionMember<ObjWithStringAdditionalProperties>(
+            "{\"normalField\":\"string\",\"extra1\":\"value1\"}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(new Dictionary<string, string>() { { "extra1", "value1" } }, obj.AdditionalProperties);
+        Assert.Throws<ResponseBodyDeserializer.MissingMemberException>(
+            () => ResponseBodyDeserializer.DeserializeUndiscriminatedUnionMember<ClosedNormalField>(
+                "{\"normalField\":\"string\",\"extra1\":\"value1\"}"
+            )
+        );
+    }
+
+    private class ClosedNormalField
+    {
+        [JsonProperty("normalField")]
+        public string NormalField { get; set; }
+    }
+
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
+    private class ConstKindWithIntExtras
+    {
+        [JsonProperty("kind")]
+        public string Kind { get; } = "widget";
+
+        [JsonIgnore]
+        public Dictionary<string, long> AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { "kind" });
+
+        private AdditionalPropertiesAdapter<long> _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<long>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
     }
 }
