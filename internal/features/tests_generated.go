@@ -104,6 +104,8 @@ func (t Test) String() string {
         return "auth-open-id-connect-auth"
     case TestAuthOperationLevelOauth2:
         return "auth-operation-level-oauth2"
+    case TestAuthTypedErrorInspectionOmitsCredentials:
+        return "auth-typed-error-inspection-omits-credentials"
     case TestCancellationTokenCancelledBeforeRequest:
         return "cancellation-token-cancelled-before-request"
     case TestCancellationTokenCancelledDuringRequest:
@@ -1664,6 +1666,8 @@ func TestFromString(s string) Test {
         return TestAuthOpenIDConnectAuth
     case "auth-operation-level-oauth2":
         return TestAuthOperationLevelOauth2
+    case "auth-typed-error-inspection-omits-credentials":
+        return TestAuthTypedErrorInspectionOmitsCredentials
     case "cancellation-token-cancelled-before-request":
         return TestCancellationTokenCancelledBeforeRequest
     case "cancellation-token-cancelled-during-request":
@@ -3173,6 +3177,7 @@ var testList = []Test{
     TestAuthOauth2Auth,
     TestAuthOpenIDConnectAuth,
     TestAuthOperationLevelOauth2,
+    TestAuthTypedErrorInspectionOmitsCredentials,
     TestCancellationTokenCancelledBeforeRequest,
     TestCancellationTokenCancelledDuringRequest,
     TestCancellationTokenCancelledInsideHook,
