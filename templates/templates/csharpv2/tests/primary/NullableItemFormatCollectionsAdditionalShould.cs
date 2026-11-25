@@ -70,13 +70,26 @@ public partial class NullableItemFormatCollectionsAdditionalShould
     }
 
     [Fact]
-    public void ConvertNullableItemCollectionsWithBigIntegerStringFactory()
+    public void ConvertCollectionsWithBigIntegerStringFactory()
     {
         var factory = new BigIntegerStringJsonConverterFactory();
+        AssertRoundTrip(factory, LargeBigInteger, "\"123456789012345678901234567890\"");
+        AssertRoundTrip<BigInteger?>(factory, LargeBigInteger, "\"123456789012345678901234567890\"");
+        AssertRoundTrip<BigInteger?>(factory, null, "null");
+        AssertRoundTrip(
+            factory,
+            new List<BigInteger> { LargeBigInteger, BigInteger.MinusOne },
+            "[\"123456789012345678901234567890\",\"-1\"]"
+        );
         AssertRoundTrip(
             factory,
             new List<BigInteger?> { null, LargeBigInteger },
             "[null,\"123456789012345678901234567890\"]"
+        );
+        AssertRoundTrip(
+            factory,
+            new Dictionary<string, BigInteger> { ["a"] = LargeBigInteger, ["b"] = BigInteger.MinusOne },
+            "{\"a\":\"123456789012345678901234567890\",\"b\":\"-1\"}"
         );
         AssertRoundTrip(
             factory,
@@ -86,13 +99,26 @@ public partial class NullableItemFormatCollectionsAdditionalShould
     }
 
     [Fact]
-    public void ConvertNullableItemCollectionsWithBigIntegerNumberFactory()
+    public void ConvertCollectionsWithBigIntegerNumberFactory()
     {
         var factory = new BigIntegerJsonConverterFactory();
+        AssertRoundTrip(factory, LargeBigInteger, "123456789012345678901234567890");
+        AssertRoundTrip<BigInteger?>(factory, LargeBigInteger, "123456789012345678901234567890");
+        AssertRoundTrip<BigInteger?>(factory, null, "null");
+        AssertRoundTrip(
+            factory,
+            new List<BigInteger> { LargeBigInteger, BigInteger.MinusOne },
+            "[123456789012345678901234567890,-1]"
+        );
         AssertRoundTrip(
             factory,
             new List<BigInteger?> { null, LargeBigInteger },
             "[null,123456789012345678901234567890]"
+        );
+        AssertRoundTrip(
+            factory,
+            new Dictionary<string, BigInteger> { ["a"] = LargeBigInteger, ["b"] = BigInteger.MinusOne },
+            "{\"a\":123456789012345678901234567890,\"b\":-1}"
         );
         AssertRoundTrip(
             factory,
@@ -102,13 +128,26 @@ public partial class NullableItemFormatCollectionsAdditionalShould
     }
 
     [Fact]
-    public void ConvertNullableItemCollectionsWithDecimalStringFactory()
+    public void ConvertCollectionsWithDecimalStringFactory()
     {
         var factory = new DecimalStringJsonConverterFactory();
+        AssertRoundTrip(factory, PreciseDecimal, "\"3.1415926535897932384626433833\"");
+        AssertRoundTrip<decimal?>(factory, PreciseDecimal, "\"3.1415926535897932384626433833\"");
+        AssertRoundTrip<decimal?>(factory, null, "null");
+        AssertRoundTrip(
+            factory,
+            new List<decimal> { PreciseDecimal, -0.5m },
+            "[\"3.1415926535897932384626433833\",\"-0.5\"]"
+        );
         AssertRoundTrip(
             factory,
             new List<decimal?> { null, PreciseDecimal },
             "[null,\"3.1415926535897932384626433833\"]"
+        );
+        AssertRoundTrip(
+            factory,
+            new Dictionary<string, decimal> { ["a"] = PreciseDecimal, ["b"] = -0.5m },
+            "{\"a\":\"3.1415926535897932384626433833\",\"b\":\"-0.5\"}"
         );
         AssertRoundTrip(
             factory,
@@ -118,13 +157,26 @@ public partial class NullableItemFormatCollectionsAdditionalShould
     }
 
     [Fact]
-    public void ConvertNullableItemCollectionsWithDecimalNumberFactory()
+    public void ConvertCollectionsWithDecimalNumberFactory()
     {
         var factory = new DecimalJsonConverterFactory();
+        AssertRoundTrip(factory, PreciseDecimal, "3.1415926535897932384626433833");
+        AssertRoundTrip<decimal?>(factory, PreciseDecimal, "3.1415926535897932384626433833");
+        AssertRoundTrip<decimal?>(factory, null, "null");
+        AssertRoundTrip(
+            factory,
+            new List<decimal> { PreciseDecimal, -0.5m },
+            "[3.1415926535897932384626433833,-0.5]"
+        );
         AssertRoundTrip(
             factory,
             new List<decimal?> { null, PreciseDecimal },
             "[null,3.1415926535897932384626433833]"
+        );
+        AssertRoundTrip(
+            factory,
+            new Dictionary<string, decimal> { ["a"] = PreciseDecimal, ["b"] = -0.5m },
+            "{\"a\":3.1415926535897932384626433833,\"b\":-0.5}"
         );
         AssertRoundTrip(
             factory,
@@ -134,13 +186,26 @@ public partial class NullableItemFormatCollectionsAdditionalShould
     }
 
     [Fact]
-    public void ConvertNullableItemCollectionsWithDateTimeFactory()
+    public void ConvertCollectionsWithDateTimeFactory()
     {
         var factory = new DateTimeJsonConverterFactory();
+        AssertRoundTrip(factory, Timestamp, "\"2024-01-02T03:04:05.0000000Z\"");
+        AssertRoundTrip<DateTime?>(factory, Timestamp, "\"2024-01-02T03:04:05.0000000Z\"");
+        AssertRoundTrip<DateTime?>(factory, null, "null");
+        AssertRoundTrip(
+            factory,
+            new List<DateTime> { Timestamp, Timestamp.AddDays(1) },
+            "[\"2024-01-02T03:04:05.0000000Z\",\"2024-01-03T03:04:05.0000000Z\"]"
+        );
         AssertRoundTrip(
             factory,
             new List<DateTime?> { null, Timestamp },
             "[null,\"2024-01-02T03:04:05.0000000Z\"]"
+        );
+        AssertRoundTrip(
+            factory,
+            new Dictionary<string, DateTime> { ["a"] = Timestamp, ["b"] = Timestamp.AddDays(1) },
+            "{\"a\":\"2024-01-02T03:04:05.0000000Z\",\"b\":\"2024-01-03T03:04:05.0000000Z\"}"
         );
         AssertRoundTrip(
             factory,
@@ -152,21 +217,21 @@ public partial class NullableItemFormatCollectionsAdditionalShould
     [Fact]
     public void RejectUnsupportedCollectionsInBigIntegerFactory()
     {
-        AssertRejected(new BigIntegerStringJsonConverterFactory());
-        AssertRejected(new BigIntegerJsonConverterFactory());
+        AssertRejected<BigInteger>(new BigIntegerStringJsonConverterFactory());
+        AssertRejected<BigInteger>(new BigIntegerJsonConverterFactory());
     }
 
     [Fact]
     public void RejectUnsupportedCollectionsInDecimalFactory()
     {
-        AssertRejected(new DecimalStringJsonConverterFactory());
-        AssertRejected(new DecimalJsonConverterFactory());
+        AssertRejected<decimal>(new DecimalStringJsonConverterFactory());
+        AssertRejected<decimal>(new DecimalJsonConverterFactory());
     }
 
     [Fact]
     public void RejectUnsupportedCollectionsInDateTimeFactory()
     {
-        AssertRejected(new DateTimeJsonConverterFactory());
+        AssertRejected<DateTime>(new DateTimeJsonConverterFactory());
     }
 
     private static NullableItemFormatCollections Request(CollectionOrString collectionOrString) =>
@@ -198,12 +263,29 @@ public partial class NullableItemFormatCollectionsAdditionalShould
 
         Assert.Equal(expectedJson, json);
         Assert.Equal(value, JsonSerializer.Deserialize(json, typeInfo));
+        var wrongContainer = expectedJson.StartsWith("[") ? "{}" : "[]";
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(wrongContainer, typeInfo));
     }
 
-    private static void AssertRejected(JsonConverterFactory factory)
+    private static void AssertRejected<T>(JsonConverterFactory factory)
+        where T : struct
     {
-        Assert.False(factory.CanConvert(typeof(List<string>)));
-        Assert.Throws<NotSupportedException>(() => factory.CreateConverter(typeof(List<string>), Options));
+        foreach (var type in new[] { typeof(List<string>), typeof(Dictionary<int, T>), typeof(Dictionary<int, T?>) })
+        {
+            Assert.False(factory.CanConvert(type));
+            Assert.Throws<NotSupportedException>(() => factory.CreateConverter(type, Options));
+        }
+        AssertNullHandling<List<T>>(factory, "[null]");
+        AssertNullHandling<Dictionary<string, T>>(factory, "{\"a\":null}");
+    }
+
+    private static void AssertNullHandling<T>(JsonConverterFactory factory, string jsonWithNullItem)
+        where T : class
+    {
+        var typeInfo = JsonMetadataServices.CreateValueInfo<T>(Options, factory.CreateConverter(typeof(T), Options)!);
+
+        Assert.Null(JsonSerializer.Deserialize("null", typeInfo));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(jsonWithNullItem, typeInfo));
     }
 
     [JsonSerializable(typeof(string))]

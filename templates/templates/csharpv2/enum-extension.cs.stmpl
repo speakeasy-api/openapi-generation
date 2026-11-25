@@ -1,23 +1,27 @@
 {{- $name := .Local.Name}}
+{{- $type := or (index .Local "QualifiedName") $name}}
+{{- $int := index .Local "Int"}}
+{{- $valueType := "string"}}
+{{- if $int}}{{$valueType = "long"}}{{end}}
     public static class {{$name}}Extension
     {
-        public static string Value(this {{$name}} value)
+        public static {{$valueType}} Value(this {{$type}} value)
         {
             return value switch
             {
         {{- range $index, $scope := .Local.Scopes }}
-                {{$name}}.{{index $.Local.DedupNames $index}} => "{{$scope.Name}}",
+                {{$type}}.{{index $.Local.DedupNames $index}} => {{if $int}}{{$scope.Name}}{{else}}{{templateStringLiteral $scope.Name}}{{end}},
         {{- end}}
                 _ => throw new global::System.ArgumentOutOfRangeException(nameof(value), value, null),
             };
         }
 
-        public static {{$name}} ToEnum(this string value)
+        public static {{$type}} ToEnum(this {{$valueType}} value)
         {
             return value switch
             {
         {{- range $index, $scope := .Local.Scopes }}
-                "{{$scope.Name}}" => {{$name}}.{{index $.Local.DedupNames $index}},
+                {{if $int}}{{templateIntPattern $scope.Name}}{{else}}{{templateStringLiteral $scope.Name}}{{end}} => {{$type}}.{{index $.Local.DedupNames $index}},
         {{- end}}
                 _ => throw new global::System.Exception($"Unknown value {value} for enum {{$name}}"),
             };

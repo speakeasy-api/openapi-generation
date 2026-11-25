@@ -11,7 +11,6 @@
 
   <ItemGroup>
     <ProjectReference Include="{{getUsageSourceFilePath .Global.Config.Usage.SourceDir}}"/>
-    <ProjectReference Include="{{getUsageModelsFilePath .Global.Config.Usage.SourceDir}}"/>
   </ItemGroup>
 
 </Project>

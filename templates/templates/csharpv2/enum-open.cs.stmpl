@@ -3,13 +3,10 @@
 {{- $enumType := sanitizeType .Local.Enum.Type false "" }}
 {{- $stringEnum := eq $enumType "string" }}
 {{- $deprecated := and .Local.Comments .Local.Comments.Deprecated }}
+{{- $type := getEnumQualifiedName .Local }}
 
-{{- if $deprecated }}
-#pragma warning disable 0618
-{{- end}}
     {{- templateComments .Local.Comments 1 "class" false}}
     {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
-    [GenerateEnumConverter(Open = true, Type = EnumType.{{if $stringEnum}}String{{else}}Int{{end}})]
     [System.Text.Json.Serialization.JsonConverter(typeof({{ $className }}OpenEnumConverter))]
     public {{templatePartialModifier}}class {{ $className }} : IEquatable<{{ $className }}>
     {
@@ -58,6 +55,59 @@
         }
 
         public override int GetHashCode() => Value.GetHashCode();
+    }
+{{- if $deprecated }}{{"\n"}}#pragma warning disable 0618{{- end}}
+
+    public sealed class {{ $className }}OpenEnumConverter : global::System.Text.Json.Serialization.JsonConverter<{{$type}}>
+    {
+        public override {{$type}}? Read(ref global::System.Text.Json.Utf8JsonReader reader, global::System.Type typeToConvert, global::System.Text.Json.JsonSerializerOptions options)
+        {
+            if (reader.TokenType == global::System.Text.Json.JsonTokenType.Null)
+            {
+                return null;
+            }
+            {{- if $stringEnum }}
+
+            var value = reader.GetString();
+            if (value == null)
+            {
+                return null;
+            }
+
+            return {{$type}}.Of(value);
+            {{- else }}
+
+            if (!reader.TryGetInt64(out var value))
+            {
+                var number = reader.GetDouble();
+                if (number != global::System.Math.Floor(number) || number < (double)long.MinValue || number >= -(double)long.MinValue)
+                {
+                    throw new global::System.Text.Json.JsonException($"Expected an integral value for {{$className}}, got {number}");
+                }
+                value = (long)number;
+            }
+
+            try
+            {
+                return {{$type}}.Of(checked(({{$enumType}})value));
+            }
+            catch (global::System.OverflowException ex)
+            {
+                throw new global::System.Text.Json.JsonException($"Value {value} is out of range for {{$className}}", ex);
+            }
+            {{- end }}
+        }
+
+        public override void Write(global::System.Text.Json.Utf8JsonWriter writer, {{$type}}? value, global::System.Text.Json.JsonSerializerOptions options)
+        {
+            if (value == null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+            writer.{{if $stringEnum}}WriteStringValue{{else}}WriteNumberValue{{end}}(value.Value);
+        }
     }
 {{- if $deprecated }}
 #pragma warning restore 0618

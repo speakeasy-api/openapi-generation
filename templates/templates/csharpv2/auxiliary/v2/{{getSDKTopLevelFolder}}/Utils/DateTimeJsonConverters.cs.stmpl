@@ -1,0 +1,73 @@
+#nullable enable
+namespace {{getScopeNamespace "utils" true}};
+
+using System;
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+/// <summary>
+/// Reads a <see cref="DateTime"/> from an ISO 8601 string and writes it in UTC with seven fractional-second digits.
+/// </summary>
+internal sealed class DateTimeJsonConverter : JsonConverter<DateTime>
+{
+    private const string Format = "yyyy-MM-ddTHH:mm:ss.fffffffK";
+
+    public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.String)
+            throw new JsonException($"Unexpected token type for DateTime: {reader.TokenType}");
+        var s = reader.GetString();
+        if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dt))
+        {
+            return dt;
+        }
+        throw new JsonException($"Cannot parse DateTime from string: {s}");
+    }
+
+    public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
+    {
+        var utc = value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
+        writer.WriteStringValue(utc.ToString(Format, CultureInfo.InvariantCulture));
+    }
+}
+
+{{- if requiresNodatime}}
+
+/// <summary>
+/// Reads and writes a <see cref="NodaTime.LocalDate"/> as an ISO 8601 date string ("yyyy-MM-dd").
+/// </summary>
+public sealed class LocalDateJsonConverter : JsonConverter<NodaTime.LocalDate>
+{
+    public override NodaTime.LocalDate Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.String)
+            throw new JsonException($"Unexpected token type for LocalDate: {reader.TokenType}");
+        var s = reader.GetString() ?? "";
+        var result = NodaTime.Text.LocalDatePattern.Iso.Parse(s);
+        if (result.Success)
+        {
+            return result.Value;
+        }
+        throw new JsonException($"Cannot parse LocalDate from string: {s}");
+    }
+
+    public override void Write(Utf8JsonWriter writer, NodaTime.LocalDate value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(NodaTime.Text.LocalDatePattern.Iso.Format(value));
+    }
+}
+{{- end}}
+
+/// <summary>
+/// Reads <see cref="DateTime"/>, nullable, list and dictionary values from ISO 8601 strings and writes them as ISO 8601 strings in UTC.
+/// </summary>
+public sealed class DateTimeJsonConverterFactory : JsonConverterFactory
+{
+    public override bool CanConvert(Type t) => FormatJsonConverters.CanConvert<DateTime>(t);
+
+    public override JsonConverter? CreateConverter(Type t, JsonSerializerOptions options)
+    {
+        return FormatJsonConverters.Create(t, new DateTimeJsonConverter());
+    }
+}

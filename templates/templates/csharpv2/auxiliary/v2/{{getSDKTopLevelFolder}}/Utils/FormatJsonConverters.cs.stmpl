@@ -1,0 +1,116 @@
+#nullable enable
+namespace {{getScopeNamespace "utils" true}};
+
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+internal static class FormatJsonConverters
+{
+    public static bool CanConvert<T>(Type t)
+        where T : struct =>
+        t == typeof(T)
+        || t == typeof(T?)
+        || t == typeof(List<T>)
+        || t == typeof(List<T?>)
+        || t == typeof(Dictionary<string, T>)
+        || t == typeof(Dictionary<string, T?>);
+
+    public static JsonConverter Create<T>(Type t, JsonConverter<T> scalar)
+        where T : struct
+    {
+        if (t == typeof(T))
+            return scalar;
+        var nullable = new NullableValueJsonConverter<T>(scalar);
+        if (t == typeof(T?))
+            return nullable;
+        if (t == typeof(List<T>))
+            return new ListJsonConverter<T>(scalar);
+        if (t == typeof(List<T?>))
+            return new ListJsonConverter<T?>(nullable);
+        if (t == typeof(Dictionary<string, T>))
+            return new StringKeyDictionaryJsonConverter<T>(scalar);
+        if (t == typeof(Dictionary<string, T?>))
+            return new StringKeyDictionaryJsonConverter<T?>(nullable);
+        throw new NotSupportedException($"Type not supported by {typeof(T).Name} converter: {t}");
+    }
+}
+
+internal sealed class NullableValueJsonConverter<T> : JsonConverter<T?>
+    where T : struct
+{
+    private readonly JsonConverter<T> _inner;
+    public NullableValueJsonConverter(JsonConverter<T> inner) { _inner = inner; }
+
+    public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Null) return null;
+        return _inner.Read(ref reader, typeof(T), options);
+    }
+
+    public override void Write(Utf8JsonWriter writer, T? value, JsonSerializerOptions options)
+    {
+        if (value is null) { writer.WriteNullValue(); return; }
+        _inner.Write(writer, value.Value, options);
+    }
+}
+
+internal sealed class ListJsonConverter<TItem> : JsonConverter<List<TItem>>
+{
+    private readonly JsonConverter<TItem> _inner;
+    public ListJsonConverter(JsonConverter<TItem> inner) { _inner = inner; }
+
+    public override List<TItem> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.StartArray)
+            throw new JsonException($"Expected StartArray for {typeToConvert}, got {reader.TokenType}");
+        var list = new List<TItem>();
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+        {
+            list.Add(_inner.Read(ref reader, typeof(TItem), options)!);
+        }
+        return list;
+    }
+
+    public override void Write(Utf8JsonWriter writer, List<TItem> value, JsonSerializerOptions options)
+    {
+        writer.WriteStartArray();
+        foreach (var v in value)
+        {
+            _inner.Write(writer, v, options);
+        }
+        writer.WriteEndArray();
+    }
+}
+
+internal sealed class StringKeyDictionaryJsonConverter<TValue> : JsonConverter<Dictionary<string, TValue>>
+{
+    private readonly JsonConverter<TValue> _inner;
+    public StringKeyDictionaryJsonConverter(JsonConverter<TValue> inner) { _inner = inner; }
+
+    public override Dictionary<string, TValue> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.StartObject)
+            throw new JsonException($"Expected StartObject for {typeToConvert}, got {reader.TokenType}");
+        var dict = new Dictionary<string, TValue>();
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+        {
+            var key = reader.GetString()!;
+            reader.Read();
+            dict[key] = _inner.Read(ref reader, typeof(TValue), options)!;
+        }
+        return dict;
+    }
+
+    public override void Write(Utf8JsonWriter writer, Dictionary<string, TValue> value, JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+        foreach (var kvp in value)
+        {
+            writer.WritePropertyName(kvp.Key);
+            _inner.Write(writer, kvp.Value, options);
+        }
+        writer.WriteEndObject();
+    }
+}

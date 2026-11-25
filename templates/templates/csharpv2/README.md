@@ -741,7 +741,12 @@ What to do: add direct package references for any of these your own code uses.
   for Newtonsoft and were not meant to be called.
 - Types that were `internal` in v1 (`URLBuilder`, `RequestBodySerializer`, `HeaderSerializer`, `SpeakeasyMetadata`,
   `ResponseBodyDeserializer`, `EnumConverter`, …) are replaced by other internal types.
-- New public types and members (`JsonSerialization`, converter classes in `Utils`, `<Union>ConverterFactory`,
-  `<Enum>JsonConverter`, `<Enum>OpenEnumConverter`, `OptionalNullableJsonConverter<T>`,
-  `SseStreamExtensions.AsAsyncEnumerable<T>()`, `Utilities.UnknownPrimitiveToString()`) are additions.
+- New public types and members (`JsonSerialization`, `SseStreamExtensions.AsAsyncEnumerable<T>()`,
+  `Utilities.UnknownPrimitiveToString()`, and the converters below) are additions.
+- Converters named in `[JsonConverter]` attributes on models are public, so that a `JsonSerializerContext` in your own
+  assembly applies them: `<Union>ConverterFactory`, `<Enum>JsonConverter`, `<Enum>OpenEnumConverter`,
+  `OptionalNullableJsonConverter<T>` and the `Utils` factories `BigIntegerJsonConverterFactory`,
+  `BigIntegerStringJsonConverterFactory`, `DecimalJsonConverterFactory`, `DecimalStringJsonConverterFactory` and
+  `DateTimeJsonConverterFactory`. `Utils.LocalDateJsonConverter` is public so you can add it to your own options. The
+  converters these factories create are internal.
 - On net8.0 and later the SDK is marked trimming- and NativeAOT-compatible.

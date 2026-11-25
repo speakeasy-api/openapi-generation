@@ -116,6 +116,9 @@ declare global {
   function getServerReadmeContext(): ServerReadmeContext;
   function templateServerVariableSetter(v: ServerVariable): string;
 
+  // enums.ts
+  function sanitizeEnumName(name: string): string;
+
   // sanitization.ts
   function sanitizeFieldName(name: string, className?: string): string;
   function sanitizeClassName(name: string, isInterface?: boolean): string;
@@ -125,6 +128,7 @@ declare global {
   function getDataTypeFormat(request: RequestDef): string;
   function canTypeBeNull(typeDef: TypeDef): boolean;
   function canFieldBeNull(field: FieldDef): boolean;
+  function getEnumNames(t: TypeDef): string[];
   function bodyVariantOverloadTargets(op: Operation): {
     bodyIndex: number;
     conversions: { Member: TypeDef }[];

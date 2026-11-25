@@ -22,13 +22,10 @@
   <ItemGroup>
     <ProjectReference Include="{{getUsageSourceFilePath .Global.Config.TestProject.SourceDir}}"
                       AdditionalProperties="NoWarn=CS0618%3BCS1591" />
-    <ProjectReference Include="{{getUsageModelsFilePath .Global.Config.TestProject.SourceDir}}"
-                      AdditionalProperties="NoWarn=CS0618%3BCS1591" />
   </ItemGroup>
 
   <ItemGroup>
     <TrimmerRootAssembly Include="{{getPackageId}}" />
-    <TrimmerRootAssembly Include="{{getModelsPackageId}}" />
   </ItemGroup>
 
 </Project>

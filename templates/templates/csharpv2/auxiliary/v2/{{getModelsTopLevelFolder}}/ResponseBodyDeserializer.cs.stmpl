@@ -6,8 +6,7 @@ namespace {{getModelNamespace ""}}
     /// Constructs typed models from JSON bodies that do not match their schema. Used by the SDK when
     /// schema validation is lenient; not intended to be called directly.
     /// </summary>
-    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-    public static class ResponseBodyDeserializer
+    internal static class ResponseBodyDeserializer
     {
         private static global::System.Tuple<global::System.Text.Json.JsonSerializerOptions, global::System.Text.Json.JsonSerializerOptions>? _lenientOptions;
 

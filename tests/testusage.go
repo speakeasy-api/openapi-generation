@@ -258,7 +258,7 @@ func sourceDirectory(lang, group string) string {
 				if info.IsDir() && info.Name() == "Tests" {
 					return filepath.SkipDir
 				}
-				if !info.IsDir() && csprojRegex.MatchString(info.Name()) {
+				if !info.IsDir() && csprojRegex.MatchString(info.Name()) && !strings.HasSuffix(info.Name(), ".Generators.csproj") {
 					projectDir = filepath.Dir(path)
 				}
 				return nil

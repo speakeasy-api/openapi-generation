@@ -158,9 +158,7 @@ function getTypeImports(
   switch (typeDef.Type.toString()) {
     case "enum":
       if (topLevel) {
-        if (isCsharpV2()) {
-          imports = addImport(imports, "Generators.Enum", true);
-        } else if (typeDef.Enum.Type.Type == "string") {
+        if (!isCsharpV2() && typeDef.Enum.Type.Type == "string") {
           imports = addImport(imports, "Newtonsoft.Json", false);
           imports = addImport(imports, "System", false);
         }

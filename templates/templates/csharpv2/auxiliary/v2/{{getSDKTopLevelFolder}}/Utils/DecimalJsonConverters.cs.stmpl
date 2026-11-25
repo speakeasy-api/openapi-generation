@@ -1,0 +1,98 @@
+#nullable enable
+namespace {{getScopeNamespace "utils" true}};
+
+using System;
+using System.Buffers;
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+/// <summary>
+/// Reads a <see cref="decimal"/> from a JSON number or string and writes it as a JSON number.
+/// </summary>
+internal sealed class DecimalJsonConverter : JsonConverter<decimal>
+{
+    public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return DecimalConverterHelpers.ReadValue(ref reader);
+    }
+
+    public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options)
+    {
+        // WriteRawValue emits unescaped numeric literal preserving full decimal precision.
+        writer.WriteRawValue(value.ToString(CultureInfo.InvariantCulture));
+    }
+}
+
+/// <summary>
+/// Reads a <see cref="decimal"/> from a JSON number or string and writes it as a JSON string.
+/// </summary>
+internal sealed class DecimalStringJsonConverter : JsonConverter<decimal>
+{
+    public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return DecimalConverterHelpers.ReadValue(ref reader);
+    }
+
+    public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value.ToString(CultureInfo.InvariantCulture));
+    }
+}
+
+internal static class DecimalConverterHelpers
+{
+    public static decimal ReadValue(ref Utf8JsonReader reader)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var s = reader.GetString();
+            if (decimal.TryParse(s, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
+            {
+                return parsed;
+            }
+            throw new JsonException($"Cannot parse decimal from string: {s}");
+        }
+        if (reader.TokenType == JsonTokenType.Number)
+        {
+            if (reader.TryGetDecimal(out var d))
+            {
+                return d;
+            }
+            // Fallback: read raw numeric text and parse to retain high-precision digits.
+            var raw = System.Text.Encoding.UTF8.GetString(reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray());
+            if (decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
+            {
+                return parsed;
+            }
+            throw new JsonException($"Cannot parse decimal from numeric token: {raw}");
+        }
+        throw new JsonException($"Unexpected token type for decimal: {reader.TokenType}");
+    }
+}
+
+/// <summary>
+/// Reads <see cref="decimal"/>, nullable, list and dictionary values from JSON numbers or strings and writes them as JSON numbers.
+/// </summary>
+public sealed class DecimalJsonConverterFactory : JsonConverterFactory
+{
+    public override bool CanConvert(Type t) => FormatJsonConverters.CanConvert<decimal>(t);
+
+    public override JsonConverter? CreateConverter(Type t, JsonSerializerOptions options)
+    {
+        return FormatJsonConverters.Create(t, new DecimalJsonConverter());
+    }
+}
+
+/// <summary>
+/// Reads <see cref="decimal"/>, nullable, list and dictionary values from JSON numbers or strings and writes them as JSON strings.
+/// </summary>
+public sealed class DecimalStringJsonConverterFactory : JsonConverterFactory
+{
+    public override bool CanConvert(Type t) => FormatJsonConverters.CanConvert<decimal>(t);
+
+    public override JsonConverter? CreateConverter(Type t, JsonSerializerOptions options)
+    {
+        return FormatJsonConverters.Create(t, new DecimalStringJsonConverter());
+    }
+}

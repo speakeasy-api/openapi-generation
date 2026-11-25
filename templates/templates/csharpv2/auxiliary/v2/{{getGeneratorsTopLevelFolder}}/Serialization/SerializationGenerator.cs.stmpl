@@ -189,7 +189,7 @@ public class SerializationGenerator : IIncrementalGenerator
         // clang-format off
         return $$"""
             #nullable enable
-            {{interp "namespaceDecl"}}public static class {{interp "SerializerClassName(info)"}}Serializer
+            {{interp "namespaceDecl"}}internal static class {{interp "SerializerClassName(info)"}}Serializer
             {
                 {{interp "methods"}}
             }
@@ -484,7 +484,7 @@ public class SerializationGenerator : IIncrementalGenerator
             #nullable enable
             namespace {{interp "utilsNamespace"}};
 
-            public static class RequestSerializer
+            internal static class RequestSerializer
             {
             {{interp "overloads"}}
             }
@@ -519,7 +519,7 @@ public class SerializationGenerator : IIncrementalGenerator
             #nullable enable
             namespace {{interp "utilsNamespace"}};
 
-            public static class ResponseDeserializer
+            internal static class ResponseDeserializer
             {
             {{interp "overloads"}}
             }

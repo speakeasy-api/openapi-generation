@@ -7,7 +7,7 @@ function getModelJobs(types: BucketedTypes, path: string): Job[] {
       for (const typeDef of types) {
         let modelName = typeDef.Name;
 
-        const fileDir = `${path}.${MODELS_PROJECT_NAME}/${getModelsLocation(
+        const fileDir = `${path}/${MODELS_FOLDER_NAME}/${getModelsLocation(
           outputLocation,
         )}`;
 
