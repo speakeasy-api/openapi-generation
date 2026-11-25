@@ -129,7 +129,7 @@ public class SecurityGenerator : IIncrementalGenerator
         // clang-format off
         return $$"""
             #nullable enable
-            {{interp "typeNsDecl"}}public static class {{interp "typeName"}}Applier
+            {{interp "typeNsDecl"}}internal static class {{interp "typeName"}}Applier
             {
                 public static System.Net.Http.HttpRequestMessage Apply(System.Func<{{interp "typeFqn"}}?> source, System.Net.Http.HttpRequestMessage request, System.Collections.Generic.List<string>? allowedFields = null)
                 {

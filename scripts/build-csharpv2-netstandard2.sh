@@ -76,7 +76,7 @@ function build_variant() {
 
     local sdk_project
     sdk_project="$(cd "${sdk_dir}" && find src -mindepth 2 -maxdepth 2 -name '*.csproj' \
-        ! -name '*.Models.csproj' ! -name '*.Generators.csproj')"
+        ! -name '*.Generators.csproj')"
     [[ -n "${sdk_project}" ]] || fail "SDK project not found" "${variant}"
 
     local net_tfm

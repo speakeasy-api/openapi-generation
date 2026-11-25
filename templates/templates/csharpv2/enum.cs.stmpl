@@ -2,12 +2,41 @@
 {{- $deprecated := and .Local.Comments .Local.Comments.Deprecated}}
 {{- $enumType := sanitizeType .Local.Enum.Type false ""}}
 {{- $stringEnum := eq $enumType "string"}}
+{{- $extension := getEnumExtensionData .Local}}
+{{- $type := $extension.QualifiedName}}
 
     {{- templateComments .Local.Comments 1 "class" false}}
     {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
-    [GenerateEnumConverter(Open = false, Type = EnumType.{{if $stringEnum}}String{{else}}Int{{end}})]
     [System.Text.Json.Serialization.JsonConverter(typeof({{$name}}{{if not $stringEnum}}Int{{end}}JsonConverter))]
     public enum {{$name}}
     {
         {{- templateEnums .Local}}
     }
+{{- if $deprecated }}{{"\n"}}#pragma warning disable 0618{{- end}}
+
+    public sealed class {{$name}}{{if not $stringEnum}}Int{{end}}JsonConverter : global::System.Text.Json.Serialization.JsonConverter<{{$type}}>
+    {
+        public override {{$type}} Read(ref global::System.Text.Json.Utf8JsonReader reader, global::System.Type typeToConvert, global::System.Text.Json.JsonSerializerOptions options)
+        {
+            var value = reader.{{if $stringEnum}}GetString{{else}}GetInt64{{end}}();
+            return value switch
+            {
+            {{- range $index, $scope := $extension.Scopes}}
+                {{if $stringEnum}}{{templateStringLiteral $scope.Name}}{{else}}{{templateIntPattern $scope.Name}}{{end}} => {{$type}}.{{index $extension.DedupNames $index}},
+            {{- end}}
+                _ => throw new global::System.Text.Json.JsonException($"Unknown {{$name}} value: {value}"),
+            };
+        }
+
+        public override void Write(global::System.Text.Json.Utf8JsonWriter writer, {{$type}} value, global::System.Text.Json.JsonSerializerOptions options)
+        {
+        {{- if $stringEnum}}
+            writer.WriteStringValue({{$type}}Extension.Value(value));
+        {{- else}}
+            writer.WriteNumberValue(global::System.Convert.ToInt64(value));
+        {{- end}}
+        }
+    }
+
+{{templateString "enum-extension.cs.stmpl" $extension}}
+{{- if $deprecated }}{{"\n"}}#pragma warning restore 0618{{- end}}

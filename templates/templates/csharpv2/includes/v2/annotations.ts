@@ -12,7 +12,7 @@ registerTemplateFunc(
 
 // @ts-ignore
 function getModelBaseImports(imports: Set<string>): Set<string> {
-  // In v2, Utils namespace does not exist in the Models project.
+  // v2 model files reference Utils types fully qualified.
   return imports;
 }
 

@@ -56,7 +56,7 @@ function getCompileCommands(
       //   - CS0618/CS1591 are pre-suppressed via NoWarn in testproject.csproj
       '{{if eq .Usage "true"}}-warnaserror{{end}}',
       // BuildInParallel=false serializes project-graph builds. dotnet build/publish otherwise
-      // parallelizes Models.dll and Generators writes from multiple reference paths, triggering
+      // parallelizes Generators writes from multiple reference paths, triggering
       // MSB3026/MSB4018 file-lock races.
       "-p:BuildInParallel=false",
       // -nodeReuse:false prevents MSBuild from leaving long-lived `/nodemode:1` workers

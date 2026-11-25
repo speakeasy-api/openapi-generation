@@ -1,6 +1,5 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using {{getGeneratorsPackageId}}.Enum;
 using {{getGeneratorsPackageId}}.Serialization;
 
 namespace {{getGeneratorsPackageId}}.Attributes;
@@ -8,20 +7,6 @@ namespace {{getGeneratorsPackageId}}.Attributes;
 [Generator]
 public class AttributeInjector : IIncrementalGenerator
 {
-    // When [EmbeddedAttribute] is applied, types are invisible outside the compilation
-    // boundary — prevents CS0436 in InternalsVisibleTo scenarios.
-    //
-    // To upgrade (requires Microsoft.CodeAnalysis.CSharp >= 4.14.0 / SDK >= 9.0.300):
-    //   1. Bump Microsoft.CodeAnalysis.CSharp to 4.14.0 in Generators.csproj
-    //   2. Set <UseEmbeddedAttributeInjection>true</UseEmbeddedAttributeInjection> in Generators.csproj
-    //
-    // https://andrewlock.net/exploring-dotnet-10-preview-features-4-solving-the-source-generator-marker-attribute-problem-in-dotnet-10/#should-you-use-addembeddedattributedefinition-or-a-shared-dll-
-#if ROSLYN_4_14_OR_GREATER
-    private static readonly string EmbeddedMarker = "[global::Microsoft.CodeAnalysis.EmbeddedAttribute]\n    ";
-#else
-    private static readonly string EmbeddedMarker = "";
-#endif
-
     private static string EnumMembers(System.Type enumType) =>
         string.Join(
             ",\n",
@@ -34,35 +19,7 @@ public class AttributeInjector : IIncrementalGenerator
     {
         context.RegisterPostInitializationOutput(ctx =>
         {
-#if ROSLYN_4_14_OR_GREATER
-            ctx.AddEmbeddedAttributeDefinition();
-#endif
             // clang-format off
-
-            // ── Enum converter ────────────────────────────────────────────────────
-            // EnumType: closed (enum) vs open (class), string vs int wire format.
-            // Used by: EnumGenerator
-            ctx.AddSource("EnumType.g.cs", $$"""
-                namespace {{getGeneratorsPackageId}}.Enum;
-
-                {{interp "EmbeddedMarker"}}internal enum EnumType
-                {
-                {{interp "EnumMembers(typeof(EnumType))"}}
-                }
-                """);
-
-            // [GenerateEnumConverter(Type = EnumType.String, Open = false)]
-            // Applied to: enum (closed) or class (open).
-            ctx.AddSource("GenerateEnumConverterAttribute.g.cs", $$"""
-                namespace {{getGeneratorsPackageId}}.Enum;
-
-                [System.AttributeUsage(System.AttributeTargets.Enum | System.AttributeTargets.Class)]
-                {{interp "EmbeddedMarker"}}internal sealed class GenerateEnumConverterAttribute : System.Attribute
-                {
-                    public EnumType Type { get; set; } = EnumType.String;
-                    public bool Open { get; set; } = false;
-                }
-                """);
 
             // ── Serialization ─────────────────────────────────────────────────────
             // SerializationFormat: wire format used by GenerateSerializer.
@@ -70,7 +27,7 @@ public class AttributeInjector : IIncrementalGenerator
             ctx.AddSource("SerializationFormat.g.cs", $$"""
                 namespace {{getGeneratorsPackageId}}.Serialization;
 
-                {{interp "EmbeddedMarker"}}internal enum SerializationFormat
+                internal enum SerializationFormat
                 {
                 {{interp "EnumMembers(typeof(SerializationFormat))"}}
                 }
@@ -85,7 +42,7 @@ public class AttributeInjector : IIncrementalGenerator
                 namespace {{getGeneratorsPackageId}}.Serialization;
 
                 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum, AllowMultiple = true, Inherited = false)]
-                {{interp "EmbeddedMarker"}}internal sealed class GenerateSerializerAttribute : Attribute
+                internal sealed class GenerateSerializerAttribute : Attribute
                 {
                     public SerializationFormat Format { get; }
                     public string? MediaType { get; set; }
@@ -107,7 +64,7 @@ public class AttributeInjector : IIncrementalGenerator
                 namespace {{getGeneratorsPackageId}}.Serialization;
 
                 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-                {{interp "EmbeddedMarker"}}internal sealed class FormFieldAttribute : Attribute
+                internal sealed class FormFieldAttribute : Attribute
                 {
                     public string? Name { get; set; }
                     public bool IsJson { get; set; }
@@ -126,7 +83,7 @@ public class AttributeInjector : IIncrementalGenerator
                 namespace {{getGeneratorsPackageId}}.Serialization;
 
                 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-                {{interp "EmbeddedMarker"}}internal sealed class MultipartFieldAttribute : Attribute
+                internal sealed class MultipartFieldAttribute : Attribute
                 {
                     public string? Name { get; set; }
                     public bool IsContent { get; set; }
@@ -144,7 +101,7 @@ public class AttributeInjector : IIncrementalGenerator
                 namespace {{getGeneratorsPackageId}}.Union;
 
                 [System.AttributeUsage(System.AttributeTargets.Property, AllowMultiple = true)]
-                {{interp "EmbeddedMarker"}}internal sealed class DiscriminatorValueAttribute : System.Attribute
+                internal sealed class DiscriminatorValueAttribute : System.Attribute
                 {
                     public string Value { get; }
 
@@ -160,7 +117,7 @@ public class AttributeInjector : IIncrementalGenerator
                 namespace {{getGeneratorsPackageId}}.Union;
 
                 [System.AttributeUsage(System.AttributeTargets.Class)]
-                {{interp "EmbeddedMarker"}}internal sealed class GenerateDiscriminatedUnionConverterAttribute : System.Attribute
+                internal sealed class GenerateDiscriminatedUnionConverterAttribute : System.Attribute
                 {
                     public bool Nullable { get; set; } = false;
                     public string DiscriminatorField { get; set; } = "type";
@@ -175,45 +132,12 @@ public class AttributeInjector : IIncrementalGenerator
                 namespace {{getGeneratorsPackageId}}.Union;
 
                 [System.AttributeUsage(System.AttributeTargets.Class)]
-                {{interp "EmbeddedMarker"}}internal sealed class GenerateUndiscriminatedUnionConverterAttribute : System.Attribute
+                internal sealed class GenerateUndiscriminatedUnionConverterAttribute : System.Attribute
                 {
                     public bool Nullable { get; set; } = false;
                     public bool Open { get; set; } = false;
                     public string UnknownMember { get; set; } = "Unknown";
                 }
-                """);
-
-            // ── BigInteger converter ──────────────────────────────────────────────
-            // [assembly: GenerateBigIntegerConverter]
-            // Applied to: assembly. Generates a JsonConverter<BigInteger> for the whole assembly.
-            // Used by: BigIntegerGenerator
-            ctx.AddSource("GenerateBigIntegerConverterAttribute.g.cs", $$"""
-                namespace {{getGeneratorsPackageId}}.BigInteger;
-
-                [System.AttributeUsage(System.AttributeTargets.Assembly)]
-                {{interp "EmbeddedMarker"}}internal sealed class GenerateBigIntegerConverterAttribute : System.Attribute { }
-                """);
-
-            // ── Decimal converter ─────────────────────────────────────────────────
-            // [assembly: GenerateDecimalConverter]
-            // Applied to: assembly. Generates a JsonConverter<decimal> for the whole assembly.
-            // Used by: DecimalGenerator
-            ctx.AddSource("GenerateDecimalConverterAttribute.g.cs", $$"""
-                namespace {{getGeneratorsPackageId}}.Decimal;
-
-                [System.AttributeUsage(System.AttributeTargets.Assembly)]
-                {{interp "EmbeddedMarker"}}internal sealed class GenerateDecimalConverterAttribute : System.Attribute { }
-                """);
-
-            // ── DateTime converter ────────────────────────────────────────────────
-            // [assembly: GenerateDateTimeConverter]
-            // Applied to: assembly. Generates a JsonConverter<DateTime> for the whole assembly.
-            // Used by: DateTimeGenerator
-            ctx.AddSource("GenerateDateTimeConverterAttribute.g.cs", $$"""
-                namespace {{getGeneratorsPackageId}}.DateTime;
-
-                [System.AttributeUsage(System.AttributeTargets.Assembly)]
-                {{interp "EmbeddedMarker"}}internal sealed class GenerateDateTimeConverterAttribute : System.Attribute { }
                 """);
 
             // ── Parameter binding ─────────────────────────────────────────────────
@@ -224,7 +148,7 @@ public class AttributeInjector : IIncrementalGenerator
                 namespace {{getGeneratorsPackageId}}.Params;
 
                 [System.AttributeUsage(System.AttributeTargets.Property)]
-                {{interp "EmbeddedMarker"}}internal sealed class PathParamAttribute : System.Attribute
+                internal sealed class PathParamAttribute : System.Attribute
                 {
                     public string Name { get; set; } = "";
                     public string Style { get; set; } = "simple";
@@ -240,7 +164,7 @@ public class AttributeInjector : IIncrementalGenerator
                 namespace {{getGeneratorsPackageId}}.Params;
 
                 [System.AttributeUsage(System.AttributeTargets.Property)]
-                {{interp "EmbeddedMarker"}}internal sealed class QueryParamAttribute : System.Attribute
+                internal sealed class QueryParamAttribute : System.Attribute
                 {
                     public string Name { get; set; } = "";
                     public string Style { get; set; } = "form";
@@ -255,7 +179,7 @@ public class AttributeInjector : IIncrementalGenerator
                 namespace {{getGeneratorsPackageId}}.Params;
 
                 [System.AttributeUsage(System.AttributeTargets.Property)]
-                {{interp "EmbeddedMarker"}}internal sealed class HeaderParamAttribute : System.Attribute
+                internal sealed class HeaderParamAttribute : System.Attribute
                 {
                     public string Name { get; set; } = "";
                     public string Style { get; set; } = "simple";
@@ -270,7 +194,7 @@ public class AttributeInjector : IIncrementalGenerator
                 namespace {{getGeneratorsPackageId}}.Params;
 
                 [System.AttributeUsage(System.AttributeTargets.Property)]
-                {{interp "EmbeddedMarker"}}internal sealed class SecurityParamAttribute : System.Attribute
+                internal sealed class SecurityParamAttribute : System.Attribute
                 {
                     public bool Option { get; set; } = false;
                     public bool Scheme { get; set; } = false;
@@ -288,7 +212,7 @@ public class AttributeInjector : IIncrementalGenerator
                 namespace {{getGeneratorsPackageId}}.Params;
 
                 [System.AttributeUsage(System.AttributeTargets.Property)]
-                {{interp "EmbeddedMarker"}}internal sealed class RequestBodyAttribute : System.Attribute
+                internal sealed class RequestBodyAttribute : System.Attribute
                 {
                     public string MediaType { get; set; } = "";
                 }

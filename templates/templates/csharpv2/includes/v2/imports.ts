@@ -4,7 +4,6 @@ function templateSDKImports(sdk: SDK, main: boolean): string {
 
   imports = addImport(imports, "System", false);
   imports = addImport(imports, "Utils", true);
-  imports = addImport(imports, "Generators.Enum", true);
   imports = addImport(imports, getScopeNamespace("errors", true), false);
   imports = addImport(imports, "System.Text.Json", false);
   imports = addImport(imports, "System.Text.Json.Serialization", false);

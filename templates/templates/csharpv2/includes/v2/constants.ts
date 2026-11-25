@@ -1,4 +1,4 @@
-const MODELS_PROJECT_NAME = "Models";
+const MODELS_FOLDER_NAME = "Models";
 const GENERATORS_PROJECT_NAME = "Generators";
 const GENERATORS_TARGET_FRAMEWORK = "netstandard2.1";
 const JSONCONTEXT_LOCATION = "Utils/Json";

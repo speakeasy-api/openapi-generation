@@ -20,7 +20,7 @@ function getSDKDependencies(): TargetDependency[] {
   ];
 }
 
-// Multi-target (netstandard2.0;netX) SDK and Models projects only: a direct
+// Multi-target (netstandard2.0;netX) SDK project only: a direct
 // System.Text.Json reference on a single netX TFM is pruned and NU1510 fails
 // warnings-as-errors builds (e.g. the usage testproject).
 function templateNetstandard2Dependencies(): string {
