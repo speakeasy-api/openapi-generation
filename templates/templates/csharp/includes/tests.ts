@@ -447,6 +447,13 @@ registerTemplateFunc("templateTestID", templateTestID);
 
 const csharpTestGenerationTestsEnabled = true;
 
+// Without the spreadAdditionalProperties fix flag, additional properties are read from a
+// literal "additionalProperties" key, so top-level extras in JSON responses are dropped.
+const testsSkippedWithoutSpreadAdditionalProperties = [
+  "getUser-testWithResponseBody",
+  "getUser-testWithResponseBodyFields",
+];
+
 // Tests skipped by name (for tests without internal IDs)
 const testsSkippedByName = [
   // C# SDK usage snippet includes auto-pagination while loop, making extra requests
@@ -455,11 +462,6 @@ const testsSkippedByName = [
   // C# SDK RequestBodySerializer.SerializeMultipart does not handle File types
   "postFile",
   "postFileWithEncoding",
-  // C# SDK uses [JsonProperty("additionalProperties")] instead of
-  // [JsonExtensionData], so additional properties in JSON responses are not deserialized
-  // into the dictionary. Un-skip these once the wire format is fixed.
-  "getUser-testWithResponseBody",
-  "getUser-testWithResponseBodyFields",
   // C# SDK pagination: while loop leaves res=null, then assertions access res (Java also skips this test)
   "getUnionErrors",
 ];
@@ -482,7 +484,11 @@ function templateTestSkipAnnotation(test: Test): string {
     return `(Skip = "test marked as skipped for csharp: generated body would not compile")`;
   }
 
-  if (testsSkippedByName.includes(test.Name)) {
+  if (
+    testsSkippedByName.includes(test.Name) ||
+    (!spreadAdditionalProperties() &&
+      testsSkippedWithoutSpreadAdditionalProperties.includes(test.Name))
+  ) {
     return `(Skip = "test marked as skipped for csharp or generated unit tests not production ready yet")`;
   }
   const id = getTestInternalID(test);

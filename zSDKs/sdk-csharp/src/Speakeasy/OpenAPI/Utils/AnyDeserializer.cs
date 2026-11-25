@@ -46,6 +46,20 @@ namespace Speakeasy.OpenAPI.Utils
             throw new JsonSerializationException($"Could not deserialize token into dictionary");
         }
 
+        internal static object? ParseToken(JToken token)
+        {
+            var deserializer = new AnyDeserializer();
+            if (token is JObject)
+            {
+                return deserializer.ParseTokenIntoDictionary(token);
+            }
+            if (token is JArray)
+            {
+                return deserializer.ParseTokenIntoList(token);
+            }
+            return ((JValue)token).Value;
+        }
+
         private Dictionary<string, object?> ParseTokenIntoDictionary(JToken token)
         {
             var dict = new Dictionary<string, object?>();

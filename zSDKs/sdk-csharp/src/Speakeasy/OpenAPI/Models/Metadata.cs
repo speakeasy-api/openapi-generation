@@ -13,12 +13,20 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Utils;
     using System.Collections.Generic;
 
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
     public partial class Metadata
     {
         [JsonProperty("allergies", Required = Newtonsoft.Json.Required.DisallowNull)]
         public string? Allergies { get; set; }
 
-        [JsonProperty("additionalProperties")]
+        [JsonIgnore]
         public Dictionary<string, string>? AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { "allergies" });
+
+        private AdditionalPropertiesAdapter<string>? _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object?> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<string>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
     }
 }

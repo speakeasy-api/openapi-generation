@@ -54,6 +54,8 @@ csharp:
   enableCancellationToken: true
   enableFormatting: true
   enableSourceLink: true
+  fixFlags:
+    spreadAdditionalProperties: true
   flattenGlobalSecurity: true
   flatteningOrder: parameters-first
   forwardCompatibleEnumsByDefault: true

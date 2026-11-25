@@ -1,0 +1,10 @@
+id: 1795596997-2b36e9d4
+features:
+    - additionalProperties
+targets:
+    - csharp
+type: fix
+bump: patch
+description: spread additionalProperties at the top level of the JSON object behind the spreadAdditionalProperties fix flag
+author: 2ynn
+date: "2026-11-25"

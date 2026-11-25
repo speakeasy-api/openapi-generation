@@ -15,6 +15,8 @@ generation:
     oAuth2ClientCredentialsEnabled: true
   sdkHooksConfigAccess: false
 csharp:
+  fixFlags:
+    spreadAdditionalProperties: false
   inferUnionDiscriminators: true
   forwardCompatibleUnionsByDefault: tagged-only
   enableFormatting: false

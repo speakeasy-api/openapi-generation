@@ -10,6 +10,8 @@ generation:
     generateTests: true
     generateNewTests: false
 csharp:
+  fixFlags:
+    spreadAdditionalProperties: false
   inferUnionDiscriminators: true
   forwardCompatibleUnionsByDefault: "false"
   enableFormatting: true

@@ -162,9 +162,13 @@ function templateJSONAnnotation(
     return "[JsonIgnore]";
   }
 
-  // additionalProperties are emitted as a literal "additionalProperties" wire
-  // key instead of being spread top-level (JsonExtensionData semantics). Revisit this
-  // union scorer special-case when wire format is fixed.
+  if (fieldDef.IsAdditionalProperties && spreadAdditionalProperties()) {
+    return "[JsonIgnore]";
+  }
+
+  // Without the spreadAdditionalProperties fix flag, additionalProperties are emitted
+  // as a literal "additionalProperties" wire key instead of being spread top-level
+  // (JsonExtensionData semantics). The union scorer special-cases this key.
   const fieldName = fieldDef.IsAdditionalProperties
     ? "additionalProperties"
     : escapeString(annotation.FieldName);
@@ -335,6 +339,24 @@ function templateDeprecationAnnotation(
 registerTemplateFunc(
   "templateDeprecationAnnotation",
   templateDeprecationAnnotation,
+);
+
+// MissingMemberHandling.Error (left-to-right union matching) rejects extension data members.
+// @ts-ignore
+function templateAdditionalPropertiesClassAnnotation(
+  typeDef: TypeDef,
+  indent: number,
+): string {
+  if (!getAdditionalPropertiesField(typeDef)) return "";
+  return indentString(
+    `
+[JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]`,
+    indent,
+  );
+}
+registerTemplateFunc(
+  "templateAdditionalPropertiesClassAnnotation",
+  templateAdditionalPropertiesClassAnnotation,
 );
 
 //@ts-ignore

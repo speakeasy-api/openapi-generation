@@ -525,6 +525,15 @@ function getConfigFields(
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
+    fixes: {
+      Name: "fixFlags",
+      Required: false,
+      DefaultValue: {
+        spreadAdditionalProperties: newSDK,
+      },
+      Description:
+        "Fixes to apply to the generated SDK, generally should be set to true but may be false for backwards compatibility",
+    },
   };
 }
 

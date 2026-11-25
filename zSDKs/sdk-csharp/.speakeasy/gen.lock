@@ -6,7 +6,7 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 493e13fd1eb042742dddc1f2cf453c42
+  configChecksum: e6d51aa35fbf85a849291d74d86d7eb0
   repoURL: https://github.com/speakeasy-sdks/test-sdk
   installationURL: https://github.com/speakeasy-sdks/test-sdk
 features:
@@ -60,7 +60,7 @@ trackedFiles:
   Tests/ConflictsTests.cs:
     last_write_checksum: sha1:448ba240c260d5d8847bfc7452f858fb21b33494
   Tests/SDKTests.cs:
-    last_write_checksum: sha1:d2ce3cb285f1be79c01a4b5947d5014dc556ac45
+    last_write_checksum: sha1:b8cff4270d9d8e201dd014b3d2d0e77d8d43b814
   Tests/SinglebarTests.cs:
     last_write_checksum: sha1:bd9a51e35edf29712a72db64f61d0e49cd195eb9
   Tests/SinglefooTests.cs:
@@ -1226,9 +1226,9 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Models/MCPPolicy.cs:
     last_write_checksum: sha1:33763fc7aaa15da0d96acbfa5740f5c06b3cad4b
   src/Speakeasy/OpenAPI/Models/Metadata.cs:
-    last_write_checksum: sha1:01c901b6f16e41cc240cfedad0a7a5f956791c58
+    last_write_checksum: sha1:57a249c331d23e07c3b229ce8b406f77d020a4b3
   src/Speakeasy/OpenAPI/Models/MetadataAny.cs:
-    last_write_checksum: sha1:3eaabff608f735ad623b011426976b76fe552013
+    last_write_checksum: sha1:5fddf1a2e501c4f19dd452dd2b45db4af971cad4
   src/Speakeasy/OpenAPI/Models/MyApiKey.cs:
     last_write_checksum: sha1:70da72b11dec65c3372014e02c58cc697a69ed80
   src/Speakeasy/OpenAPI/Models/MyObject.cs:
@@ -1455,8 +1455,10 @@ trackedFiles:
     last_write_checksum: sha1:68b1babf5601870be1cc1cedbc9a7e161d111cc5
   src/Speakeasy/OpenAPI/Types.cs:
     last_write_checksum: sha1:7775fbb89f62699087683cf47642c3ead6b62861
+  src/Speakeasy/OpenAPI/Utils/AdditionalPropertiesAdapter.cs:
+    last_write_checksum: sha1:828b4bbbb0a70098194c259bc3bf3b9013997545
   src/Speakeasy/OpenAPI/Utils/AnyDeserializer.cs:
-    last_write_checksum: sha1:e3b1814b90eb10e0bf595115bc1647de659d83e0
+    last_write_checksum: sha1:040beb977b4413c34b462cdbb69653f7cc7461da
   src/Speakeasy/OpenAPI/Utils/BigIntStrConverter.cs:
     last_write_checksum: sha1:62c143c14a8ca2a1df4731614a09b993e085923f
   src/Speakeasy/OpenAPI/Utils/Constants.cs:
@@ -1512,7 +1514,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Utils/URLBuilder.cs:
     last_write_checksum: sha1:27aa6dd3713a24f20a7737dfb966c3c673529cb5
   src/Speakeasy/OpenAPI/Utils/UnionDeserializer.cs:
-    last_write_checksum: sha1:f50ceb5bd0e472ad8cbd5192adde954d4f4dbf26
+    last_write_checksum: sha1:ea2c1ab22aaea26fd910ea27ced6fab24616bb3c
   src/Speakeasy/OpenAPI/Utils/Utilities.cs:
     last_write_checksum: sha1:c3fd047198f06c29d58dc4f569f5b3f65839550b
 examples:

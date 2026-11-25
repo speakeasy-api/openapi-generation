@@ -35,6 +35,22 @@ namespace {{getScopeNamespace "utils"}}
             }
             throw new JsonSerializationException($"Could not deserialize token into dictionary");
         }
+    {{- if spreadAdditionalProperties}}
+
+        internal static object? ParseToken(JToken token)
+        {
+            var deserializer = new AnyDeserializer();
+            if (token is JObject)
+            {
+                return deserializer.ParseTokenIntoDictionary(token);
+            }
+            if (token is JArray)
+            {
+                return deserializer.ParseTokenIntoList(token);
+            }
+            return ((JValue)token).Value;
+        }
+    {{- end}}
 
         private Dictionary<string, object?> ParseTokenIntoDictionary(JToken token)
         {

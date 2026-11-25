@@ -288,16 +288,25 @@ namespace {{getScopeNamespace "utils"}}
 
         private static void ScoreObject(UnionCandidateScore score, Type type, object? value, JObject jo)
         {
+        {{- if spreadAdditionalProperties}}
+            if (value != null && GetExtensionData(type, value) is ICollection<KeyValuePair<string, object?>> extensionData)
+            {
+                score.AdditionalProperties += extensionData.Count;
+            }
+
+        {{- end}}
             foreach (var (prop, attr) in EnumerateJsonProperties(type))
             {
                 var name = attr.PropertyName ?? prop.Name;
-                {{/* additionalProperties still captured under a literal "additionalProperties". Revisit when wire format is fixed. */}}
+            {{- if not spreadAdditionalProperties}}
+                {{/* Without the spreadAdditionalProperties fix flag, additionalProperties are captured under a literal "additionalProperties" key. */}}
                 if (name == "additionalProperties")
                 {
                     var extra = value != null ? prop.GetValue(value) : null;
                     if (extra is IDictionary extraDict) score.AdditionalProperties += extraDict.Count;
                     continue;
                 }
+            {{- end}}
 
                 if (jo.TryGetValue(name, out var token) && token != null)
                 {
@@ -414,6 +423,16 @@ namespace {{getScopeNamespace "utils"}}
             }
             return (wrapperType, null);
         }
+
+    {{- if spreadAdditionalProperties}}
+
+        private static object? GetExtensionData(Type type, object value)
+        {
+            var prop = type.GetProperties(BindingFlags.NonPublic | BindingFlags.Instance)
+                .FirstOrDefault(p => p.IsDefined(typeof(JsonExtensionDataAttribute)));
+            return prop?.GetValue(value);
+        }
+    {{- end}}
 
         private static IEnumerable<(PropertyInfo Prop, JsonPropertyAttribute Attr)> EnumerateJsonProperties(Type type)
         {

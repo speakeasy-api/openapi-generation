@@ -1593,12 +1593,9 @@ public class UnionsShould
         var pool = new UnionCandidatePool<int>();
         pool.Add<ScoreOnlyA>("A", 0, 0);
         pool.Add<ScoreBWithExtras>("B", 1, 1);
-        // C# does not yet spread additionalProperties on the wire - extras are
-        // nested under a literal "additionalProperties" key to be captured. Once wire format
-        // is fixed switch this payload to: {"a":"","b":"","c":""}
         Assert.Equal(
             typeof(ScoreBWithExtras),
-            PickWinnerType(pool, "{\"a\":\"\",\"b\":\"\",\"additionalProperties\":{\"c\":\"\"}}")
+            PickWinnerType(pool, "{\"a\":\"\",\"b\":\"\",\"c\":\"\"}")
         );
     }
 
@@ -2051,22 +2048,38 @@ public class UnionsShould
         public string A { get; set; }
     }
 
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
     private class ScoreBWithExtras
     {
         [JsonProperty("b")]
         public string B { get; set; }
 
-        [JsonProperty("additionalProperties")]
+        [JsonIgnore]
         public Dictionary<string, string> AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { "b" });
+
+        private AdditionalPropertiesAdapter<string> _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<string>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
     }
 
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
     private class ScoreIdWithExtras
     {
         [JsonProperty("id")]
         public string Id { get; set; }
 
-        [JsonProperty("additionalProperties")]
+        [JsonIgnore]
         public Dictionary<string, string> AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { "id" });
+
+        private AdditionalPropertiesAdapter<string> _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<string>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
     }
 
     private class ScoreFoo

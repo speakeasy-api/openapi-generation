@@ -294,16 +294,13 @@ namespace Speakeasy.OpenAPI.Utils
 
         private static void ScoreObject(UnionCandidateScore score, Type type, object? value, JObject jo)
         {
+            if (value != null && GetExtensionData(type, value) is ICollection<KeyValuePair<string, object?>> extensionData)
+            {
+                score.AdditionalProperties += extensionData.Count;
+            }
             foreach (var (prop, attr) in EnumerateJsonProperties(type))
             {
                 var name = attr.PropertyName ?? prop.Name;
-
-                if (name == "additionalProperties")
-                {
-                    var extra = value != null ? prop.GetValue(value) : null;
-                    if (extra is IDictionary extraDict) score.AdditionalProperties += extraDict.Count;
-                    continue;
-                }
 
                 if (jo.TryGetValue(name, out var token) && token != null)
                 {
@@ -400,6 +397,13 @@ namespace Speakeasy.OpenAPI.Utils
                 return (prop.PropertyType, v);
             }
             return (wrapperType, null);
+        }
+
+        private static object? GetExtensionData(Type type, object value)
+        {
+            var prop = type.GetProperties(BindingFlags.NonPublic | BindingFlags.Instance)
+                           .FirstOrDefault(p => p.IsDefined(typeof(JsonExtensionDataAttribute)));
+            return prop?.GetValue(value);
         }
 
         private static IEnumerable<(PropertyInfo Prop, JsonPropertyAttribute Attr)> EnumerateJsonProperties(Type type)

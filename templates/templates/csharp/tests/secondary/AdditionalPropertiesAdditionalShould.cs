@@ -1,0 +1,100 @@
+using System.Collections.Generic;
+using System.Numerics;
+using HoistedSecurity.Models.Shared;
+using HoistedSecurity.Utils;
+using Newtonsoft.Json;
+using Xunit;
+
+// Legacy wire format (spreadAdditionalProperties fix flag off): additionalProperties are
+// nested under a literal "additionalProperties" key instead of spread at the top level.
+public class AdditionalPropertiesAdditionalShould
+{
+    [Fact]
+    public void WriteUnderLiteralKey()
+    {
+        var obj = new ObjWithStringAdditionalProperties()
+        {
+            NormalField = "string",
+            AdditionalProperties = new Dictionary<string, string>()
+            {
+                { "extra1", "value1" },
+                { "extra2", null },
+            },
+        };
+
+        Assert.Equal(
+            "{\"additionalProperties\":{\"extra1\":\"value1\",\"extra2\":null},\"normalField\":\"string\"}",
+            Utilities.SerializeJSON(obj)
+        );
+    }
+
+    [Fact]
+    public void WriteItemConverterValuesUnderLiteralKey()
+    {
+        var obj = new ObjWithComplexNumbersAdditionalProperties()
+        {
+            NormalField = "string",
+            AdditionalProperties = new Dictionary<string, BigInteger>()
+            {
+                { "bigintStr", BigInteger.Parse("123456789012345678901234567890") },
+            },
+        };
+
+        Assert.Equal(
+            "{\"additionalProperties\":{\"bigintStr\":\"123456789012345678901234567890\"},\"normalField\":\"string\"}",
+            Utilities.SerializeJSON(obj)
+        );
+    }
+
+    [Fact]
+    public void ReadFromLiteralKey()
+    {
+        var obj = ResponseBodyDeserializer.Deserialize<ObjWithStringAdditionalProperties>(
+            "{\"normalField\":\"string\",\"additionalProperties\":{\"extra1\":\"value1\"}}"
+        );
+
+        Assert.Equal("string", obj.NormalField);
+        Assert.Equal(new Dictionary<string, string>() { { "extra1", "value1" } }, obj.AdditionalProperties);
+    }
+
+    [Fact]
+    public void DropTopLevelExtrasOnRead()
+    {
+        var obj = ResponseBodyDeserializer.Deserialize<ObjWithStringAdditionalProperties>(
+            "{\"normalField\":\"string\",\"extra1\":\"value1\"}"
+        );
+
+        Assert.Equal("string", obj.NormalField);
+        Assert.Null(obj.AdditionalProperties);
+    }
+
+    [Fact]
+    public void ScoreUnion_AdditionalPropertiesUnderLiteralKeyWins()
+    {
+        var pool = new UnionCandidatePool<int>();
+        pool.Add<ScoreOnlyA>("A", 0, 0);
+        pool.Add<ScoreBWithExtras>("B", 1, 1);
+
+        var (winner, _) = pool.PickBest(
+            Newtonsoft.Json.Linq.JToken.Parse("{\"a\":\"\",\"b\":\"\",\"additionalProperties\":{\"c\":\"\"}}"),
+            new JsonSerializerSettings { Converters = Utilities.GetDefaultJsonDeserializers() }
+        );
+
+        Assert.Equal(typeof(ScoreBWithExtras), winner?.Type);
+    }
+
+    private class ScoreOnlyA
+    {
+        [JsonProperty("a")]
+        public string A { get; set; }
+    }
+
+    private class ScoreBWithExtras
+    {
+        [JsonProperty("b")]
+        public string B { get; set; }
+
+        [JsonProperty("additionalProperties")]
+        public Dictionary<string, string> AdditionalProperties { get; set; }
+    }
+}

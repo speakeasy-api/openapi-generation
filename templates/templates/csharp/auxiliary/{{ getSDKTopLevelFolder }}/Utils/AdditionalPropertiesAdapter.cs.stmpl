@@ -1,0 +1,173 @@
+{{- if spreadAdditionalProperties -}}
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+
+    internal sealed class AdditionalPropertiesOptions
+    {
+        public AdditionalPropertiesOptions(string[] declaredJsonNames, JsonConverter? itemConverter = null)
+        {
+            DeclaredJsonNames = new HashSet<string>(declaredJsonNames, StringComparer.OrdinalIgnoreCase);
+
+            var readConverters = Utilities.GetDefaultJsonDeserializers().ToList();
+            if (itemConverter != null)
+            {
+                readConverters.Insert(0, itemConverter);
+                WriteSerializer = JsonSerializer.Create(new JsonSerializerSettings()
+                {
+                    NullValueHandling = NullValueHandling.Ignore,
+                    Converters = new JsonConverter[] { itemConverter },
+                });
+            }
+
+            ReadSerializer = JsonSerializer.Create(new JsonSerializerSettings()
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                DateParseHandling = DateParseHandling.None,
+                Converters = readConverters,
+            });
+        }
+
+        public ISet<string> DeclaredJsonNames { get; }
+
+        public JsonSerializer ReadSerializer { get; }
+
+        public JsonSerializer? WriteSerializer { get; }
+    }
+
+    /// <summary>
+    /// Exposes a model's typed additional properties dictionary as Newtonsoft extension data,
+    /// so that additional properties are read from and written to the top level of the JSON object.
+    /// </summary>
+    /// <remarks>
+    /// Keys matching a declared property's JSON name (case-insensitively) are not written.
+    /// </remarks>
+    internal sealed class AdditionalPropertiesAdapter<T> : IDictionary<string, object?>
+    {
+        private readonly Func<Dictionary<string, T>?> _get;
+        private readonly Action<Dictionary<string, T>> _set;
+        private readonly AdditionalPropertiesOptions _options;
+
+        public AdditionalPropertiesAdapter(Func<Dictionary<string, T>?> get, Action<Dictionary<string, T>> set, AdditionalPropertiesOptions options)
+        {
+            _get = get;
+            _set = set;
+            _options = options;
+        }
+
+        public object? this[string key]
+        {
+            get => _get()![key];
+            set
+            {
+                var converted = Convert(value);
+                GetOrCreate()[key] = converted;
+            }
+        }
+
+        public ICollection<string> Keys => Written().Select(kv => kv.Key).ToList();
+
+        public ICollection<object?> Values => Written().Select(kv => (object?)kv.Value).ToList();
+
+        public int Count => Written().Count();
+
+        public bool IsReadOnly => false;
+
+        public void Add(string key, object? value)
+        {
+            var converted = Convert(value);
+            GetOrCreate().Add(key, converted);
+        }
+
+        public void Add(KeyValuePair<string, object?> item) => Add(item.Key, item.Value);
+
+        public void Clear() => _get()?.Clear();
+
+        public bool Contains(KeyValuePair<string, object?> item) => ContainsKey(item.Key);
+
+        public bool ContainsKey(string key) => _get()?.ContainsKey(key) ?? false;
+
+        public void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
+        {
+            foreach (var item in this)
+            {
+                array[arrayIndex++] = item;
+            }
+        }
+
+        public bool Remove(string key) => _get()?.Remove(key) ?? false;
+
+        public bool Remove(KeyValuePair<string, object?> item) => Remove(item.Key);
+
+        public bool TryGetValue(string key, out object? value)
+        {
+            var inner = _get();
+            if (inner != null && inner.TryGetValue(key, out var typed))
+            {
+                value = typed;
+                return true;
+            }
+            value = null;
+            return false;
+        }
+
+        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
+        {
+            foreach (var kv in Written())
+            {
+                object? value = kv.Value;
+                if (value != null && _options.WriteSerializer != null)
+                {
+                    value = JToken.FromObject(value, _options.WriteSerializer);
+                }
+                yield return new KeyValuePair<string, object?>(kv.Key, value);
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        private IEnumerable<KeyValuePair<string, T>> Written()
+        {
+            var inner = _get();
+            if (inner == null)
+            {
+                return Enumerable.Empty<KeyValuePair<string, T>>();
+            }
+            return inner.Where(kv => !_options.DeclaredJsonNames.Contains(kv.Key));
+        }
+
+        private Dictionary<string, T> GetOrCreate()
+        {
+            var inner = _get();
+            if (inner == null)
+            {
+                inner = new Dictionary<string, T>();
+                _set(inner);
+            }
+            return inner;
+        }
+
+        private T Convert(object? value)
+        {
+            var token = value as JToken ?? (value == null ? JValue.CreateNull() : new JValue(value));
+            if (typeof(T) == typeof(object))
+            {
+                return (T)AnyDeserializer.ParseToken(token)!;
+            }
+            // Extension data arrives pre-tokenized, with JSON numbers held as double. Converting
+            // through JSON text lets decimal targets parse the number text instead of a double.
+            using (var reader = new JsonTextReader(new StringReader(token.ToString(Formatting.None))) { DateParseHandling = DateParseHandling.None })
+            {
+                return _options.ReadSerializer.Deserialize<T>(reader)!;
+            }
+        }
+    }
+}
+{{- end }}

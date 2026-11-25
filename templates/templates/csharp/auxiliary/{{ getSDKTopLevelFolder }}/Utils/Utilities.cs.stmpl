@@ -53,7 +53,7 @@ namespace {{getScopeNamespace "utils"}}
             return new JsonSerializerSettings()
             {
                 NullValueHandling = NullValueHandling.Ignore,
-            {{- if.Global.Config.PresenceAwareJSONSerialization}}
+            {{- if dateParseHandlingNone}}
                 DateParseHandling = DateParseHandling.None,
             {{- end}}
                 Converters = GetDefaultJsonDeserializers()

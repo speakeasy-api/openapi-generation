@@ -128,7 +128,7 @@ public class ResponseBodiesShould
         };
 
         json = await Helpers.GetSerializedBodyJson(req);
-        Assert.Equal("{\"additionalProperties\":{\"extra1\":\"value1\",\"extra2\":null},\"normalField\":\"string\"}", json);
+        Assert.Equal("{\"normalField\":\"string\",\"extra1\":\"value1\",\"extra2\":null}", json);
 
         res = await sdk.ResponseBodies.ResponseBodyAdditionalPropertiesPostAsync(req);
         Assert.NotNull(res);
@@ -153,7 +153,7 @@ public class ResponseBodiesShould
         };
 
         var json = await Helpers.GetSerializedBodyJson(req);
-        Assert.Equal("{\"additionalProperties\":{\"today\":\"2020-01-01\"},\"normalField\":\"string\"}", json);
+        Assert.Equal("{\"normalField\":\"string\",\"today\":\"2020-01-01\"}", json);
 
         var res = await sdk.ResponseBodies.ResponseBodyAdditionalPropertiesDatePostAsync(req);
         Assert.NotNull(res);
@@ -179,7 +179,7 @@ public class ResponseBodiesShould
         };
 
         var json = await Helpers.GetSerializedBodyJson(req);
-        Assert.Equal("{\"additionalProperties\":{\"bigintStr\":\"123456789012345678901234567890\"},\"normalField\":\"string\"}", json);
+        Assert.Equal("{\"normalField\":\"string\",\"bigintStr\":\"123456789012345678901234567890\"}", json);
 
         var res = await sdk.ResponseBodies.ResponseBodyAdditionalPropertiesComplexNumbersPostAsync(req);
         Assert.NotNull(res);
@@ -206,7 +206,7 @@ public class ResponseBodiesShould
         };
 
         var json = await Helpers.GetSerializedBodyJson(req);
-        Assert.Contains("{\"AdditionalProperties\":[1,2,3],\"additionalProperties\":{\"obj1\":{\"any\":\"any\",\"bool\":true,\"boolOpt\":true,\"date\":\"2020-01-01\",\"dateTime\":\"2020-01-01T00:00:00.0000001Z\",\"enum\":\"one\",\"float32\":1.1,\"int\":1,\"int32\":1,\"int32Enum\":55,\"intEnum\":2,\"num\":1.1,\"str\":\"test\",\"strOpt\":\"testOptional\"}},\"datetime\":\"2020-01-01T00:00:00.0000000Z\"}", json);
+        Assert.Contains("{\"AdditionalProperties\":[1,2,3],\"datetime\":\"2020-01-01T00:00:00.0000000Z\",\"obj1\":{\"any\":\"any\",\"bool\":true,\"boolOpt\":true,\"date\":\"2020-01-01\",\"dateTime\":\"2020-01-01T00:00:00.0000001Z\",\"enum\":\"one\",\"float32\":1.1,\"int\":1,\"int32\":1,\"int32Enum\":55,\"intEnum\":2,\"num\":1.1,\"str\":\"test\",\"strOpt\":\"testOptional\"}}", json);
 
         var res = await sdk.ResponseBodies.ResponseBodyAdditionalPropertiesObjectPostAsync(req);
         Assert.NotNull(res);
@@ -256,5 +256,50 @@ public class ResponseBodiesShould
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
         Assert.Null(res.Object.Json.NormalField);
         Helpers.AssertDictEqual(req.AdditionalProperties, res.Object.Json.AdditionalProperties);
+    }
+
+    [Fact]
+    public void AdditionalPropertiesReadFromTopLevel()
+    {
+        var obj = ResponseBodyDeserializer.Deserialize<ObjWithStringAdditionalProperties>(
+            "{\"normalField\":\"string\",\"extra1\":\"value1\",\"when\":\"2020-01-01T00:00:00Z\"}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal("string", obj.NormalField);
+        Assert.Equal(
+            new Dictionary<string, string>()
+            {
+                { "extra1", "value1" },
+                { "when", "2020-01-01T00:00:00Z" },
+            },
+            obj.AdditionalProperties
+        );
+    }
+
+    [Fact]
+    public async Task AdditionalPropertiesSkipDeclaredJsonNamesOnWrite()
+    {
+        var req = new ObjWithStringAdditionalProperties()
+        {
+            NormalField = "string",
+            AdditionalProperties = new Dictionary<string, string>()
+            {
+                { "NormalField", "ignored" },
+                { "extra1", "value1" },
+            },
+        };
+
+        var json = await Helpers.GetSerializedBodyJson(req);
+        Assert.Equal("{\"normalField\":\"string\",\"extra1\":\"value1\"}", json);
+    }
+
+    [Fact]
+    public void AdditionalPropertiesSelfReferenceThrows()
+    {
+        var obj = new ObjWithAnyAdditionalProperties();
+        obj.AdditionalProperties = new Dictionary<string, object>() { { "self", obj } };
+
+        Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => Utilities.SerializeJSON(obj));
     }
 }
