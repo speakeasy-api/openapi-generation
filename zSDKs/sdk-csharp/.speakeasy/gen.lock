@@ -1226,9 +1226,9 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Models/MCPPolicy.cs:
     last_write_checksum: sha1:33763fc7aaa15da0d96acbfa5740f5c06b3cad4b
   src/Speakeasy/OpenAPI/Models/Metadata.cs:
-    last_write_checksum: sha1:57a249c331d23e07c3b229ce8b406f77d020a4b3
+    last_write_checksum: sha1:0d946a9b805a4380b02eb3540ae036c9532983dd
   src/Speakeasy/OpenAPI/Models/MetadataAny.cs:
-    last_write_checksum: sha1:5fddf1a2e501c4f19dd452dd2b45db4af971cad4
+    last_write_checksum: sha1:1b6f55fc68077c11c82a4891291e9c52001c5f3f
   src/Speakeasy/OpenAPI/Models/MyApiKey.cs:
     last_write_checksum: sha1:70da72b11dec65c3372014e02c58cc697a69ed80
   src/Speakeasy/OpenAPI/Models/MyObject.cs:

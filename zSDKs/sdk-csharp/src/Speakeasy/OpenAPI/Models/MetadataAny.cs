@@ -25,11 +25,11 @@ namespace Speakeasy.OpenAPI
         [JsonIgnore]
         public Dictionary<string, object>? AdditionalProperties { get; set; }
 
-        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { "notes" });
+        private static readonly global::Speakeasy.OpenAPI.Utils.AdditionalPropertiesOptions _additionalPropertiesOptions = new global::Speakeasy.OpenAPI.Utils.AdditionalPropertiesOptions(new string[] { "notes" });
 
-        private AdditionalPropertiesAdapter<object>? _additionalPropertiesAdapter;
+        private global::Speakeasy.OpenAPI.Utils.AdditionalPropertiesAdapter<object>? _additionalPropertiesAdapter;
 
         [JsonExtensionData]
-        private IDictionary<string, object?> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<object>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
+        private IDictionary<string, object?> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new global::Speakeasy.OpenAPI.Utils.AdditionalPropertiesAdapter<object>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
     }
 }

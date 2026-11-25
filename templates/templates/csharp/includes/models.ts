@@ -140,18 +140,17 @@ function templateAdditionalPropertiesMembers(
     optionsArgs.push(`new ${itemConverter}()`);
   }
   const options = optionsArgs.join(", ");
+  const utils = `global::${getScopeNamespace("utils", true)}`;
 
-  return indentLines(
-    [
-      "",
-      "",
-      `private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(${options});`,
-      "",
-      `private AdditionalPropertiesAdapter<${valueType}>? _additionalPropertiesAdapter;`,
-      "",
-      "[JsonExtensionData]",
-      `private IDictionary<string, object?> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<${valueType}>(() => ${name}, value => ${name} = value, _additionalPropertiesOptions);`,
-    ],
+  return indentString(
+    `
+
+private static readonly ${utils}.AdditionalPropertiesOptions _additionalPropertiesOptions = new ${utils}.AdditionalPropertiesOptions(${options});
+
+private ${utils}.AdditionalPropertiesAdapter<${valueType}>? _additionalPropertiesAdapter;
+
+[JsonExtensionData]
+private IDictionary<string, object?> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new ${utils}.AdditionalPropertiesAdapter<${valueType}>(() => ${name}, value => ${name} = value, _additionalPropertiesOptions);`,
     indent,
   );
 }
