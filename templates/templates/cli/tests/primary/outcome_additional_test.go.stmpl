@@ -248,6 +248,14 @@ func TestOutcomePaginatedResponse(t *testing.T) {
 			assert.Contains(t, outcomeErrorEnvelope(t, h.GetStderr())["message"], `ended in failure state "failed"`)
 		})
 	}
+	t.Run("all pages/jq-halt", func(t *testing.T) {
+		srv := newOutcomeServerFirstPage(t, "completed", false, "failed")
+		defer srv.Close()
+		h, err := runOutcome(t, srv.URL, "outcome", "outcome-list-interactions", "--all", "--jq", ".status, halt")
+		assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+		assert.Equal(t, `"failed"`, strings.TrimSpace(h.GetStdout()))
+		assert.Equal(t, "CLI_OUTCOME_FAILED", outcomeErrorEnvelope(t, h.GetStderr())["error_reason"])
+	})
 }
 
 func TestOutcomeStreamedResponse(t *testing.T) {
@@ -302,5 +310,13 @@ func TestOutcomeStreamedResponse(t *testing.T) {
 		require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope), h.GetStderr())
 		assert.Equal(t, "CLI_OUTCOME_FAILED", envelope["error_reason"])
 		assert.Equal(t, "failed", envelope["state"])
+	})
+	t.Run("jq-halt", func(t *testing.T) {
+		srv := newOutcomeServer(t, "failed", true)
+		defer srv.Close()
+		h, err := runOutcome(t, srv.URL, "outcome-say", "hello", "--output-format", "json", "--jq", `.data | select(.event_type == "completed") | .interaction.status, halt`)
+		assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+		assert.Equal(t, `"failed"`, strings.TrimSpace(h.GetStdout()))
+		assert.Equal(t, "CLI_OUTCOME_FAILED", outcomeErrorEnvelope(t, h.GetStderr())["error_reason"])
 	})
 }
