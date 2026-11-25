@@ -22,15 +22,20 @@ func TestUnparseableConfigFile(t *testing.T) {
 		return NewCLITestHarness(t).WithEnv("HOME", home), path
 	}
 
-	for _, args := range [][]string{
-		{"version"},
-		{"help"},
-		{"completion", "bash"},
-		{"whoami", "--no-interactive"},
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{name: "root", args: []string{}},
+		{name: "version", args: []string{"version"}},
+		{name: "help", args: []string{"help"}},
+		{name: "completion", args: []string{"completion", "bash"}},
+		{name: "shell completion request", args: []string{"__complete", "methods", ""}},
+		{name: "whoami", args: []string{"whoami", "--no-interactive"}},
 	} {
-		t.Run("runs with a warning/"+args[0], func(t *testing.T) {
+		t.Run("runs with a warning/"+tc.name, func(t *testing.T) {
 			h, _ := setup(t)
-			require.NoError(t, h.RunBare(args), h.GetStderr())
+			require.NoError(t, h.RunBare(tc.args), h.GetStderr())
 			assert.Contains(t, h.GetStderr(), "Warning: failed to parse config file")
 		})
 	}
@@ -49,7 +54,7 @@ func TestUnparseableConfigFile(t *testing.T) {
 		want string
 	}{
 		{name: "configure", args: []string{"configure"}, want: "failed to parse config file"},
-		{name: "auth logout", args: []string{"auth", "logout"}, want: "fix or remove the file before saving settings"},
+		{name: "auth logout", args: []string{"auth", "logout"}, want: "fix or remove the file before logging out"},
 	} {
 		t.Run(tc.name+" does not overwrite the file", func(t *testing.T) {
 			h, path := setup(t)

@@ -148,6 +148,9 @@ func runAuthLogoutCmd(cmd *cobra.Command, args []string) error {
     if dryRunLocalNoop(cmd, "auth logout removes local credentials only (no API request); nothing was changed.") {
         return nil
     }
+    if err := config.LoadError(); err != nil {
+        return fmt.Errorf("%w; fix or remove the file before logging out", err)
+    }
     cfg := config.GetConfig()
     if cfg == nil {
         cfg = &config.Config{}
