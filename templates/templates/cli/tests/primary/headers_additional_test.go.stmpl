@@ -210,6 +210,38 @@ func TestHeadersResponseOptional(t *testing.T) {
 	assert.Empty(t, jsonGetString(output2, "_response_headers.X-Required-Header"))
 }
 
+func TestHeadersTypedErrorWithHTTPMeta(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Error-Id", "err-123")
+		w.WriteHeader(501)
+		_, _ = w.Write([]byte(`{"code":"not_implemented","message":"not implemented"}`))
+	}))
+	defer s.Close()
+
+	t.Run("json", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{
+			"--include-headers",
+			"errors", "status-get-X-speakeasy-errors",
+			"--status-code", "501",
+		})
+		require.Error(t, err)
+		assert.Equal(t, "err-123", jsonGetString(strings.TrimSpace(h.GetStderr()), "_response_headers.X-Error-Id"), h.GetStderr())
+	})
+
+	t.Run("pretty", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{
+			"--include-headers", "--output-format", "pretty",
+			"errors", "status-get-X-speakeasy-errors",
+			"--status-code", "501",
+		})
+		require.Error(t, err)
+		assert.Regexp(t, `X-Error-Id:\s+err-123`, h.GetStderr())
+	})
+}
+
 func TestHeadersErrorNone(t *testing.T) {
 	recordTest("headers-error-response-headers-none")
 
