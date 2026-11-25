@@ -1,7 +1,10 @@
 package explorer
 
 import (
+	"fmt"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -24,6 +27,38 @@ func explorerTestTree() CommandNode {
 			{Name: "status", FullPath: "status", Description: "Show status"},
 		},
 	}
+}
+
+func scrollTestLeaves(prefix, parent string) []CommandNode {
+	var leaves []CommandNode
+	for i := 0; i < 10; i++ {
+		name := fmt.Sprintf("%s%02d", prefix, i)
+		leaves = append(leaves, CommandNode{Name: name, FullPath: strings.TrimSpace(parent + " " + name)})
+	}
+	return leaves
+}
+
+func scrollTestTree() CommandNode {
+	group := CommandNode{Name: "many", FullPath: "many", IsGroup: true, Children: scrollTestLeaves("cmd", "many")}
+	return CommandNode{
+		Name:     "cli",
+		IsGroup:  true,
+		Children: append([]CommandNode{group}, scrollTestLeaves("run", "")...),
+	}
+}
+
+func newScrollTestModel(t *testing.T) model {
+	t.Helper()
+	m := newModel(scrollTestTree(), "1.2.3")
+	return applyMsgs(t, m, tea.WindowSizeMsg{Width: 100, Height: 10})
+}
+
+func pressDown(t *testing.T, m model, n int) model {
+	t.Helper()
+	for i := 0; i < n; i++ {
+		m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	return m
 }
 
 func newExplorerTestModel(t *testing.T) model {
@@ -206,6 +241,54 @@ func TestSearchTypingFiltersAcrossTree(t *testing.T) {
 	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
 	if m.searching || m.filter != "" || m.searchResults != nil {
 		t.Fatalf("after esc searching = %v, filter = %q, results = %v, want cleared", m.searching, m.filter, m.searchResults)
+	}
+}
+
+func TestScrolledListShowsLastItem(t *testing.T) {
+	m := pressDown(t, newScrollTestModel(t), 10)
+	if m.cursor != 10 {
+		t.Fatalf("cursor = %d, want 10", m.cursor)
+	}
+	if out := m.renderList(80); !strings.Contains(out, "run09") {
+		t.Fatalf("renderList hides the selected last item:\n%s", out)
+	}
+}
+
+func TestDeepSearchInGroupShowsLastResult(t *testing.T) {
+	m := newScrollTestModel(t)
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if !m.hasBack() {
+		t.Fatal("hasBack = false after entering group, want true")
+	}
+	m = applyMsgs(t, m, textKey("/"), textKey("c"), textKey("m"), textKey("d"))
+	if len(m.searchResults) < 5 {
+		t.Fatalf("searchResults = %d, want enough cmd matches to scroll", len(m.searchResults))
+	}
+	m = pressDown(t, m, len(m.searchResults)-1)
+	last := m.searchResults[len(m.searchResults)-1].Node.Name
+	if out := m.renderList(80); !strings.Contains(out, last) {
+		t.Fatalf("renderList hides the selected last result %q:\n%s", last, out)
+	}
+}
+
+func TestClickOnLastVisibleItemOfScrolledList(t *testing.T) {
+	m := pressDown(t, newScrollTestModel(t), 10)
+	row := 3 + m.cursor - m.scrollOffset
+	m = applyMsgExpectQuit(t, m, leftClick(2, row))
+	if m.selected != "run09" {
+		t.Fatalf("selected = %q, want run09", m.selected)
+	}
+}
+
+func TestSearchBackspaceRemovesWholeRune(t *testing.T) {
+	m := newExplorerTestModel(t)
+	m = applyMsgs(t, m, textKey("/"), textKey("c"), textKey("é"))
+	if m.filter != "cé" {
+		t.Fatalf("filter = %q, want cé", m.filter)
+	}
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+	if m.filter != "c" || !utf8.ValidString(m.filter) {
+		t.Fatalf("filter after backspace = %q, want c", m.filter)
 	}
 }
 
