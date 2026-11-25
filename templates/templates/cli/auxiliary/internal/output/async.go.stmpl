@@ -95,10 +95,13 @@ func (e *asyncRuntimeError) MachineErrorFields() map[string]interface{} {
 			errorMember = "error"
 		}
 		object, isObject := e.payload.(map[string]interface{})
-		if !isObject {
-			fields["error"] = e.payload
-		} else if member, exists := object[errorMember]; exists {
+		member, exists := object[errorMember]
+		switch {
+		case isObject && exists:
 			fields["error"] = member
+		case !isObject || e.reason != ReasonCLIAsyncFailed:
+			// Without a failure detail, the poll response is the only diagnostic.
+			fields["error"] = e.payload
 		}
 	}
 	return fields
