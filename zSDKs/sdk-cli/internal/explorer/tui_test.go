@@ -282,6 +282,34 @@ func TestClickOnLastVisibleItemOfScrolledList(t *testing.T) {
 	}
 }
 
+func TestClickOnLastDeepSearchResultInGroup(t *testing.T) {
+	m := newScrollTestModel(t)
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyEnter}, textKey("/"), textKey("c"), textKey("m"), textKey("d"))
+	m = pressDown(t, m, len(m.searchResults)-1)
+	want := m.searchResults[m.cursor].Node.FullPath
+	row := 3 + m.cursor - m.scrollOffset
+	m = applyMsgExpectQuit(t, m, leftClick(2, row))
+	if m.selected != want {
+		t.Fatalf("selected = %q, want %q", m.selected, want)
+	}
+}
+
+func TestClearingScrolledSearchResetsScroll(t *testing.T) {
+	m := newScrollTestModel(t)
+	m = applyMsgs(t, m, textKey("/"), textKey("c"))
+	m = pressDown(t, m, len(m.searchResults)-1)
+	if m.scrollOffset == 0 {
+		t.Fatal("scrollOffset = 0 after moving to the last result, want scrolled")
+	}
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+	if m.filter != "" || m.scrollOffset != 0 {
+		t.Fatalf("filter = %q, scrollOffset = %d after clearing, want empty and 0", m.filter, m.scrollOffset)
+	}
+	if out := m.renderList(80); !strings.Contains(out, "many/") {
+		t.Fatalf("renderList after clearing search hides the first item:\n%s", out)
+	}
+}
+
 func TestSearchBackspaceRemovesWholeRune(t *testing.T) {
 	m := newExplorerTestModel(t)
 	m = applyMsgs(t, m, textKey("/"), textKey("c"), textKey("é"))

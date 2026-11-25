@@ -369,6 +369,7 @@ func (m *model) applyFilter() {
 		m.filtered = nil
 		m.searchResults = nil
 		m.cursor = 0
+		m.scrollOffset = 0
 		return
 	}
 	// Deep search from root across the entire tree
