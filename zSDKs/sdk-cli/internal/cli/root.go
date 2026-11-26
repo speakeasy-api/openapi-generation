@@ -70,7 +70,10 @@ func NewRootCommand() (*cobra.Command, error) {
 			}
 			if cmd.Annotations["speakeasy_settings_command"] != "true" {
 				if err := output.ValidateConfiguredOutputFormat(cmd); err != nil {
-					return err
+					if !config.RunsWithoutConfig(cmd) {
+						return err
+					}
+					fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %v\n", err)
 				}
 			}
 			config.SetKeyringWarningOutput(cmd.ErrOrStderr())

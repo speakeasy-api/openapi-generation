@@ -175,7 +175,7 @@ func TestConfiguredOutputFormatIsValidated(t *testing.T) {
 	}
 
 	t.Run("env", func(t *testing.T) {
-		h, err := run(t, "bogus", "", "version")
+		h, err := run(t, "bogus", "", "methods", "method-get")
 		require.Error(t, err)
 		assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
 		assert.Contains(t, h.GetStderr(), `invalid output format "bogus" from CLI_OUTPUT_FORMAT`)
@@ -183,11 +183,38 @@ func TestConfiguredOutputFormatIsValidated(t *testing.T) {
 	})
 
 	t.Run("config", func(t *testing.T) {
-		h, err := run(t, "", "bogus", "version")
+		h, err := run(t, "", "bogus", "methods", "method-get")
 		require.Error(t, err)
 		assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
 		assert.Contains(t, h.GetStderr(), `invalid output format "bogus" from output_format in `)
 	})
+
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "version", args: []string{"version"}},
+		{name: "help", args: []string{"help"}},
+		{name: "completion", args: []string{"completion", "bash"}},
+		{name: "shell completion request", args: []string{"__complete", "methods", ""}, want: "method-get"},
+	} {
+		for _, source := range []struct {
+			name, env, configured, message string
+		}{
+			{name: "env", env: "bogus", message: `Warning: invalid output format "bogus" from CLI_OUTPUT_FORMAT`},
+			{name: "config", configured: "bogus", message: `Warning: invalid output format "bogus" from output_format in `},
+		} {
+			t.Run("local commands warn and run/"+source.name+"/"+tc.name, func(t *testing.T) {
+				h, err := run(t, source.env, source.configured, tc.args...)
+				require.NoError(t, err, h.GetStderr())
+				assert.Contains(t, h.GetStderr(), source.message)
+				if tc.want != "" {
+					assert.Contains(t, h.GetStdout(), tc.want)
+				}
+			})
+		}
+	}
 
 	t.Run("flag overrides", func(t *testing.T) {
 		h, err := run(t, "bogus", "", "version", "--output-format", "json")
