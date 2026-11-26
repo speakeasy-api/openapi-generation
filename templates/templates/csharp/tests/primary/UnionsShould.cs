@@ -1618,6 +1618,50 @@ public class UnionsShould
     }
 
     [Fact]
+    public void ScoreUnion_AdditionalPropertiesValidWireFormsMatch()
+    {
+        var bigIntStr = ScoreNameOr<ScoreNameWithBigIntStrExtras>();
+        Assert.Equal(typeof(ScoreNameWithBigIntStrExtras), PickWinnerType(bigIntStr, "{\"name\":\"n\",\"x\":\"5\"}"));
+        Assert.Equal(typeof(ScoreName), PickWinnerType(bigIntStr, "{\"name\":\"n\",\"x\":5}"));
+
+        var bigInt = ScoreNameOr<ScoreNameWithExtras<System.Numerics.BigInteger>>();
+        Assert.Equal(typeof(ScoreNameWithExtras<System.Numerics.BigInteger>), PickWinnerType(bigInt, "{\"name\":\"n\",\"x\":5}"));
+        Assert.Equal(typeof(ScoreName), PickWinnerType(bigInt, "{\"name\":\"n\",\"x\":\"5\"}"));
+
+        var dateTime = ScoreNameOr<ScoreNameWithExtras<DateTime>>();
+        Assert.Equal(typeof(ScoreNameWithExtras<DateTime>), PickWinnerType(dateTime, "{\"name\":\"n\",\"x\":\"2024-01-02T03:04:05.123456789Z\"}"));
+        Assert.Equal(typeof(ScoreNameWithExtras<DateTime>), PickWinnerType(dateTime, "{\"name\":\"n\",\"x\":\"2024-01-02t03:04:05z\"}"));
+        Assert.Equal(typeof(ScoreName), PickWinnerType(dateTime, "{\"name\":\"n\",\"x\":\"01/02/2020\"}"));
+
+        var intEnum = ScoreNameOr<ScoreNameWithExtras<ScoreIntEnum>>();
+        Assert.Equal(typeof(ScoreNameWithExtras<ScoreIntEnum>), PickWinnerType(intEnum, "{\"name\":\"n\",\"x\":1}"));
+        Assert.Equal(typeof(ScoreName), PickWinnerType(intEnum, "{\"name\":\"n\",\"x\":7}"));
+    }
+
+    [Fact]
+    public void ScoreUnion_AdditionalPropertiesOnGeneratedModels()
+    {
+        var stringOrAny = new UnionCandidatePool<int>();
+        stringOrAny.Add<ObjWithStringAdditionalProperties>("A", 0, 0);
+        stringOrAny.Add<ObjWithAnyAdditionalProperties>("B", 1, 1);
+        Assert.Equal(typeof(ObjWithAnyAdditionalProperties), PickWinnerType(stringOrAny, "{\"normalField\":\"s\",\"x\":5}"));
+        Assert.Equal(typeof(ObjWithStringAdditionalProperties), PickWinnerType(stringOrAny, "{\"normalField\":\"s\",\"x\":\"5\"}"));
+
+        var bigIntStrOrString = new UnionCandidatePool<int>();
+        bigIntStrOrString.Add<ObjWithComplexNumbersAdditionalProperties>("A", 0, 0);
+        bigIntStrOrString.Add<ObjWithStringAdditionalProperties>("B", 1, 1);
+        Assert.Equal(typeof(ObjWithComplexNumbersAdditionalProperties), PickWinnerType(bigIntStrOrString, "{\"normalField\":\"s\",\"x\":\"5\"}"));
+    }
+
+    private static UnionCandidatePool<int> ScoreNameOr<TOpen>()
+    {
+        var pool = new UnionCandidatePool<int>();
+        pool.Add<ScoreName>("A", 0, 0);
+        pool.Add<TOpen>("B", 1, 1);
+        return pool;
+    }
+
+    [Fact]
     public void ScoreUnion_AdditionalPropertiesVsExactField()
     {
         var pool = new UnionCandidatePool<int>();
@@ -2116,6 +2160,52 @@ public class UnionsShould
 
         [JsonExtensionData]
         private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<object>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
+    }
+
+    private class ScoreName
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+    }
+
+    private enum ScoreIntEnum
+    {
+        One = 1,
+        Two = 2,
+    }
+
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
+    private class ScoreNameWithExtras<T>
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonIgnore]
+        public Dictionary<string, T> AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { "name" });
+
+        private AdditionalPropertiesAdapter<T> _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<T>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
+    }
+
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
+    private class ScoreNameWithBigIntStrExtras
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonIgnore]
+        public Dictionary<string, System.Numerics.BigInteger> AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { "name" }, new BigIntStrConverter());
+
+        private AdditionalPropertiesAdapter<System.Numerics.BigInteger> _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<System.Numerics.BigInteger>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
     }
 
     [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]

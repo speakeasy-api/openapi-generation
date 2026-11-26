@@ -48,6 +48,13 @@ namespace Speakeasy.OpenAPI.Utils
         public JsonSerializer? WriteSerializer { get; }
     }
 
+    internal interface IAdditionalPropertiesAdapter
+    {
+        Type ValueType { get; }
+
+        bool HasItemConverter { get; }
+    }
+
     /// <summary>
     /// Exposes a model's typed additional properties dictionary as Newtonsoft extension data,
     /// so that additional properties are read from and written to the top level of the JSON object.
@@ -55,7 +62,7 @@ namespace Speakeasy.OpenAPI.Utils
     /// <remarks>
     /// Keys matching a declared property's JSON name (case-insensitively) are neither read nor written.
     /// </remarks>
-    internal sealed class AdditionalPropertiesAdapter<T> : IDictionary<string, object?>
+    internal sealed class AdditionalPropertiesAdapter<T> : IDictionary<string, object?>, IAdditionalPropertiesAdapter
     {
         private readonly Func<Dictionary<string, T>?> _get;
         private readonly Action<Dictionary<string, T>> _set;
@@ -67,6 +74,10 @@ namespace Speakeasy.OpenAPI.Utils
             _set = set;
             _options = options;
         }
+
+        public Type ValueType => typeof(T);
+
+        public bool HasItemConverter => _options.WriteSerializer != null;
 
         public object? this[string key]
         {
