@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.968.17] - 2026-11-26
+### :bug: Bug Fixes
+- [`c83c6b1`](https://github.com/speakeasy-api/openapi-generation/commit/c83c6b1777365bc54700a6ca27f67322f1c80a9e) - **cli**: keep the last explore list item visible and trim whole runes on backspace ([#245](https://github.com/speakeasy-api/openapi-generation/pull/245)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.968.16] - 2026-11-26
 ### :bug: Bug Fixes
 - [`44af722`](https://github.com/speakeasy-api/openapi-generation/commit/44af722700d666016a6a5f675e96b5e384177ffd) - **cli**: read error response headers from HTTPMeta for --include-headers ([#244](https://github.com/speakeasy-api/openapi-generation/pull/244)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21187,3 +21192,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.968.14]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.13...v2.968.14
 [v2.968.15]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.14...v2.968.15
 [v2.968.16]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.15...v2.968.16
+[v2.968.17]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.16...v2.968.17
