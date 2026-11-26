@@ -70,6 +70,7 @@ const (
 	TestCustomCodeRegionSdkMethodWithImports
 	TestCustomCodeRegionSubSdkMethodWithImports
 	TestCustomCodeRegionModelMethodWithImports
+	TestEnumValues
 	TestFlatteningComponentBodyAndParamNoConflict
 	TestFlatteningComponentBodyAndParamNoConflictFlattenRequests
 	TestFlatteningComponentBodyAndParamConflict

@@ -20,6 +20,14 @@ const (
 func (e OutputModality) ToPointer() *OutputModality {
 	return &e
 }
+
+// OutputModalityValues returns every known OutputModality value in schema order.
+func OutputModalityValues() []OutputModality {
+	return []OutputModality{
+		OutputModalityText,
+		OutputModalityImage,
+	}
+}
 func (e *OutputModality) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

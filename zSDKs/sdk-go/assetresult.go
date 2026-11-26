@@ -22,6 +22,16 @@ func (e Status) ToPointer() *Status {
 	return &e
 }
 
+// StatusValues returns every known Status value in schema order.
+func StatusValues() []Status {
+	return []Status{
+		StatusInProgress,
+		StatusCompleted,
+		StatusFailed,
+		StatusRequiresAction,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *Status) IsExact() bool {
 	if e != nil {

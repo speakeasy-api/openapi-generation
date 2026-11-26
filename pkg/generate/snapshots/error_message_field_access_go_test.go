@@ -146,6 +146,13 @@ const (
 func (e KindRejection) ToPointer() *KindRejection {
 	return &e
 }
+
+// KindRejectionValues returns every known KindRejection value in schema order.
+func KindRejectionValues() []KindRejection {
+	return []KindRejection{
+		KindRejectionRejection,
+	}
+}
 func (e *KindRejection) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -198,6 +205,13 @@ const (
 
 func (e KindFailure) ToPointer() *KindFailure {
 	return &e
+}
+
+// KindFailureValues returns every known KindFailure value in schema order.
+func KindFailureValues() []KindFailure {
+	return []KindFailure{
+		KindFailureFailure,
+	}
 }
 func (e *KindFailure) UnmarshalJSON(data []byte) error {
 	var v string

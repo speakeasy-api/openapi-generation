@@ -20,6 +20,16 @@ const (
 func (e XPollingStatus) ToPointer() *XPollingStatus {
 	return &e
 }
+
+// XPollingStatusValues returns every known XPollingStatus value in schema order.
+func XPollingStatusValues() []XPollingStatus {
+	return []XPollingStatus{
+		XPollingStatusCompleted,
+		XPollingStatusFailed,
+		XPollingStatusPending,
+		XPollingStatusStarting,
+	}
+}
 func (e *XPollingStatus) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

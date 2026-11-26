@@ -59,6 +59,15 @@ func (e OneOfWithFactoredOutPropertiesIntEnum) ToPointer() *OneOfWithFactoredOut
 	return &e
 }
 
+// OneOfWithFactoredOutPropertiesIntEnumValues returns every known OneOfWithFactoredOutPropertiesIntEnum value in schema order.
+func OneOfWithFactoredOutPropertiesIntEnumValues() []OneOfWithFactoredOutPropertiesIntEnum {
+	return []OneOfWithFactoredOutPropertiesIntEnum{
+		OneOfWithFactoredOutPropertiesIntEnumFirst,
+		OneOfWithFactoredOutPropertiesIntEnumSecond,
+		OneOfWithFactoredOutPropertiesIntEnumThird,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *OneOfWithFactoredOutPropertiesIntEnum) IsExact() bool {
 	if e != nil {
@@ -81,6 +90,15 @@ const (
 
 func (e OneOfWithFactoredOutPropertiesInt32Enum) ToPointer() *OneOfWithFactoredOutPropertiesInt32Enum {
 	return &e
+}
+
+// OneOfWithFactoredOutPropertiesInt32EnumValues returns every known OneOfWithFactoredOutPropertiesInt32Enum value in schema order.
+func OneOfWithFactoredOutPropertiesInt32EnumValues() []OneOfWithFactoredOutPropertiesInt32Enum {
+	return []OneOfWithFactoredOutPropertiesInt32Enum{
+		OneOfWithFactoredOutPropertiesInt32EnumFiftyFive,
+		OneOfWithFactoredOutPropertiesInt32EnumSixtyNine,
+		OneOfWithFactoredOutPropertiesInt32EnumOneHundredAndEightyOne,
+	}
 }
 
 // IsExact returns true if the value matches a known enum value, false otherwise.
@@ -229,6 +247,15 @@ func (e OneOfWithFactoredOutPropertiesNullableIntEnum) ToPointer() *OneOfWithFac
 	return &e
 }
 
+// OneOfWithFactoredOutPropertiesNullableIntEnumValues returns every known OneOfWithFactoredOutPropertiesNullableIntEnum value in schema order.
+func OneOfWithFactoredOutPropertiesNullableIntEnumValues() []OneOfWithFactoredOutPropertiesNullableIntEnum {
+	return []OneOfWithFactoredOutPropertiesNullableIntEnum{
+		OneOfWithFactoredOutPropertiesNullableIntEnumFirst,
+		OneOfWithFactoredOutPropertiesNullableIntEnumSecond,
+		OneOfWithFactoredOutPropertiesNullableIntEnumThird,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *OneOfWithFactoredOutPropertiesNullableIntEnum) IsExact() bool {
 	if e != nil {
@@ -250,6 +277,15 @@ const (
 
 func (e OneOfWithFactoredOutPropertiesNullableStringEnum) ToPointer() *OneOfWithFactoredOutPropertiesNullableStringEnum {
 	return &e
+}
+
+// OneOfWithFactoredOutPropertiesNullableStringEnumValues returns every known OneOfWithFactoredOutPropertiesNullableStringEnum value in schema order.
+func OneOfWithFactoredOutPropertiesNullableStringEnumValues() []OneOfWithFactoredOutPropertiesNullableStringEnum {
+	return []OneOfWithFactoredOutPropertiesNullableStringEnum{
+		OneOfWithFactoredOutPropertiesNullableStringEnumFirst,
+		OneOfWithFactoredOutPropertiesNullableStringEnumSecond,
+		OneOfWithFactoredOutPropertiesNullableStringEnumThird,
+	}
 }
 
 // IsExact returns true if the value matches a known enum value, false otherwise.
@@ -275,6 +311,15 @@ func (e OneOfWithFactoredOutPropertiesIcon) ToPointer() *OneOfWithFactoredOutPro
 	return &e
 }
 
+// OneOfWithFactoredOutPropertiesIconValues returns every known OneOfWithFactoredOutPropertiesIcon value in schema order.
+func OneOfWithFactoredOutPropertiesIconValues() []OneOfWithFactoredOutPropertiesIcon {
+	return []OneOfWithFactoredOutPropertiesIcon{
+		OneOfWithFactoredOutPropertiesIconTick,
+		OneOfWithFactoredOutPropertiesIconThumbsUp,
+		OneOfWithFactoredOutPropertiesIconFire,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *OneOfWithFactoredOutPropertiesIcon) IsExact() bool {
 	if e != nil {
@@ -296,6 +341,15 @@ const (
 
 func (e OneOfWithFactoredOutPropertiesHeroWidth) ToPointer() *OneOfWithFactoredOutPropertiesHeroWidth {
 	return &e
+}
+
+// OneOfWithFactoredOutPropertiesHeroWidthValues returns every known OneOfWithFactoredOutPropertiesHeroWidth value in schema order.
+func OneOfWithFactoredOutPropertiesHeroWidthValues() []OneOfWithFactoredOutPropertiesHeroWidth {
+	return []OneOfWithFactoredOutPropertiesHeroWidth{
+		OneOfWithFactoredOutPropertiesHeroWidthFourHundredAndEighty,
+		OneOfWithFactoredOutPropertiesHeroWidthSevenHundredAndTwenty,
+		OneOfWithFactoredOutPropertiesHeroWidthOneThousandAndEighty,
+	}
 }
 
 // IsExact returns true if the value matches a known enum value, false otherwise.
