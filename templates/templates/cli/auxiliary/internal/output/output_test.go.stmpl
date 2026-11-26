@@ -736,6 +736,48 @@ func TestAsyncFailureDetailReadsDeclaredErrorMember(t *testing.T) {
 	}
 }
 
+func TestAsyncMachineErrorOnlyIncludesDeclaredErrorMember(t *testing.T) {
+	for name, tc := range map[string]struct {
+		reason     string
+		errorField string
+		payload    string
+		want       string
+	}{
+		"default member":                {payload: `{"state":"failed","error":{"message":"quota exceeded"}}`, want: `{"message":"quota exceeded"}`},
+		"declared member":               {errorField: "errors", payload: `{"state":"failed","errors":[{"message":"unsafe"}]}`, want: `[{"message":"unsafe"}]`},
+		"missing member":                {payload: `{"state":"failed","output":"large result body"}`},
+		"non-object":                    {payload: `"failed"`, want: `"failed"`},
+		"unknown state keeps payload":   {reason: ReasonCLIAsyncUnknownState, payload: `{"state":"odd"}`, want: `{"state":"odd"}`},
+		"protocol error keeps payload":  {reason: ReasonCLIProtocol, payload: `{"output":"x"}`, want: `{"output":"x"}`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var payload interface{}
+			if err := json.Unmarshal([]byte(tc.payload), &payload); err != nil {
+				t.Fatal(err)
+			}
+			reason := tc.reason
+			if reason == "" {
+				reason = ReasonCLIAsyncFailed
+			}
+			runtimeErr := &asyncRuntimeError{reason: reason, message: "failed", id: "handle", resume: "wait handle", payload: payload, errorField: tc.errorField}
+			got, present := runtimeErr.MachineErrorFields()["error"]
+			if tc.want == "" {
+				if present {
+					t.Fatalf("expected no error field, got %v", got)
+				}
+				return
+			}
+			encoded, err := json.Marshal(got)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(encoded) != tc.want {
+				t.Fatalf("got %s; want %s", encoded, tc.want)
+			}
+		})
+	}
+}
+
 func TestAsyncFailureScrubsResolvedCredentials(t *testing.T) {
 	t.Cleanup(config.Reset)
 	config.RegisterSecret("example-secret")

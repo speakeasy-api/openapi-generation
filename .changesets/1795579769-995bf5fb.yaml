@@ -1,0 +1,10 @@
+id: 1795579769-995bf5fb
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: machine-readable async failures no longer copy the whole poll response into the error field when the declared error member is missing
+author: TristanSpeakEasy
+date: "2026-11-25"
