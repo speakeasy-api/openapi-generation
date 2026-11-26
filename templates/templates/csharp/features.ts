@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.15.31",
+  core: "3.15.33",
   getRequestBodies: "2.81.1",
   flattening: "2.81.3",
   methodArguments: "0.2.1",
@@ -444,6 +444,7 @@ function isTestSkipped(test: string): boolean {
     "parameters-header-params-enum",
     "parameters-header-params-string-formats",
     "enum-values",
+    "auth-typed-error-inspection-omits-credentials",
   ].includes(test);
 }
 

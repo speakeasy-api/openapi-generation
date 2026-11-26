@@ -12,6 +12,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/clierrors"
 )
 
 // getAPITestServiceURL returns the URL of the API test service that serves
@@ -476,26 +478,37 @@ func TestEventStreamErrorEventPretty(t *testing.T) {
 	assert.Contains(t, h.GetStderr(), "boom")
 }
 
-// Agent mode classifies an in-band error event reason-first (the declared
-// status probe maps OVERLOADED -> rate_limit_error), never as a connection
-// error.
+// Agent mode classifies an in-band error event reason-first through the
+// $.status probe, never as a connection error. The stream error schema does
+// not declare status, so the probe only resolves on the event's wire JSON.
 func TestEventStreamErrorEventAgentModeClassification(t *testing.T) {
 	recordTest("event-stream-error-event-agent-mode")
 
-	server := newSSEServer(t,
-		`{"event_type":"error","error":{"code":"OVERLOADED","message":"quota exceeded","status":"OVERLOADED"}}`,
-	)
-	defer server.Close()
+	for _, tc := range []struct {
+		status, errorType string
+		exitCode          int
+	}{
+		{"OVERLOADED", "rate_limit_error", clierrors.ExitRuntime},
+		{"AUTH_MISSING", "authentication_error", clierrors.ExitAuth},
+	} {
+		t.Run(tc.status, func(t *testing.T) {
+			server := newSSEServer(t,
+				`{"event_type":"error","error":{"code":"E1","message":"request rejected","status":"`+tc.status+`"}}`,
+			)
+			defer server.Close()
 
-	h := NewCLITestHarness(t)
-	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--agent-mode"})
-	require.Error(t, err)
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--agent-mode"})
+			require.Error(t, err)
 
-	stderr := strings.TrimSpace(h.GetStderr())
-	var envelope map[string]interface{}
-	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
-	assert.Equal(t, "rate_limit_error", envelope["error_type"], stderr)
-	assert.Equal(t, "OVERLOADED", envelope["error_reason"], stderr)
+			stderr := strings.TrimSpace(h.GetStderr())
+			var envelope map[string]interface{}
+			require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
+			assert.Equal(t, tc.errorType, envelope["error_type"], stderr)
+			assert.Equal(t, tc.status, envelope["error_reason"], stderr)
+			assert.Equal(t, float64(tc.exitCode), envelope["exit_code"], stderr)
+		})
+	}
 }
 
 // An error event the reason-first classifier cannot place is an API error
@@ -517,6 +530,34 @@ func TestEventStreamErrorEventAgentModeFallbackIsAPIError(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
 	assert.Equal(t, "api_error", envelope["error_type"], stderr)
 	assert.NotContains(t, stderr, "Check network connectivity")
+}
+
+// Members the error schema does not declare reach the error envelope and
+// classification: the body comes from the event's wire JSON, not the decoded model.
+func TestEventStreamErrorEventKeepsUndeclaredMembers(t *testing.T) {
+	server := newSSEServer(t,
+		`{"event_type":"error","error":{"code":"SOMETHING_ODD","message":"key revoked","retry_hint":"rotate","links":[{"href":"https://example.com/help"}]}}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--agent-mode"})
+	require.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
+	errObj, ok := envelope["error"].(map[string]interface{})
+	require.True(t, ok, "expected the event's error object in the envelope: %s", stderr)
+	assert.Equal(t, "rotate", errObj["retry_hint"], stderr)
+	assert.Equal(t, []interface{}{map[string]interface{}{"href": "https://example.com/help"}}, errObj["links"], stderr)
+	assert.Equal(t, "key revoked", errObj["message"], stderr)
+
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", "pretty"})
+	require.Error(t, err)
+	assert.Contains(t, h.GetStderr(), "retry_hint", "pretty output shows undeclared members too")
+	assert.Contains(t, h.GetStderr(), "https://example.com/help")
 }
 
 // Negative case: an undiscriminated oneOf with an error-shaped variant

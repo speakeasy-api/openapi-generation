@@ -76,13 +76,18 @@ function templateZodErrorInboundSchema(
   }
 
   // Build the transform function that creates the error instance
-  // Always need 'v' to access request$, response$, body$ properties
   let transformParam = "v";
   let transformBody = "";
+  let httpMetaSource = "v";
+
+  if (hasFields && !emptyType) {
+    transformBody = `const { request$, response$, body$, ...data } = v;\n    `;
+    httpMetaSource = "";
+  }
 
   if (inboundRemaps.mappingObject && !emptyType) {
     addInternalImport("primitives", "remap as remap$", usageLocation);
-    transformBody = `const remapped = remap$(v, ${inboundRemaps.mappingObject});\n    `;
+    transformBody += `const remapped = remap$(data, ${inboundRemaps.mappingObject});\n    `;
   }
 
   let constructorArg = "";
@@ -90,7 +95,7 @@ function templateZodErrorInboundSchema(
     if (inboundRemaps.mappingObject && !emptyType) {
       constructorArg = "remapped, ";
     } else if (!emptyType) {
-      constructorArg = "v, ";
+      constructorArg = "data, ";
     }
   } else {
     // For empty types, we still need to pass an empty object as the first arg
@@ -98,7 +103,10 @@ function templateZodErrorInboundSchema(
     constructorArg = "{}, ";
   }
 
-  transformBody += `\nreturn new ${typeName}(${constructorArg}{ request: v.request$, response: v.response$, body: v.body$ });`;
+  const meta = (k: string) => (httpMetaSource ? `${httpMetaSource}.${k}` : k);
+  transformBody += `\nreturn new ${typeName}(${constructorArg}{ request: ${meta(
+    "request$",
+  )}, response: ${meta("response$")}, body: ${meta("body$")} });`;
 
   const transformFn = `(${transformParam}) => {\n    ${transformBody}\n  }`;
   return z.transform(schema, transformFn, true);

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using Company.Product.Feature.Subnamespace;
@@ -124,5 +125,24 @@ public class OptionalNullableFieldsShould
     {
         [JsonProperty("val")]
         public object? Val { get; set; }
+    }
+
+    // Required + nullable free-form object fields carry NullValueHandling.Include with the flag
+    // off as well, so an explicit null reaches AnyDeserializer rather than being skipped.
+    [Fact]
+    public void Legacy_RequiredNullableFreeForm_ExplicitNull_DeserializesToNull()
+    {
+        var model = JsonConvert.DeserializeObject<RequiredNullableFreeFormModel>(
+            "{\"field\":null}",
+            Utilities.GetDefaultJsonDeserializerSettings()
+        );
+        Assert.NotNull(model);
+        Assert.Null(model!.Field);
+    }
+
+    private class RequiredNullableFreeFormModel
+    {
+        [JsonProperty("field", NullValueHandling = NullValueHandling.Include)]
+        public Dictionary<string, object>? Field { get; set; }
     }
 }

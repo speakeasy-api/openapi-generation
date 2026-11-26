@@ -4,6 +4,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.968.17] - 2026-11-26
+### :bug: Bug Fixes
+- [`c83c6b1`](https://github.com/speakeasy-api/openapi-generation/commit/c83c6b1777365bc54700a6ca27f67322f1c80a9e) - **cli**: keep the last explore list item visible and trim whole runes on backspace ([#245](https://github.com/speakeasy-api/openapi-generation/pull/245)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.968.16] - 2026-11-26
+### :bug: Bug Fixes
+- [`44af722`](https://github.com/speakeasy-api/openapi-generation/commit/44af722700d666016a6a5f675e96b5e384177ffd) - **cli**: read error response headers from HTTPMeta for --include-headers ([#244](https://github.com/speakeasy-api/openapi-generation/pull/244)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.968.15] - 2026-11-25
+### :bug: Bug Fixes
+- [`af1b512`](https://github.com/speakeasy-api/openapi-generation/commit/af1b5121aae2e6b0fe7fab94f8ae2509f3f784ef) - **cli**: keep local commands working when the config file cannot be parsed ([#243](https://github.com/speakeasy-api/openapi-generation/pull/243)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.968.14] - 2026-11-24
+### :bug: Bug Fixes
+- [`8e1506b`](https://github.com/speakeasy-api/openapi-generation/commit/8e1506bf3c96d89a7c0c285af954a3c1300f6273) - **cli**: mask sensitive values in API error output ([#232](https://github.com/speakeasy-api/openapi-generation/pull/232)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.968.13] - 2026-11-24
+### :bug: Bug Fixes
+- [`e91bcf8`](https://github.com/speakeasy-api/openapi-generation/commit/e91bcf8711f3edff901b960207d9df34ae2f07ec) - **csharp**: send union-typed fields in form-urlencoded and multipart request bodies ([#240](https://github.com/speakeasy-api/openapi-generation/pull/240)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
+## [v2.968.12] - 2026-11-24
+### :bug: Bug Fixes
+- [`09e7ee4`](https://github.com/speakeasy-api/openapi-generation/commit/09e7ee4cb37716cee7ce6e90a3c545ad2575589e) - **csharp**: deserialize an explicit null into a nullable free-form object field instead of throwing ([#236](https://github.com/speakeasy-api/openapi-generation/pull/236)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
+## [v2.968.11] - 2026-11-24
+### :bug: Bug Fixes
+- [`371dbf5`](https://github.com/speakeasy-api/openapi-generation/commit/371dbf555e4c5d004beaa2dddcf88ddeb18ed1ac) - **terraform**: clone union members and shared fields instead of reusing the source TypeDefs ([#237](https://github.com/speakeasy-api/openapi-generation/pull/237)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
+## [v2.968.10] - 2026-11-24
+### :bug: Bug Fixes
+- [`adb246a`](https://github.com/speakeasy-api/openapi-generation/commit/adb246aaf70cb656a6e8035134eed0dda5891c8d) - **cli**: keep the full wire body of in-band stream error events ([#231](https://github.com/speakeasy-api/openapi-generation/pull/231)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.968.9] - 2026-11-24
+### :bug: Bug Fixes
+- [`a3f8e9d`](https://github.com/speakeasy-api/openapi-generation/commit/a3f8e9d6dfe31a3e55fa33e11f6c7318d6aa2e96) - **cli**: decide error-output colouring from stderr ([#234](https://github.com/speakeasy-api/openapi-generation/pull/234)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.968.8] - 2026-11-24
+### :bug: Bug Fixes
+- [`e151286`](https://github.com/speakeasy-api/openapi-generation/commit/e151286e228d80a3929f9ea31971a537d8227a06) - **cli**: verify installer downloads and fail clearly on install errors ([#233](https://github.com/speakeasy-api/openapi-generation/pull/233)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.968.7] - 2026-11-24
+### :bug: Bug Fixes
+- [`a7f4cd8`](https://github.com/speakeasy-api/openapi-generation/commit/a7f4cd879a3da895f6b78da0986bdcd77fca3cda) - **cli**: read async failure messages from array error members ([#230](https://github.com/speakeasy-api/openapi-generation/pull/230)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.968.6] - 2026-11-23
 ### :bug: Bug Fixes
 - [`7ec0a56`](https://github.com/speakeasy-api/openapi-generation/commit/7ec0a56c8d9d2a00369aeb081a7bed705544f57a) - **cli**: validate and merge discriminated-union variant flags ([#228](https://github.com/speakeasy-api/openapi-generation/pull/228)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21127,3 +21182,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.968.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.3...v2.968.4
 [v2.968.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.4...v2.968.5
 [v2.968.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.5...v2.968.6
+[v2.968.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.6...v2.968.7
+[v2.968.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.7...v2.968.8
+[v2.968.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.8...v2.968.9
+[v2.968.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.9...v2.968.10
+[v2.968.11]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.10...v2.968.11
+[v2.968.12]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.11...v2.968.12
+[v2.968.13]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.12...v2.968.13
+[v2.968.14]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.13...v2.968.14
+[v2.968.15]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.14...v2.968.15
+[v2.968.16]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.15...v2.968.16
+[v2.968.17]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.16...v2.968.17

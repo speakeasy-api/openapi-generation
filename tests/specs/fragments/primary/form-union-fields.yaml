@@ -1,0 +1,217 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/formUnionFields:
+    post:
+      operationId: requestBodyPostFormUnionFields
+      tags:
+        - requestBodies
+      description: >-
+        Exercises form-urlencoded request body fields whose schema is a union.
+        Each field is encoded as if it had been declared with the type of its
+        active variant: scalar, enum and array variants, an array of unions, a
+        union whose array variant holds unions, a nullable union holding null,
+        an optional union left unset, a union with an object variant
+        encoded as JSON, and an open union holding an unknown value, encoded
+        as the raw value when it is a primitive and omitted otherwise.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/FormUnionFields"
+            encoding:
+              jsonUnion:
+                contentType: application/json
+      responses:
+        "200":
+          description: The echoed form fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormUnionEcho"
+  /anything/formUnionBody:
+    post:
+      operationId: requestBodyPostFormUnionBody
+      tags:
+        - requestBodies
+      description: >-
+        Exercises a form-urlencoded request body whose schema is a union of
+        objects and a map. A union-typed property of the active object variant
+        is encoded as its active variant, or as JSON when the union has an
+        object variant. Union-typed values of the active map variant are
+        encoded as their active variant.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/FormUnionBody"
+      responses:
+        "200":
+          description: The echoed form fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormUnionEcho"
+  /anything/multipartUnionFields:
+    post:
+      operationId: requestBodyPostMultipartUnionFields
+      tags:
+        - requestBodies
+      description: >-
+        Exercises multipart request body parts whose schema is a union. Each
+        part is encoded as its active variant: a scalar variant, an array
+        variant sent as repeated parts, and an array of unions sent as
+        repeated parts. A union with an object variant is encoded as JSON. A
+        nullable union holding null is omitted.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/MultipartUnionFields"
+      responses:
+        "200":
+          description: The echoed form fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormUnionEcho"
+components:
+  schemas:
+    FormUnionEcho:
+      type: object
+      properties:
+        form:
+          type: object
+          additionalProperties: true
+    FormUnionFields:
+      type: object
+      required:
+        - scalarUnion
+      properties:
+        scalarUnion:
+          $ref: "#/components/schemas/FormUnionStringOrInteger"
+        stringOrArrayUnion:
+          $ref: "#/components/schemas/FormUnionStringOrArray"
+        enumOrBooleanUnion:
+          $ref: "#/components/schemas/FormUnionEnumOrBoolean"
+        arrayOfUnion:
+          type: array
+          items:
+            $ref: "#/components/schemas/FormUnionStringOrInteger"
+        stringOrArrayOfUnion:
+          $ref: "#/components/schemas/FormUnionStringOrArrayOfUnion"
+        nullableUnion:
+          $ref: "#/components/schemas/FormUnionNullable"
+        optionalUnion:
+          $ref: "#/components/schemas/FormUnionStringOrInteger"
+        jsonUnion:
+          $ref: "#/components/schemas/FormUnionObjectOrString"
+        openUnion:
+          $ref: "#/components/schemas/FormUnionOpenStringOrInteger"
+    FormUnionStringOrInteger:
+      oneOf:
+        - type: string
+        - type: integer
+    FormUnionOpenStringOrInteger:
+      x-speakeasy-unknown-values: allow
+      oneOf:
+        - type: string
+        - type: integer
+    FormUnionStringOrArray:
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            type: string
+    FormUnionStringOrArrayOfUnion:
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            $ref: "#/components/schemas/FormUnionIntegerOrBoolean"
+    FormUnionIntegerOrBoolean:
+      oneOf:
+        - type: integer
+        - type: boolean
+    FormUnionBody:
+      oneOf:
+        - $ref: "#/components/schemas/FormUnionBodyLabeled"
+        - $ref: "#/components/schemas/FormUnionBodyCounted"
+        - $ref: "#/components/schemas/FormUnionBodyMap"
+    FormUnionBodyLabeled:
+      type: object
+      required:
+        - label
+        - labelValue
+      properties:
+        label:
+          type: string
+        labelValue:
+          $ref: "#/components/schemas/FormUnionStringOrInteger"
+        labelJson:
+          $ref: "#/components/schemas/FormUnionObjectOrString"
+    FormUnionBodyCounted:
+      type: object
+      required:
+        - count
+      properties:
+        count:
+          type: integer
+    FormUnionBodyMap:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/FormUnionStringOrInteger"
+    MultipartUnionFields:
+      type: object
+      required:
+        - scalarUnion
+      properties:
+        scalarUnion:
+          $ref: "#/components/schemas/FormUnionStringOrInteger"
+        stringOrArrayUnion:
+          $ref: "#/components/schemas/FormUnionStringOrArray"
+        arrayOfUnion:
+          type: array
+          items:
+            $ref: "#/components/schemas/FormUnionStringOrInteger"
+        nullableUnion:
+          $ref: "#/components/schemas/FormUnionNullable"
+        jsonUnion:
+          $ref: "#/components/schemas/FormUnionObjectOrString"
+    FormUnionEnumOrBoolean:
+      oneOf:
+        - $ref: "#/components/schemas/FormUnionEnum"
+        - type: boolean
+    FormUnionNullable:
+      oneOf:
+        - type: string
+        - type: integer
+        - type: "null"
+    FormUnionObjectOrString:
+      oneOf:
+        - $ref: "#/components/schemas/FormUnionObject"
+        - type: string
+    FormUnionEnum:
+      type: string
+      enum:
+        - first
+        - second
+    FormUnionObject:
+      type: object
+      required:
+        - label
+      properties:
+        label:
+          type: string
+        count:
+          type: integer

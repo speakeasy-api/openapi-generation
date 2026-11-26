@@ -157,7 +157,7 @@ func TestCompactHelpGlobalBypassesBrokenConfig(t *testing.T) {
 	require.NoError(t, os.WriteFile(configPath, []byte("security: ["), 0o600))
 
 	h := NewCLITestHarness(t).WithEnv("HOME", home)
-	err := h.RunBare([]string{"version"})
+	err := h.RunBare([]string{"methods", "method-get"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse config file")
 

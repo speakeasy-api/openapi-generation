@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -104,6 +105,57 @@ func TestStreamErrorEventUnencodableBodyMatchesEncodableShape(t *testing.T) {
 			body, isErr := streamErrorEvent(tc.item, []byte(tc.raw))
 			if !isErr || string(body) != tc.want {
 				t.Fatalf("got %s, error event %v; want %s", body, isErr, tc.want)
+			}
+		})
+	}
+}
+
+type objectErrorEnvelope struct {
+	Data  *errorData `json:"data"`
+	Event string     `json:"event"`
+	ID    string     `json:"id"`
+	Retry int        `json:"retry"`
+}
+
+type objectEnvelopeUnion struct {
+	Envelope *objectErrorEnvelope `union:"member"`
+	Type     string
+}
+
+func (u objectEnvelopeUnion) MarshalJSON() ([]byte, error) {
+	return json.Marshal(u.Envelope)
+}
+
+type unencodableObjectEnvelopeUnion struct {
+	Envelope *objectErrorEnvelope `union:"member"`
+	Type     string
+}
+
+func (unencodableObjectEnvelopeUnion) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("required union has no member")
+}
+
+func TestStreamErrorEventEnvelopeUnionKeepsEnvelopeLevel(t *testing.T) {
+	raw := `{"id":"7","event":"error","retry":3000,"data":{"message":"quota exceeded","extra":{"href":"https://example.com"}}}`
+	envelope := &objectErrorEnvelope{Data: &errorData{Message: "quota exceeded"}, Event: "error", ID: "7", Retry: 3000}
+	want := map[string]interface{}{
+		"id":    "7",
+		"event": "error",
+		"retry": float64(3000),
+		"data":  map[string]interface{}{"message": "quota exceeded", "extra": map[string]interface{}{"href": "https://example.com"}},
+	}
+	for name, item := range map[string]interface{}{
+		"encodable":   objectEnvelopeUnion{Envelope: envelope, Type: "error"},
+		"unencodable": unencodableObjectEnvelopeUnion{Envelope: envelope, Type: "error"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			body, isErr := streamErrorEvent(item, []byte(raw))
+			if !isErr {
+				t.Fatal("not classified as an error event")
+			}
+			var got map[string]interface{}
+			if err := json.Unmarshal(body, &got); err != nil || !reflect.DeepEqual(got, want) {
+				t.Fatalf("got %s, error %v; want %v", body, err, want)
 			}
 		})
 	}

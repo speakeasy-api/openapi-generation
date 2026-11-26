@@ -1563,6 +1563,24 @@ DEBUG	discriminated: Renamed to "OASOneOfResponse_optional_discriminator_request
 	 registrationID: "scope:shared refType:Schemas refName:OASOneOfResponse originalName:optional_discriminator_request_and_response"
 DEBUG	
 
+--- Renaming 2 types with name "optional_const_discriminator_request_and_response" ---
+DEBUG	discriminated: Renamed to "OASOneOfRequest_optional_const_discriminator_request_and_response" 
+	 labels: "original_name:optional_const_discriminator_request_and_response scope:shared data_type:union refName:OASOneOfRequest" 
+	 registrationID: "scope:shared refType:Schemas refName:OASOneOfRequest originalName:optional_const_discriminator_request_and_response"
+DEBUG	discriminated: Renamed to "OASOneOfResponse_optional_const_discriminator_request_and_response" 
+	 labels: "original_name:optional_const_discriminator_request_and_response scope:shared data_type:union refName:OASOneOfResponse" 
+	 registrationID: "scope:shared refType:Schemas refName:OASOneOfResponse originalName:optional_const_discriminator_request_and_response"
+DEBUG	
+
+--- Renaming 2 types with name "optional_const_discriminator_request_and_response_repeat" ---
+DEBUG	discriminated: Renamed to "OASOneOfRequest_optional_const_discriminator_request_and_response_repeat" 
+	 labels: "original_name:optional_const_discriminator_request_and_response_repeat scope:shared data_type:union refName:OASOneOfRequest" 
+	 registrationID: "scope:shared refType:Schemas refName:OASOneOfRequest originalName:optional_const_discriminator_request_and_response_repeat"
+DEBUG	discriminated: Renamed to "OASOneOfResponse_optional_const_discriminator_request_and_response_repeat" 
+	 labels: "original_name:optional_const_discriminator_request_and_response_repeat scope:shared data_type:union refName:OASOneOfResponse" 
+	 registrationID: "scope:shared refType:Schemas refName:OASOneOfResponse originalName:optional_const_discriminator_request_and_response_repeat"
+DEBUG	
+
 --- Renaming 2 types with name "optional_discriminator_request_required_response" ---
 DEBUG	discriminated: Renamed to "OASOneOfRequest_optional_discriminator_request_required_response" 
 	 labels: "original_name:optional_discriminator_request_required_response scope:shared data_type:union refName:OASOneOfRequest" 
@@ -3011,7 +3029,7 @@ GetOasMinlengthRequest (id: string)
 GetOasMinlengthResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
 UpdateOasMinlengthRequest (id: string, OASMinlengthRequest: OASMinlengthRequest)
 UpdateOasMinlengthResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
-OasOneOfRequest (optional_discriminator_request_only: union, optional_discriminator_request_and_response: union, optional_discriminator_request_required_response: union ...)
+OasOneOfRequest (optional_discriminator_request_only: union, optional_discriminator_request_and_response: union, optional_const_discriminator_request_and_response: union ...)
  OptionalDiscriminatorRequestOnly (union)
   OptionalDiscriminatorRequestOnlyOasOneOfDiscriminatorObjectString (discriminator: string, object_string: string, nondiscriminator: string)
   OptionalDiscriminatorRequestOnlyOasOneOfDiscriminatorObjectNumber (discriminator: string, object_number: number, nondiscriminator: string)
@@ -3020,6 +3038,10 @@ OasOneOfRequest (optional_discriminator_request_only: union, optional_discrimina
   OasOneOfRequestOptionalDiscriminatorRequestAndResponseOasOneOfDiscriminatorObjectString (discriminator: string, object_string: string, nondiscriminator: string)
   OasOneOfRequestOptionalDiscriminatorRequestAndResponseOasOneOfDiscriminatorObjectNumber (discriminator: string, object_number: number, nondiscriminator: string)
   OasOneOfRequestOptionalDiscriminatorRequestAndResponseOasOneOfDiscriminatorObjectAllOf (discriminator: string, object_string: string, object_number: number ...)
+ OasOneOfRequestOptionalConstDiscriminatorRequestAndResponse (union)
+  OasOneOfConstDiscriminatorAlpha (kind: string, alpha_value: string)
+  OasOneOfConstDiscriminatorBeta (kind: string, beta_value: number)
+ OasOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat (union)
  OasOneOfRequestOptionalDiscriminatorRequestRequiredResponse (union)
   OasOneOfRequestOptionalDiscriminatorRequestRequiredResponseOasOneOfDiscriminatorObjectString (discriminator: string, object_string: string, nondiscriminator: string)
   OasOneOfRequestOptionalDiscriminatorRequestRequiredResponseOasOneOfDiscriminatorObjectNumber (discriminator: string, object_number: number, nondiscriminator: string)
@@ -3067,11 +3089,13 @@ OasOneOfRequest (optional_discriminator_request_only: union, optional_discrimina
  RequiredRefPrimitivesRequestOnly (union)
  OasOneOfRequestRequiredRefPrimitivesRequestAndResponse (union)
 CreateOasOneofResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
- OasOneOfResponse (id: string, optional_discriminator_request_and_response: union, optional_discriminator_request_required_response: union ...)
+ OasOneOfResponse (id: string, optional_discriminator_request_and_response: union, optional_const_discriminator_request_and_response: union ...)
   OasOneOfResponseOptionalDiscriminatorRequestAndResponse (union)
    OasOneOfResponseOptionalDiscriminatorRequestAndResponseOasOneOfDiscriminatorObjectString (discriminator: string, object_string: string, nondiscriminator: string)
    OasOneOfResponseOptionalDiscriminatorRequestAndResponseOasOneOfDiscriminatorObjectNumber (discriminator: string, object_number: number, nondiscriminator: string)
    OasOneOfResponseOptionalDiscriminatorRequestAndResponseOasOneOfDiscriminatorObjectAllOf (discriminator: string, object_string: string, object_number: number ...)
+  OasOneOfResponseOptionalConstDiscriminatorRequestAndResponse (union)
+  OasOneOfResponseOptionalConstDiscriminatorRequestAndResponseRepeat (union)
   OasOneOfResponseOptionalDiscriminatorRequestRequiredResponse (union)
    OasOneOfResponseOptionalDiscriminatorRequestRequiredResponseOasOneOfDiscriminatorObjectString (discriminator: string, object_string: string, nondiscriminator: string)
    OasOneOfResponseOptionalDiscriminatorRequestRequiredResponseOasOneOfDiscriminatorObjectNumber (discriminator: string, object_number: number, nondiscriminator: string)

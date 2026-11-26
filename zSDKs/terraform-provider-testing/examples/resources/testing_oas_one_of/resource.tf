@@ -1,4 +1,14 @@
 resource "testing_oas_one_of" "my_oasoneof" {
+  optional_const_discriminator_request_and_response = {
+    beta = {
+      beta_value = 0.44
+    }
+  }
+  optional_const_discriminator_request_and_response_repeat = {
+    alpha = {
+      alpha_value = "...my_alpha_value..."
+    }
+  }
   optional_discriminator_request_and_response = {
     allof = {
       nondiscriminator = "...my_nondiscriminator..."

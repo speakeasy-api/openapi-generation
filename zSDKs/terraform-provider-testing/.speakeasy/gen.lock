@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 52db7940c5b8f2e1032a13a3f84626ae
+  docChecksum: da848b9f02d61a37187cf0abbf9ab437
   docVersion: 0.0.1
   speakeasyVersion: internal
   generationVersion: internal
@@ -15,7 +15,7 @@ features:
     constObjects: 0.2.0
     constsAndDefaults: 0.3.2
     contentMediaTypeApplicationJSON: 0.1.1
-    core: 3.50.7
+    core: 3.50.8
     customCodeRegions: 0.1.1
     customSecuritySchemes: 0.1.2
     deepObjectParams: 0.1.0
@@ -454,7 +454,7 @@ trackedFiles:
   examples/resources/testing_oas_one_of/import.sh:
     last_write_checksum: sha1:260ff5ee8759b64c5b54cfe7d05e2a7dd6b159c3
   examples/resources/testing_oas_one_of/resource.tf:
-    last_write_checksum: sha1:2c586ea478fc81a5454703a721b5b968ac74ef7e
+    last_write_checksum: sha1:f89bdd4c30367b515b19bdf94ad8e95c4b5df511
   examples/resources/testing_oas_pattern/import-by-string-id.tf:
     last_write_checksum: sha1:eae89d3e2fe50889f71b388680448ca32b434f25
   examples/resources/testing_oas_pattern/import.sh:
@@ -1006,13 +1006,13 @@ trackedFiles:
   internal/provider/oasminlength_resource_sdk.go:
     last_write_checksum: sha1:c0e392b6a3298b21cce8e2052962abcf75f6244b
   internal/provider/oasoneof_data_source.go:
-    last_write_checksum: sha1:fb95eae2c14eca19b6660038d05c75b2c15fa18c
+    last_write_checksum: sha1:65c82c19773fca9b7a43bf88981b308a12ba69de
   internal/provider/oasoneof_data_source_sdk.go:
-    last_write_checksum: sha1:4e2dd2928cc8b0c51086fb8d77c99dae8c1d6608
+    last_write_checksum: sha1:14e8029ff652685ab3e5a2d01d258f4ed442a1db
   internal/provider/oasoneof_resource.go:
-    last_write_checksum: sha1:f0f16a47551a86f19b90fb9ccc7ddea13465254f
+    last_write_checksum: sha1:acc72f0dda728073be9fd4ea295fc5bdb8619028
   internal/provider/oasoneof_resource_sdk.go:
-    last_write_checksum: sha1:ff4ba3ffe888e924575c58aa828c316d4c386184
+    last_write_checksum: sha1:78d93c4fc519b6cebd0247238873832f9087ed9a
   internal/provider/oaspattern_data_source.go:
     last_write_checksum: sha1:88007829795c5e1d601e972066432f4537b06ca5
   internal/provider/oaspattern_data_source_sdk.go:
@@ -1623,6 +1623,10 @@ trackedFiles:
     last_write_checksum: sha1:ae69fe4ea3eb41e10fdee33b7c35868ca6a25450
   internal/provider/types/oas_example_response_set_nested_response.go:
     last_write_checksum: sha1:6ac7f777406c589dc3292ccd74818008e1b5d173
+  internal/provider/types/oas_one_of_const_discriminator_alpha.go:
+    last_write_checksum: sha1:6a4b4c53663d0647e0c95293d16b29cc432b74cc
+  internal/provider/types/oas_one_of_const_discriminator_beta.go:
+    last_write_checksum: sha1:fb770193fd512d3692ccfc99b5d78c29ded9de07
   internal/provider/types/oas_one_of_discriminator_object_all_of.go:
     last_write_checksum: sha1:96b6d9cc28aacb6fe5f390303d0cd0ca57ebf8da
   internal/provider/types/oas_one_of_discriminator_object_number.go:
@@ -1633,6 +1637,10 @@ trackedFiles:
     last_write_checksum: sha1:f064a4d007d07498b1398022a5f29c9ae73a25bd
   internal/provider/types/oas_one_of_object_string.go:
     last_write_checksum: sha1:666e80006796d54cef9c8d2377a31330ec7739dd
+  internal/provider/types/oas_one_of_request_optional_const_discriminator_request_and_response.go:
+    last_write_checksum: sha1:216c3cf82adce49c0e46b2aa256991ddeade791b
+  internal/provider/types/oas_one_of_request_optional_const_discriminator_request_and_response_repeat.go:
+    last_write_checksum: sha1:b5d077c2922d94f0b31ecd5c58f4fcd5307864a7
   internal/provider/types/oas_one_of_request_optional_discriminator_request_and_response.go:
     last_write_checksum: sha1:cc3b137f899e8cd1ff61f6c3e52308ac8407c8cb
   internal/provider/types/oas_one_of_request_optional_discriminator_request_and_response_oas_one_of_discriminator_object_all_of.go:
@@ -1689,6 +1697,10 @@ trackedFiles:
     last_write_checksum: sha1:60a90abb56f410a72bf1e68b8695a2edae4b2393
   internal/provider/types/oas_one_of_request_required_ref_primitives_request_and_response.go:
     last_write_checksum: sha1:e5e4d3aa99fb2b0e6010a2b1ab2a92526a7c68c2
+  internal/provider/types/oas_one_of_response_optional_const_discriminator_request_and_response.go:
+    last_write_checksum: sha1:c7d580072eff80c56f0ed72e4e2f9a915ed3c2cd
+  internal/provider/types/oas_one_of_response_optional_const_discriminator_request_and_response_repeat.go:
+    last_write_checksum: sha1:54e3b959f59b65467e62ee9a57929fefa9456d3a
   internal/provider/types/oas_one_of_response_optional_discriminator_request_and_response.go:
     last_write_checksum: sha1:19b4548e7fe334ca31a81db31b123990c611793e
   ? internal/provider/types/oas_one_of_response_optional_discriminator_request_and_response_oas_one_of_discriminator_object_all_of.go
@@ -3295,6 +3307,10 @@ trackedFiles:
     last_write_checksum: sha1:9912bd07effe9044c207ff25bf1c92a1f77fde3c
   internal/sdk/models/shared/oasminlengthresponse.go:
     last_write_checksum: sha1:e2f4f3275fe9cae5af901503cf6be2359a8c5f37
+  internal/sdk/models/shared/oasoneofconstdiscriminatoralpha.go:
+    last_write_checksum: sha1:c964516d45fc3f73b99244a52d9e80384737d079
+  internal/sdk/models/shared/oasoneofconstdiscriminatorbeta.go:
+    last_write_checksum: sha1:3384e67e713cc93ec56f89779ea62b3c8987d38e
   internal/sdk/models/shared/oasoneofdiscriminatorobjectallof.go:
     last_write_checksum: sha1:661e25409fe95408eb38e0b4abdcc7ed4729f847
   internal/sdk/models/shared/oasoneofdiscriminatorobjectnumber.go:
@@ -3306,9 +3322,9 @@ trackedFiles:
   internal/sdk/models/shared/oasoneofobjectstring.go:
     last_write_checksum: sha1:086a316170abf1ff01a0b1900125f19bf516f03b
   internal/sdk/models/shared/oasoneofrequest.go:
-    last_write_checksum: sha1:2f8ea81dcf3a85612275e72b421f39229ba93602
+    last_write_checksum: sha1:e9c4ec8c49b116323fd787ba9ff92578f34972ba
   internal/sdk/models/shared/oasoneofresponse.go:
-    last_write_checksum: sha1:2255d6bce076137eb59811d95f485cb235e35bae
+    last_write_checksum: sha1:ce9e86a7f50f34ea02339ea83631e0d306dbf13f
   internal/sdk/models/shared/oaspatternrequest.go:
     last_write_checksum: sha1:f821041e626f5e2fe98dc89ca93a7df83157d1aa
   internal/sdk/models/shared/oaspatternresponse.go:

@@ -330,19 +330,6 @@ func (f Fields) clone(fieldDefVisited map[*FieldDef]*FieldDef, typeDefVisited ma
 		typeDefVisited = make(map[*TypeDef]*TypeDef)
 	}
 
-	allVisited := true
-
-	for _, field := range f {
-		if _, ok := fieldDefVisited[field]; !ok {
-			allVisited = false
-			break
-		}
-	}
-
-	if allVisited {
-		return f
-	}
-
 	cloned := make(Fields, len(f))
 
 	for i, field := range f {

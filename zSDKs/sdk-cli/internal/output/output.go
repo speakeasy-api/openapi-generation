@@ -652,8 +652,7 @@ func renderUnclassifiedPrettyAPIError(cmd *cobra.Command, out io.Writer, err err
 	if wantsHeaders(cmd) {
 		headers := extractErrorResponseHeaders(err)
 		if len(headers) > 0 {
-			colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
-			printResponseHeadersPretty(out, headers, ShouldColorize(colorFlag))
+			printResponseHeadersPretty(out, headers, stderrColorize(cmd))
 		}
 	}
 	if classification.RawBody != "" && classification.StatusCode != 0 {
@@ -689,7 +688,7 @@ func renderUnclassifiedStructuredAPIError(cmd *cobra.Command, out io.Writer, err
 				}
 				envelope = object
 			} else {
-				wrapped := map[string]interface{}{"error": err.Error(), "body": parsed}
+				wrapped := map[string]interface{}{"error": redactedErrorText(err, classification), "body": parsed}
 				if statusCode != 0 {
 					wrapped["status_code"] = statusCode
 				}
@@ -701,7 +700,7 @@ func renderUnclassifiedStructuredAPIError(cmd *cobra.Command, out io.Writer, err
 		}
 	}
 	if envelope == nil {
-		wrapped := map[string]interface{}{"error": err.Error()}
+		wrapped := map[string]interface{}{"error": redactedErrorText(err, classification)}
 		if statusCode != 0 {
 			wrapped["status_code"] = statusCode
 		}
@@ -732,18 +731,16 @@ func renderUnclassifiedStructuredAPIError(cmd *cobra.Command, out io.Writer, err
 	}
 	jsonData, marshalErr := json.MarshalIndent(envelope, "", "  ")
 	if marshalErr != nil {
-		jsonData, _ = json.MarshalIndent(map[string]interface{}{"error": err.Error(), "exit_code": ExitCodeFor(classification)}, "", "  ")
+		jsonData, _ = json.MarshalIndent(map[string]interface{}{"error": redactedErrorText(err, classification), "exit_code": ExitCodeFor(classification)}, "", "  ")
 	}
-	colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
-	printScrubbedJSON(out, jsonData, ShouldColorize(colorFlag))
+	printScrubbedJSON(out, jsonData, stderrColorize(cmd))
 }
 
 func renderPrettyError(cmd *cobra.Command, out io.Writer, err error, classification Classification) {
 	if wantsHeaders(cmd) {
 		headers := extractErrorResponseHeaders(err)
 		if len(headers) > 0 {
-			colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
-			printResponseHeadersPretty(out, headers, ShouldColorize(colorFlag))
+			printResponseHeadersPretty(out, headers, stderrColorize(cmd))
 		}
 	}
 	fmt.Fprintf(out, "Error (%s): %s\n", classification.Type, classification.Message)
@@ -777,15 +774,14 @@ func renderStructuredError(cmd *cobra.Command, out io.Writer, err error, classif
 	jsonData, marshalErr := json.MarshalIndent(envelope, "", "  ")
 	if marshalErr != nil {
 		jsonData, _ = json.MarshalIndent(map[string]interface{}{
-			"error":      err.Error(),
+			"error":      redactedErrorText(err, classification),
 			"error_type": string(classification.Type),
 			"exit_code":  ExitCodeFor(classification),
 			"message":    classification.Message,
 			"hints":      classification.Hints,
 		}, "", "  ")
 	}
-	colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
-	printScrubbedJSON(out, jsonData, ShouldColorize(colorFlag))
+	printScrubbedJSON(out, jsonData, stderrColorize(cmd))
 }
 
 func classifiedErrorEnvelope(err error, classification Classification) map[string]interface{} {
@@ -796,7 +792,7 @@ func classifiedErrorEnvelope(err error, classification Classification) map[strin
 			envelope[key] = value
 		}
 	} else {
-		envelope = map[string]interface{}{"error": err.Error()}
+		envelope = map[string]interface{}{"error": redactedErrorText(err, classification)}
 		if classification.Body != nil {
 			envelope["body"] = classification.Body
 		} else if classification.RawBody != "" {
@@ -1206,19 +1202,12 @@ func extractResponseHeaders(res interface{}) http.Header {
 	return httpRes.Header
 }
 
-// extractErrorResponseHeaders extracts HTTP response headers from an SDK error.
-// Error types store *http.Response in a RawResponse field.
+// extractErrorResponseHeaders extracts HTTP response headers from an SDK error
+// or any error it wraps.
 func extractErrorResponseHeaders(err error) http.Header {
 	for current := err; current != nil; current = errors.Unwrap(current) {
-		v, ok := derefToStruct(reflect.ValueOf(current))
-		if !ok {
-			continue
-		}
-		rawResp := v.FieldByName("RawResponse")
-		if rawResp.IsValid() && rawResp.CanInterface() {
-			if r, ok := rawResp.Interface().(*http.Response); ok && r != nil {
-				return r.Header
-			}
+		if r := extractHTTPResponse(current); r != nil {
+			return r.Header
 		}
 	}
 	return nil

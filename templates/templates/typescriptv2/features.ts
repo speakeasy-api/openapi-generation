@@ -24,7 +24,7 @@ const supportedFeatures = {
   inputOutputModels: "2.82.1",
   ignores: "2.81.1",
   typeOverrides: "2.81.1",
-  errors: "2.86.3",
+  errors: "2.86.4",
   acceptHeaders: "2.81.2",
   multiLevelTagging: "2.87.3",
   devContainers: "2.90.1",

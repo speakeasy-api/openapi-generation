@@ -1,7 +1,7 @@
 //@ts-ignore
 // TODO: determine if this needs to be insync with the go version or can define these differently
 const supportedFeatures = {
-  core: "0.9.38",
+  core: "0.9.46",
   allowReserved: "0.2.0",
   getRequestBodies: "0.0.1",
   flattening: "0.0.0",
@@ -376,6 +376,7 @@ function isTestSkipped(test: string): boolean {
     "parameters-header-params-enum",
     "parameters-header-params-string-formats",
     "enum-values",
+    "auth-typed-error-inspection-omits-credentials",
   ].includes(test);
 }
 

@@ -15,7 +15,7 @@ features:
     additionalProperties: 0.0.2
     bigint: 0.2.1
     constsAndDefaults: 0.0.3
-    core: 3.15.31
+    core: 3.15.33
     customSecuritySchemes: 0.1.0
     decimal: 0.1.0
     deprecations: 2.81.2
@@ -1456,7 +1456,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Types.cs:
     last_write_checksum: sha1:7775fbb89f62699087683cf47642c3ead6b62861
   src/Speakeasy/OpenAPI/Utils/AnyDeserializer.cs:
-    last_write_checksum: sha1:0132e56c9b583ca2b8ec632c9ef924600dd0cd68
+    last_write_checksum: sha1:e3b1814b90eb10e0bf595115bc1647de659d83e0
   src/Speakeasy/OpenAPI/Utils/BigIntStrConverter.cs:
     last_write_checksum: sha1:62c143c14a8ca2a1df4731614a09b993e085923f
   src/Speakeasy/OpenAPI/Utils/Constants.cs:
@@ -1484,7 +1484,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Utils/OptionalNullableJsonConverter.cs:
     last_write_checksum: sha1:bf8eec6e762302070ff3a32d58ebc04347c8ed79
   src/Speakeasy/OpenAPI/Utils/RequestBodySerializer.cs:
-    last_write_checksum: sha1:4f68b905a9c9caee72cafe309fb8f991b9e18a7b
+    last_write_checksum: sha1:38292e65b7616271d7581e557885b96dcfd5b5b5
   src/Speakeasy/OpenAPI/Utils/ResponseBodyDeserializer.cs:
     last_write_checksum: sha1:d466d0e2124070f8010d396be9fa10dd9a7fb9d0
   src/Speakeasy/OpenAPI/Utils/Retries/BackoffStrategy.cs:
@@ -1512,9 +1512,9 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Utils/URLBuilder.cs:
     last_write_checksum: sha1:27aa6dd3713a24f20a7737dfb966c3c673529cb5
   src/Speakeasy/OpenAPI/Utils/UnionDeserializer.cs:
-    last_write_checksum: sha1:9ddf50cc9aee44e22210ad6a12b6001f997487b7
+    last_write_checksum: sha1:f50ceb5bd0e472ad8cbd5192adde954d4f4dbf26
   src/Speakeasy/OpenAPI/Utils/Utilities.cs:
-    last_write_checksum: sha1:868a41b840b16955fb0530f8220cf2be15f72967
+    last_write_checksum: sha1:c3fd047198f06c29d58dc4f569f5b3f65839550b
 examples:
   _operation_with_leading_and_trailing_underscores_:
     "":

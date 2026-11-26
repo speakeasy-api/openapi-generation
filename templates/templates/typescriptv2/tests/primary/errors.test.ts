@@ -242,6 +242,7 @@ test("Test Union Of Errors", async () => {
     },
     (err) => {
       expect(err).toBeInstanceOf(ErrorType1);
+      expect(Object.keys(err.data$).sort()).toEqual(["error", "httpMeta"]);
       [err, err.data$].forEach((e) => {
         expect(e).toHaveProperty(["httpMeta", "response", "status"], 500);
         expect(e).toHaveProperty(["error"], "Error1");
