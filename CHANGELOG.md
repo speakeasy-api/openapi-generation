@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.969.0] - 2026-11-26
+### :bee: New Features
+- [`6cb06ef`](https://github.com/speakeasy-api/openapi-generation/commit/6cb06ef1f53cc9cd72727dd4352b0239b486b01b) - **go,cli**: add Values helpers listing every known value of a generated enum ([#235](https://github.com/speakeasy-api/openapi-generation/pull/235)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.968.18] - 2026-11-26
 ### :bug: Bug Fixes
 - [`49c74e0`](https://github.com/speakeasy-api/openapi-generation/commit/49c74e0e701e205a6313658ef4e0ef857f5939e0) - **typescript**: keep only declared response fields in typed error data$ ([#248](https://github.com/speakeasy-api/openapi-generation/pull/248)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -21199,3 +21204,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.968.16]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.15...v2.968.16
 [v2.968.17]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.16...v2.968.17
 [v2.968.18]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.17...v2.968.18
+[v2.969.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.18...v2.969.0
