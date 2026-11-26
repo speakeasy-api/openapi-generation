@@ -322,7 +322,22 @@ func TestAsyncMachineErrorDetail(t *testing.T) {
 		envelope := outcomeErrorEnvelope(t, h.GetStderr())
 		assert.Equal(t, "CLI_ASYNC_FAILED", envelope["error_reason"])
 		assert.Equal(t, "job_1", envelope["id"])
+		assert.Equal(t, envelope["message"], envelope["error"])
 		assert.NotContains(t, h.GetStderr(), "large result body")
+	})
+
+	t.Run("missing state keeps the poll response", func(t *testing.T) {
+		srv := newAsyncServer(t, `{"id":"job_1","output_text":"diagnostic"}`)
+		h, err := runOutcome(t, srv.URL, "compose-job", "--prompt", "hello", "--agent-mode")
+		assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
+		assert.Empty(t, h.GetStdout())
+		envelope := outcomeErrorEnvelope(t, h.GetStderr())
+		assert.Equal(t, "CLI_PROTOCOL", envelope["error_reason"])
+		assert.Contains(t, envelope["message"], "/status")
+		assert.Equal(t, "job_1", envelope["id"])
+		detail, ok := envelope["error"].(map[string]interface{})
+		require.True(t, ok, h.GetStderr())
+		assert.Equal(t, "diagnostic", detail["output_text"])
 	})
 
 	t.Run("unknown state keeps the poll response", func(t *testing.T) {
