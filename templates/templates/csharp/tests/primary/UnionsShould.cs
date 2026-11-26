@@ -1600,6 +1600,24 @@ public class UnionsShould
     }
 
     [Fact]
+    public void ScoreUnion_AdditionalPropertiesMismatchingValueTypeLoses()
+    {
+        var pool = new UnionCandidatePool<int>();
+        pool.Add<ScoreNameWithIntExtras>("A", 0, 0);
+        pool.Add<ScoreNameWithAnyExtras>("B", 1, 1);
+
+        var (stringWinner, stringValue) = pool.PickBest(
+            Newtonsoft.Json.Linq.JToken.Parse("{\"name\":\"n\",\"x\":\"5\"}"),
+            new JsonSerializerSettings { Converters = Utilities.GetDefaultJsonDeserializers() }
+        );
+        Assert.Equal(typeof(ScoreNameWithAnyExtras), stringWinner?.Type);
+        Assert.Equal("5", Assert.IsType<ScoreNameWithAnyExtras>(stringValue).AdditionalProperties["x"]);
+
+        Assert.Equal(typeof(ScoreNameWithAnyExtras), PickWinnerType(pool, "{\"name\":\"n\",\"x\":true}"));
+        Assert.Equal(typeof(ScoreNameWithIntExtras), PickWinnerType(pool, "{\"name\":\"n\",\"x\":5}"));
+    }
+
+    [Fact]
     public void ScoreUnion_AdditionalPropertiesVsExactField()
     {
         var pool = new UnionCandidatePool<int>();
@@ -1609,6 +1627,7 @@ public class UnionsShould
         // ScoreFoo wins on an exact field match; ScoreIdWithExtras only has an absent field plus
         // an empty catch-all, so an exact match must outrank additionalProperties capture.
         Assert.Equal(typeof(ScoreFoo), PickWinnerType(pool, "{\"foo\":\"\"}"));
+        Assert.Equal(typeof(ScoreFoo), PickWinnerType(pool, "{\"foo\":\"\",\"x\":\"\"}"));
     }
 
     [Fact]
@@ -2063,6 +2082,40 @@ public class UnionsShould
 
         [JsonExtensionData]
         private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<string>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
+    }
+
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
+    private class ScoreNameWithIntExtras
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonIgnore]
+        public Dictionary<string, long> AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { "name" });
+
+        private AdditionalPropertiesAdapter<long> _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<long>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
+    }
+
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
+    private class ScoreNameWithAnyExtras
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonIgnore]
+        public Dictionary<string, object> AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { "name" });
+
+        private AdditionalPropertiesAdapter<object> _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<object>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
     }
 
     [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]

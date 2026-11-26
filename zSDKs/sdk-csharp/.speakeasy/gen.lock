@@ -1514,7 +1514,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Utils/URLBuilder.cs:
     last_write_checksum: sha1:27aa6dd3713a24f20a7737dfb966c3c673529cb5
   src/Speakeasy/OpenAPI/Utils/UnionDeserializer.cs:
-    last_write_checksum: sha1:ea2c1ab22aaea26fd910ea27ced6fab24616bb3c
+    last_write_checksum: sha1:aac73071f75de1a7a3b1a324d1eb3336566b64a6
   src/Speakeasy/OpenAPI/Utils/Utilities.cs:
     last_write_checksum: sha1:7bd106d1bd0e62bd94ce36521069eb2cf54fb354
 examples:

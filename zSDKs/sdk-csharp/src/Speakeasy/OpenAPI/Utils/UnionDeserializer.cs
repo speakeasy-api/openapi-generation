@@ -297,6 +297,7 @@ namespace Speakeasy.OpenAPI.Utils
             if (value != null && GetExtensionData(type, value) is ICollection<KeyValuePair<string, object?>> extensionData)
             {
                 score.AdditionalProperties += extensionData.Count;
+                ScoreExtensionDataValues(score, extensionData, jo);
             }
             foreach (var (prop, attr) in EnumerateJsonProperties(type))
             {
@@ -404,6 +405,26 @@ namespace Speakeasy.OpenAPI.Utils
             var prop = type.GetProperties(BindingFlags.NonPublic | BindingFlags.Instance)
                            .FirstOrDefault(p => p.IsDefined(typeof(JsonExtensionDataAttribute)));
             return prop?.GetValue(value);
+        }
+
+        // Only mismatches count: scoring extras as matched would let them outrank declared fields.
+        private static void ScoreExtensionDataValues(UnionCandidateScore score, ICollection<KeyValuePair<string, object?>> extensionData, JObject jo)
+        {
+            var adapterType = extensionData.GetType();
+            if (!adapterType.IsGenericType || adapterType.GetGenericTypeDefinition() != typeof(AdditionalPropertiesAdapter<>))
+            {
+                return;
+            }
+            var valueType = adapterType.GetGenericArguments()[0];
+            var extrasScore = new UnionCandidateScore();
+            foreach (var kv in extensionData)
+            {
+                if (jo.TryGetValue(kv.Key, out var raw))
+                {
+                    ScoreValue(extrasScore, valueType, kv.Value, raw);
+                }
+            }
+            score.Inexact += extrasScore.Inexact;
         }
 
         private static IEnumerable<(PropertyInfo Prop, JsonPropertyAttribute Attr)> EnumerateJsonProperties(Type type)
