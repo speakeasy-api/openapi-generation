@@ -39,6 +39,7 @@ func NewRootCommand() (*cobra.Command, error) {
 		Long:          "This document will show case as many of our features as possible in as little operations/models as possible.\nThis will then generate a SDK that we can more easily review than the test SDKs based on uber.yaml spec.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		Annotations:   map[string]string{config.OptionalAnnotation: "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if usage.UsageRequested(cmd) {
 				return usage.EmitSchema(cmd, cmd.OutOrStdout())
@@ -62,7 +63,10 @@ func NewRootCommand() (*cobra.Command, error) {
 				return err
 			}
 			if err := config.Init("cli", "CLI"); err != nil {
-				return err
+				if !config.RunsWithoutConfig(cmd) {
+					return err
+				}
+				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %v\n", err)
 			}
 			if cmd.Annotations["speakeasy_settings_command"] != "true" {
 				if err := output.ValidateConfiguredOutputFormat(cmd); err != nil {
@@ -324,7 +328,9 @@ func NewRootCommand() (*cobra.Command, error) {
 	custom.Register(rootCmd)
 
 	// Cobra creates its default help and completion commands lazily inside Execute.
-	usage.InitDefaultCommands(rootCmd)
+	for _, cmd := range usage.InitDefaultCommands(rootCmd) {
+		cmd.Annotations[config.OptionalAnnotation] = "true"
+	}
 	applyDeclaredCommandOrder(rootCmd)
 	interactive.Intercept(rootCmd)
 	usage.Intercept(rootCmd)

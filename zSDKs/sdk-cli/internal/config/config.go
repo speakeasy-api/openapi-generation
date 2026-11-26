@@ -125,6 +125,36 @@ func Init(name, prefix string) error {
 	return initErr
 }
 
+// OptionalAnnotation marks a command that still runs, with a warning, when the
+// config file cannot be read or parsed.
+const OptionalAnnotation = "speakeasy_config_optional"
+
+// RunsWithoutConfig reports whether cmd can run when the config file cannot
+// be read or parsed. Subcommands inherit OptionalAnnotation from every
+// ancestor except the root.
+func RunsWithoutConfig(cmd *cobra.Command) bool {
+	switch cmd.Name() {
+	case cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
+		return true
+	}
+	if cmd.Annotations[OptionalAnnotation] == "true" {
+		return true
+	}
+	for p := cmd.Parent(); p != nil && p.HasParent(); p = p.Parent() {
+		if p.Annotations[OptionalAnnotation] == "true" {
+			return true
+		}
+	}
+	return false
+}
+
+// LoadError returns the error from reading or parsing the config file, if any.
+func LoadError() error {
+	initMu.Lock()
+	defer initMu.Unlock()
+	return initErr
+}
+
 // Reset clears all configuration state, allowing Init to be called again.
 // This is intended for use in tests to support re-initialization between test cases.
 func Reset() {
@@ -504,6 +534,9 @@ func GetConfig() *Config {
 // SaveConfig saves the configuration to the config file.
 // Creates the config directory if it doesn't exist.
 func SaveConfig(c *Config) error {
+	if err := LoadError(); err != nil {
+		return fmt.Errorf("%w; fix or remove the file before saving settings", err)
+	}
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
