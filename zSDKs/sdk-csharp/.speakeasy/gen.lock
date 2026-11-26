@@ -1226,9 +1226,9 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Models/MCPPolicy.cs:
     last_write_checksum: sha1:33763fc7aaa15da0d96acbfa5740f5c06b3cad4b
   src/Speakeasy/OpenAPI/Models/Metadata.cs:
-    last_write_checksum: sha1:0d946a9b805a4380b02eb3540ae036c9532983dd
+    last_write_checksum: sha1:e4b61f36b9289abd8fc31b27703a8bfabc680243
   src/Speakeasy/OpenAPI/Models/MetadataAny.cs:
-    last_write_checksum: sha1:1b6f55fc68077c11c82a4891291e9c52001c5f3f
+    last_write_checksum: sha1:a142591d6f9fdaaafd31d330bca38852fd8fbbf6
   src/Speakeasy/OpenAPI/Models/MyApiKey.cs:
     last_write_checksum: sha1:70da72b11dec65c3372014e02c58cc697a69ed80
   src/Speakeasy/OpenAPI/Models/MyObject.cs:
@@ -1456,7 +1456,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Types.cs:
     last_write_checksum: sha1:7775fbb89f62699087683cf47642c3ead6b62861
   src/Speakeasy/OpenAPI/Utils/AdditionalPropertiesAdapter.cs:
-    last_write_checksum: sha1:b34d26f30cca6a190c7814d583ffe5e964cf7de5
+    last_write_checksum: sha1:977041a32e15599d93a53cd22f0588e138ae5b55
   src/Speakeasy/OpenAPI/Utils/AnyDeserializer.cs:
     last_write_checksum: sha1:040beb977b4413c34b462cdbb69653f7cc7461da
   src/Speakeasy/OpenAPI/Utils/BigIntStrConverter.cs:

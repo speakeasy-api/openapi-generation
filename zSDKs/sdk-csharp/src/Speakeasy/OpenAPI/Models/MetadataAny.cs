@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A metadata object with additionalProperties true (any type) - should be flattened.
     /// </summary>
-    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
+    [JsonObject(MissingMemberHandling = global::Newtonsoft.Json.MissingMemberHandling.Ignore)]
     public partial class MetadataAny
     {
         [JsonProperty("notes", Required = Newtonsoft.Json.Required.DisallowNull)]

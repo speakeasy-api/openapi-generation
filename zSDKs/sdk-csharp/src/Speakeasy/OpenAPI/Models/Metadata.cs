@@ -13,7 +13,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Utils;
     using System.Collections.Generic;
 
-    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
+    [JsonObject(MissingMemberHandling = global::Newtonsoft.Json.MissingMemberHandling.Ignore)]
     public partial class Metadata
     {
         [JsonProperty("allergies", Required = Newtonsoft.Json.Required.DisallowNull)]

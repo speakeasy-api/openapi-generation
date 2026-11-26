@@ -84,7 +84,7 @@ namespace Speakeasy.OpenAPI.Utils
 
         public ICollection<string> Keys => Written().Select(kv => kv.Key).ToList();
 
-        public ICollection<object?> Values => Written().Select(kv => (object?)kv.Value).ToList();
+        public ICollection<object?> Values => Written().Select(kv => ToJsonValue(kv.Value)).ToList();
 
         public int Count => Written().Count();
 
@@ -110,7 +110,8 @@ namespace Speakeasy.OpenAPI.Utils
             }
         }
 
-        public bool Contains(KeyValuePair<string, object?> item) => TryGetValue(item.Key, out var value) && Equals(value, item.Value);
+        public bool Contains(KeyValuePair<string, object?> item) =>
+            TryGetValue(item.Key, out var value) && (value is JToken token && item.Value is JToken other ? JToken.DeepEquals(token, other) : Equals(value, item.Value));
 
         public bool ContainsKey(string key) => !IsDeclared(key) && (_get()?.ContainsKey(key) ?? false);
 
@@ -131,7 +132,7 @@ namespace Speakeasy.OpenAPI.Utils
             var inner = _get();
             if (!IsDeclared(key) && inner != null && inner.TryGetValue(key, out var typed))
             {
-                value = typed;
+                value = ToJsonValue(typed);
                 return true;
             }
             value = null;
@@ -142,12 +143,7 @@ namespace Speakeasy.OpenAPI.Utils
         {
             foreach (var kv in Written())
             {
-                object? value = kv.Value;
-                if (value != null && _options.WriteSerializer != null)
-                {
-                    value = JToken.FromObject(value, _options.WriteSerializer);
-                }
-                yield return new KeyValuePair<string, object?>(kv.Key, value);
+                yield return new KeyValuePair<string, object?>(kv.Key, ToJsonValue(kv.Value));
             }
         }
 
@@ -164,6 +160,9 @@ namespace Speakeasy.OpenAPI.Utils
         }
 
         private bool IsDeclared(string key) => _options.DeclaredJsonNames.Contains(key);
+
+        private object? ToJsonValue(T value) =>
+            value != null && _options.WriteSerializer != null ? JToken.FromObject(value, _options.WriteSerializer) : value;
 
         private Dictionary<string, T> GetOrCreate()
         {
@@ -185,7 +184,7 @@ namespace Speakeasy.OpenAPI.Utils
             }
             // JToken.ToObject<decimal> rounds a double token to 15 significant digits; the token's
             // JSON text keeps the double's round-trip digits.
-            using (var reader = new JsonTextReader(new StringReader(token.ToString(Formatting.None))) { DateParseHandling = DateParseHandling.None })
+            using (var reader = new JsonTextReader(new StringReader(token.ToString(Formatting.None))))
             {
                 return _options.ReadSerializer.Deserialize<T>(reader)!;
             }

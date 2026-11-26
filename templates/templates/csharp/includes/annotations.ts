@@ -350,7 +350,7 @@ function templateAdditionalPropertiesClassAnnotation(
   if (!getAdditionalPropertiesField(typeDef)) return "";
   return indentString(
     `
-[JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]`,
+[JsonObject(MissingMemberHandling = global::Newtonsoft.Json.MissingMemberHandling.Ignore)]`,
     indent,
   );
 }
