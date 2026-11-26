@@ -447,13 +447,6 @@ registerTemplateFunc("templateTestID", templateTestID);
 
 const csharpTestGenerationTestsEnabled = true;
 
-// Without the spreadAdditionalProperties fix flag, additional properties are read from a
-// literal "additionalProperties" key, so top-level extras in JSON responses are dropped.
-const testsSkippedWithoutSpreadAdditionalProperties = [
-  "getUser-testWithResponseBody",
-  "getUser-testWithResponseBodyFields",
-];
-
 // Tests skipped by name (for tests without internal IDs)
 const testsSkippedByName = [
   // C# SDK usage snippet includes auto-pagination while loop, making extra requests
@@ -484,11 +477,7 @@ function templateTestSkipAnnotation(test: Test): string {
     return `(Skip = "test marked as skipped for csharp: generated body would not compile")`;
   }
 
-  if (
-    testsSkippedByName.includes(test.Name) ||
-    (!spreadAdditionalProperties() &&
-      testsSkippedWithoutSpreadAdditionalProperties.includes(test.Name))
-  ) {
+  if (testsSkippedByName.includes(test.Name)) {
     return `(Skip = "test marked as skipped for csharp or generated unit tests not production ready yet")`;
   }
   const id = getTestInternalID(test);
