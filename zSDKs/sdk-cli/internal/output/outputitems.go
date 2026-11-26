@@ -14,9 +14,9 @@ import (
 // outputOneItem outputs a single item in the appropriate streaming format.
 func outputOneItem(out io.Writer, item interface{}, format, jqExpr string, colorize, jqRaw, first bool) error {
 	if jqExpr != "" {
-		results, err := ApplyJqFilter(item, jqExpr)
-		if err != nil {
-			return err
+		results, jqErr := ApplyJqFilter(item, jqExpr)
+		if jqErr != nil && jqHalt(jqErr) == nil {
+			return jqErr
 		}
 		for _, r := range results {
 			if s, ok := r.(string); ok && jqRaw {
@@ -31,7 +31,7 @@ func outputOneItem(out io.Writer, item interface{}, format, jqExpr string, color
 			}
 			printJSON(out, data, colorize)
 		}
-		return nil
+		return jqErr
 	}
 
 	switch format {

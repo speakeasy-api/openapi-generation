@@ -427,7 +427,7 @@ func result(cmd *cobra.Command, res interface{}, allowArtifact bool) error {
 	if failure != nil && allowArtifact && activeArtifact(cmd) != nil {
 		return Error(cmd, failure)
 	}
-	if err := renderResult(cmd, res, allowArtifact); err != nil {
+	if err := renderResult(cmd, res, allowArtifact); err != nil && (failure == nil || jqHalt(err) == nil) {
 		return err
 	}
 	if failure != nil {
@@ -1371,19 +1371,25 @@ func applyJqToRawJSON(out io.Writer, rawBody []byte, jqExpr string, colorize, ra
 		return fmt.Errorf("failed to parse response JSON for jq: %w", err)
 	}
 	results, err := ApplyJqFilter(data, jqExpr)
-	if err != nil {
+	if err != nil && jqHalt(err) == nil {
 		return err
 	}
-	return outputJqResults(out, results, colorize, raw)
+	if outErr := outputJqResults(out, results, colorize, raw); outErr != nil {
+		return outErr
+	}
+	return err
 }
 
 // applyJqToTyped applies a jq expression to typed content (non-raw path).
 func applyJqToTyped(out io.Writer, content interface{}, jqExpr string, colorize, raw bool) error {
 	results, err := ApplyJqFilter(content, jqExpr)
-	if err != nil {
+	if err != nil && jqHalt(err) == nil {
 		return err
 	}
-	return outputJqResults(out, results, colorize, raw)
+	if outErr := outputJqResults(out, results, colorize, raw); outErr != nil {
+		return outErr
+	}
+	return err
 }
 
 // printTable renders content as an aligned table.

@@ -111,7 +111,7 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 			lastHeaders = extractResponseHeaders(page)
 		} else if pageHeaders {
 			if err := outputPageWithHeaders(out, page, format, jqExpr, colorize, jqRaw, rawJSON, first); err != nil {
-				return err
+				return pageOutcomeOverHalt(cmd, page, err)
 			}
 			first = false
 			handledRaw = true
@@ -120,7 +120,7 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 			var err error
 			handledRaw, err = outputRawPage(out, page, resultsFieldName != "", probe.Results, jqExpr, colorize, jqRaw)
 			if err != nil {
-				return err
+				return pageOutcomeOverHalt(cmd, page, err)
 			}
 			if handledRaw {
 				first = false
@@ -145,7 +145,7 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 						} else {
 							for i := 0; i < itemsVal.Len(); i++ {
 								if err := outputOneItem(out, itemsVal.Index(i).Interface(), format, jqExpr, colorize, jqRaw, first); err != nil {
-									return err
+									return pageOutcomeOverHalt(cmd, page, err)
 								}
 								first = false
 							}
@@ -155,7 +155,7 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 			} else {
 				// No results field path — output the entire content per page
 				if err := outputOneItem(out, content, format, jqExpr, colorize, jqRaw, first); err != nil {
-					return err
+					return pageOutcomeOverHalt(cmd, page, err)
 				}
 				first = false
 			}
@@ -193,6 +193,18 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 		}
 	}
 	return finish()
+}
+
+// pageOutcomeOverHalt reports the page's outcome failure in place of a jq
+// halt, so a halt cannot turn a failed outcome into success.
+func pageOutcomeOverHalt(cmd *cobra.Command, page interface{}, err error) error {
+	if jqHalt(err) == nil {
+		return err
+	}
+	if failure := outcomeResultFailure(cmd, page); failure != nil {
+		return Error(cmd, failure)
+	}
+	return err
 }
 
 // outputPageWithHeaders prints one whole page with its response headers:

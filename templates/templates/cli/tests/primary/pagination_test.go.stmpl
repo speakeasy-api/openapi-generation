@@ -624,6 +624,58 @@ func TestPaginationAllJqKeepsLargeIntegers(t *testing.T) {
 	assert.Equal(t, "1234567890123456789\n9007199254740993", strings.TrimSpace(h.GetStdout()))
 }
 
+func TestPaginationAllJqHalt(t *testing.T) {
+	var pages atomic.Int32
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pages.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		_, _ = fmt.Fprintf(w, `{"numPages":3,"resultArray":[{"id":%d,"name":"first"},{"id":%d,"name":"second"}]}`, page*2+1, page*2+2)
+	}))
+	defer s.Close()
+
+	run := func(t *testing.T, expr string) (*CLITestHarness, error) {
+		pages.Store(0)
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{"pagination", "pagination-object-results-page-params",
+			"--page", "0", "--all", "--jq", expr,
+		})
+		return h, err
+	}
+
+	t.Run("halt keeps earlier output and stops paging", func(t *testing.T) {
+		h, err := run(t, `.id, (select(.id == 2) | halt)`)
+		require.NoError(t, err, h.GetStderr())
+		assert.Equal(t, "1\n2", strings.TrimSpace(h.GetStdout()))
+		assert.Empty(t, h.GetStderr())
+		assert.Equal(t, int32(1), pages.Load())
+	})
+
+	t.Run("halt_error with exit code zero writes its value to stderr", func(t *testing.T) {
+		h, err := run(t, `.id, ("stopped\n" | halt_error(0))`)
+		require.NoError(t, err, h.GetStderr())
+		assert.Equal(t, "1", strings.TrimSpace(h.GetStdout()))
+		assert.Equal(t, "stopped\n", h.GetStderr())
+		assert.Equal(t, int32(1), pages.Load())
+	})
+
+	t.Run("halt_error with a null value fails with a generic message", func(t *testing.T) {
+		h, err := run(t, `.id, (null | halt_error(1))`)
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
+		assert.Equal(t, "jq halt_error", jsonGetString(h.GetStderr(), "message"))
+	})
+
+	t.Run("halt_error fails with its value as the message", func(t *testing.T) {
+		h, err := run(t, `.id, ({"stopped": .id} | halt_error)`)
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
+		assert.Equal(t, "1", strings.TrimSpace(h.GetStdout()))
+		assert.Equal(t, `{"stopped":1}`, jsonGetString(h.GetStderr(), "message"))
+		assert.Equal(t, int32(1), pages.Load())
+	})
+}
+
 // TestPaginationAllPrettyFormat verifies --all with pretty output format.
 func TestPaginationAllPrettyFormat(t *testing.T) {
 	s := newPaginationServer()

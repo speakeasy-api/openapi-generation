@@ -264,7 +264,7 @@ trackedFiles:
   internal/interactive/policy_test.go:
     last_write_checksum: sha1:770e41163c2746f200544c985e26c7be16aaedb9
   internal/output/agentmode.go:
-    last_write_checksum: sha1:82dd548507c3b764e47c04d32aa9c4c8b1ba5cd3
+    last_write_checksum: sha1:349a4c65b2674ffd27abaf259610ebad9b028dc5
   internal/output/artifact.go:
     last_write_checksum: sha1:6f1f9f12fe4a10fb0fdc7cc47a9f8e8a92011bf4
   internal/output/artifact_test.go:
@@ -282,25 +282,25 @@ trackedFiles:
   internal/output/exitcodes.go:
     last_write_checksum: sha1:2d7b297cdcaa356d3fd19e4ea639086cb312e715
   internal/output/jq.go:
-    last_write_checksum: sha1:1ecac6747c1288a23dbd34efa42e39fb5d558487
+    last_write_checksum: sha1:64920ba996a31478e2be1e0ad34dc3df2a74e34a
   internal/output/number.go:
     last_write_checksum: sha1:7134750cc26632383479e8bf71b4ae79f0041140
   internal/output/outcome.go:
     last_write_checksum: sha1:0ea32db0867358ff91cd5fe6d24de400d09b4fc3
   internal/output/output.go:
-    last_write_checksum: sha1:8d124ab766f7f79f3e5507e4029ed7d9476ed886
+    last_write_checksum: sha1:ce8c3d55f1789ab5b267d32647bc3abefd211a0f
   internal/output/output_test.go:
     last_write_checksum: sha1:8fbe483a74a4aa39b8faa4c5067c76ba29bfb7d9
   internal/output/outputitems.go:
-    last_write_checksum: sha1:d327eee8d9a395821fef201257e033bae50cda51
+    last_write_checksum: sha1:2c7596835051ba77bca5eee0562345c1bebf3d76
   internal/output/paginated.go:
-    last_write_checksum: sha1:70807d12e53d96ab73ac7cd0cf0a4515ea8ea93b
+    last_write_checksum: sha1:d086df2a2e0ce737fa79177c26443493c7836b59
   internal/output/pretty.go:
     last_write_checksum: sha1:b7c74bd93d4e8a464956f098724dc653e9f8e594
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:1c7298362ebeb138163ab89e3313c9307690be9a
+    last_write_checksum: sha1:1dd280b9bd28100ca4975f75ad84eeddf25a01c0
   internal/output/streaming_test.go:
     last_write_checksum: sha1:f1948b1af4e2018171d1df902a5584cfd684ac7f
   internal/output/streamproject.go:

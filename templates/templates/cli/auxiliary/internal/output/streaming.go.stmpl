@@ -204,6 +204,9 @@ func streamResult(cmd *cobra.Command, res interface{}, streamFieldName string, h
 					return false, finishJoin(err)
 				}
 			} else if err := outputOneItem(out, item, format, jqExpr, colorize, jqRaw, first); err != nil {
+				if streamFailure != nil && jqHalt(err) != nil {
+					return false, renderAfterFinish(wrap(streamFailure))
+				}
 				return false, err
 			}
 			first = false
