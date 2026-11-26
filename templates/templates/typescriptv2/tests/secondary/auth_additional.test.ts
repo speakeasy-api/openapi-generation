@@ -1,6 +1,10 @@
+import { Buffer } from "node:buffer";
+import { inspect } from "node:util";
 import { expect, test } from "vitest";
 
 import { BasicAuthUser } from "../sdk/models/operations/basicauth.js";
+import { ErrorType1 } from "../sdk/models/errors/errortype1.js";
+import { ErrorUnionPostRequestBody } from "../sdk/models/operations/errorunionpost.js";
 import { SDK } from "../index.js";
 import {
   HTTPBIN_URL,
@@ -85,6 +89,34 @@ test("Test Authenticated Request Operation Level OAuth2", async () => {
       entry.body.includes("scope=read+write+erase"),
   );
   expect(tokenRequests).toHaveLength(1);
+});
+
+test("Test Typed Error Inspection Omits Credentials", async () => {
+  recordTest("auth-typed-error-inspection-omits-credentials");
+
+  const username = "testUser";
+  const password = "secret-" + randSeq(10);
+  const sdk = new SDK({
+    serverURL: HTTPBIN_URL,
+    security: { username, password },
+  });
+
+  const req: ErrorUnionPostRequestBody = { error: "Error1" };
+  await sdk.errors.errorUnionPost(req).then(
+    () => {
+      expect.unreachable("sdk call is expected to fail");
+    },
+    (err) => {
+      expect(err).toBeInstanceOf(ErrorType1);
+      expect(err.rawResponse.status).toBe(500);
+
+      const dump = inspect(err, { depth: Infinity });
+      expect(dump).not.toContain(password);
+      expect(dump).not.toContain(
+        Buffer.from(`${username}:${password}`).toString("base64"),
+      );
+    },
+  );
 });
 
 function randSeq(length: number) {

@@ -65,6 +65,7 @@ const (
 	TestAuthCustomSecuritySchemeAppId
 	TestAuthCustomSecuritySchemeOnly
 	TestAuthOperationLevelOauth2
+	TestAuthTypedErrorInspectionOmitsCredentials
 	TestCustomclientRequestParametersRetained
 	TestCustomCodeRegionSdkMethodWithImports
 	TestCustomCodeRegionSubSdkMethodWithImports
