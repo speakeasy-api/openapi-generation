@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.968.16] - 2026-11-26
+### :bug: Bug Fixes
+- [`44af722`](https://github.com/speakeasy-api/openapi-generation/commit/44af722700d666016a6a5f675e96b5e384177ffd) - **cli**: read error response headers from HTTPMeta for --include-headers ([#244](https://github.com/speakeasy-api/openapi-generation/pull/244)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.968.15] - 2026-11-25
 ### :bug: Bug Fixes
 - [`af1b512`](https://github.com/speakeasy-api/openapi-generation/commit/af1b5121aae2e6b0fe7fab94f8ae2509f3f784ef) - **cli**: keep local commands working when the config file cannot be parsed ([#243](https://github.com/speakeasy-api/openapi-generation/pull/243)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21181,3 +21186,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.968.13]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.12...v2.968.13
 [v2.968.14]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.13...v2.968.14
 [v2.968.15]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.14...v2.968.15
+[v2.968.16]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.15...v2.968.16
