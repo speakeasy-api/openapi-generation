@@ -1202,19 +1202,12 @@ func extractResponseHeaders(res interface{}) http.Header {
 	return httpRes.Header
 }
 
-// extractErrorResponseHeaders extracts HTTP response headers from an SDK error.
-// Error types store *http.Response in a RawResponse field.
+// extractErrorResponseHeaders extracts HTTP response headers from an SDK error
+// or any error it wraps.
 func extractErrorResponseHeaders(err error) http.Header {
 	for current := err; current != nil; current = errors.Unwrap(current) {
-		v, ok := derefToStruct(reflect.ValueOf(current))
-		if !ok {
-			continue
-		}
-		rawResp := v.FieldByName("RawResponse")
-		if rawResp.IsValid() && rawResp.CanInterface() {
-			if r, ok := rawResp.Interface().(*http.Response); ok && r != nil {
-				return r.Header
-			}
+		if r := extractHTTPResponse(current); r != nil {
+			return r.Header
 		}
 	}
 	return nil

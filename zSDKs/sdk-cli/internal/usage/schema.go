@@ -369,18 +369,22 @@ func MarkGenerated(cmd *cobra.Command) {
 
 // InitDefaultCommands creates cobra's default help and completion commands and
 // marks only the ones cobra created, leaving a custom command of the same name live.
-func InitDefaultCommands(root *cobra.Command) {
+// It returns the commands cobra created.
+func InitDefaultCommands(root *cobra.Command) []*cobra.Command {
 	existing := map[*cobra.Command]bool{}
 	for _, cmd := range root.Commands() {
 		existing[cmd] = true
 	}
 	root.InitDefaultHelpCmd()
 	root.InitDefaultCompletionCmd()
+	var created []*cobra.Command
 	for _, cmd := range root.Commands() {
 		if !existing[cmd] {
 			MarkGenerated(cmd)
+			created = append(created, cmd)
 		}
 	}
+	return created
 }
 
 func usageFlagSetIdentity(cmd *cobra.Command) string {
