@@ -250,12 +250,17 @@ func (g *Generator) transformConfig(ctx context.Context, cfg *config.Config) (*c
 	}
 
 	if langCfg, ok := cfg.Config.Languages[g.target.Target]; ok {
-		if _, ok := langCfg.Cfg["templateVersion"]; ok {
+		if _, ok := langCfg.Cfg["templateVersion"]; ok || g.target.Template == "csharpv2" {
 			templateVersion := strings.TrimPrefix(g.target.Template, g.target.Target)
 			if templateVersion != "" {
 				langCfg.Cfg["templateVersion"] = templateVersion
 				cfg.Config.Languages[g.target.Target] = langCfg
 			}
+		}
+
+		if g.target.Template == "csharpv2" {
+			langCfg.Cfg["dotnetVersion"] = "net8.0"
+			cfg.Config.Languages[g.target.Target] = langCfg
 		}
 
 		// Disable MCP server when using Zod v4 for TypeScript targets

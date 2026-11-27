@@ -1814,6 +1814,10 @@ func (g *Generator) GetTarget(ctx context.Context, target, outDir string) (types
 		}
 	}
 
+	if target == "csharp" {
+		return types.NewTargetFromTemplate("csharpv2"), nil
+	}
+
 	templateVersion, err := config.GetTemplateVersion(outDir, target, g.getConfigOptions(ctx, false, target)...)
 	if err != nil {
 		return types.Target{}, err

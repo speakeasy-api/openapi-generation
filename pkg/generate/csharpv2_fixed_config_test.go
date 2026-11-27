@@ -97,11 +97,12 @@ func TestCsharpFixedConfigInitAndSave(t *testing.T) {
 			wantSaved:    map[string]any{},
 		},
 		{
-			name:            "v1 keeps and saves configured values",
+			name:            "v1 is forced to v2, replaces legacy values with a warning and does not save them",
 			templateVersion: "v1",
 			seed:            csharpLegacyConfig,
-			wantResolved:    csharpLegacyConfig,
-			wantSaved:       csharpLegacyConfig,
+			wantResolved:    csharpV2FixedConfig,
+			wantWarnings:    slices.Sorted(maps.Keys(csharpV2FixedConfig)),
+			wantSaved:       map[string]any{},
 		},
 	}
 
@@ -150,7 +151,8 @@ func TestCsharpFixedConfigInitAndSave(t *testing.T) {
 				}
 			}
 			assert.Equal(t, tt.wantSaved, savedFixed)
-			assert.Equal(t, tt.templateVersion, saved.Languages["csharp"].Cfg["templateVersion"])
+			assert.Equal(t, "v2", saved.Languages["csharp"].Cfg["templateVersion"])
+			assert.Equal(t, "net8.0", saved.Languages["csharp"].Cfg["dotnetVersion"])
 		})
 	}
 }
