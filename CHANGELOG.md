@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.969.2] - 2026-11-27
+### :bug: Bug Fixes
+- [`c6e6a54`](https://github.com/speakeasy-api/openapi-generation/commit/c6e6a54b31c07f094fa87c720208df8810e4eed0) - **cli**: stop async failure errors falling back to the whole poll response ([#246](https://github.com/speakeasy-api/openapi-generation/pull/246)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.969.1] - 2026-11-26
 ### :bug: Bug Fixes
 - [`6f5e45f`](https://github.com/speakeasy-api/openapi-generation/commit/6f5e45f58f5622be0a6cffc23496569a3d49a425) - **cli**: follow jq halt and halt_error semantics in --jq ([#241](https://github.com/speakeasy-api/openapi-generation/pull/241)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21211,3 +21216,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.968.18]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.17...v2.968.18
 [v2.969.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.18...v2.969.0
 [v2.969.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.969.0...v2.969.1
+[v2.969.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.969.1...v2.969.2
