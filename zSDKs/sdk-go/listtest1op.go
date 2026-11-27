@@ -69,6 +69,15 @@ const (
 func (e QueryParam2) ToPointer() *QueryParam2 {
 	return &e
 }
+
+// QueryParam2Values returns every known QueryParam2 value in schema order.
+func QueryParam2Values() []QueryParam2 {
+	return []QueryParam2{
+		QueryParam2Zero,
+		QueryParam2One,
+		QueryParam2Two,
+	}
+}
 func (e *QueryParam2) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {

@@ -128,6 +128,11 @@ func CLIError(cmd *cobra.Command, err error) error {
 	if err == nil || IsRendered(err) {
 		return err
 	}
+	if halt := jqHalt(err); halt != nil {
+		if err = jqHaltOutcome(cmd.ErrOrStderr(), halt); err == nil {
+			return nil
+		}
+	}
 	jqExpr, changed := flagutil.GetStringFlag(cmd, "jq")
 	if !changed || jqExpr == "" {
 		jqExpr = preparsedRendering.jq

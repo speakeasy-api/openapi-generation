@@ -15,6 +15,16 @@ func (e Enum) ToPointer() *Enum {
 	return &e
 }
 
+// EnumValues returns every known Enum value in schema order.
+func EnumValues() []Enum {
+	return []Enum{
+		EnumFirst,
+		EnumSecond,
+		EnumThirdA,
+		EnumThirdB,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *Enum) IsExact() bool {
 	if e != nil {

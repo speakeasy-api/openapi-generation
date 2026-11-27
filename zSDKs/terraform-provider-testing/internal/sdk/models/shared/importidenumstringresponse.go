@@ -17,6 +17,13 @@ const (
 func (e ID) ToPointer() *ID {
 	return &e
 }
+
+// IDValues returns every known ID value in schema order.
+func IDValues() []ID {
+	return []ID{
+		IDDefault,
+	}
+}
 func (e *ID) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

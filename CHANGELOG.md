@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.969.2] - 2026-11-27
+### :bug: Bug Fixes
+- [`c6e6a54`](https://github.com/speakeasy-api/openapi-generation/commit/c6e6a54b31c07f094fa87c720208df8810e4eed0) - **cli**: stop async failure errors falling back to the whole poll response ([#246](https://github.com/speakeasy-api/openapi-generation/pull/246)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.969.1] - 2026-11-26
+### :bug: Bug Fixes
+- [`6f5e45f`](https://github.com/speakeasy-api/openapi-generation/commit/6f5e45f58f5622be0a6cffc23496569a3d49a425) - **cli**: follow jq halt and halt_error semantics in --jq ([#241](https://github.com/speakeasy-api/openapi-generation/pull/241)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.969.0] - 2026-11-26
+### :bee: New Features
+- [`6cb06ef`](https://github.com/speakeasy-api/openapi-generation/commit/6cb06ef1f53cc9cd72727dd4352b0239b486b01b) - **go,cli**: add Values helpers listing every known value of a generated enum ([#235](https://github.com/speakeasy-api/openapi-generation/pull/235)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
+## [v2.968.18] - 2026-11-26
+### :bug: Bug Fixes
+- [`49c74e0`](https://github.com/speakeasy-api/openapi-generation/commit/49c74e0e701e205a6313658ef4e0ef857f5939e0) - **typescript**: keep only declared response fields in typed error data$ ([#248](https://github.com/speakeasy-api/openapi-generation/pull/248)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
+## [v2.968.17] - 2026-11-26
+### :bug: Bug Fixes
+- [`c83c6b1`](https://github.com/speakeasy-api/openapi-generation/commit/c83c6b1777365bc54700a6ca27f67322f1c80a9e) - **cli**: keep the last explore list item visible and trim whole runes on backspace ([#245](https://github.com/speakeasy-api/openapi-generation/pull/245)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.968.16] - 2026-11-26
 ### :bug: Bug Fixes
 - [`44af722`](https://github.com/speakeasy-api/openapi-generation/commit/44af722700d666016a6a5f675e96b5e384177ffd) - **cli**: read error response headers from HTTPMeta for --include-headers ([#244](https://github.com/speakeasy-api/openapi-generation/pull/244)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21187,3 +21212,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.968.14]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.13...v2.968.14
 [v2.968.15]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.14...v2.968.15
 [v2.968.16]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.15...v2.968.16
+[v2.968.17]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.16...v2.968.17
+[v2.968.18]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.17...v2.968.18
+[v2.969.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.18...v2.969.0
+[v2.969.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.969.0...v2.969.1
+[v2.969.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.969.1...v2.969.2

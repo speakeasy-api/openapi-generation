@@ -161,10 +161,12 @@ export const BadRequestSchemaError$inboundSchema: z.ZodMiniType<
       body$: z.string(),
     }),
     z.transform((v) => {
-      return new BadRequestSchemaError(v, {
-        request: v.request$,
-        response: v.response$,
-        body: v.body$,
+      const { request$, response$, body$, ...data } = v;
+
+      return new BadRequestSchemaError(data, {
+        request: request$,
+        response: response$,
+        body: body$,
       });
     }),
   )
@@ -227,10 +229,12 @@ export const UnauthorizedResponseError$inboundSchema: z.ZodMiniType<
       body$: z.string(),
     }),
     z.transform((v) => {
-      return new UnauthorizedResponseError(v, {
-        request: v.request$,
-        response: v.response$,
-        body: v.body$,
+      const { request$, response$, body$, ...data } = v;
+
+      return new UnauthorizedResponseError(data, {
+        request: request$,
+        response: response$,
+        body: body$,
       });
     }),
   )

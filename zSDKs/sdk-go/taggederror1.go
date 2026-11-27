@@ -16,6 +16,13 @@ const (
 func (e Tag) ToPointer() *Tag {
 	return &e
 }
+
+// TagValues returns every known Tag value in schema order.
+func TagValues() []Tag {
+	return []Tag{
+		TagTag1,
+	}
+}
 func (e *Tag) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

@@ -8,7 +8,7 @@ const supportedFeatures = {
   globalServerURLs: "2.83.1",
   methodServerURLs: "2.82.2",
   globals: "2.82.3",
-  enums: "2.82.2",
+  enums: "2.82.3",
   serverIDs: "2.81.1",
   nameOverrides: "2.81.4",
   includes: "2.81.1",
@@ -444,6 +444,7 @@ function isTestSkipped(test: string): boolean {
     "request-bodies-base64-file-input-raw-bytes",
     "parameters-header-params-enum",
     "parameters-header-params-string-formats",
+    "auth-typed-error-inspection-omits-credentials",
   ].includes(test);
 }
 

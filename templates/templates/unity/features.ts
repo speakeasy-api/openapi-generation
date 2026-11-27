@@ -616,6 +616,8 @@ function isTestSkipped(test: string): boolean {
     "request-bodies-base64-file-input-raw-bytes",
     "parameters-header-params-enum",
     "parameters-header-params-string-formats",
+    "enum-values",
+    "auth-typed-error-inspection-omits-credentials",
   ].includes(test);
 }
 

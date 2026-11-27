@@ -138,15 +138,16 @@ export const BadRequestResponseError$inboundSchema: z.ZodMiniType<
       body$: z.string(),
     }),
     z.transform((v) => {
-      const remapped = remap$(v, {
+      const { request$, response$, body$, ...data } = v;
+      const remapped = remap$(data, {
         "status_code": "statusCode",
         "type_name": "typeName",
       });
 
       return new BadRequestResponseError(remapped, {
-        request: v.request$,
-        response: v.response$,
-        body: v.body$,
+        request: request$,
+        response: response$,
+        body: body$,
       });
     }),
   )

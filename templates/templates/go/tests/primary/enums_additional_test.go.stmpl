@@ -50,3 +50,34 @@ func TestOpenEnumsRoundTrip(t *testing.T) {
 	wantHeroWidth = shared.HeroWidth(2160)
 	require.Equal(t, &wantHeroWidth, roundTripTheme.HeroWidth)
 }
+
+func TestEnumValues(t *testing.T) {
+	recordTest("enum-values")
+
+	require.Equal(t, []shared.PrototypeMemberNameEnum{
+		shared.PrototypeMemberNameEnumStandard,
+		shared.PrototypeMemberNameEnumConstructor,
+		shared.PrototypeMemberNameEnumToString,
+		shared.PrototypeMemberNameEnumValueOf,
+		shared.PrototypeMemberNameEnumHasOwnProperty,
+	}, shared.PrototypeMemberNameEnumValues())
+
+	require.Equal(t, []shared.ValuesMemberEnum{shared.ValuesMemberEnumValues, shared.ValuesMemberEnumCount}, shared.ValuesMemberEnumEnumValues())
+	require.Equal(t, []shared.Priority{shared.PriorityLow, shared.PriorityHigh}, shared.PriorityEnumValues())
+	require.Equal(t, []shared.PriorityEnum{shared.PriorityEnumUrgent, shared.PriorityEnumNormal}, shared.PriorityEnumEnumValues())
+
+	require.Equal(t, []shared.HeroWidth{480, 720, 1080}, shared.HeroWidthValues())
+
+	colors := shared.ColorValues()
+	require.Equal(t, []shared.Color{
+		shared.ColorRed,
+		shared.ColorGreen,
+		shared.ColorBlue,
+		shared.ColorReturn,
+		shared.ColorClass,
+		shared.ColorInt,
+	}, colors)
+	for _, c := range colors {
+		require.True(t, c.IsExact(), "ColorValues returned %q, which IsExact rejects", c)
+	}
+}

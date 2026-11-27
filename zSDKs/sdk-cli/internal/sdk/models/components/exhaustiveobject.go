@@ -27,6 +27,15 @@ func (e IntEnum) ToPointer() *IntEnum {
 	return &e
 }
 
+// IntEnumValues returns every known IntEnum value in schema order.
+func IntEnumValues() []IntEnum {
+	return []IntEnum{
+		IntEnumFirst,
+		IntEnumSecond,
+		IntEnumThird,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *IntEnum) IsExact() bool {
 	if e != nil {
@@ -49,6 +58,15 @@ const (
 
 func (e Int32Enum) ToPointer() *Int32Enum {
 	return &e
+}
+
+// Int32EnumValues returns every known Int32Enum value in schema order.
+func Int32EnumValues() []Int32Enum {
+	return []Int32Enum{
+		Int32EnumFiftyFive,
+		Int32EnumSixtyNine,
+		Int32EnumOneHundredAndEightyOne,
+	}
 }
 
 // IsExact returns true if the value matches a known enum value, false otherwise.
@@ -196,6 +214,15 @@ func (e NullableIntEnum) ToPointer() *NullableIntEnum {
 	return &e
 }
 
+// NullableIntEnumValues returns every known NullableIntEnum value in schema order.
+func NullableIntEnumValues() []NullableIntEnum {
+	return []NullableIntEnum{
+		NullableIntEnumFirst,
+		NullableIntEnumSecond,
+		NullableIntEnumThird,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *NullableIntEnum) IsExact() bool {
 	if e != nil {
@@ -217,6 +244,15 @@ const (
 
 func (e NullableStringEnum) ToPointer() *NullableStringEnum {
 	return &e
+}
+
+// NullableStringEnumValues returns every known NullableStringEnum value in schema order.
+func NullableStringEnumValues() []NullableStringEnum {
+	return []NullableStringEnum{
+		NullableStringEnumFirst,
+		NullableStringEnumSecond,
+		NullableStringEnumThird,
+	}
 }
 
 // IsExact returns true if the value matches a known enum value, false otherwise.
@@ -242,6 +278,15 @@ func (e Icon) ToPointer() *Icon {
 	return &e
 }
 
+// IconValues returns every known Icon value in schema order.
+func IconValues() []Icon {
+	return []Icon{
+		IconTick,
+		IconThumbsUp,
+		IconFire,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *Icon) IsExact() bool {
 	if e != nil {
@@ -263,6 +308,15 @@ const (
 
 func (e HeroWidth) ToPointer() *HeroWidth {
 	return &e
+}
+
+// HeroWidthValues returns every known HeroWidth value in schema order.
+func HeroWidthValues() []HeroWidth {
+	return []HeroWidth{
+		HeroWidthFourHundredAndEighty,
+		HeroWidthSevenHundredAndTwenty,
+		HeroWidthOneThousandAndEighty,
+	}
 }
 
 // IsExact returns true if the value matches a known enum value, false otherwise.

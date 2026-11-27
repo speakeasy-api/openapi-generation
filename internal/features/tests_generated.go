@@ -104,6 +104,8 @@ func (t Test) String() string {
         return "auth-open-id-connect-auth"
     case TestAuthOperationLevelOauth2:
         return "auth-operation-level-oauth2"
+    case TestAuthTypedErrorInspectionOmitsCredentials:
+        return "auth-typed-error-inspection-omits-credentials"
     case TestCancellationTokenCancelledBeforeRequest:
         return "cancellation-token-cancelled-before-request"
     case TestCancellationTokenCancelledDuringRequest:
@@ -202,6 +204,8 @@ func (t Test) String() string {
         return "duplicate-query-parameter-at-operation-level-does-not-error"
     case TestDuplicateQueryParameterAtPathLevelDoesNotError:
         return "duplicate-query-parameter-at-path-level-does-not-error"
+    case TestEnumValues:
+        return "enum-values"
     case TestErrorTaxonomyDeclaredRulesAndOrdering:
         return "error-taxonomy-declared-rules-and-ordering"
     case TestErrorTaxonomyEveryClosedTypeHasAHint:
@@ -1664,6 +1668,8 @@ func TestFromString(s string) Test {
         return TestAuthOpenIDConnectAuth
     case "auth-operation-level-oauth2":
         return TestAuthOperationLevelOauth2
+    case "auth-typed-error-inspection-omits-credentials":
+        return TestAuthTypedErrorInspectionOmitsCredentials
     case "cancellation-token-cancelled-before-request":
         return TestCancellationTokenCancelledBeforeRequest
     case "cancellation-token-cancelled-during-request":
@@ -1762,6 +1768,8 @@ func TestFromString(s string) Test {
         return TestDuplicateQueryParameterAtOperationLevelDoesNotError
     case "duplicate-query-parameter-at-path-level-does-not-error":
         return TestDuplicateQueryParameterAtPathLevelDoesNotError
+    case "enum-values":
+        return TestEnumValues
     case "error-taxonomy-declared-rules-and-ordering":
         return TestErrorTaxonomyDeclaredRulesAndOrdering
     case "error-taxonomy-every-closed-type-has-a-hint":
@@ -3173,6 +3181,7 @@ var testList = []Test{
     TestAuthOauth2Auth,
     TestAuthOpenIDConnectAuth,
     TestAuthOperationLevelOauth2,
+    TestAuthTypedErrorInspectionOmitsCredentials,
     TestCancellationTokenCancelledBeforeRequest,
     TestCancellationTokenCancelledDuringRequest,
     TestCancellationTokenCancelledInsideHook,
@@ -3222,6 +3231,7 @@ var testList = []Test{
     TestDuplicatePathParameterAtPathLevelDoesNotError,
     TestDuplicateQueryParameterAtOperationLevelDoesNotError,
     TestDuplicateQueryParameterAtPathLevelDoesNotError,
+    TestEnumValues,
     TestErrorTaxonomyDeclaredRulesAndOrdering,
     TestErrorTaxonomyEveryClosedTypeHasAHint,
     TestErrorTaxonomyFallbackMessageOmitsRawBody,

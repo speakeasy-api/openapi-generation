@@ -67,10 +67,12 @@ export const ErrorType1$inboundSchema: z.ZodMiniType<ErrorType1, unknown> =
         body$: z.string(),
       }),
       z.transform((v) => {
-        return new ErrorType1(v, {
-          request: v.request$,
-          response: v.response$,
-          body: v.body$,
+        const { request$, response$, body$, ...data } = v;
+
+        return new ErrorType1(data, {
+          request: request$,
+          response: response$,
+          body: body$,
         });
       }),
     )
