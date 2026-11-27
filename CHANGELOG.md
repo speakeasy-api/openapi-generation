@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.969.3] - 2026-11-27
+### :bug: Bug Fixes
+- [`b8a8769`](https://github.com/speakeasy-api/openapi-generation/commit/b8a876944127c5c108461f0bd002f1871e87ae56) - **cli**: validate env and config output format and honour it for parse errors ([#242](https://github.com/speakeasy-api/openapi-generation/pull/242)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.969.2] - 2026-11-27
 ### :bug: Bug Fixes
 - [`c6e6a54`](https://github.com/speakeasy-api/openapi-generation/commit/c6e6a54b31c07f094fa87c720208df8810e4eed0) - **cli**: stop async failure errors falling back to the whole poll response ([#246](https://github.com/speakeasy-api/openapi-generation/pull/246)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21217,3 +21222,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.969.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.968.18...v2.969.0
 [v2.969.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.969.0...v2.969.1
 [v2.969.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.969.1...v2.969.2
+[v2.969.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.969.2...v2.969.3
