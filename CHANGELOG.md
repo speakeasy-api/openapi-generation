@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.969.4] - 2026-11-27
+### :bug: Bug Fixes
+- [`354bce7`](https://github.com/speakeasy-api/openapi-generation/commit/354bce7cbd1cd234f46b962d42dd9aaa9aa31f0d) - **csharp**: spread additionalProperties behind spreadAdditionalProperties fix flag ([#247](https://github.com/speakeasy-api/openapi-generation/pull/247)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.969.3] - 2026-11-27
 ### :bug: Bug Fixes
 - [`b8a8769`](https://github.com/speakeasy-api/openapi-generation/commit/b8a876944127c5c108461f0bd002f1871e87ae56) - **cli**: validate env and config output format and honour it for parse errors ([#242](https://github.com/speakeasy-api/openapi-generation/pull/242)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -21223,3 +21228,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.969.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.969.0...v2.969.1
 [v2.969.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.969.1...v2.969.2
 [v2.969.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.969.2...v2.969.3
+[v2.969.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.969.3...v2.969.4
