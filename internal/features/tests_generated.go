@@ -104,6 +104,8 @@ func (t Test) String() string {
         return "auth-open-id-connect-auth"
     case TestAuthOperationLevelOauth2:
         return "auth-operation-level-oauth2"
+    case TestAuthTypedErrorInspectionOmitsCredentials:
+        return "auth-typed-error-inspection-omits-credentials"
     case TestCancellationTokenCancelledBeforeRequest:
         return "cancellation-token-cancelled-before-request"
     case TestCancellationTokenCancelledDuringRequest:
@@ -202,6 +204,8 @@ func (t Test) String() string {
         return "duplicate-query-parameter-at-operation-level-does-not-error"
     case TestDuplicateQueryParameterAtPathLevelDoesNotError:
         return "duplicate-query-parameter-at-path-level-does-not-error"
+    case TestEnumValues:
+        return "enum-values"
     case TestErrorTaxonomyDeclaredRulesAndOrdering:
         return "error-taxonomy-declared-rules-and-ordering"
     case TestErrorTaxonomyEveryClosedTypeHasAHint:
@@ -734,6 +738,8 @@ func (t Test) String() string {
         return "parameters-form-query-params-unions"
     case TestParametersHeaderParamsArray:
         return "parameters-header-params-array"
+    case TestParametersHeaderParamsEnum:
+        return "parameters-header-params-enum"
     case TestParametersHeaderParamsMap:
         return "parameters-header-params-map"
     case TestParametersHeaderParamsNil:
@@ -742,6 +748,8 @@ func (t Test) String() string {
         return "parameters-header-params-object"
     case TestParametersHeaderParamsPrimitive:
         return "parameters-header-params-primitive"
+    case TestParametersHeaderParamsStringFormats:
+        return "parameters-header-params-string-formats"
     case TestParametersJSONQueryParamsObject:
         return "parameters-json-query-params-object"
     case TestParametersMixedPrimitives:
@@ -1662,6 +1670,8 @@ func TestFromString(s string) Test {
         return TestAuthOpenIDConnectAuth
     case "auth-operation-level-oauth2":
         return TestAuthOperationLevelOauth2
+    case "auth-typed-error-inspection-omits-credentials":
+        return TestAuthTypedErrorInspectionOmitsCredentials
     case "cancellation-token-cancelled-before-request":
         return TestCancellationTokenCancelledBeforeRequest
     case "cancellation-token-cancelled-during-request":
@@ -1760,6 +1770,8 @@ func TestFromString(s string) Test {
         return TestDuplicateQueryParameterAtOperationLevelDoesNotError
     case "duplicate-query-parameter-at-path-level-does-not-error":
         return TestDuplicateQueryParameterAtPathLevelDoesNotError
+    case "enum-values":
+        return TestEnumValues
     case "error-taxonomy-declared-rules-and-ordering":
         return TestErrorTaxonomyDeclaredRulesAndOrdering
     case "error-taxonomy-every-closed-type-has-a-hint":
@@ -2292,6 +2304,8 @@ func TestFromString(s string) Test {
         return TestParametersFormQueryParamsUnions
     case "parameters-header-params-array":
         return TestParametersHeaderParamsArray
+    case "parameters-header-params-enum":
+        return TestParametersHeaderParamsEnum
     case "parameters-header-params-map":
         return TestParametersHeaderParamsMap
     case "parameters-header-params-nil":
@@ -2300,6 +2314,8 @@ func TestFromString(s string) Test {
         return TestParametersHeaderParamsObject
     case "parameters-header-params-primitive":
         return TestParametersHeaderParamsPrimitive
+    case "parameters-header-params-string-formats":
+        return TestParametersHeaderParamsStringFormats
     case "parameters-json-query-params-object":
         return TestParametersJSONQueryParamsObject
     case "parameters-mixed-primitives":
@@ -3169,6 +3185,7 @@ var testList = []Test{
     TestAuthOauth2Auth,
     TestAuthOpenIDConnectAuth,
     TestAuthOperationLevelOauth2,
+    TestAuthTypedErrorInspectionOmitsCredentials,
     TestCancellationTokenCancelledBeforeRequest,
     TestCancellationTokenCancelledDuringRequest,
     TestCancellationTokenCancelledInsideHook,
@@ -3218,6 +3235,7 @@ var testList = []Test{
     TestDuplicatePathParameterAtPathLevelDoesNotError,
     TestDuplicateQueryParameterAtOperationLevelDoesNotError,
     TestDuplicateQueryParameterAtPathLevelDoesNotError,
+    TestEnumValues,
     TestErrorTaxonomyDeclaredRulesAndOrdering,
     TestErrorTaxonomyEveryClosedTypeHasAHint,
     TestErrorTaxonomyFallbackMessageOmitsRawBody,
@@ -3484,10 +3502,12 @@ var testList = []Test{
     TestParametersFormQueryParamsRefParamObject,
     TestParametersFormQueryParamsUnions,
     TestParametersHeaderParamsArray,
+    TestParametersHeaderParamsEnum,
     TestParametersHeaderParamsMap,
     TestParametersHeaderParamsNil,
     TestParametersHeaderParamsObject,
     TestParametersHeaderParamsPrimitive,
+    TestParametersHeaderParamsStringFormats,
     TestParametersJSONQueryParamsObject,
     TestParametersMixedPrimitives,
     TestParametersMixedQueryParams,

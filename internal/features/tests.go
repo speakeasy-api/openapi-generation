@@ -65,10 +65,12 @@ const (
 	TestAuthCustomSecuritySchemeAppId
 	TestAuthCustomSecuritySchemeOnly
 	TestAuthOperationLevelOauth2
+	TestAuthTypedErrorInspectionOmitsCredentials
 	TestCustomclientRequestParametersRetained
 	TestCustomCodeRegionSdkMethodWithImports
 	TestCustomCodeRegionSubSdkMethodWithImports
 	TestCustomCodeRegionModelMethodWithImports
+	TestEnumValues
 	TestFlatteningComponentBodyAndParamNoConflict
 	TestFlatteningComponentBodyAndParamNoConflictFlattenRequests
 	TestFlatteningComponentBodyAndParamConflict
@@ -130,6 +132,8 @@ const (
 	TestParametersJSONQueryParamsObject
 	TestParametersMixedQueryParams
 	TestParametersHeaderParamsPrimitive
+	TestParametersHeaderParamsEnum
+	TestParametersHeaderParamsStringFormats
 	TestParametersHeaderParamsObject
 	TestParametersHeaderParamsMap
 	TestParametersHeaderParamsArray

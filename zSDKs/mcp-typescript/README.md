@@ -403,6 +403,7 @@ targets:
 The `github-oidc` method uses GitHub Actions OIDC — no secrets required. For other auth methods:
 - `github` — requires a `MCP_REGISTRY_TOKEN` secret (GitHub PAT with `read:org` + `read:user` scopes)
 - `dns` — requires a `MCP_REGISTRY_TOKEN` secret (Ed25519 private key for custom domain namespaces)
+- `http` — requires a `MCP_REGISTRY_TOKEN` secret (Ed25519 private key for custom domain namespaces verified by a `/.well-known/mcp-registry-auth` file, which must be served without redirects)
 
 When the Speakeasy workflow runs, it will automatically publish to npm first, then to the MCP Registry.
 

@@ -446,7 +446,10 @@ function isTestSkipped(test: string): boolean {
     "unions-body-variant-overloads-request-body",
     "unions-body-variant-overloads-nested-union",
     "unions-body-variant-overloads-open-enum",
-    "pagination-limit-offset-page-num-pages-missing",
+    "parameters-header-params-enum",
+    "parameters-header-params-string-formats",
+    "enum-values",
+    "auth-typed-error-inspection-omits-credentials",
   ].includes(test);
 }
 

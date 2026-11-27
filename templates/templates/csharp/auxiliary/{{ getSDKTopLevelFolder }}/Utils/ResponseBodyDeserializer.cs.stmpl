@@ -20,7 +20,7 @@ namespace {{getScopeNamespace "utils"}}
 
         public static T? Deserialize<T>(string json, NullValueHandling nullValueHandling=NullValueHandling.Ignore, MissingMemberHandling missingMemberHandling=MissingMemberHandling.Ignore)
         {
-            return JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings(){ NullValueHandling = nullValueHandling, MissingMemberHandling = missingMemberHandling{{if .Global.Config.PresenceAwareJSONSerialization}}, DateParseHandling = DateParseHandling.None{{end}}, Converters = Utilities.GetJsonDeserializers(typeof(T))});
+            return JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings(){ NullValueHandling = nullValueHandling, MissingMemberHandling = missingMemberHandling{{if dateParseHandlingNone}}, DateParseHandling = DateParseHandling.None{{end}}{{if spreadAdditionalProperties}}, MetadataPropertyHandling = MetadataPropertyHandling.Ignore{{end}}, Converters = Utilities.GetJsonDeserializers(typeof(T))});
         }
 
         public static T DeserializeNotNull<T>(string json, NullValueHandling nullValueHandling=NullValueHandling.Ignore, MissingMemberHandling missingMemberHandling=MissingMemberHandling.Ignore)
@@ -50,7 +50,7 @@ namespace {{getScopeNamespace "utils"}}
                 using (var reader = new JsonTextReader(new System.IO.StringReader(json)))
                 {
                     reader.MaxDepth = 64;
-                {{- if .Global.Config.PresenceAwareJSONSerialization}}
+                {{- if dateParseHandlingNone}}
                     reader.DateParseHandling = DateParseHandling.None;
                 {{- end}}
                     token = JToken.Load(reader);
@@ -62,8 +62,11 @@ namespace {{getScopeNamespace "utils"}}
                     ContractResolver = LenientContractResolver.Instance,
                     Error = (sender, args) => args.ErrorContext.Handled = true,
                     MaxDepth = 64,
-                {{- if .Global.Config.PresenceAwareJSONSerialization}}
+                {{- if dateParseHandlingNone}}
                     DateParseHandling = DateParseHandling.None,
+                {{- end}}
+                {{- if spreadAdditionalProperties}}
+                    MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
                 {{- end}}
                     Converters = Utilities.GetJsonDeserializers(typeof(T)),
                 });

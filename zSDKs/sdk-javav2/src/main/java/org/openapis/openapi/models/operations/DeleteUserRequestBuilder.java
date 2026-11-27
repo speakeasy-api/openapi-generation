@@ -6,10 +6,13 @@ package org.openapis.openapi.models.operations;
 import static org.openapis.openapi.operations.Operations.RequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.lang.String;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.DeleteUser;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class DeleteUserRequestBuilder {
@@ -17,16 +20,23 @@ public class DeleteUserRequestBuilder {
     private final Headers _headers = new Headers();
     private final DeleteUserRequest.Builder pojoBuilder;
     private DeleteUserRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public DeleteUserRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = DeleteUserRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public DeleteUserRequestBuilder id(@Nonnull String id) {
         this.pojoBuilder.id(id);
         this._setterCalled = true;
+        return this;
+    }
+
+    public DeleteUserRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -50,8 +60,9 @@ public class DeleteUserRequestBuilder {
      * @return The response from the server.
      */
     public DeleteUserResponse call() {
+        Options options = optionsBuilder.build();
         RequestOperation<DeleteUserRequest, DeleteUserResponse> operation =
-                new DeleteUser.Sync(sdkConfiguration, _headers);
+                new DeleteUser.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(this._buildRequest()));
     }
 }

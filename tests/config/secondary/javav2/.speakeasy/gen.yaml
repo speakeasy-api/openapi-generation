@@ -43,6 +43,7 @@ java:
   projectName: openapi
   getterStyle: raw
   nullFriendlyParameters: true
+  enforceOperationTimeout: true
   httpClient: okhttp
   asyncMode: enabled
   templateVersion: v2

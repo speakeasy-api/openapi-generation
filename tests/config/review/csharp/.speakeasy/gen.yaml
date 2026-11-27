@@ -54,6 +54,8 @@ csharp:
   enableCancellationToken: true
   enableFormatting: true
   enableSourceLink: true
+  fixFlags:
+    spreadAdditionalProperties: true
   flattenGlobalSecurity: true
   flatteningOrder: parameters-first
   forwardCompatibleEnumsByDefault: true
@@ -73,6 +75,7 @@ csharp:
   maxMethodParams: 4
   methodArguments: infer-optional-args
   multipartArrayFormat: standard
+  optionalNullableScope: all
   outputModelSuffix: output
   packageName: Speakeasy.OpenAPI
   packageTags: Speakeasy API SDK-Generation

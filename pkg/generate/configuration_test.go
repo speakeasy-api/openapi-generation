@@ -312,3 +312,41 @@ func readGenYAML(t *testing.T, outDir string) string {
 	require.NoError(t, err)
 	return strings.ReplaceAll(string(data), "\r\n", "\n")
 }
+
+func TestCsharpSpreadAdditionalPropertiesDefault(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		existing bool
+		expected bool
+	}{
+		{
+			name:     "new SDK",
+			existing: false,
+			expected: true,
+		},
+		{
+			name:     "existing SDK without fixFlags",
+			existing: true,
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			outDir := t.TempDir()
+			require.NoError(t, os.MkdirAll(filepath.Join(outDir, ".speakeasy"), 0o755))
+			if tc.existing {
+				writeGenConfigWithTestsDisabled(t, outDir, "csharp")
+			}
+
+			cfg := loadGenConfigForTarget(t, outDir, "csharp")
+			fixFlags, ok := cfg.Config.Languages["csharp"].Cfg["fixFlags"].(map[string]any)
+			require.True(t, ok, "csharp fixFlags missing from loaded config")
+			assert.Equal(t, tc.expected, fixFlags["spreadAdditionalProperties"])
+		})
+	}
+}

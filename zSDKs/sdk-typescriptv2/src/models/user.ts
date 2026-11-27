@@ -4,7 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import {
@@ -43,27 +43,30 @@ export type User = {
 };
 
 /** @internal */
-export const User$inboundSchema: z.ZodMiniType<User, unknown> = z.pipe(
-  z.object({
-    id: types.string(),
-    email: types.string(),
-    first_name: types.optional(types.string()),
-    last_name: types.optional(types.string()),
-    age: types.optional(types.number()),
-    postal_code: types.optional(types.string()),
-    gender: types.optional(Gender$inboundSchema),
-    associatedIds: types.optional(z.array(types.string())),
-    metadata: types.optional(Metadata$inboundSchema),
-    metadataAny: types.optional(MetadataAny$inboundSchema),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      "first_name": "firstName",
-      "last_name": "lastName",
-      "postal_code": "postalCode",
-    });
-  }),
-);
+export const User$inboundSchema: z.ZodMiniType<User, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.pipe(
+      z.object({
+        id: types.string(),
+        email: types.string(),
+        first_name: types.optional(types.string()),
+        last_name: types.optional(types.string()),
+        age: types.optional(types.number()),
+        postal_code: types.optional(types.string()),
+        gender: types.optional(Gender$inboundSchema),
+        associatedIds: types.optional(z.array(types.string())),
+        metadata: types.optional(Metadata$inboundSchema),
+        metadataAny: types.optional(MetadataAny$inboundSchema),
+      }),
+      z.transform((v) => {
+        return remap$(v, {
+          "first_name": "firstName",
+          "last_name": "lastName",
+          "postal_code": "postalCode",
+        });
+      }),
+    )
+  );
 /** @internal */
 export type User$Outbound = {
   id: string;
@@ -79,27 +82,30 @@ export type User$Outbound = {
 };
 
 /** @internal */
-export const User$outboundSchema: z.ZodMiniType<User$Outbound, User> = z.pipe(
-  z.object({
-    id: z.string(),
-    email: z.string(),
-    firstName: z.optional(z.string()),
-    lastName: z.optional(z.string()),
-    age: z.optional(z.number()),
-    postalCode: z.optional(z.string()),
-    gender: z.optional(Gender$outboundSchema),
-    associatedIds: z.optional(z.array(z.string())),
-    metadata: z.optional(Metadata$outboundSchema),
-    metadataAny: z.optional(MetadataAny$outboundSchema),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      firstName: "first_name",
-      lastName: "last_name",
-      postalCode: "postal_code",
-    });
-  }),
-);
+export const User$outboundSchema: z.ZodMiniType<User$Outbound, User> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.pipe(
+      z.object({
+        id: z.string(),
+        email: z.string(),
+        firstName: z.optional(z.string()),
+        lastName: z.optional(z.string()),
+        age: z.optional(z.number()),
+        postalCode: z.optional(z.string()),
+        gender: z.optional(Gender$outboundSchema),
+        associatedIds: z.optional(z.array(z.string())),
+        metadata: z.optional(Metadata$outboundSchema),
+        metadataAny: z.optional(MetadataAny$outboundSchema),
+      }),
+      z.transform((v) => {
+        return remap$(v, {
+          firstName: "first_name",
+          lastName: "last_name",
+          postalCode: "postal_code",
+        });
+      }),
+    )
+  );
 
 export function userToJSON(user: User): string {
   return JSON.stringify(User$outboundSchema.parse(user));

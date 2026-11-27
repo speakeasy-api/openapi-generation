@@ -8,7 +8,8 @@
   "version": "{{.Global.Config.SDKVersion}}",
   "exports": {
     ".": "./src/index.ts",
-    {{- range $ns := $nss }}    
+    "./node": "./src/node.ts",
+    {{- range $ns := $nss }}
     "./{{$ns}}": "./src/{{$ns}}/index.ts",
     {{- end }}
     "./lib/config": "./src/lib/config.ts",

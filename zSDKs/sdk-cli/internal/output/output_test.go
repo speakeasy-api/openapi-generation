@@ -735,6 +735,73 @@ func TestUnclassifiedRenderersKeepPollHandle(t *testing.T) {
 	}
 }
 
+func TestAsyncFailureDetailReadsDeclaredErrorMember(t *testing.T) {
+	for name, tc := range map[string]struct {
+		cfg     asyncConfig
+		payload string
+		want    string
+	}{
+		"object":           {cfg: asyncConfig{ErrorField: "error", ErrorMessageField: "message"}, payload: `{"error":{"message":"quota exceeded"}}`, want: "quota exceeded"},
+		"array of objects": {cfg: asyncConfig{ErrorField: "errors", ErrorMessageField: "message"}, payload: `{"errors":[{"code":"x"},{"message":"unsafe prompt"},{"message":"second"}]}`, want: "unsafe prompt"},
+		"array of strings": {cfg: asyncConfig{ErrorField: "errors", ErrorMessageField: "message"}, payload: `{"errors":["  unsafe prompt  "]}`, want: "unsafe prompt"},
+		"custom message":   {cfg: asyncConfig{ErrorField: "errors", ErrorMessageField: "detail"}, payload: `{"errors":[{"detail":"rejected"}]}`, want: "rejected"},
+		"missing member":   {cfg: asyncConfig{ErrorField: "error", ErrorMessageField: "message"}, payload: `{"errors":[{"message":"elsewhere"}]}`, want: ""},
+		"empty array":      {cfg: asyncConfig{ErrorField: "errors", ErrorMessageField: "message"}, payload: `{"errors":[]}`, want: ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var payload interface{}
+			if err := json.Unmarshal([]byte(tc.payload), &payload); err != nil {
+				t.Fatal(err)
+			}
+			if got := asyncFailureDetail(&tc.cfg, payload); got != tc.want {
+				t.Fatalf("got %q; want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAsyncMachineErrorOnlyIncludesDeclaredErrorMember(t *testing.T) {
+	for name, tc := range map[string]struct {
+		reason     string
+		errorField string
+		payload    string
+		want       string
+	}{
+		"default member":               {payload: `{"state":"failed","error":{"message":"quota exceeded"}}`, want: `{"message":"quota exceeded"}`},
+		"declared member":              {errorField: "errors", payload: `{"state":"failed","errors":[{"message":"unsafe"}]}`, want: `[{"message":"unsafe"}]`},
+		"missing member":               {payload: `{"state":"failed","output":"large result body"}`},
+		"non-object":                   {payload: `"failed"`, want: `"failed"`},
+		"unknown state keeps payload":  {reason: ReasonCLIAsyncUnknownState, payload: `{"state":"odd"}`, want: `{"state":"odd"}`},
+		"protocol error keeps payload": {reason: ReasonCLIProtocol, payload: `{"output":"x"}`, want: `{"output":"x"}`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var payload interface{}
+			if err := json.Unmarshal([]byte(tc.payload), &payload); err != nil {
+				t.Fatal(err)
+			}
+			reason := tc.reason
+			if reason == "" {
+				reason = ReasonCLIAsyncFailed
+			}
+			runtimeErr := &asyncRuntimeError{reason: reason, message: "failed", id: "handle", resume: "wait handle", payload: payload, errorField: tc.errorField}
+			got, present := runtimeErr.MachineErrorFields()["error"]
+			if tc.want == "" {
+				if present {
+					t.Fatalf("expected no error field, got %v", got)
+				}
+				return
+			}
+			encoded, err := json.Marshal(got)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(encoded) != tc.want {
+				t.Fatalf("got %s; want %s", encoded, tc.want)
+			}
+		})
+	}
+}
+
 func TestAsyncFailureScrubsResolvedCredentials(t *testing.T) {
 	t.Cleanup(config.Reset)
 	config.RegisterSecret("example-secret")
@@ -748,6 +815,60 @@ func TestAsyncFailureScrubsResolvedCredentials(t *testing.T) {
 	}
 	if strings.Contains(stderr.String(), "example-secret") || !strings.Contains(stderr.String(), "invalid key [REDACTED]") {
 		t.Fatalf("expected the credential to be masked, got:\n%s", stderr.String())
+	}
+}
+
+func TestRedactedMessageDropsMaskedValues(t *testing.T) {
+	raw := `{"name":"n","value":"secret-value"}`
+	redacted := `{"name":"n","value":"(sensitive)"}`
+	for name, tc := range map[string]struct {
+		message, redacted, want string
+	}{
+		"embedded raw body":       {message: "API error occurred: Status 400\n" + raw, redacted: redacted, want: "API error occurred: Status 400\n" + redacted},
+		"typed model JSON":        {message: `{"value":"secret-value","name":"n"}`, redacted: redacted, want: redacted},
+		"message from body field": {message: "request rejected", redacted: redacted, want: "request rejected"},
+		"nothing masked":          {message: raw, redacted: raw, want: raw},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if got := newMessageRedaction(raw, tc.redacted).apply(tc.message); got != tc.want {
+				t.Fatalf("got %q; want %q", got, tc.want)
+			}
+		})
+	}
+	if got := newMessageRedaction("", redacted).apply("request failed"); got != "request failed" {
+		t.Fatalf("a message with no source body must be kept, got %q", got)
+	}
+	if got := newMessageRedaction(raw, redacted).apply("secret-value"); got != "(sensitive)" {
+		t.Fatalf("a message that is a masked field must be masked, got %q", got)
+	}
+	if got := newMessageRedaction(raw, "(sensitive)").apply("secret-value"); got != "(sensitive)" {
+		t.Fatalf("a message from a wholly masked body must be the mask, got %q", got)
+	}
+	nested := `{"outer":{"token":"abc-secret","codes":[123456]}}`
+	nestedRedacted := `{"outer":"(sensitive)"}`
+	if got := newMessageRedaction(nested, nestedRedacted).apply("rejected abc-secret with 123456"); got != "rejected (sensitive) with (sensitive)" {
+		t.Fatalf("values under a masked subtree must be masked, got %q", got)
+	}
+	numbers := `{"id":9007199254740993,"rate":1.50,"name":"n"}`
+	numbersRedacted := `{"id":"(sensitive)","rate":"(sensitive)","name":"n"}`
+
+	if got := newMessageRedaction(numbers, numbersRedacted).apply("id 9007199254740993 at 1.50"); got != "id (sensitive) at (sensitive)" {
+		t.Fatalf("masked numbers must keep their original spelling, got %q", got)
+	}
+	repeated := `{"message":"rejected s","secrets":["s","s","s","s","s","s","s","s","s","s","s","s","s","s","s","s"]}`
+	repeatedRedacted := `{"message":"rejected s","secrets":["(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)","(sensitive)"]}`
+	if got := newMessageRedaction(repeated, repeatedRedacted).apply("rejected s"); got != "rejected (sensitive)" {
+		t.Fatalf("each masked value must be replaced in a single pass, got %q", got)
+	}
+}
+
+func TestStructuredErrorEnvelopeRedactsNonObjectBodyErrorText(t *testing.T) {
+	raw := `["secret-value"]`
+	classification := Classification{RawBody: `["(sensitive)"]`, Body: []interface{}{"(sensitive)"}}
+	envelope := classifiedErrorEnvelope(errors.New(raw), classification)
+	text, _ := envelope["error"].(string)
+	if strings.Contains(text, "secret-value") || text != classification.RawBody {
+		t.Fatalf("error text = %q; want the redacted body", text)
 	}
 }
 
@@ -1084,6 +1205,68 @@ func TestOutcomeStreamStatePointerOrder(t *testing.T) {
 	}
 }
 
+func unboundedJSONNumbers() []json.Number {
+	return []json.Number{
+		"1e100000000",
+		"1e-100000000",
+		"1E+99999999999999999999",
+		json.Number(strings.Repeat("9", maxDecimalLength+1)),
+		"1/2",
+		"0x1p100000000",
+		"1_000",
+		"+1",
+		".5",
+		"1.",
+		"1e",
+		"",
+		"00",
+		"01",
+		"-01",
+		"01e2",
+		"01.5",
+	}
+}
+
+func TestParseBoundedRat(t *testing.T) {
+	for _, number := range unboundedJSONNumbers() {
+		if _, ok := parseBoundedRat(number.String()); ok {
+			t.Errorf("parseBoundedRat(%.20q) parsed", number)
+		}
+	}
+	for text, want := range map[string]string{
+		"0":       "0",
+		"-0":      "0",
+		"0.5":     "1/2",
+		"-0e1":    "0",
+		"10":      "10",
+		"12":      "12",
+		"-1.5":    "-3/2",
+		"2.5E+1":  "25",
+		"25e-1":   "5/2",
+		"1e1000":  "1" + strings.Repeat("0", 1000),
+		"1e-1000": "1/1" + strings.Repeat("0", 1000),
+	} {
+		got, ok := parseBoundedRat(text)
+		if !ok || got.RatString() != want {
+			t.Errorf("parseBoundedRat(%q) = %v, %t, want %s", text, got, ok, want)
+		}
+	}
+	if _, ok := parseBoundedRat("1e1001"); ok {
+		t.Error("parseBoundedRat(1e1001) parsed")
+	}
+}
+
+func TestCanonicalNumberKeepsUnboundedLexemes(t *testing.T) {
+	for _, number := range unboundedJSONNumbers() {
+		if got := canonicalNumber(number); got != number {
+			t.Errorf("canonicalNumber(%.20q) = %v", number, got)
+		}
+	}
+	if got := canonicalNumber("1.50"); got != json.Number("1.5") {
+		t.Errorf("canonicalNumber(1.50) = %v", got)
+	}
+}
+
 func TestUnknownSubcommandHonoursDisableSuggestions(t *testing.T) {
 	root, _ := unknownCommandTestTree()
 	group, _, _ := root.Find([]string{"errors"})
@@ -1097,5 +1280,28 @@ func TestUnknownSubcommandHonoursDisableSuggestions(t *testing.T) {
 		if strings.Contains(hint, "Did you mean") {
 			t.Fatalf("suggestions are disabled on the group, got %q", hint)
 		}
+	}
+}
+
+type failingTableWriter struct{}
+
+func (failingTableWriter) Write([]byte) (int, error) { return 0, errors.New("write failed") }
+
+func TestPrintTableRendersEmptyValues(t *testing.T) {
+	var nilPointer *struct{ Name string }
+	for name, content := range map[string]any{
+		"untyped nil":  nil,
+		"nil pointer":  nilPointer,
+		"empty struct": struct{}{},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var buf bytes.Buffer
+			if err := printTable(&buf, content); err != nil || buf.String() != "(empty)\n" {
+				t.Fatalf("got %q, error %v; want (empty)", buf.String(), err)
+			}
+			if err := printTable(failingTableWriter{}, content); err == nil {
+				t.Fatal("expected the write error to be returned")
+			}
+		})
 	}
 }

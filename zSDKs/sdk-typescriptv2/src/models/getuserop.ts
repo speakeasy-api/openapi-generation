@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type GetUserRequest = {
   id: string;
@@ -17,9 +18,11 @@ export type GetUserRequest$Outbound = {
 export const GetUserRequest$outboundSchema: z.ZodMiniType<
   GetUserRequest$Outbound,
   GetUserRequest
-> = z.object({
-  id: z.string(),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    id: z.string(),
+  })
+);
 
 export function getUserRequestToJSON(getUserRequest: GetUserRequest): string {
   return JSON.stringify(GetUserRequest$outboundSchema.parse(getUserRequest));

@@ -20,6 +20,13 @@ const (
 func (e DeleteImportIDEnumStringID) ToPointer() *DeleteImportIDEnumStringID {
 	return &e
 }
+
+// DeleteImportIDEnumStringIDValues returns every known DeleteImportIDEnumStringID value in schema order.
+func DeleteImportIDEnumStringIDValues() []DeleteImportIDEnumStringID {
+	return []DeleteImportIDEnumStringID{
+		DeleteImportIDEnumStringIDDefault,
+	}
+}
 func (e *DeleteImportIDEnumStringID) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

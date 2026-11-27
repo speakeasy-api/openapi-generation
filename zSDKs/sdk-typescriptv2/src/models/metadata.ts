@@ -6,6 +6,7 @@ import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
 import {
   collectExtraKeys as collectExtraKeys$,
+  lazySchema as lazySchema$,
   safeParse,
 } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
@@ -19,15 +20,17 @@ export type Metadata = {
 
 /** @internal */
 export const Metadata$inboundSchema: z.ZodMiniType<Metadata, unknown> =
-  collectExtraKeys$(
-    z.catchall(
-      z.object({
-        allergies: types.optional(types.string()),
-      }),
-      types.string(),
-    ),
-    "additionalProperties",
-    true,
+  /* @__PURE__ */ lazySchema$(() =>
+    collectExtraKeys$(
+      z.catchall(
+        z.object({
+          allergies: types.optional(types.string()),
+        }),
+        types.string(),
+      ),
+      "additionalProperties",
+      true,
+    )
   );
 /** @internal */
 export type Metadata$Outbound = {
@@ -39,19 +42,21 @@ export type Metadata$Outbound = {
 export const Metadata$outboundSchema: z.ZodMiniType<
   Metadata$Outbound,
   Metadata
-> = z.pipe(
-  z.object({
-    allergies: z.optional(z.string()),
-    additionalProperties: z.optional(z.record(z.string(), z.string())),
-  }),
-  z.transform((v) => {
-    return {
-      ...v.additionalProperties,
-      ...remap$(v, {
-        additionalProperties: null,
-      }),
-    };
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      allergies: z.optional(z.string()),
+      additionalProperties: z.optional(z.record(z.string(), z.string())),
+    }),
+    z.transform((v) => {
+      return {
+        ...v.additionalProperties,
+        ...remap$(v, {
+          additionalProperties: null,
+        }),
+      };
+    }),
+  )
 );
 
 export function metadataToJSON(metadata: Metadata): string {

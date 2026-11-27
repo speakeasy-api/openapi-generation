@@ -19,6 +19,15 @@ func (e XUnknownValuesResponseRequiredOpenEnumString) ToPointer() *XUnknownValue
 	return &e
 }
 
+// XUnknownValuesResponseRequiredOpenEnumStringValues returns every known XUnknownValuesResponseRequiredOpenEnumString value in schema order.
+func XUnknownValuesResponseRequiredOpenEnumStringValues() []XUnknownValuesResponseRequiredOpenEnumString {
+	return []XUnknownValuesResponseRequiredOpenEnumString{
+		XUnknownValuesResponseRequiredOpenEnumStringAlpha,
+		XUnknownValuesResponseRequiredOpenEnumStringBeta,
+		XUnknownValuesResponseRequiredOpenEnumStringGamma,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *XUnknownValuesResponseRequiredOpenEnumString) IsExact() bool {
 	if e != nil {
@@ -40,6 +49,15 @@ const (
 
 func (e XUnknownValuesResponseOptionalComputedOpenEnumString) ToPointer() *XUnknownValuesResponseOptionalComputedOpenEnumString {
 	return &e
+}
+
+// XUnknownValuesResponseOptionalComputedOpenEnumStringValues returns every known XUnknownValuesResponseOptionalComputedOpenEnumString value in schema order.
+func XUnknownValuesResponseOptionalComputedOpenEnumStringValues() []XUnknownValuesResponseOptionalComputedOpenEnumString {
+	return []XUnknownValuesResponseOptionalComputedOpenEnumString{
+		XUnknownValuesResponseOptionalComputedOpenEnumStringSmall,
+		XUnknownValuesResponseOptionalComputedOpenEnumStringMedium,
+		XUnknownValuesResponseOptionalComputedOpenEnumStringLarge,
+	}
 }
 
 // IsExact returns true if the value matches a known enum value, false otherwise.
@@ -65,6 +83,15 @@ func (e XUnknownValuesResponseOptionalComputedOpenEnumInt64) ToPointer() *XUnkno
 	return &e
 }
 
+// XUnknownValuesResponseOptionalComputedOpenEnumInt64Values returns every known XUnknownValuesResponseOptionalComputedOpenEnumInt64 value in schema order.
+func XUnknownValuesResponseOptionalComputedOpenEnumInt64Values() []XUnknownValuesResponseOptionalComputedOpenEnumInt64 {
+	return []XUnknownValuesResponseOptionalComputedOpenEnumInt64{
+		XUnknownValuesResponseOptionalComputedOpenEnumInt64One,
+		XUnknownValuesResponseOptionalComputedOpenEnumInt64Two,
+		XUnknownValuesResponseOptionalComputedOpenEnumInt64Three,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *XUnknownValuesResponseOptionalComputedOpenEnumInt64) IsExact() bool {
 	if e != nil {
@@ -85,6 +112,14 @@ const (
 
 func (e XUnknownValuesResponseClosedEnumString) ToPointer() *XUnknownValuesResponseClosedEnumString {
 	return &e
+}
+
+// XUnknownValuesResponseClosedEnumStringValues returns every known XUnknownValuesResponseClosedEnumString value in schema order.
+func XUnknownValuesResponseClosedEnumStringValues() []XUnknownValuesResponseClosedEnumString {
+	return []XUnknownValuesResponseClosedEnumString{
+		XUnknownValuesResponseClosedEnumStringOn,
+		XUnknownValuesResponseClosedEnumStringOff,
+	}
 }
 func (e *XUnknownValuesResponseClosedEnumString) UnmarshalJSON(data []byte) error {
 	var v string
@@ -114,6 +149,15 @@ func (e ResponseOnlyOpenEnumString) ToPointer() *ResponseOnlyOpenEnumString {
 	return &e
 }
 
+// ResponseOnlyOpenEnumStringValues returns every known ResponseOnlyOpenEnumString value in schema order.
+func ResponseOnlyOpenEnumStringValues() []ResponseOnlyOpenEnumString {
+	return []ResponseOnlyOpenEnumString{
+		ResponseOnlyOpenEnumStringActive,
+		ResponseOnlyOpenEnumStringInactive,
+		ResponseOnlyOpenEnumStringPending,
+	}
+}
+
 // IsExact returns true if the value matches a known enum value, false otherwise.
 func (e *ResponseOnlyOpenEnumString) IsExact() bool {
 	if e != nil {
@@ -135,6 +179,15 @@ const (
 
 func (e ResponseOnlyOpenEnumInt64) ToPointer() *ResponseOnlyOpenEnumInt64 {
 	return &e
+}
+
+// ResponseOnlyOpenEnumInt64Values returns every known ResponseOnlyOpenEnumInt64 value in schema order.
+func ResponseOnlyOpenEnumInt64Values() []ResponseOnlyOpenEnumInt64 {
+	return []ResponseOnlyOpenEnumInt64{
+		ResponseOnlyOpenEnumInt64OneHundred,
+		ResponseOnlyOpenEnumInt64TwoHundred,
+		ResponseOnlyOpenEnumInt64ThreeHundred,
+	}
 }
 
 // IsExact returns true if the value matches a known enum value, false otherwise.

@@ -67,7 +67,7 @@ public class {{$className}} {
         return this;
     }{{"\n"}}
         {{- end}}{{end}}{{end}}
-    {{- range $option := $options}}
+    {{- range $option := requestBuilderMethodOptions $op}}
     public {{$className}} {{$option.Name}}({{javaImport $option.Type}} {{$option.Name}}) {
         this.optionsBuilder.{{$option.Name}}({{$option.Name}});
         return this;

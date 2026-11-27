@@ -12,7 +12,7 @@ features:
     additionalProperties: 0.1.1
     bigint: 0.1.2
     constsAndDefaults: 0.2.2
-    core: 3.9.29
+    core: 3.9.30
     customSecuritySchemes: 0.1.0
     decimal: 0.1.1
     deprecations: 2.81.1
@@ -965,7 +965,7 @@ trackedFiles:
   src/Utils/FormMetadata.php:
     last_write_checksum: sha1:88a51ef0c94473353e3f2f04a1d2709d8bc5f79d
   src/Utils/Headers.php:
-    last_write_checksum: sha1:939284bf67cb987ab84e504fa52b2a481f8568dd
+    last_write_checksum: sha1:75746f8ace759eaddae532702d3afb7c0e5622e9
   src/Utils/JSON.php:
     last_write_checksum: sha1:699d18afb5666cc4ff9f098abdd4a9ae5d860bf9
   src/Utils/MixedJSONHandler.php:

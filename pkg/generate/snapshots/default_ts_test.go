@@ -84,6 +84,7 @@ components:
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 import { Decimal as Decimal$ } from "../types/decimal.js";
 import { ClosedEnum } from "../types/enums.js";
 
@@ -108,8 +109,8 @@ export type DefaultModel = {
 };
 
 /** @internal */
-export const EnumDefault$outboundSchema: z.ZodMiniEnum<typeof EnumDefault> = z
-  .enum(EnumDefault);
+export const EnumDefault$outboundSchema: z.ZodMiniEnum<typeof EnumDefault> =
+  /* @__PURE__ */ lazySchema$(() => z.enum(EnumDefault));
 
 /** @internal */
 export type DefaultModel$Outbound = {
@@ -129,31 +130,32 @@ export type DefaultModel$Outbound = {
 export const DefaultModel$outboundSchema: z.ZodMiniType<
   DefaultModel$Outbound,
   DefaultModel
-> = z.object({
-  stringDefault: z._default(z.string(), "default-string-value"),
-  numberDefault: z._default(z.number(), 42.5),
-  integerDefault: z._default(z.int(), 123),
-  booleanDefault: z._default(z.boolean(), true),
-  enumDefault: z._default(EnumDefault$outboundSchema, "option2"),
-  dateDefault: z.pipe(
-    z._default(z.date(), new Date("2023-12-25")),
-    z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
-  ),
-  dateTimeDefault: z.pipe(
-    z._default(z.date(), () => new Date("2023-12-25T10:30:00Z")),
-    z.transform(v => v.toISOString()),
-  ),
-  bigintDefault: z._default(z.number(), 9007199254740991),
-  decimalDefault: z.pipe(
-    z._default(
-      z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
-      () =>
-        new Decimal$("123.456789"),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    stringDefault: z._default(z.string(), "default-string-value"),
+    numberDefault: z._default(z.number(), 42.5),
+    integerDefault: z._default(z.int(), 123),
+    booleanDefault: z._default(z.boolean(), true),
+    enumDefault: z._default(EnumDefault$outboundSchema, "option2"),
+    dateDefault: z.pipe(
+      z._default(z.date(), new Date("2023-12-25")),
+      z.transform(v => v.toISOString().slice(0, "YYYY-MM-DD".length)),
     ),
-    z.transform(v => typeof v === "number" ? v : v.toNumber()),
-  ),
-  bytesDefault: z._default(z.string(), "SGVsbG8gV29ybGQ="),
-});
+    dateTimeDefault: z.pipe(
+      z._default(z.date(), () => new Date("2023-12-25T10:30:00Z")),
+      z.transform(v => v.toISOString()),
+    ),
+    bigintDefault: z._default(z.number(), 9007199254740991),
+    decimalDefault: z.pipe(
+      z._default(
+        z.union([z.custom<Decimal$>(x => x instanceof Decimal$), z.number()]),
+        () => new Decimal$("123.456789"),
+      ),
+      z.transform(v => typeof v === "number" ? v : v.toNumber()),
+    ),
+    bytesDefault: z._default(z.string(), "SGVsbG8gV29ybGQ="),
+  })
+);
 
 export function defaultModelToJSON(defaultModel: DefaultModel): string {
   return JSON.stringify(DefaultModel$outboundSchema.parse(defaultModel));

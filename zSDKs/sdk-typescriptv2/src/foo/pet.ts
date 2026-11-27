@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { SDKValidationError } from "../models/sdkvalidationerror.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
@@ -41,16 +41,19 @@ export type Pet = {
 };
 
 /** @internal */
-export const Pet$inboundSchema: z.ZodMiniType<Pet, unknown> = z.object({
-  id: types.string(),
-  name: types.string(),
-  species: types.string(),
-  models: types.optional(types.string()),
-  request: types.optional(types.string()),
-  operations: types.optional(types.string()),
-  errors: types.optional(types.string()),
-  utils: types.optional(types.string()),
-});
+export const Pet$inboundSchema: z.ZodMiniType<Pet, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      id: types.string(),
+      name: types.string(),
+      species: types.string(),
+      models: types.optional(types.string()),
+      request: types.optional(types.string()),
+      operations: types.optional(types.string()),
+      errors: types.optional(types.string()),
+      utils: types.optional(types.string()),
+    })
+  );
 /** @internal */
 export type Pet$Outbound = {
   id: string;
@@ -64,16 +67,19 @@ export type Pet$Outbound = {
 };
 
 /** @internal */
-export const Pet$outboundSchema: z.ZodMiniType<Pet$Outbound, Pet> = z.object({
-  id: z.string(),
-  name: z.string(),
-  species: z.string(),
-  models: z.optional(z.string()),
-  request: z.optional(z.string()),
-  operations: z.optional(z.string()),
-  errors: z.optional(z.string()),
-  utils: z.optional(z.string()),
-});
+export const Pet$outboundSchema: z.ZodMiniType<Pet$Outbound, Pet> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      species: z.string(),
+      models: z.optional(z.string()),
+      request: z.optional(z.string()),
+      operations: z.optional(z.string()),
+      errors: z.optional(z.string()),
+      utils: z.optional(z.string()),
+    })
+  );
 
 export function petToJSON(pet: Pet): string {
   return JSON.stringify(Pet$outboundSchema.parse(pet));

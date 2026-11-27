@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import * as discriminatedUnionTypes from "../types/discriminatedUnion.js";
 import { discriminatedUnion } from "../types/discriminatedUnion.js";
 import * as openEnums from "../types/enums.js";
@@ -45,14 +45,16 @@ export type AssetResult = {
 
 /** @internal */
 export const Status$inboundSchema: z.ZodMiniType<StatusOpen, unknown> =
-  openEnums.inboundSchema(Status);
+  /* @__PURE__ */ lazySchema$(() => openEnums.inboundSchema(Status));
 
 /** @internal */
 export const Step$inboundSchema: z.ZodMiniType<Step, unknown> =
-  discriminatedUnion("type", {
-    note: AssetNoteStep$inboundSchema,
-    output: AssetOutputStep$inboundSchema,
-  });
+  /* @__PURE__ */ lazySchema$(() =>
+    discriminatedUnion("type", {
+      note: AssetNoteStep$inboundSchema,
+      output: AssetOutputStep$inboundSchema,
+    })
+  );
 
 export function stepFromJSON(
   jsonString: string,
@@ -65,19 +67,21 @@ export function stepFromJSON(
 }
 
 /** @internal */
-export const AssetResult$inboundSchema: z.ZodMiniType<AssetResult, unknown> = z
-  .object({
-    id: types.optional(types.string()),
-    status: types.optional(Status$inboundSchema),
-    steps: types.optional(
-      z.array(
-        discriminatedUnion("type", {
-          note: AssetNoteStep$inboundSchema,
-          output: AssetOutputStep$inboundSchema,
-        }),
+export const AssetResult$inboundSchema: z.ZodMiniType<AssetResult, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      id: types.optional(types.string()),
+      status: types.optional(Status$inboundSchema),
+      steps: types.optional(
+        z.array(
+          discriminatedUnion("type", {
+            note: AssetNoteStep$inboundSchema,
+            output: AssetOutputStep$inboundSchema,
+          }),
+        ),
       ),
-    ),
-  });
+    })
+  );
 
 export function assetResultFromJSON(
   jsonString: string,

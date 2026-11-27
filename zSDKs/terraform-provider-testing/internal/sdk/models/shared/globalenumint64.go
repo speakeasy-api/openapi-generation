@@ -17,6 +17,14 @@ const (
 func (e GlobalEnumInt64) ToPointer() *GlobalEnumInt64 {
 	return &e
 }
+
+// GlobalEnumInt64Values returns every known GlobalEnumInt64 value in schema order.
+func GlobalEnumInt64Values() []GlobalEnumInt64 {
+	return []GlobalEnumInt64{
+		GlobalEnumInt64Three,
+		GlobalEnumInt64Four,
+	}
+}
 func (e *GlobalEnumInt64) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {

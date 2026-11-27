@@ -15,6 +15,8 @@ type CSharpModel = {
 //   - fields never used in a JSON body/response (no "json" annotation): the tri-state is
 //     only observable through JSON serialization, so a form/multipart-only body field has
 //     no absent/null/set distinction to preserve and stays plain T?.
+//   - optionalNullableScope "writable-models" and the owning model is never sent in a
+//     request: the SDK only ever reads it, so there is no absent/null decision to make.
 //
 // Note: OptionalNullable<T> has no meaning outside the JSON serializer. A component reached
 // by more than one serializer (e.g. a JSON body field that is also a form/multipart field
@@ -24,7 +26,21 @@ type CSharpModel = {
 // RequestBodySerializer.cs, URLBuilder.cs and HeaderSerializer.cs). Path parameters are
 // forced required upstream, so they are never optional and never wrapped.
 // @ts-ignore
-function needsOptionalNullableWrapper(fieldDef: FieldDef): boolean {
+function needsOptionalNullableWrapper(
+  fieldDef: FieldDef,
+  owner: TypeDef,
+): boolean {
+  return (
+    isPresenceAwareOptionalNullable(fieldDef) && isPresenceTrackedModel(owner)
+  );
+}
+registerTemplateFunc(
+  "needsOptionalNullableWrapper",
+  needsOptionalNullableWrapper,
+);
+
+// @ts-ignore
+function isPresenceAwareOptionalNullable(fieldDef: FieldDef): boolean {
   return (
     context.Global.Config.PresenceAwareJSONSerialization &&
     fieldDef.Optional &&
@@ -34,10 +50,14 @@ function needsOptionalNullableWrapper(fieldDef: FieldDef): boolean {
     Array.from(fieldDef.Annotations).some((a) => a.Type().toString() === "json")
   );
 }
-registerTemplateFunc(
-  "needsOptionalNullableWrapper",
-  needsOptionalNullableWrapper,
-);
+
+// @ts-ignore
+function isPresenceTrackedModel(owner: TypeDef): boolean {
+  if (context.Global.Config.OptionalNullableScope !== "writable-models") {
+    return true;
+  }
+  return owner.UsedInRequest === true;
+}
 
 // NB: A scalar (non-array/non-map) bare-number `format: decimal` field is emitted as
 // plain `decimal?` rather than OptionalNullable<decimal?>, even when optional+nullable.
@@ -68,6 +88,77 @@ function templateGetPropValue(varName: string): string {
 }
 registerTemplateFunc("templateGetPropValue", templateGetPropValue);
 
+// @ts-ignore
+function spreadAdditionalProperties(): boolean {
+  return !!context.Global.Config.FixFlags?.["spreadAdditionalProperties"];
+}
+registerTemplateFunc("spreadAdditionalProperties", spreadAdditionalProperties);
+
+// Additional properties are read as extension data, which tokenizes each value with
+// the reader settings before conversion: ISO-shaped strings must stay strings.
+// @ts-ignore
+function dateParseHandlingNone(): boolean {
+  return (
+    !!context.Global.Config.PresenceAwareJSONSerialization ||
+    spreadAdditionalProperties()
+  );
+}
+registerTemplateFunc("dateParseHandlingNone", dateParseHandlingNone);
+
+function getAdditionalPropertiesField(typeDef: TypeDef): FieldDef | undefined {
+  if (!spreadAdditionalProperties()) return undefined;
+  return typeDef.Fields?.find((f: FieldDef) => f.IsAdditionalProperties);
+}
+
+// @ts-ignore
+function templateAdditionalPropertiesMembers(
+  typeDef: TypeDef,
+  className: string,
+  usageLocation: string,
+  indent: number,
+): string {
+  const apField = getAdditionalPropertiesField(typeDef);
+  if (!apField) return "";
+
+  const name = sanitizeFieldName(apField.Name, className);
+  const valueType = sanitizeItemType(apField.Type, usageLocation, "", false);
+
+  const declaredJsonNames: string[] = [];
+  for (const field of typeDef.Fields) {
+    if (field.IsAdditionalProperties) continue;
+    for (const annotation of field.Annotations) {
+      if (!annotation.IsType("json")) continue;
+      const json = annotation as JSONAnnotation;
+      if (json.Ignore) continue;
+      declaredJsonNames.push(`"${escapeString(json.FieldName)}"`);
+    }
+  }
+
+  const optionsArgs = [`new string[] { ${declaredJsonNames.join(", ")} }`];
+  const itemConverter = getJsonConverterType(apField.Type.ItemType);
+  if (itemConverter != "") {
+    optionsArgs.push(`new ${itemConverter}()`);
+  }
+  const options = optionsArgs.join(", ");
+  const utils = `global::${getScopeNamespace("utils", true)}`;
+
+  return indentString(
+    `
+
+private static readonly ${utils}.AdditionalPropertiesOptions _additionalPropertiesOptions = new ${utils}.AdditionalPropertiesOptions(${options});
+
+private ${utils}.AdditionalPropertiesAdapter<${valueType}>? _additionalPropertiesAdapter;
+
+[JsonExtensionData]
+private IDictionary<string, object?> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new ${utils}.AdditionalPropertiesAdapter<${valueType}>(() => ${name}, value => ${name} = value, _additionalPropertiesOptions);`,
+    indent,
+  );
+}
+registerTemplateFunc(
+  "templateAdditionalPropertiesMembers",
+  templateAdditionalPropertiesMembers,
+);
+
 // Smart-union scoring (unionStrategy: populated-fields) relies on the Required
 // JsonProperty attribute and OptionalNullable wrapper type, which are only emitted
 // when presenceAwareJsonSerialization is enabled.
@@ -87,6 +178,7 @@ function templateFieldType(
   fieldDef: FieldDef,
   fallbackOptional: boolean,
   usageLocation: string,
+  owner: TypeDef,
 ): string {
   if (!context.Global.Config.PresenceAwareJSONSerialization) {
     return sanitizeType(fieldDef.Type, fallbackOptional, usageLocation);
@@ -94,7 +186,7 @@ function templateFieldType(
   if (fieldDef.Const) {
     return sanitizeType(fieldDef.Type, fallbackOptional, usageLocation);
   }
-  if (needsOptionalNullableWrapper(fieldDef)) {
+  if (needsOptionalNullableWrapper(fieldDef, owner)) {
     const inner = sanitizeType(fieldDef.Type, true, usageLocation);
     return `OptionalNullable<${inner}>`;
   }
@@ -103,14 +195,14 @@ function templateFieldType(
 registerTemplateFunc("templateFieldType", templateFieldType);
 
 // @ts-ignore
-function templateFieldDefault(fieldDef: FieldDef): string {
+function templateFieldDefault(fieldDef: FieldDef, owner: TypeDef): string {
   if (!context.Global.Config.PresenceAwareJSONSerialization) {
     return templateDefaultValue(fieldDef);
   }
   if (fieldDef.Const || fieldDef.Default) {
     return templateDefaultValue(fieldDef);
   }
-  if (needsOptionalNullableWrapper(fieldDef)) {
+  if (needsOptionalNullableWrapper(fieldDef, owner)) {
     return "";
   }
   if (
@@ -128,8 +220,9 @@ registerTemplateFunc("templateFieldDefault", templateFieldDefault);
 function templateShouldSerialize(
   fieldDef: FieldDef,
   className: string,
+  owner: TypeDef,
 ): string {
-  if (!needsOptionalNullableWrapper(fieldDef)) return "";
+  if (!needsOptionalNullableWrapper(fieldDef, owner)) return "";
   const name = sanitizeFieldName(fieldDef.Name, className);
   return `\n        public bool ShouldSerialize${name}() => ${name}.IsSet;`;
 }

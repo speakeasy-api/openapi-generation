@@ -5,7 +5,7 @@
 import * as z from "zod/v4-mini";
 import { Stream } from "../lib/event-streams.js";
 import { remap as remap$ } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import { smartUnion } from "../types/smartUnion.js";
 import { AssetResult, AssetResult$inboundSchema } from "./assetresult.js";
@@ -36,7 +36,7 @@ export type RenderAssetResponse = AssetResult | Stream<AssetResult>;
 /** @internal */
 export const OutputModality$outboundSchema: z.ZodMiniEnum<
   typeof OutputModality
-> = z.enum(OutputModality);
+> = /* @__PURE__ */ lazySchema$(() => z.enum(OutputModality));
 
 /** @internal */
 export type RenderAssetRequest$Outbound = {
@@ -48,16 +48,18 @@ export type RenderAssetRequest$Outbound = {
 export const RenderAssetRequest$outboundSchema: z.ZodMiniType<
   RenderAssetRequest$Outbound,
   RenderAssetRequest
-> = z.pipe(
-  z.object({
-    prompt: z.string(),
-    outputModalities: z.optional(z.array(OutputModality$outboundSchema)),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      outputModalities: "output_modalities",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      prompt: z.string(),
+      outputModalities: z.optional(z.array(OutputModality$outboundSchema)),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        outputModalities: "output_modalities",
+      });
+    }),
+  )
 );
 
 export function renderAssetRequestToJSON(
@@ -69,28 +71,30 @@ export function renderAssetRequestToJSON(
 }
 
 /** @internal */
-export const AssetStream$inboundSchema: z.ZodMiniType<AssetStream, unknown> = z
-  .object({
-    data: z.pipe(
-      z.pipe(
-        z.unknown(),
-        z.transform((v, ctx) => {
-          if (typeof v !== "string") return v;
-          try {
-            return JSON.parse(v);
-          } catch (err) {
-            ctx.issues.push({
-              input: v,
-              code: "custom",
-              message: `malformed json: ${err}`,
-            });
-            return z.NEVER;
-          }
-        }),
+export const AssetStream$inboundSchema: z.ZodMiniType<AssetStream, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      data: z.pipe(
+        z.pipe(
+          z.unknown(),
+          z.transform((v, ctx) => {
+            if (typeof v !== "string") return v;
+            try {
+              return JSON.parse(v);
+            } catch (err) {
+              ctx.issues.push({
+                input: v,
+                code: "custom",
+                message: `malformed json: ${err}`,
+              });
+              return z.NEVER;
+            }
+          }),
+        ),
+        AssetResult$inboundSchema,
       ),
-      AssetResult$inboundSchema,
-    ),
-  });
+    })
+  );
 
 export function assetStreamFromJSON(
   jsonString: string,
@@ -106,21 +110,23 @@ export function assetStreamFromJSON(
 export const RenderAssetResponse$inboundSchema: z.ZodMiniType<
   RenderAssetResponse,
   unknown
-> = smartUnion([
-  AssetResult$inboundSchema,
-  z.pipe(
-    z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
-    z.transform(stream => {
-      return new Stream(stream, rawEvent => {
-        return {
-          done: false,
-          value: z.parse(z.lazy(() => AssetStream$inboundSchema), rawEvent)
-            ?.data,
-        };
-      });
-    }),
-  ),
-]);
+> = /* @__PURE__ */ lazySchema$(() =>
+  smartUnion([
+    AssetResult$inboundSchema,
+    z.pipe(
+      z.custom<ReadableStream<Uint8Array>>(x => x instanceof ReadableStream),
+      z.transform(stream => {
+        return new Stream(stream, rawEvent => {
+          return {
+            done: false,
+            value: z.parse(z.lazy(() => AssetStream$inboundSchema), rawEvent)
+              ?.data,
+          };
+        });
+      }),
+    ),
+  ])
+);
 
 export function renderAssetResponseFromJSON(
   jsonString: string,

@@ -4,7 +4,8 @@
   "name": "openapi",
   "version": "0.0.1",
   "exports": {
-    ".": "./src/index.ts",    
+    ".": "./src/index.ts",
+    "./node": "./src/node.ts",
     "./models": "./src/models/index.ts",
     "./lib/config": "./src/lib/config.ts",
     "./lib/http": "./src/lib/http.ts",

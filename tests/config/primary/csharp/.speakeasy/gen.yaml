@@ -16,6 +16,8 @@ generation:
     generateNewTests: false
   sdkHooksConfigAccess: true
 csharp:
+  fixFlags:
+    spreadAdditionalProperties: true
   additionalDependencies:
     - package: FluentAssertions
       version: 6.12.0

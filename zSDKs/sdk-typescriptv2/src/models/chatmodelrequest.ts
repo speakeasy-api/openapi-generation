@@ -4,6 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type ChatModelRequest = {
   /**
@@ -38,19 +39,21 @@ export type ChatModelRequest$Outbound = {
 export const ChatModelRequest$outboundSchema: z.ZodMiniType<
   ChatModelRequest$Outbound,
   ChatModelRequest
-> = z.pipe(
-  z.object({
-    model: z._default(z.string(), "review-model"),
-    prompt: z.string(),
-    stream: z._default(z.boolean(), true),
-    maxTokens: z.optional(z.int()),
-    temperature: z.optional(z.number()),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      maxTokens: "max_tokens",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      model: z._default(z.string(), "review-model"),
+      prompt: z.string(),
+      stream: z._default(z.boolean(), true),
+      maxTokens: z.optional(z.int()),
+      temperature: z.optional(z.number()),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        maxTokens: "max_tokens",
+      });
+    }),
+  )
 );
 
 export function chatModelRequestToJSON(

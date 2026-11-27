@@ -12,6 +12,8 @@ generation:
   auth:
     hoistGlobalSecurity: false
 csharp:
+  fixFlags:
+    spreadAdditionalProperties: true
   inferUnionDiscriminators: true
   version: 0.0.1
   clientServerStatusCodesAsErrors: true
@@ -19,6 +21,7 @@ csharp:
   dotnetVersion: net8.0
   targetFramework: net5.0
   presenceAwareJsonSerialization: true
+  optionalNullableScope: writable-models
   schemaValidation: lenient
   unionStrategy: left-to-right
   imports:

@@ -1,0 +1,58 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/headers/enum:
+    get:
+      operationId: headerParamsEnum
+      tags:
+        - parameters
+      description: >-
+        Exercises header parameters whose schema is a referenced enum.
+        Targets that map the enum to a dedicated type must serialize the
+        value into the header as its string form; the header must not be
+        dropped or sent empty. The optional header is omitted in one call
+        to check that an unset enum header is not sent.
+      parameters:
+        - name: X-Header-Enum
+          in: header
+          required: true
+          schema:
+            $ref: "#/components/schemas/HeaderEnum"
+        - name: X-Header-Enum-Optional
+          in: header
+          schema:
+            $ref: "#/components/schemas/HeaderEnum"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  headers:
+                    type: object
+                    properties:
+                      X-Header-Enum:
+                        type: string
+                      X-Header-Enum-Optional:
+                        type: string
+                    required:
+                      - X-Header-Enum
+                required:
+                  - headers
+components:
+  schemas:
+    HeaderEnum:
+      type: string
+      enum:
+        - first-value
+        - second-value

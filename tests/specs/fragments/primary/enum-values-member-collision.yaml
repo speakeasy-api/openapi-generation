@@ -1,0 +1,70 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /primary/enum-values-member-collision:
+    post:
+      operationId: primaryEnumValuesMemberCollision
+      description: >-
+        Exercises enums whose per-member-list helper identifier would collide
+        with another identifier in the same package. ValuesMemberEnum has a
+        member literally named "values", so the helper must not collide with
+        the member constant derived from that name. Priority and PriorityEnum
+        sit next to an object schema named PriorityValues, so the helper for
+        Priority has to move and must not then land on the helper for
+        PriorityEnum. The enums are only used in the request so they render as
+        closed enums regardless of the configured forward-compatibility
+        default.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValuesMemberSelection"
+      responses:
+        "204":
+          description: Accepted with no content.
+components:
+  schemas:
+    ValuesMemberSelection:
+      type: object
+      required:
+        - aggregation
+      properties:
+        aggregation:
+          $ref: "#/components/schemas/ValuesMemberEnum"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        priorityEnum:
+          $ref: "#/components/schemas/PriorityEnum"
+        priorityValues:
+          $ref: "#/components/schemas/PriorityValues"
+    ValuesMemberEnum:
+      x-speakeasy-unknown-values: disallow
+      type: string
+      enum:
+        - values
+        - count
+    Priority:
+      x-speakeasy-unknown-values: disallow
+      type: string
+      enum:
+        - low
+        - high
+    PriorityEnum:
+      x-speakeasy-unknown-values: disallow
+      type: string
+      enum:
+        - urgent
+        - normal
+    PriorityValues:
+      type: object
+      properties:
+        count:
+          type: integer

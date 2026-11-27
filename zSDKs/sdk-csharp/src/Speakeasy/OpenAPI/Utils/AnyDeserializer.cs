@@ -28,18 +28,36 @@ namespace Speakeasy.OpenAPI.Utils
             throw new NotSupportedException();
         }
 
-        public override object ReadJson(
+        public override object? ReadJson(
             JsonReader reader,
             Type objectType,
             object? existingValue,
             JsonSerializer serializer
         )
         {
+            if (reader.TokenType == JsonToken.Null)
+            {
+                return null;
+            }
             if (reader.TokenType == JsonToken.StartObject)
             {
                 return ParseTokenIntoDictionary(JToken.Load(reader));
             }
             throw new JsonSerializationException($"Could not deserialize token into dictionary");
+        }
+
+        internal static object? ParseToken(JToken token)
+        {
+            var deserializer = new AnyDeserializer();
+            if (token is JObject)
+            {
+                return deserializer.ParseTokenIntoDictionary(token);
+            }
+            if (token is JArray)
+            {
+                return deserializer.ParseTokenIntoList(token);
+            }
+            return ((JValue)token).Value;
         }
 
         private Dictionary<string, object?> ParseTokenIntoDictionary(JToken token)

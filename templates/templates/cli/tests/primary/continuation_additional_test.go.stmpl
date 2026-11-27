@@ -52,10 +52,10 @@ func newContinuationServer(t *testing.T, reply func(n int) continuationReply) *c
 			return
 		}
 		switch r.URL.Path {
-		case "/continuation/compose", "/continuation/dispatch":
+		case "/continuation/compose", "/continuation/dispatch", "/continuation/run":
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, answer.body)
-		case "/continuation/compose/stream":
+		case "/continuation/compose/stream", "/continuation/run/stream":
 			if answer.events == nil {
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprint(w, answer.body)
@@ -415,6 +415,214 @@ func TestContinuationDiscrete(t *testing.T) {
 		h, err := runOutcome(t, srv.URL, composeArgs("--dry-run")...)
 		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
 		assert.Empty(t, srv.sent())
+	})
+}
+
+func taskArgs(body string, extra ...string) []string {
+	return append([]string{"continuation", "continuation-run", "--continuation-task-request", body, "--output-format", "json"}, extra...)
+}
+
+func taskStreamArgs(body string, extra ...string) []string {
+	return append([]string{"continuation", "continuation-run-stream", "--continuation-task-request", body, "--output-format", "json"}, extra...)
+}
+
+func jsonReply(body string) continuationReply {
+	return continuationReply{body: body}
+}
+
+func TestContinuationTask(t *testing.T) {
+	twoHops := scriptedReplies(
+		jsonReply(`{"id":"r1","status":"needs_more","resume_token":"t1","started_at":"s1","steps":[{"type":"prompt_echo","text":"hi"},{"type":"output","text":"a"}],"usage":{"units":10,"units_by_kind":[{"kind":"alpha","count":10}]}}`),
+		jsonReply(`{"id":"r2","status":"completed","previous_id":"r1","started_at":"s2","steps":[{"type":"prompt_echo","text":"hi"},{"type":"output","text":"b"}],"usage":{"units":5,"units_by_kind":[{"kind":"alpha","count":5},{"kind":"beta","count":1}]}}`),
+	)
+
+	t.Run("persisted tasks resend only the resume values and combine responses", func(t *testing.T) {
+		srv := newContinuationServer(t, twoHops)
+		h, err := runOutcome(t, srv.URL, taskArgs(`{"engine":"e","prompt":"hi"}`)...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		sent := srv.sent()
+		require.Len(t, sent, 2)
+		assert.Equal(t, map[string]interface{}{"engine": "e", "prompt": "hi"}, sent[0])
+		assert.Equal(t, map[string]interface{}{"engine": "e", "resume_token": "t1", "previous_id": "r1"}, sent[1])
+
+		payload := decodeJSONObject(t, h.GetStdout())
+		assert.Equal(t, "r2", payload["id"])
+		assert.NotContains(t, payload, "previous_id", "the first response had no previous ID")
+		assert.Equal(t, "s1", payload["started_at"])
+		assert.Equal(t, []interface{}{"r1", "r2"}, payload["run_ids"])
+		assert.Equal(t, []string{"hi", "a", "b"}, stepTexts(payload))
+		assert.Equal(t, map[string]interface{}{
+			"units":       float64(15),
+			"first_units": float64(10),
+			"units_by_kind": []interface{}{
+				map[string]interface{}{"kind": "alpha", "count": float64(15)},
+				map[string]interface{}{"kind": "beta", "count": float64(1)},
+			},
+		}, payload["usage"])
+	})
+
+	t.Run("unpersisted tasks resend the prompt without a previous ID", func(t *testing.T) {
+		srv := newContinuationServer(t, twoHops)
+		h, err := runOutcome(t, srv.URL, taskArgs(`{"engine":"e","prompt":"hi","persist":false}`)...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		sent := srv.sent()
+		require.Len(t, sent, 2)
+		assert.Equal(t, map[string]interface{}{"engine": "e", "prompt": "hi", "persist": false, "resume_token": "t1"}, sent[1])
+	})
+
+	t.Run("the first response keeps its previous ID", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(
+			jsonReply(`{"id":"r1","status":"needs_more","resume_token":"t1","previous_id":"r0"}`),
+			jsonReply(`{"id":"r2","status":"completed","previous_id":"r1"}`),
+		))
+		h, err := runOutcome(t, srv.URL, taskArgs(`{"engine":"e","prompt":"hi","previous_id":"r0"}`)...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		assert.Equal(t, "r0", decodeJSONObject(t, h.GetStdout())["previous_id"])
+	})
+
+	for name, body := range map[string]string{
+		"detached requests": `{"engine":"e","prompt":"hi","detached":true}`,
+		"runner requests":   `{"runner":"r","prompt":"hi"}`,
+	} {
+		t.Run(name+" are returned as sent", func(t *testing.T) {
+			raw := `{"id":"r1","status":"needs_more","resume_token":"t1","usage":{"units":3}}`
+			srv := newContinuationServer(t, scriptedReplies(jsonReply(raw)))
+			h, err := runOutcome(t, srv.URL, taskArgs(body)...)
+			require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+			require.Len(t, srv.sent(), 1)
+			payload := decodeJSONObject(t, h.GetStdout())
+			assert.NotContains(t, payload, "run_ids")
+			assert.Equal(t, map[string]interface{}{"units": float64(3)}, payload["usage"])
+			assert.NotContains(t, h.GetStderr(), "CLI_")
+		})
+	}
+
+	t.Run("a single response gains the combined fields", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(jsonReply(`{"id":"r1","status":"completed","usage":{"units":7}}`)))
+		h, err := runOutcome(t, srv.URL, taskArgs(`{"engine":"e","prompt":"hi"}`)...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		payload := decodeJSONObject(t, h.GetStdout())
+		assert.Equal(t, []interface{}{"r1"}, payload["run_ids"])
+		assert.Equal(t, map[string]interface{}{"units": float64(7), "first_units": float64(7)}, payload["usage"])
+	})
+
+	t.Run("auto-continue disabled returns the response as sent", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(jsonReply(`{"id":"r1","status":"needs_more","resume_token":"t1","usage":{"units":7}}`)))
+		h, err := runOutcome(t, srv.URL, taskArgs(`{"engine":"e","prompt":"hi"}`, "--auto-continue=false")...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		require.Len(t, srv.sent(), 1)
+		payload := decodeJSONObject(t, h.GetStdout())
+		assert.NotContains(t, payload, "run_ids")
+		assert.Equal(t, map[string]interface{}{"units": float64(7)}, payload["usage"])
+	})
+
+	t.Run("a repeated resume token stops without another request", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(
+			jsonReply(`{"id":"r1","status":"needs_more","resume_token":"t1"}`),
+			jsonReply(`{"id":"r2","status":"needs_more","resume_token":"t1"}`),
+		))
+		h, err := runOutcome(t, srv.URL, taskArgs(`{"engine":"e","prompt":"hi"}`)...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		require.Len(t, srv.sent(), 2)
+		assert.Equal(t, []interface{}{"r1", "r2"}, decodeJSONObject(t, h.GetStdout())["run_ids"])
+	})
+
+	t.Run("the caller's own resume token counts as already sent", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(jsonReply(`{"id":"r1","status":"needs_more","resume_token":"t0"}`)))
+		h, err := runOutcome(t, srv.URL, "continuation", "continuation-run", "--continuation-task-request", `{"engine":"e","resume_token":"t0"}`)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		require.Len(t, srv.sent(), 1)
+		assert.Contains(t, h.GetStderr(), "Stopped continuing")
+	})
+}
+
+func taskProgress(token, id, status string) string {
+	data := map[string]interface{}{"event_type": "task.progress"}
+	if token != "" {
+		data["resume_token"] = token
+	}
+	if id != "" || status != "" {
+		data["task"] = map[string]interface{}{"id": id, "status": status}
+	}
+	raw, _ := json.Marshal(data)
+	return string(raw)
+}
+
+func taskDone(token, id, status string) string {
+	task := map[string]interface{}{"id": id, "status": status}
+	if token != "" {
+		task["resume_token"] = token
+	}
+	raw, _ := json.Marshal(map[string]interface{}{"event_type": "task.done", "task": task})
+	return string(raw)
+}
+
+func TestContinuationTaskStream(t *testing.T) {
+	t.Run("the completion token resumes the next stream", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(
+			continuationReply{events: []string{taskProgress("mid1", "r1", "in_progress"), taskDone("t1", "r1", "needs_more")}},
+			continuationReply{events: []string{taskDone("", "r2", "completed")}},
+		))
+		h, err := runOutcome(t, srv.URL, taskStreamArgs(`{"engine":"e","prompt":"hi"}`)...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		sent := srv.sent()
+		require.Len(t, sent, 2)
+		assert.Equal(t, map[string]interface{}{"engine": "e", "resume_token": "t1", "previous_id": "r1"}, sent[1])
+	})
+
+	t.Run("a completion without a token clears the progress checkpoint", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(continuationReply{events: []string{
+			taskProgress("mid1", "r1", "in_progress"),
+			taskDone("", "r1", "needs_more"),
+		}}))
+		h, err := runOutcome(t, srv.URL, taskStreamArgs(`{"engine":"e","prompt":"hi"}`)...)
+		require.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+		require.Len(t, srv.sent(), 1)
+		envelope := outcomeErrorEnvelope(t, h.GetStderr())
+		assert.Equal(t, "CLI_PROTOCOL", envelope["error_reason"])
+		assert.NotContains(t, envelope, "continuation")
+	})
+
+	t.Run("runner requests keep their prompt on later streams", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(
+			continuationReply{events: []string{taskDone("t1", "r1", "needs_more")}},
+			continuationReply{events: []string{taskDone("", "r2", "completed")}},
+		))
+		h, err := runOutcome(t, srv.URL, taskStreamArgs(`{"runner":"r","prompt":"hi"}`)...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		sent := srv.sent()
+		require.Len(t, sent, 2)
+		assert.Equal(t, map[string]interface{}{"runner": "r", "prompt": "hi", "resume_token": "t1", "previous_id": "r1"}, sent[1])
+	})
+
+	t.Run("detached requests stream once", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(continuationReply{events: []string{taskDone("t1", "r1", "needs_more")}}))
+		h, err := runOutcome(t, srv.URL, taskStreamArgs(`{"engine":"e","prompt":"hi","detached":true}`)...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		require.Len(t, srv.sent(), 1)
+	})
+
+	t.Run("a repeated completion token stops cleanly", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(
+			continuationReply{events: []string{taskDone("t1", "r1", "needs_more")}},
+			continuationReply{events: []string{taskDone("t1", "r2", "needs_more")}},
+		))
+		h, err := runOutcome(t, srv.URL, taskStreamArgs(`{"engine":"e","prompt":"hi"}`)...)
+		require.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err), h.GetStderr())
+		require.Len(t, srv.sent(), 2)
+	})
+
+	t.Run("a later stream that drops keeps the previous checkpoint", func(t *testing.T) {
+		srv := newContinuationServer(t, scriptedReplies(
+			continuationReply{events: []string{taskDone("t1", "r1", "needs_more")}},
+			continuationReply{events: []string{taskProgress("", "r2", "in_progress")}},
+		))
+		h, err := runOutcome(t, srv.URL, taskStreamArgs(`{"engine":"e","prompt":"hi"}`)...)
+		require.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+		require.Len(t, srv.sent(), 2)
+		envelope := outcomeErrorEnvelope(t, h.GetStderr())
+		assert.Equal(t, "CLI_CONNECTION", envelope["error_reason"])
+		assert.Equal(t, map[string]interface{}{"$.resume_token": "t1", "$.previous_id": "r1"}, envelope["continuation"])
 	})
 }
 

@@ -4,7 +4,7 @@
 
 import * as z from "zod/v4-mini";
 import { remap as remap$ } from "../lib/primitives.js";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -20,18 +20,20 @@ export type AssetImageBlock = {
 export const AssetImageBlock$inboundSchema: z.ZodMiniType<
   AssetImageBlock,
   unknown
-> = z.pipe(
-  z.object({
-    type: types.literal("image"),
-    data: types.optional(types.string()),
-    mime_type: types.optional(types.string()),
-    uri: types.optional(types.string()),
-  }),
-  z.transform((v) => {
-    return remap$(v, {
-      "mime_type": "mimeType",
-    });
-  }),
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.pipe(
+    z.object({
+      type: types.literal("image"),
+      data: types.optional(types.string()),
+      mime_type: types.optional(types.string()),
+      uri: types.optional(types.string()),
+    }),
+    z.transform((v) => {
+      return remap$(v, {
+        "mime_type": "mimeType",
+      });
+    }),
+  )
 );
 
 export function assetImageBlockFromJSON(

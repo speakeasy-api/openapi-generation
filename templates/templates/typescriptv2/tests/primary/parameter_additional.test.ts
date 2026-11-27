@@ -193,8 +193,8 @@ test("Test Path Encoding Structural Characters", async () => {
     httpClient: newRequestRecorderClient(log),
   });
 
-  // "?" and "#" keep their structural meaning when passed through raw, so the
-  // value is truncated on the wire. Callers using allowReserved own that.
+  // allowReserved still percent-encodes "?" and "#" in path parameters so they
+  // cannot end the path or start a query or fragment.
   await sdk.parameters
     .pathEncoding(reservedChars, reservedChars)
     .catch(() => {});
@@ -204,7 +204,7 @@ test("Test Path Encoding Structural Characters", async () => {
     HTTPBIN_URL +
       "/anything/pathencoding" +
       "/abc%20123%3A%2F%3F%23%5B%5D%40!%24%26'()*%2B%2C%3B%3D" +
-      "/abc%20123:/?",
+      "/abc%20123:/%3F%23[]@!$&'()*+,;=",
   );
 });
 

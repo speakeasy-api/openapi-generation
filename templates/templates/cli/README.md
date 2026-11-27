@@ -690,7 +690,7 @@ Three output paths:
 
 Streaming `--output-format table` applies the same single-object renderer to each event, with a blank line between events. An event wrapper containing only a nested `data` value renders a `data` compact JSON cell beneath a `FIELD`/`VALUE` header; it previously had no displayable table fields and fell back to pretty output. JSON, YAML, TOON, and pretty streaming formats keep their existing rendering paths. Covered by `TestTableStreamingUnionDataCells` in `tests/primary/table_additional_test.go.stmpl`.
 
-3. **jq filtering** (`--jq`): Applies a [gojq](https://github.com/itchyny/gojq) expression to the JSON output. Overrides `--output-format` since the result is always JSON — except under `--raw-output` (jq `-r` semantics: string results are written as raw text plus a newline, unquoted, unescaped, never colorized; non-string results stay JSON), so `--jq '.data' --raw-output | base64 -d > image.png` works. The flag's default is the `cli.jqRawOutput` gen.yaml key (default `false`); it threads through `outputJqResults` (single results, `--include-headers`, artifacts) and `outputOneItem` (streams, `--all` pagination).
+3. **jq filtering** (`--jq`): Applies a [gojq](https://github.com/itchyny/gojq) expression to the JSON output. Overrides `--output-format` since the result is always JSON — except under `--raw-output` (jq `-r` semantics: string results are written as raw text plus a newline, unquoted, unescaped, never colorized; non-string results stay JSON), so `--jq '.data' --raw-output | base64 -d > image.png` works. The flag's default is the `cli.jqRawOutput` gen.yaml key (default `false`); it threads through `outputJqResults` (single results, `--include-headers`, artifacts) and `outputOneItem` (streams, `--all` pagination). jq `halt` and `halt_error` end evaluation as in jq: results produced before them are still printed, `halt` (and `halt_error` with exit code 0, which writes its value to stderr) succeeds and stops further stream events or pages, and a non-zero `halt_error` fails the command with the halted value as the error message under the CLI's exit-code contract (`jqHaltOutcome` in `CLIError`). Covered by `TestPaginationAllJqHalt`.
 
 **Color default** (`cli.defaultColor` gen.yaml key: `auto` | `always` | `never`, default `auto`): the default value of `--color`. `never` makes uncolored ("raw") output the default so redirected/piped bytes are always clean; `--color`, `NO_COLOR`/`FORCE_COLOR`, and agent mode (never colorized) still apply. JSON and pretty-output keys use bold sky blue (`#38BDF8`), matching the default interactive accent rather than terminal dark blue.
 
@@ -897,7 +897,59 @@ continuation:
 `unlessRequest` compares an existing request-body value with a JSON scalar. Missing
 values do not match, and `null` only matches an explicit `equals: null`. Numeric
 conditions must be finite and within the JavaScript safe-integer range. A disabled
-binding neither changes the request nor appears in resume guidance.
+binding neither changes the request nor appears in resume guidance. A condition can
+instead test presence with `exists: true|false` (a `null` value counts as absent);
+exactly one of `equals` and `exists` is required. A condition path only needs to
+exist in one request-body union member, so it can test a field that distinguishes
+members. `equals` must compare a scalar wherever the path is declared.
+
+The full recipe surface, all keys optional except `bind`:
+
+```yaml
+continuation:
+  unlessRequest:            # one condition or a list; any match turns continuation off
+    - {path: $.detached, equals: true}
+    - {path: $.runner, exists: true}
+  bind:
+    - from: $.resume_token
+      streamFrom: [$.data.resume_token, $.data.task.resume_token]
+      streamAuthoritativeWhen: {path: $.data.event_type, equals: task.done}
+      to: $.resume_token
+  omit:                     # removed from every request after the first
+    - path: $.prompt
+      unlessRequest: {path: $.persist, equals: false}
+  merge:                    # arrays concatenated across hops
+    - path: $.steps
+      dropLeadingWhere: {field: type, equals: prompt_echo}
+  keepFirst:                # taken from the first hop; deleted when it lacks them
+    - $.previous_id
+    - path: $.usage.first_units
+      fallback: $.usage.units
+  collect:                  # strings from every hop, in order, deduplicated unless unique: false
+    - to: $.run_ids
+      from: [$.run_ids, $.id]
+  sum: [$.usage.units]
+  sumBy:                    # keyed counter objects; value summed per key
+    - {path: $.usage.units_by_kind, key: kind, value: count}
+```
+
+- A recipe-level `unlessRequest` match sends the request once and renders the
+  response or stream exactly as the server sent it.
+- `omit` paths must be optional in every request-body member the omit can reach. A
+  member is out of reach when a recipe or omit `unlessRequest` `exists: true`
+  condition names a property that member requires. Omitted fields are absent on the
+  wire, never `null`. Manual resume hints name the omitted paths to leave out.
+- `streamAuthoritativeWhen` (string `equals` only) marks events that report the
+  binding's final value. A matching event without a value clears the value captured
+  from earlier events, so a terminal event that still asks to continue without a
+  token fails with `CLI_PROTOCOL` instead of resuming from a stale checkpoint.
+- A `continue` response whose required resume values equal the ones its request was
+  sent with stops the loop with exit 0 rather than repeating until the hop limit.
+- `dropLeadingWhere` applies to hops after the first. `merge`, `sum`, `keepFirst`,
+  `collect`, and `sumBy` each own a distinct result path. The combined result is
+  produced for multi-hop runs, and for single-hop auto-continued runs when `collect`
+  or a `keepFirst` `fallback` is declared. `--auto-continue=false` and skipped runs
+  always print the raw response.
 
 `output.outcome.streamStatePointer` accepts a singular JSONPath or a list. For each
 event, the first path containing a non-empty string supplies the state. All paths
@@ -906,7 +958,9 @@ are validated against the stream's event schemas.
 Automatic continuation follows only states classified as `continue`. Terminal
 responses do not produce manual continuation hints. Errors after a continuation
 hop retain the last complete checkpoint's resume values when the new hop has not
-provided a complete checkpoint. Values from different hops are never combined.
+provided a complete checkpoint. Values from different hops are never combined. A
+stream that ends in an error event discards the state and values captured during that hop,
+so its error reports the previous hop's checkpoint, or none on the first hop.
 
 ### Exit Codes and Error Boundaries
 
@@ -1030,7 +1084,7 @@ skills:
 - **No `WithSkipDeserialization()`** — the SDK needs full deserialization to create the stream iterator
 - **Handles both SSE and JSONL** — SSE `Value()` returns `*T` (1 value), JSONL `Value()` returns `(T, error)` (2 values). `StreamResult` handles both via `len(valueResults)` check
 - **Error routing** — all stream errors go through `Error(cmd, err)` for consistent `--output-format json` behavior
-- **In-band SSE error events are errors, not data** — before rendering each SSE item, `StreamResult` runs `streamErrorEvent` (`streaming.go.stmpl`): if the item is a generated discriminated union (a struct with `union:"member"` fields), or its `Data` member is one, and the union's resolved `Type` (the wire discriminator value) is exactly `error` or ends in `.error`/`_error`/`-error` (`isErrorDiscriminator`, case-sensitive so PascalCase variant type names of undiscriminated unions such as `ErrorEvent` never match), the event is wrapped in `output.StreamEventError` (Body = the union value's JSON) and routed through `Error()`. The command exits non-zero, pretty mode prints the event body under `API Error:`, and json/agent mode emits the usual envelope with reason-first classification (`error.status`/`error.details[].reason`); when nothing classifies, a status-less stream error event is `api_error` (`classifyNoStatusError` in `agentmode.go.stmpl`), never `connection_error`. Events streamed before the error event are still output. JSONL items are not inspected. Covered by `tests/primary/eventstreaming_test.go.stmpl` against the CLI-only ops added by `tests/overlays/primary/cli/overlay.yaml` (`eventstreams discriminated-events` / `undiscriminated-events`).
+- **In-band SSE error events are errors, not data** — before rendering each SSE item, `StreamResult` runs `streamErrorEvent` (`streaming.go.stmpl`): if the item is a generated discriminated union (a struct with `union:"member"` fields), or its `Data` member is one, and the union's resolved `Type` (the wire discriminator value) is exactly `error` or ends in `.error`/`_error`/`-error` (`isErrorDiscriminator`, case-sensitive so PascalCase variant type names of undiscriminated unions such as `ErrorEvent` never match), the event is wrapped in `output.StreamEventError` and routed through `Error()`. The body keeps the server's wire JSON so members the schema does not declare still reach classification: for a `Data` union it is the frame's `data` object, and for a union of whole envelopes it is the selected envelope with its `data` replaced by the frame's `data` object. A non-object `data` falls back to the union value's JSON. The command exits non-zero, pretty mode prints the event body under `API Error:`, and json/agent mode emits the usual envelope with reason-first classification (`error.status`/`error.details[].reason`); when nothing classifies, a status-less stream error event is `api_error` (`classifyNoStatusError` in `agentmode.go.stmpl`), never `connection_error`. Events streamed before the error event are still output. JSONL items are not inspected. Covered by `tests/primary/eventstreaming_test.go.stmpl` against the CLI-only ops added by `tests/overlays/primary/cli/overlay.yaml` (`eventstreams discriminated-events` / `undiscriminated-events`).
 - **Fallback to `Result()`** — if stream field is missing or doesn't have the streaming interface, falls back gracefully
 - **Context cancellation** — checks `ctx.Done()` each iteration for clean Ctrl+C handling
 
@@ -1391,7 +1445,7 @@ cli response-headers response-headers --status-code 200 --include-headers --outp
 
 1. `wantsHeaders(cmd)` checks the `--include-headers` flag
 2. `extractResponseHeaders(res)` gets `http.Header` from the response's `HTTPMeta.Response.Header` via reflection
-3. `extractErrorResponseHeaders(err)` does the same for error types (via `RawResponse` field)
+3. `extractErrorResponseHeaders(err)` does the same for the error and each error it wraps, reading `HTTPMeta.Response` or a `RawResponse` field
 4. `flattenHeaders(headers)` converts `http.Header` to `map[string]interface{}` with single-value flattening
 5. `injectHeaders(data, headers)` merges flattened headers as `_response_headers` key into the output
 6. `outputWithHeaders()` unifies header injection for json, yaml, and jq output modes
@@ -1439,6 +1493,8 @@ When a secret is stored in the keychain it is **not** written to the config file
 **Global security** is generated as a shared function in the root command package. It reads all security schemes from the OpenAPI spec and maps them to flags/env vars/keychain/config keys.
 
 **Cross-scheme ranking** (`templateRankedSecurityConstruction` in `security.ts`, `config.PickCredential` in `config.go.stmpl`): when the spec declares several OR alternatives, `BuildGlobalSecurity` (exported for custom code that needs the same credential choice) resolves every credential with its source, builds one candidate per alternative (per variant for union-typed alternatives), and populates exactly the one `config.PickCredential` picks: only alternatives the operation accepts (`client.NewClient(cmd, allowedFields...)`, mirroring the SDK's hoisted `PopulateSecurity(..., fields...)` restriction) in the operation's order; the most explicit source wins (flag > env > keyring > config), so `--api-key K` is not shadowed by an access token in the environment whatever the declared order; among equally explicit candidates a complete alternative beats a partial one; remaining ties keep declared order. Only secret fields (`isSecret`, the ones `StoreSecret` writes to the keychain) consult the keychain; non-secret fields such as a username, token URL or scopes always resolve flag > env > config (`securityFieldResolver`). Resolution is two-phase: secret fields are first resolved from flags and env only (`ResolveExplicitSecurityCredential`), and `config.PickExplicitCredential` ranks only the allowed alternatives that are complete there with a flag or env source, so a complete env alternative wins over a partial flag one. Only when there is none does it fall back to the full request chain, so a request whose credential is fully supplied by flags or env never touches a slow or locked keychain. Single-alternative CLIs keep the original construction.
+
+**Unreadable config file** (`config.go.stmpl`, `root.go.stmpl`): `config.Init` returns a `CLI_VALIDATION` error when `config.yaml` cannot be read or parsed. The root `PersistentPreRunE` returns it unless `config.RunsWithoutConfig(cmd)`: commands annotated `speakeasy_config_optional` (the bare root command, `version`, `whoami`, and cobra's own `help` and `completion` from `usage.InitDefaultCommands`, whose subcommands inherit it; the root's annotation is not inherited) and shell completion requests print `Warning: <error>` to stderr and run with an empty config. `auth logout` is also annotated so it reaches its own check: it prints the warning, then fails on `config.LoadError()` before clearing the keychain or the file. `SaveConfig` refuses while `config.LoadError()` is set, so nothing replaces a file the user still needs to fix; `configure` and `auth login` fail up front. Covered by `TestUnparseableConfigFile`.
 
 **Global parameters** are also stored in the config file (with `global_` prefix on YAML keys to avoid collisions with security fields). The `buildGlobalOptions()` function in `client.go.stmpl` reads globals with priority: flag > env var > config file. Non-string types (integer, float, boolean) are stored as strings in the config and parsed when read.
 
@@ -1885,7 +1941,7 @@ The `Changed()` pattern is critical: Cobra tracks whether a flag was explicitly 
 
 - **No stray positionals**: operation commands and generated group commands set `Args: cobra.NoArgs`, except operations with a [positional path parameter](#positional-path-parameter), which accept exactly that one argument. Other operations take flags only, so a token that is not a flag is an error (`unknown command "x" for "cli group op"`) raised by Cobra's `ValidateArgs` before `PersistentPreRun` and before any request is built. This closes the `cli agent delete --id x -- --dry-run` hole, where `--dry-run` after `--` used to become an ignored positional while the live request went out. It also turns `cli group typo` into an error instead of the group help page, with the nearest sibling commands as hints (see [Hint order](#hint-order) above). Intent commands with a declared positional stay `ArbitraryArgs`.
 - **Spaced boolean values**: pflag parses `--flag false` as `--flag` (true) plus a positional `false`. On flags-only commands that is now rejected by `NoArgs`. On a command with a positional path parameter the stray `false` becomes the identifier (so `--dry-run false` still previews rather than sending); a second argument is rejected by `MaximumNArgs(1)`. On a variadic intent command it cannot be rejected structurally, so `flagutil.SpacedBoolValueHint` prints a stderr hint when the trailing positional is `true`/`false` and a boolean flag was set (`boolean flags take their value inline: --dry-run=false`; every changed boolean flag is named when there are several, since argv adjacency is not available). Generated tests (`includes/tests.ts` `pushFlagArg`, `includes/test-workflows.ts`) and command examples (`includes/descriptions.ts` `exampleFlagPart`) always render boolean values inline (`--flag=true`).
-- **CLI-owned enums**: the root `PersistentPreRunE` validates `--output-format` (against `output.Formats`) and `--color` (`auto`, `always`, `never`) with `flagutil.ValidateEnumFlag` before any command runs (after the `--usage` short-circuit — documenting a command never validates its rendering flags); a typo errors with the option list and a did-you-mean suggestion (prefix or edit distance ≤ 2). Only the flag value is checked — config/env values are resolved separately in `resolveOutputFormat`.
+- **CLI-owned enums**: the root `PersistentPreRunE` validates `--output-format` (against `output.Formats`) and `--color` (`auto`, `always`, `never`) with `flagutil.ValidateEnumFlag` before any command runs (after the `--usage` short-circuit — documenting a command never validates its rendering flags); a typo errors with the option list and a did-you-mean suggestion (prefix or edit distance ≤ 2). Right after `config.Init`, `output.ValidateConfiguredOutputFormat` applies the same check to the `<PREFIX>_OUTPUT_FORMAT` env var or the config file's `output_format` when `--output-format` is not set, and fails with a usage error naming the source. Settings commands (`speakeasy_settings_command`: configure, auth, whoami) skip it so a bad saved value can be inspected and fixed. The other commands that run without config (`config.RunsWithoutConfig`: root, help, completion, `__complete`, version) print the error as a `Warning:` on stderr and continue, matching how they treat an unparseable config file. Rendering ignores an invalid env/config value (`configuredOutputFormat`). `ExecuteRoot` loads the config before pre-parsing rendering flags, so errors raised before `PersistentPreRunE` (unknown commands and flags) also honour the env/config format. Covered by `TestConfiguredOutputFormatIsValidated`.
 - **`--jq` expression**: the root `PersistentPreRunE` parses and compiles an explicitly set, non-empty `--jq` expression (`output.ValidateJqFlag`, `gojq.Parse` then `gojq.Compile`) right after the rendering-flag checks, so a syntax error, an undefined function or variable, or a module load is a usage error (exit 2, `CLI_VALIDATION`) before any request is sent. These used to surface only while rendering the response, after the network call, with exit 1. An explicitly empty `--jq ""` is treated as unset, matching the rendering path. `ApplyJqFilter` shares the compile (`compileJqExpression` keeps the most recently compiled expression, so paginated and streamed items reuse it), so the message is the same on both paths; errors raised while evaluating a compiled expression against the response (for example indexing a non-array) remain runtime errors (exit 1).
 - **Schema-declared bounds** (`FlagMeta.MinLength`, `HasMinimum`/`Minimum`, `HasMaximum`/`Maximum`, emitted by `includes/metadata.ts` from `TypeDef.Validations`): an explicitly set string shorter than `minLength` (including `--code=` when `minLength ≥ 1`) and an explicitly set number outside `minimum`/`maximum` are rejected before the request is sent on strict surfaces (manifest-declared commands, explicit `--agent-mode`); elsewhere `enforceStrictOrWarn` prints a stderr warning and sends the request. Undeclared bounds stay with the server (it is authoritative; client-side bounds would drift), and an unconstrained string still accepts `""` (some APIs clear fields with it).
 - **String patterns and maximum length** (`FlagMeta.Pattern`, `HasMaxLength`/`MaxLength`, emitted for `FlagKindString` operation flags by `includes/metadata.ts`; checked by `validateStringConstraints` in `buildStringField`): an explicitly set value, including an operation positional argument (which resolves to its flag), that is longer than `maxLength` (counted in Unicode code points) or does not match `pattern` is always rejected as `validation_error` / `CLI_VALIDATION` (exit 2) naming the flag, before any request is built, including under `--dry-run`. These are never downgraded to warnings: a non-conforming value cannot be a valid input for the field. As in JSON Schema, `pattern` is not implicitly anchored. Because a mismatch is rejected outright, a `pattern` is emitted only when it stays within the interoperable subset JSON Schema recommends (literals, `.`, character classes and ranges, `\d \w \b` and their negations, control and `\xHH` escapes, anchors, `(...)`/`(?:...)` groups, alternation, and `* + ? {n,m}` quantifiers) and Go's `regexp` compiles it (`isPortablePattern` in `includes/metadata.ts`). In that subset Go never rejects a value the JSON Schema pattern (ECMA-262 with the `u` flag) accepts; everything else (for example `\s`, which is ASCII-only in Go, `\p{...}`, lookarounds, backreferences, and POSIX classes) stays with the server. Go's `.` also matches `\r` and U+2028, so the CLI may pass such a value through for the server to reject. Not covered: values supplied through `--body`/stdin JSON, declared intent and `x-speakeasy-cli-commands` inputs merged into a body, global (persistent) flags, string-array items, enum/date/bytes kinds, and unchanged defaults.

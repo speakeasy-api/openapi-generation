@@ -1,7 +1,7 @@
 //@ts-ignore
 // TODO: determine if this needs to be insync with the go version or can define these differently
 const supportedFeatures = {
-  core: "0.9.32",
+  core: "0.9.49",
   allowReserved: "0.2.0",
   getRequestBodies: "0.0.1",
   flattening: "0.0.0",
@@ -10,7 +10,7 @@ const supportedFeatures = {
   globalServerURLs: "0.1.0",
   methodServerURLs: "0.0.0",
   globals: "0.1.2",
-  enums: "0.0.2",
+  enums: "0.0.3",
   openEnums: "0.0.1",
   serverIDs: "0.0.0",
   nameOverrides: "0.0.0",
@@ -32,7 +32,7 @@ const supportedFeatures = {
   bigint: "0.0.0",
   decimal: "0.0.0",
   devContainers: "0.0.0",
-  constsAndDefaults: "0.0.0",
+  constsAndDefaults: "0.0.1",
   additionalProperties: "0.0.1",
   deepObjectParams: "0.0.0",
   downloadStreams: "0.0.2",
@@ -49,7 +49,7 @@ const supportedFeatures = {
   transformJq: "0.0.0",
   jsonlResponses: "0.0.1",
   customCodeRegions: "0.0.1",
-  cliCommands: "0.4.2",
+  cliCommands: "0.4.5",
 };
 
 // @ts-ignore
@@ -373,7 +373,10 @@ function isTestSkipped(test: string): boolean {
     "unions-body-variant-overloads-nested-union",
     "unions-body-variant-overloads-open-enum",
     "request-bodies-base64-file-input-raw-bytes",
-    "pagination-limit-offset-page-num-pages-missing",
+    "parameters-header-params-enum",
+    "parameters-header-params-string-formats",
+    "enum-values",
+    "auth-typed-error-inspection-omits-credentials",
   ].includes(test);
 }
 

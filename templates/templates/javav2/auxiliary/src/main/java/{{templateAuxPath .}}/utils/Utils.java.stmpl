@@ -1769,6 +1769,13 @@ public final class Utils {
             return mapper().readValue(
                     Utils.extractByteArrayFromBody(response),
                     typeReference);
+{{- if $okHttp}}
+        } catch (java.net.SocketTimeoutException e) {
+            throw {{javaImport (print getErrorsPackage "." getDefaultErrorClassName)}}.from(
+                    "Error deserializing response body: " + e.getMessage(), response, e);
+{{- end}}
+        } catch (java.io.InterruptedIOException{{if not $okHttp}} | java.net.http.HttpTimeoutException{{end}} e) {
+            throw new java.io.UncheckedIOException(e);
         } catch (Exception e) {
             throw {{javaImport (print getErrorsPackage "." getDefaultErrorClassName)}}.from(
                     "Error deserializing response body: " + e.getMessage(), response, e);
@@ -1782,6 +1789,13 @@ public final class Utils {
                 .handle((bytes, err) -> {
                     // if a body read error occurs, we want to transform the exception
                     if (err != null) {
+                        Throwable cause = err instanceof java.util.concurrent.CompletionException && err.getCause() != null
+                                ? err.getCause()
+                                : err;
+                        if (cause instanceof java.io.InterruptedIOException
+                                || cause instanceof java.net.http.HttpTimeoutException) {
+                            throw new java.io.UncheckedIOException((java.io.IOException) cause);
+                        }
                         throw new {{javaImport (print getErrorsPackage ".Async" getDefaultErrorClassName)}}(
                                 "Error reading response body: " + err.getMessage(),
                                 response.statusCode(),

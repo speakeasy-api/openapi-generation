@@ -2,23 +2,25 @@
 {{- $className := sanitizeClassName .Local.Name false }}
 {{- $baseErrorName := getBaseErrorClassName }}
 {{- $isErrorEnvelope := eq getResponseFormat "envelope-http" }}
+    {{- templateAdditionalPropertiesClassAnnotation .Local 1}}
     public {{templatePartialModifier}}class {{$className}}Payload
     {
 {{- range $index, $field := .Local.Fields }}
   {{- with $field}}
     {{- templateComments .Comments 2 "field" (ne $index 0)}}
-    {{- templateFieldAnnotations . 2}}
+    {{- templateFieldAnnotations . 2 $.Local}}
     {{- $optional := or (or .Optional .Nullable) (eq .Name "ContentType") }}
     {{- $name := sanitizeFieldName .Name $className }}
     {{- if $.Global.Config.PresenceAwareJSONSerialization }}
-        public {{templateFieldType . $optional $usageLocation}} {{$name}} { get; set; }{{templateFieldDefault .}}
-        {{- templateShouldSerialize . $className}}
+        public {{templateFieldType . $optional $usageLocation $.Local}} {{$name}} { get; set; }{{templateFieldDefault . $.Local}}
+        {{- templateShouldSerialize . $className $.Local}}
     {{- else }}
         {{- $type := sanitizeType .Type false $usageLocation }}
         public {{$type}}{{if $optional}}?{{end}} {{$name}} { get; set; }{{if not .Optional}} = default!;{{end}}
     {{- end }}
   {{- end }}
 {{- end}}
+{{- templateAdditionalPropertiesMembers .Local $className $usageLocation 2}}
     }
 
     {{- templateComments .Local.Comments 1 "class"}}
@@ -124,7 +126,7 @@
       {{- else if isReservedErrorField $fieldName }}
         {{- continue }}
       {{- end}}
-      {{- if needsOptionalNullableWrapper . }}
+      {{- if needsOptionalNullableWrapper . $.Local }}
            {{$legacyFieldName}} = payload.{{$fieldName}}.IsSet ? payload.{{$fieldName}}.Value : default;
       {{- else }}
            {{$legacyFieldName}} = payload.{{$fieldName}};

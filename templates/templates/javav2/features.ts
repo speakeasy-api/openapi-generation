@@ -53,6 +53,7 @@ const supportedFeatures = {
   hiddenGlobals: "0.1.0",
   uploadStreams: "0.1.0",
   modelNamespaces: "0.1.2",
+  operationTimeout: "0.2.0",
 };
 
 //@ts-ignore
@@ -271,8 +272,6 @@ function isTestSkipped(test: string): boolean {
     "custom-client-http-proxy",
     "open-union-smart-union-interop",
     "event-stream-union-with-standalone-comments",
-    "timeout-ms-override-allows-completion",
-    "timeout-ms-override-is-respected",
     "request-bodies-complex-number-types-nullable-null",
     "request-bodies-complex-number-types-nullable-set",
     "request-bodies-complex-number-types-optional-populated",
@@ -494,6 +493,10 @@ function isTestSkipped(test: string): boolean {
     "unions-body-variant-overloads-nested-union",
     "unions-body-variant-overloads-open-enum",
     "request-bodies-base64-file-input-raw-bytes",
+    "parameters-header-params-enum",
+    "parameters-header-params-string-formats",
+    "enum-values",
+    "auth-typed-error-inspection-omits-credentials",
   ].includes(test);
 }
 

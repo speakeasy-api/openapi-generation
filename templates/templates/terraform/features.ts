@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.50.7",
+  core: "3.50.8",
   decimal: "1.0.0",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
@@ -9,7 +9,7 @@ const supportedFeatures = {
   globalServerURLs: "2.83.2",
   methodServerURLs: "2.83.1",
   globals: "3.0.5",
-  enums: "2.83.1",
+  enums: "2.83.2",
   serverIDs: "2.81.1",
   nameOverrides: "2.81.7",
   includes: "2.81.1",
@@ -26,6 +26,8 @@ const supportedFeatures = {
   constsAndDefaults: "0.3.2",
   defaultArrays: "0.2.0",
   defaultObjects: "0.1.2",
+  constArrays: "0.2.0",
+  constObjects: "0.2.0",
   additionalProperties: "0.1.5",
   disallowCircularRefs: "0.0.0",
   oauth2ClientCredentials: "0.3.5",

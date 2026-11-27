@@ -698,7 +698,9 @@ function Get-LatestVersion {
 }
 
 function Get-Architecture {
-    $arch = $env:PROCESSOR_ARCHITECTURE
+    # A 32-bit PowerShell on 64-bit Windows reports x86 here and the native
+    # architecture in PROCESSOR_ARCHITEW6432.
+    $arch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
     switch ($arch) {
         "AMD64" { return "x86_64" }
         "ARM64" { return "arm64" }
@@ -743,6 +745,31 @@ function Install-CLI {
 
         Write-ColorOutput "Download complete" -Color Green
 
+        $checksumsUrl = "https://github.com/$Repo/releases/download/$Version/checksums.txt"
+        $checksumsPath = Join-Path $tempDir "checksums.txt"
+        try {
+            Invoke-WebRequest -Uri $checksumsUrl -OutFile $checksumsPath -UseBasicParsing
+        }
+        catch {
+            throw "Failed to download checksums from ${checksumsUrl}: $_"
+        }
+        $expected = $null
+        foreach ($line in Get-Content -LiteralPath $checksumsPath) {
+            $fields = $line.Trim() -split '\s+', 2
+            if ($fields.Count -eq 2 -and $fields[1].TrimStart('*') -eq $archiveName) {
+                $expected = $fields[0]
+                break
+            }
+        }
+        if (-not $expected) {
+            throw "checksums.txt has no entry for $archiveName"
+        }
+        $actual = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
+        if ($actual -ne $expected) {
+            throw "Checksum mismatch for ${archiveName}: expected $expected, got $actual"
+        }
+        Write-ColorOutput "Checksum verified" -Color Green
+
         # Extract archive
         Write-ColorOutput "Extracting archive..." -Color Cyan
         Expand-Archive -Path $archivePath -DestinationPath $tempDir -Force
@@ -768,11 +795,13 @@ function Install-CLI {
 
         # Add to PATH if not already there
         $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-        if ($userPath -notlike "*$InstallDir*") {
+        $pathEntries = @($userPath -split ';' | Where-Object { $_ } | ForEach-Object { $_.Trim().TrimEnd('\') })
+        if ($pathEntries -notcontains $InstallDir.TrimEnd('\')) {
             Write-ColorOutput "Adding $InstallDir to your PATH..." -Color Cyan
+            $newPath = if ($userPath) { "$userPath;$InstallDir" } else { $InstallDir }
             [Environment]::SetEnvironmentVariable(
                 "Path",
-                "$userPath;$InstallDir",
+                $newPath,
                 "User"
             )
             $env:Path = "$env:Path;$InstallDir"
@@ -825,7 +854,7 @@ function Install-CLI {
 #   PETSTORE_VERSION     - Specific version to install (default: latest)
 #
 
-set -e
+set -eo pipefail
 
 # Configuration
 REPO="example/petstore-cli"
@@ -840,23 +869,57 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Helper functions
+# Helper functions. Logs go to stderr so command substitutions capture only
+# the value a function prints.
 log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    echo -e "${GREEN}[INFO]${NC} $1" >&2
 }
 
 log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    echo -e "${YELLOW}[WARN]${NC} $1" >&2
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+}
+
+download() {
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$1" -o "$2"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q "$1" -O "$2"
+    else
+        log_error "curl or wget is required to download the CLI"
+        exit 1
+    fi
+}
+
+verify_checksum() {
+    local file="$1" name="$2" checksums="$3" expected actual
+    expected=$(awk -v name="$name" '$2 == name || $2 == "*" name { print $1; exit }' "$checksums")
+    if [ -z "$expected" ]; then
+        log_error "checksums.txt has no entry for $name"
+        exit 1
+    fi
+    if command -v sha256sum >/dev/null 2>&1; then
+        actual=$(sha256sum "$file" | awk '{ print $1 }')
+    elif command -v shasum >/dev/null 2>&1; then
+        actual=$(shasum -a 256 "$file" | awk '{ print $1 }')
+    else
+        log_error "sha256sum or shasum is required to verify the download"
+        exit 1
+    fi
+    if [ "$actual" != "$expected" ]; then
+        log_error "Checksum mismatch for $name: expected $expected, got $actual"
+        exit 1
+    fi
+    log_info "Checksum verified"
 }
 
 # Detect operating system
 detect_os() {
-    local os
-    local uname_output="$(uname -s)"
+    local os uname_output
+    uname_output=$(uname -s)
     case "$uname_output" in
         Linux*)     os="Linux" ;;
         Darwin*)    os="Darwin" ;;
@@ -889,14 +952,18 @@ get_latest_version() {
     local version
 
     if command -v curl >/dev/null 2>&1; then
-        version=$(curl -fsSL "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        version=$(curl -fsSL "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || version=""
     elif command -v wget >/dev/null 2>&1; then
-        version=$(wget -qO- "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        version=$(wget -qO- "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || version=""
     else
         log_error "curl or wget is required to download the CLI"
         exit 1
     fi
 
+    if [ -z "$version" ]; then
+        log_error "Could not determine the latest release from $latest_url. Set PETSTORE_VERSION to install a specific version."
+        exit 1
+    fi
     echo "$version"
 }
 
@@ -908,22 +975,28 @@ get_install_dir() {
         return
     fi
 
-    # Try to use /usr/local/bin if we have write access
-    if [ -w "$DEFAULT_INSTALL_DIR" ] || [ -w "$(dirname "$DEFAULT_INSTALL_DIR")" ]; then
+    # Use /usr/local/bin if it is writable, or can be created when missing
+    if [ -d "$DEFAULT_INSTALL_DIR" ]; then
+        if [ -w "$DEFAULT_INSTALL_DIR" ]; then
+            echo "$DEFAULT_INSTALL_DIR"
+            return
+        fi
+    elif [ -w "$(dirname "$DEFAULT_INSTALL_DIR")" ]; then
         echo "$DEFAULT_INSTALL_DIR"
         return
     fi
 
     # Fall back to user directory
-    log_info "No write access to $DEFAULT_INSTALL_DIR, using $USER_INSTALL_DIR instead" >&2
+    log_info "No write access to $DEFAULT_INSTALL_DIR, using $USER_INSTALL_DIR instead"
     echo "$USER_INSTALL_DIR"
 }
 
 # Download and install
 install_cli() {
-    local INSTALL_DIR=$(get_install_dir)
-    local os=$(detect_os)
-    local arch=$(detect_arch)
+    local INSTALL_DIR os arch
+    INSTALL_DIR=$(get_install_dir)
+    os=$(detect_os)
+    arch=$(detect_arch)
 
     log_info "Detected OS: $os"
     log_info "Detected Architecture: $arch"
@@ -951,23 +1024,23 @@ install_cli() {
     log_info "Downloading from: $download_url"
 
     # Create temporary directory
-    local tmp_dir=$(mktemp -d)
-    trap "rm -rf $tmp_dir" EXIT
+    tmp_dir=$(mktemp -d) || exit 1
+    trap 'rm -rf -- "$tmp_dir"' EXIT
 
     # Download archive
-    if command -v curl >/dev/null 2>&1; then
-        if ! curl -fsSL "$download_url" -o "$tmp_dir/$archive_name"; then
-            log_error "Failed to download from $download_url"
-            exit 1
-        fi
-    elif command -v wget >/dev/null 2>&1; then
-        if ! wget -q "$download_url" -O "$tmp_dir/$archive_name"; then
-            log_error "Failed to download from $download_url"
-            exit 1
-        fi
+    if ! download "$download_url" "$tmp_dir/$archive_name"; then
+        log_error "Failed to download from $download_url"
+        exit 1
     fi
 
     log_info "Download complete"
+
+    local checksums_url="https://github.com/${REPO}/releases/download/${VERSION}/checksums.txt"
+    if ! download "$checksums_url" "$tmp_dir/checksums.txt"; then
+        log_error "Failed to download checksums from $checksums_url"
+        exit 1
+    fi
+    verify_checksum "$tmp_dir/$archive_name" "$archive_name" "$tmp_dir/checksums.txt"
 
     # Extract archive based on format
     log_info "Extracting archive..."
@@ -1748,7 +1821,9 @@ function Get-LatestVersion {
 }
 
 function Get-Architecture {
-    $arch = $env:PROCESSOR_ARCHITECTURE
+    # A 32-bit PowerShell on 64-bit Windows reports x86 here and the native
+    # architecture in PROCESSOR_ARCHITEW6432.
+    $arch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
     switch ($arch) {
         "AMD64" { return "x86_64" }
         "ARM64" { return "arm64" }
@@ -1793,6 +1868,31 @@ function Install-CLI {
 
         Write-ColorOutput "Download complete" -Color Green
 
+        $checksumsUrl = "https://github.com/$Repo/releases/download/$Version/checksums.txt"
+        $checksumsPath = Join-Path $tempDir "checksums.txt"
+        try {
+            Invoke-WebRequest -Uri $checksumsUrl -OutFile $checksumsPath -UseBasicParsing
+        }
+        catch {
+            throw "Failed to download checksums from ${checksumsUrl}: $_"
+        }
+        $expected = $null
+        foreach ($line in Get-Content -LiteralPath $checksumsPath) {
+            $fields = $line.Trim() -split '\s+', 2
+            if ($fields.Count -eq 2 -and $fields[1].TrimStart('*') -eq $archiveName) {
+                $expected = $fields[0]
+                break
+            }
+        }
+        if (-not $expected) {
+            throw "checksums.txt has no entry for $archiveName"
+        }
+        $actual = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
+        if ($actual -ne $expected) {
+            throw "Checksum mismatch for ${archiveName}: expected $expected, got $actual"
+        }
+        Write-ColorOutput "Checksum verified" -Color Green
+
         # Extract archive
         Write-ColorOutput "Extracting archive..." -Color Cyan
         Expand-Archive -Path $archivePath -DestinationPath $tempDir -Force
@@ -1818,11 +1918,13 @@ function Install-CLI {
 
         # Add to PATH if not already there
         $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-        if ($userPath -notlike "*$InstallDir*") {
+        $pathEntries = @($userPath -split ';' | Where-Object { $_ } | ForEach-Object { $_.Trim().TrimEnd('\') })
+        if ($pathEntries -notcontains $InstallDir.TrimEnd('\')) {
             Write-ColorOutput "Adding $InstallDir to your PATH..." -Color Cyan
+            $newPath = if ($userPath) { "$userPath;$InstallDir" } else { $InstallDir }
             [Environment]::SetEnvironmentVariable(
                 "Path",
-                "$userPath;$InstallDir",
+                $newPath,
                 "User"
             )
             $env:Path = "$env:Path;$InstallDir"
@@ -1875,7 +1977,7 @@ function Install-CLI {
 #   PETSTORE_VERSION     - Specific version to install (default: latest)
 #
 
-set -e
+set -eo pipefail
 
 # Configuration
 REPO="example/petstore-cli"
@@ -1890,23 +1992,57 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Helper functions
+# Helper functions. Logs go to stderr so command substitutions capture only
+# the value a function prints.
 log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    echo -e "${GREEN}[INFO]${NC} $1" >&2
 }
 
 log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    echo -e "${YELLOW}[WARN]${NC} $1" >&2
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+}
+
+download() {
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$1" -o "$2"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q "$1" -O "$2"
+    else
+        log_error "curl or wget is required to download the CLI"
+        exit 1
+    fi
+}
+
+verify_checksum() {
+    local file="$1" name="$2" checksums="$3" expected actual
+    expected=$(awk -v name="$name" '$2 == name || $2 == "*" name { print $1; exit }' "$checksums")
+    if [ -z "$expected" ]; then
+        log_error "checksums.txt has no entry for $name"
+        exit 1
+    fi
+    if command -v sha256sum >/dev/null 2>&1; then
+        actual=$(sha256sum "$file" | awk '{ print $1 }')
+    elif command -v shasum >/dev/null 2>&1; then
+        actual=$(shasum -a 256 "$file" | awk '{ print $1 }')
+    else
+        log_error "sha256sum or shasum is required to verify the download"
+        exit 1
+    fi
+    if [ "$actual" != "$expected" ]; then
+        log_error "Checksum mismatch for $name: expected $expected, got $actual"
+        exit 1
+    fi
+    log_info "Checksum verified"
 }
 
 # Detect operating system
 detect_os() {
-    local os
-    local uname_output="$(uname -s)"
+    local os uname_output
+    uname_output=$(uname -s)
     case "$uname_output" in
         Linux*)     os="Linux" ;;
         Darwin*)    os="Darwin" ;;
@@ -1939,14 +2075,18 @@ get_latest_version() {
     local version
 
     if command -v curl >/dev/null 2>&1; then
-        version=$(curl -fsSL "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        version=$(curl -fsSL "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || version=""
     elif command -v wget >/dev/null 2>&1; then
-        version=$(wget -qO- "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        version=$(wget -qO- "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || version=""
     else
         log_error "curl or wget is required to download the CLI"
         exit 1
     fi
 
+    if [ -z "$version" ]; then
+        log_error "Could not determine the latest release from $latest_url. Set PETSTORE_VERSION to install a specific version."
+        exit 1
+    fi
     echo "$version"
 }
 
@@ -1958,22 +2098,28 @@ get_install_dir() {
         return
     fi
 
-    # Try to use /usr/local/bin if we have write access
-    if [ -w "$DEFAULT_INSTALL_DIR" ] || [ -w "$(dirname "$DEFAULT_INSTALL_DIR")" ]; then
+    # Use /usr/local/bin if it is writable, or can be created when missing
+    if [ -d "$DEFAULT_INSTALL_DIR" ]; then
+        if [ -w "$DEFAULT_INSTALL_DIR" ]; then
+            echo "$DEFAULT_INSTALL_DIR"
+            return
+        fi
+    elif [ -w "$(dirname "$DEFAULT_INSTALL_DIR")" ]; then
         echo "$DEFAULT_INSTALL_DIR"
         return
     fi
 
     # Fall back to user directory
-    log_info "No write access to $DEFAULT_INSTALL_DIR, using $USER_INSTALL_DIR instead" >&2
+    log_info "No write access to $DEFAULT_INSTALL_DIR, using $USER_INSTALL_DIR instead"
     echo "$USER_INSTALL_DIR"
 }
 
 # Download and install
 install_cli() {
-    local INSTALL_DIR=$(get_install_dir)
-    local os=$(detect_os)
-    local arch=$(detect_arch)
+    local INSTALL_DIR os arch
+    INSTALL_DIR=$(get_install_dir)
+    os=$(detect_os)
+    arch=$(detect_arch)
 
     log_info "Detected OS: $os"
     log_info "Detected Architecture: $arch"
@@ -2001,23 +2147,23 @@ install_cli() {
     log_info "Downloading from: $download_url"
 
     # Create temporary directory
-    local tmp_dir=$(mktemp -d)
-    trap "rm -rf $tmp_dir" EXIT
+    tmp_dir=$(mktemp -d) || exit 1
+    trap 'rm -rf -- "$tmp_dir"' EXIT
 
     # Download archive
-    if command -v curl >/dev/null 2>&1; then
-        if ! curl -fsSL "$download_url" -o "$tmp_dir/$archive_name"; then
-            log_error "Failed to download from $download_url"
-            exit 1
-        fi
-    elif command -v wget >/dev/null 2>&1; then
-        if ! wget -q "$download_url" -O "$tmp_dir/$archive_name"; then
-            log_error "Failed to download from $download_url"
-            exit 1
-        fi
+    if ! download "$download_url" "$tmp_dir/$archive_name"; then
+        log_error "Failed to download from $download_url"
+        exit 1
     fi
 
     log_info "Download complete"
+
+    local checksums_url="https://github.com/${REPO}/releases/download/${VERSION}/checksums.txt"
+    if ! download "$checksums_url" "$tmp_dir/checksums.txt"; then
+        log_error "Failed to download checksums from $checksums_url"
+        exit 1
+    fi
+    verify_checksum "$tmp_dir/$archive_name" "$archive_name" "$tmp_dir/checksums.txt"
 
     # Extract archive based on format
     log_info "Extracting archive..."
@@ -2857,7 +3003,9 @@ function Get-LatestVersion {
 }
 
 function Get-Architecture {
-    $arch = $env:PROCESSOR_ARCHITECTURE
+    # A 32-bit PowerShell on 64-bit Windows reports x86 here and the native
+    # architecture in PROCESSOR_ARCHITEW6432.
+    $arch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
     switch ($arch) {
         "AMD64" { return "x86_64" }
         "ARM64" { return "arm64" }
@@ -2902,6 +3050,31 @@ function Install-CLI {
 
         Write-ColorOutput "Download complete" -Color Green
 
+        $checksumsUrl = "https://github.com/$Repo/releases/download/$Version/checksums.txt"
+        $checksumsPath = Join-Path $tempDir "checksums.txt"
+        try {
+            Invoke-WebRequest -Uri $checksumsUrl -OutFile $checksumsPath -UseBasicParsing
+        }
+        catch {
+            throw "Failed to download checksums from ${checksumsUrl}: $_"
+        }
+        $expected = $null
+        foreach ($line in Get-Content -LiteralPath $checksumsPath) {
+            $fields = $line.Trim() -split '\s+', 2
+            if ($fields.Count -eq 2 -and $fields[1].TrimStart('*') -eq $archiveName) {
+                $expected = $fields[0]
+                break
+            }
+        }
+        if (-not $expected) {
+            throw "checksums.txt has no entry for $archiveName"
+        }
+        $actual = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
+        if ($actual -ne $expected) {
+            throw "Checksum mismatch for ${archiveName}: expected $expected, got $actual"
+        }
+        Write-ColorOutput "Checksum verified" -Color Green
+
         # Extract archive
         Write-ColorOutput "Extracting archive..." -Color Cyan
         Expand-Archive -Path $archivePath -DestinationPath $tempDir -Force
@@ -2927,11 +3100,13 @@ function Install-CLI {
 
         # Add to PATH if not already there
         $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-        if ($userPath -notlike "*$InstallDir*") {
+        $pathEntries = @($userPath -split ';' | Where-Object { $_ } | ForEach-Object { $_.Trim().TrimEnd('\') })
+        if ($pathEntries -notcontains $InstallDir.TrimEnd('\')) {
             Write-ColorOutput "Adding $InstallDir to your PATH..." -Color Cyan
+            $newPath = if ($userPath) { "$userPath;$InstallDir" } else { $InstallDir }
             [Environment]::SetEnvironmentVariable(
                 "Path",
-                "$userPath;$InstallDir",
+                $newPath,
                 "User"
             )
             $env:Path = "$env:Path;$InstallDir"
@@ -2984,7 +3159,7 @@ function Install-CLI {
 #   PETSTORE_VERSION     - Specific version to install (default: latest)
 #
 
-set -e
+set -eo pipefail
 
 # Configuration
 REPO="example/petstore-cli"
@@ -2999,23 +3174,57 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Helper functions
+# Helper functions. Logs go to stderr so command substitutions capture only
+# the value a function prints.
 log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    echo -e "${GREEN}[INFO]${NC} $1" >&2
 }
 
 log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    echo -e "${YELLOW}[WARN]${NC} $1" >&2
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+}
+
+download() {
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$1" -o "$2"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q "$1" -O "$2"
+    else
+        log_error "curl or wget is required to download the CLI"
+        exit 1
+    fi
+}
+
+verify_checksum() {
+    local file="$1" name="$2" checksums="$3" expected actual
+    expected=$(awk -v name="$name" '$2 == name || $2 == "*" name { print $1; exit }' "$checksums")
+    if [ -z "$expected" ]; then
+        log_error "checksums.txt has no entry for $name"
+        exit 1
+    fi
+    if command -v sha256sum >/dev/null 2>&1; then
+        actual=$(sha256sum "$file" | awk '{ print $1 }')
+    elif command -v shasum >/dev/null 2>&1; then
+        actual=$(shasum -a 256 "$file" | awk '{ print $1 }')
+    else
+        log_error "sha256sum or shasum is required to verify the download"
+        exit 1
+    fi
+    if [ "$actual" != "$expected" ]; then
+        log_error "Checksum mismatch for $name: expected $expected, got $actual"
+        exit 1
+    fi
+    log_info "Checksum verified"
 }
 
 # Detect operating system
 detect_os() {
-    local os
-    local uname_output="$(uname -s)"
+    local os uname_output
+    uname_output=$(uname -s)
     case "$uname_output" in
         Linux*)     os="Linux" ;;
         Darwin*)    os="Darwin" ;;
@@ -3048,14 +3257,18 @@ get_latest_version() {
     local version
 
     if command -v curl >/dev/null 2>&1; then
-        version=$(curl -fsSL "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        version=$(curl -fsSL "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || version=""
     elif command -v wget >/dev/null 2>&1; then
-        version=$(wget -qO- "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        version=$(wget -qO- "$latest_url" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || version=""
     else
         log_error "curl or wget is required to download the CLI"
         exit 1
     fi
 
+    if [ -z "$version" ]; then
+        log_error "Could not determine the latest release from $latest_url. Set PETSTORE_VERSION to install a specific version."
+        exit 1
+    fi
     echo "$version"
 }
 
@@ -3067,22 +3280,28 @@ get_install_dir() {
         return
     fi
 
-    # Try to use /usr/local/bin if we have write access
-    if [ -w "$DEFAULT_INSTALL_DIR" ] || [ -w "$(dirname "$DEFAULT_INSTALL_DIR")" ]; then
+    # Use /usr/local/bin if it is writable, or can be created when missing
+    if [ -d "$DEFAULT_INSTALL_DIR" ]; then
+        if [ -w "$DEFAULT_INSTALL_DIR" ]; then
+            echo "$DEFAULT_INSTALL_DIR"
+            return
+        fi
+    elif [ -w "$(dirname "$DEFAULT_INSTALL_DIR")" ]; then
         echo "$DEFAULT_INSTALL_DIR"
         return
     fi
 
     # Fall back to user directory
-    log_info "No write access to $DEFAULT_INSTALL_DIR, using $USER_INSTALL_DIR instead" >&2
+    log_info "No write access to $DEFAULT_INSTALL_DIR, using $USER_INSTALL_DIR instead"
     echo "$USER_INSTALL_DIR"
 }
 
 # Download and install
 install_cli() {
-    local INSTALL_DIR=$(get_install_dir)
-    local os=$(detect_os)
-    local arch=$(detect_arch)
+    local INSTALL_DIR os arch
+    INSTALL_DIR=$(get_install_dir)
+    os=$(detect_os)
+    arch=$(detect_arch)
 
     log_info "Detected OS: $os"
     log_info "Detected Architecture: $arch"
@@ -3110,23 +3329,23 @@ install_cli() {
     log_info "Downloading from: $download_url"
 
     # Create temporary directory
-    local tmp_dir=$(mktemp -d)
-    trap "rm -rf $tmp_dir" EXIT
+    tmp_dir=$(mktemp -d) || exit 1
+    trap 'rm -rf -- "$tmp_dir"' EXIT
 
     # Download archive
-    if command -v curl >/dev/null 2>&1; then
-        if ! curl -fsSL "$download_url" -o "$tmp_dir/$archive_name"; then
-            log_error "Failed to download from $download_url"
-            exit 1
-        fi
-    elif command -v wget >/dev/null 2>&1; then
-        if ! wget -q "$download_url" -O "$tmp_dir/$archive_name"; then
-            log_error "Failed to download from $download_url"
-            exit 1
-        fi
+    if ! download "$download_url" "$tmp_dir/$archive_name"; then
+        log_error "Failed to download from $download_url"
+        exit 1
     fi
 
     log_info "Download complete"
+
+    local checksums_url="https://github.com/${REPO}/releases/download/${VERSION}/checksums.txt"
+    if ! download "$checksums_url" "$tmp_dir/checksums.txt"; then
+        log_error "Failed to download checksums from $checksums_url"
+        exit 1
+    fi
+    verify_checksum "$tmp_dir/$archive_name" "$archive_name" "$tmp_dir/checksums.txt"
 
     # Extract archive based on format
     log_info "Extracting archive..."

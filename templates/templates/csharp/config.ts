@@ -139,7 +139,20 @@ function upgradeConfig(_oldVersion, _newVersion, cfg, _defaults) {
 // @ts-ignore
 function resolveConfig(cfg: Record<string, any>) {
   resolveUnionStrategy(cfg);
+  resolveOptionalNullableScope(cfg);
   normalizeForwardCompatibleUnionsConfig(cfg);
+}
+
+// @ts-ignore
+function resolveOptionalNullableScope(cfg: Record<string, any>) {
+  if (
+    cfg.optionalNullableScope === "writable-models" &&
+    cfg.presenceAwareJsonSerialization !== true
+  ) {
+    console.warn(
+      'csharp: optionalNullableScope "writable-models" has no effect until presenceAwareJsonSerialization is true.',
+    );
+  }
 }
 
 // @ts-ignore
@@ -322,6 +335,15 @@ function getConfigFields(
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
+    optionalNullableScope: {
+      Name: "optionalNullableScope",
+      Required: false,
+      DefaultValue: "all",
+      Description:
+        "Which models get OptionalNullable<T> fields under presenceAwareJsonSerialization. 'all' wraps optional+nullable fields on every model. 'writable-models' wraps only models the SDK can send (request bodies, parameters and the schemas they embed) and leaves response-only models as plain T?; a schema used in both requests and responses is still wrapped, and OptionalNullable<T> gains an implicit conversion to T? so such fields can be read as plain nullables. With conversions in both directions, a wrapped field next to a bare T in a conditional expression or an inferred generic argument no longer compiles (CS0172, CS0411); read .Value, cast, or name the type argument. Wrapping follows reachability, so referencing an existing response-only schema from a request body is a source-breaking change for code that reads that schema. Response types match a presenceAwareJsonSerialization-off SDK, but presence-aware parsing is still stricter: an explicit null for an optional non-nullable field fails validation. Inert until presenceAwareJsonSerialization is true; the configured value is kept.",
+      ValidationRegex: /^(all|writable-models)$/.source,
+      ValidationMessage: '"all" or "writable-models" only',
+    },
     forwardCompatibleEnumsByDefault: {
       Name: "forwardCompatibleEnumsByDefault",
       Required: false,
@@ -502,6 +524,15 @@ function getConfigFields(
         "Enable embedded clang-format for generated C# files. When disabled, falls back to dotnet format during compilation.",
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
+    },
+    fixes: {
+      Name: "fixFlags",
+      Required: false,
+      DefaultValue: {
+        spreadAdditionalProperties: newSDK,
+      },
+      Description:
+        "Fixes to apply to the generated SDK, generally should be set to true but may be false for backwards compatibility",
     },
   };
 }

@@ -39,6 +39,7 @@ func NewRootCommand() (*cobra.Command, error) {
 		Long:          "This document will show case as many of our features as possible in as little operations/models as possible.\nThis will then generate a SDK that we can more easily review than the test SDKs based on uber.yaml spec.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		Annotations:   map[string]string{config.OptionalAnnotation: "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if usage.UsageRequested(cmd) {
 				return usage.EmitSchema(cmd, cmd.OutOrStdout())
@@ -62,7 +63,18 @@ func NewRootCommand() (*cobra.Command, error) {
 				return err
 			}
 			if err := config.Init("cli", "CLI"); err != nil {
-				return err
+				if !config.RunsWithoutConfig(cmd) {
+					return err
+				}
+				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %v\n", err)
+			}
+			if cmd.Annotations["speakeasy_settings_command"] != "true" {
+				if err := output.ValidateConfiguredOutputFormat(cmd); err != nil {
+					if !config.RunsWithoutConfig(cmd) {
+						return err
+					}
+					fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %v\n", err)
+				}
 			}
 			config.SetKeyringWarningOutput(cmd.ErrOrStderr())
 			if noKeyring, changed := flagutil.GetBoolFlag(cmd, "no-keyring"); changed {
@@ -319,7 +331,9 @@ func NewRootCommand() (*cobra.Command, error) {
 	custom.Register(rootCmd)
 
 	// Cobra creates its default help and completion commands lazily inside Execute.
-	usage.InitDefaultCommands(rootCmd)
+	for _, cmd := range usage.InitDefaultCommands(rootCmd) {
+		cmd.Annotations[config.OptionalAnnotation] = "true"
+	}
 	applyDeclaredCommandOrder(rootCmd)
 	interactive.Intercept(rootCmd)
 	usage.Intercept(rootCmd)
@@ -356,6 +370,7 @@ func InterruptContext(parent context.Context) (context.Context, context.CancelFu
 
 func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string) error {
 	// Cobra aborts on an unknown command or flag before PersistentPreRunE runs.
+	_ = config.Init("cli", "CLI")
 	output.InitAgentMode(root)
 	target, _, _ := root.Find(args)
 	if target == nil {
@@ -400,15 +415,23 @@ func ExplorerHandoffArgs(root *cobra.Command, selectedArgs []string) []string {
 	if debug, _ := root.PersistentFlags().GetBool("debug"); debug {
 		handoffArgs = append(handoffArgs, "--debug")
 	}
-	// Rendering flags given to the explore invocation apply to the selected
-	// command: the fresh command tree re-parses argv (and resets the
-	// preparsed rendering state), so they must travel with it. The
-	// --name=value form keeps boolean flags from swallowing the next token.
-	for _, name := range []string{"output-format", "jq", "raw-output", "color"} {
-		if flag := root.PersistentFlags().Lookup(name); flag != nil && flag.Changed {
-			handoffArgs = append(handoffArgs, "--"+name+"="+flag.Value.String())
+	// Global flags given to the explore invocation (server, credentials,
+	// headers, rendering) apply to the selected command: the fresh command
+	// tree re-parses argv, so they must travel with it. The --name=value form
+	// keeps boolean flags from swallowing the next token.
+	handled := map[string]bool{"interactive": true, "no-interactive": true, "dry-run": true, "debug": true, "help": true}
+	root.PersistentFlags().VisitAll(func(flag *pflag.Flag) {
+		if !flag.Changed || handled[flag.Name] {
+			return
 		}
-	}
+		if values, ok := flag.Value.(pflag.SliceValue); ok {
+			for _, value := range values.GetSlice() {
+				handoffArgs = append(handoffArgs, "--"+flag.Name+"="+value)
+			}
+			return
+		}
+		handoffArgs = append(handoffArgs, "--"+flag.Name+"="+flag.Value.String())
+	})
 	return append(handoffArgs, selectedArgs...)
 }
 

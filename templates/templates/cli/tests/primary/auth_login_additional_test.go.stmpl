@@ -196,11 +196,38 @@ func TestAuthLoginLinePromptsReadMethodAndCredentialsFromOneInput(t *testing.T) 
 	// Option 3 is basic auth, which prompts for the password before the username.
 	stdin := strings.NewReader("3\nsekr1t-pass\nalice\n")
 	require.NoError(t, h.RunPolicyDefaultWithInput([]string{"auth", "login", "--interactive"}, stdin), "stderr: %s", h.GetStderr())
-	assert.Contains(t, h.GetStdout(), "Authentication Method")
-	assert.Contains(t, h.GetStdout(), "3. HTTP Basic (Username + Password)")
+	assert.Contains(t, h.GetStderr(), "Authentication Method")
+	assert.Contains(t, h.GetStderr(), "3. HTTP Basic (Username + Password)")
+	assert.NotContains(t, h.GetStdout(), "Authentication Method")
 
 	cfg := readAuthConfig(t, home)
 	assert.Contains(t, cfg, "username: alice")
 	assert.Contains(t, cfg, "password: sekr1t-pass")
+}
+
+func TestLinePromptsKeepMachineOutputClean(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   []string
+		stdin  string
+		prompt string
+	}{
+		{name: "auth login", args: []string{"auth", "login", "--interactive", "--output-format", "json"}, stdin: "3\nsekr1t-pass\nalice\n", prompt: "Authentication Method"},
+		{name: "configure", args: []string{"configure", "--interactive", "--output-format", "json"}, stdin: strings.Repeat("\n", 64), prompt: "--api-key-auth\n> "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			installKeyring(t, false, nil)
+			home := t.TempDir()
+
+			h := NewCLITestHarness(t).WithEnv("HOME", home)
+			require.NoError(t, h.RunPolicyDefaultWithInput(tt.args, strings.NewReader(tt.stdin)), "stderr: %s", h.GetStderr())
+			assert.Contains(t, h.GetStderr(), tt.prompt)
+
+			var result map[string]any
+			require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &result), "stdout must hold only the JSON result, got %q", h.GetStdout())
+			assert.Contains(t, result, "config_file")
+		})
+	}
 }
 {{- end}}

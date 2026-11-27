@@ -133,7 +133,19 @@ function getJobs(): Job[] {
 function getSDKJobs(sdk: SDK): Job[] {
   const jobs: Job[] = [];
 
-  jobs.push(createTemplateFileJob("sdk.ts.stmpl", "src/sdk/sdk.ts", sdk));
+  jobs.push(
+    createTemplateFileJob("sdk.ts.stmpl", "src/sdk/sdk.ts", {
+      ...sdk,
+      LazyOperations: false,
+    }),
+  );
+  jobs.push(
+    createTemplateFileJob("sdk.ts.stmpl", "src/sdk/sdk.lazy.ts", {
+      ...sdk,
+      LazyOperations: true,
+    }),
+    createTemplateFileJob("node.ts.stmpl", "src/node.ts", null),
+  );
 
   for (const subSDK of sdk.SubSDKs) {
     jobs.push(...getSubSDKJobs(subSDK));
@@ -151,7 +163,12 @@ function getSubSDKJobs(subSDK: SDK): Job[] {
     createTemplateFileJob(
       "subsdk.ts.stmpl",
       `src/sdk/${sanitizeTypeFilename(subSDK.Type.Name)}.ts`,
-      subSDK,
+      { ...subSDK, LazyOperations: false },
+    ),
+    createTemplateFileJob(
+      "subsdk.ts.stmpl",
+      `src/sdk/${sanitizeTypeFilename(subSDK.Type.Name)}.lazy.ts`,
+      { ...subSDK, LazyOperations: true },
     ),
   );
 

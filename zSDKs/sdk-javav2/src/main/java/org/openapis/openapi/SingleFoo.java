@@ -7,6 +7,7 @@ import static org.openapis.openapi.operations.Operations.RequestOperation;
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.openapis.openapi.models.foo.Pet;
 import org.openapis.openapi.models.operations.CreateSingleNamespaceFooPetRequestBuilder;
 import org.openapis.openapi.models.operations.CreateSingleNamespaceFooPetResponse;
@@ -15,6 +16,7 @@ import org.openapis.openapi.models.operations.GetSingleNamespaceFooPetResponse;
 import org.openapis.openapi.operations.CreateSingleNamespaceFooPet;
 import org.openapis.openapi.operations.GetSingleNamespaceFooPet;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class SingleFoo {
     private static final Headers _headers = Headers.EMPTY;
@@ -57,8 +59,22 @@ public class SingleFoo {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetSingleNamespaceFooPetResponse getSingleNamespaceFooPetDirect() {
+        return getSingleNamespaceFooPet(null);
+    }
+
+    /**
+     * Get Single Namespace Foo Pet
+     *
+     * <p>This endpoint tests using a single component from the foo namespace.
+     * No import aliasing should be needed since there's no conflict within this group.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetSingleNamespaceFooPetResponse getSingleNamespaceFooPet(@Nullable Options options) {
         RequestlessOperation<GetSingleNamespaceFooPetResponse> operation =
-                new GetSingleNamespaceFooPet.Sync(sdkConfiguration, _headers);
+                new GetSingleNamespaceFooPet.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -85,8 +101,24 @@ public class SingleFoo {
      * @throws RuntimeException subclass if the API call fails
      */
     public CreateSingleNamespaceFooPetResponse createSingleNamespaceFooPet(@Nonnull Pet request) {
+        return createSingleNamespaceFooPet(request, null);
+    }
+
+    /**
+     * Create Single Namespace Foo Pet
+     *
+     * <p>This endpoint tests creating a component in the foo namespace.
+     * No import aliasing should be needed since there's no conflict within this group.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public CreateSingleNamespaceFooPetResponse createSingleNamespaceFooPet(
+            @Nonnull Pet request, @Nullable Options options) {
         RequestOperation<Pet, CreateSingleNamespaceFooPetResponse> operation =
-                new CreateSingleNamespaceFooPet.Sync(sdkConfiguration, _headers);
+                new CreateSingleNamespaceFooPet.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 }

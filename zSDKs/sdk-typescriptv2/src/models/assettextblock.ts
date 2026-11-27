@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
@@ -17,10 +17,12 @@ export type AssetTextBlock = {
 export const AssetTextBlock$inboundSchema: z.ZodMiniType<
   AssetTextBlock,
   unknown
-> = z.object({
-  type: types.literal("text"),
-  text: types.optional(types.string()),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    type: types.literal("text"),
+    text: types.optional(types.string()),
+  })
+);
 
 export function assetTextBlockFromJSON(
   jsonString: string,

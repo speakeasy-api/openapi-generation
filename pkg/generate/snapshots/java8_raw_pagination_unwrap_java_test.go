@@ -103,6 +103,7 @@ import java.io.InputStream;
 import java.lang.Iterable;
 import java.lang.Long;
 import java.lang.String;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -110,6 +111,7 @@ import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.ListItems;
 import org.openapis.openapi.utils.Headers;
 import org.openapis.openapi.utils.Java8Compat;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 import org.openapis.openapi.utils.pagination.CursorTracker;
 import org.openapis.openapi.utils.pagination.Paginator;
@@ -120,11 +122,13 @@ public class ListItemsRequestBuilder {
     private final Headers _headers = new Headers();
     private final ListItemsRequest.Builder pojoBuilder;
     private ListItemsRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public ListItemsRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = ListItemsRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public ListItemsRequestBuilder cursor(@Nullable String cursor) {
@@ -136,6 +140,11 @@ public class ListItemsRequestBuilder {
     public ListItemsRequestBuilder limit(@Nullable Long limit) {
         this.pojoBuilder.limit(limit);
         this._setterCalled = true;
+        return this;
+    }
+
+    public ListItemsRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -159,8 +168,9 @@ public class ListItemsRequestBuilder {
     * @return The response from the server.
     */
     public ListItemsResponse call() {
+        Options options = optionsBuilder.build();
         RequestOperation<ListItemsRequest, ListItemsResponse> operation
-              = new ListItems.Sync(sdkConfiguration, _headers);
+              = new ListItems.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(this._buildRequest()));
     }
     
@@ -179,8 +189,9 @@ public class ListItemsRequestBuilder {
     */
     public Iterable<ListItemsResponse> callAsIterable() {
         ListItemsRequest request = pojoBuilder.build();
+        Options options = optionsBuilder.build();
         RequestOperation<ListItemsRequest, ListItemsResponse> operation
-              = new ListItems.Sync(sdkConfiguration, _headers);
+              = new ListItems.Sync(sdkConfiguration, options, _headers);
 
         Iterator<HttpResponse<InputStream>> iterator = new Paginator<>(
             request,

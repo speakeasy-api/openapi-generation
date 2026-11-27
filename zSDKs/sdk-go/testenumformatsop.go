@@ -23,6 +23,18 @@ const (
 func (e StringArrayFormat) ToPointer() *StringArrayFormat {
 	return &e
 }
+
+// StringArrayFormatValues returns every known StringArrayFormat value in schema order.
+func StringArrayFormatValues() []StringArrayFormat {
+	return []StringArrayFormat{
+		StringArrayFormatAwaitingReviewProcess,
+		StringArrayFormatCompletelyApprovedAndFinalized,
+		StringArrayFormatPermanentlyRejectedForever,
+		StringArrayFormatX8664,
+		StringArrayFormatIOsApp,
+		StringArrayFormatMyCustomName,
+	}
+}
 func (e *StringArrayFormat) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -60,6 +72,16 @@ const (
 func (e StringMapFormat) ToPointer() *StringMapFormat {
 	return &e
 }
+
+// StringMapFormatValues returns every known StringMapFormat value in schema order.
+func StringMapFormatValues() []StringMapFormat {
+	return []StringMapFormat{
+		StringMapFormatMinimalImportanceLevel,
+		StringMapFormatModerateImportanceLevel,
+		StringMapFormatSignificantImportanceLevel,
+		StringMapFormatExtremelyUrgentAndCritical,
+	}
+}
 func (e *StringMapFormat) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -92,6 +114,16 @@ const (
 
 func (e StringPartialMapFormat) ToPointer() *StringPartialMapFormat {
 	return &e
+}
+
+// StringPartialMapFormatValues returns every known StringPartialMapFormat value in schema order.
+func StringPartialMapFormatValues() []StringPartialMapFormat {
+	return []StringPartialMapFormat{
+		StringPartialMapFormatInitialDraftVersion,
+		StringPartialMapFormatUnderReview,
+		StringPartialMapFormatLivePublishedContent,
+		StringPartialMapFormatArchivedOld,
+	}
 }
 func (e *StringPartialMapFormat) UnmarshalJSON(data []byte) error {
 	var v string
@@ -126,6 +158,16 @@ const (
 func (e IntegerMapFormat) ToPointer() *IntegerMapFormat {
 	return &e
 }
+
+// IntegerMapFormatValues returns every known IntegerMapFormat value in schema order.
+func IntegerMapFormatValues() []IntegerMapFormat {
+	return []IntegerMapFormat{
+		IntegerMapFormatContinueProcessingRequest,
+		IntegerMapFormatSuccessfulOperationComplete,
+		IntegerMapFormatRedirectToAnotherLocation,
+		IntegerMapFormatClientSideErrorOccurred,
+	}
+}
 func (e *IntegerMapFormat) UnmarshalJSON(data []byte) error {
 	var v int64
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -159,6 +201,17 @@ const (
 
 func (e IntegerPartialMapFormat) ToPointer() *IntegerPartialMapFormat {
 	return &e
+}
+
+// IntegerPartialMapFormatValues returns every known IntegerPartialMapFormat value in schema order.
+func IntegerPartialMapFormatValues() []IntegerPartialMapFormat {
+	return []IntegerPartialMapFormat{
+		IntegerPartialMapFormatPrimaryFirstOption,
+		IntegerPartialMapFormatTwo,
+		IntegerPartialMapFormatMiddleThirdChoice,
+		IntegerPartialMapFormatFour,
+		IntegerPartialMapFormatFinalFifthSelection,
+	}
 }
 func (e *IntegerPartialMapFormat) UnmarshalJSON(data []byte) error {
 	var v int64

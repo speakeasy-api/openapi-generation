@@ -128,6 +128,11 @@ func CLIError(cmd *cobra.Command, err error) error {
 	if err == nil || IsRendered(err) {
 		return err
 	}
+	if halt := jqHalt(err); halt != nil {
+		if err = jqHaltOutcome(cmd.ErrOrStderr(), halt); err == nil {
+			return nil
+		}
+	}
 	jqExpr, changed := flagutil.GetStringFlag(cmd, "jq")
 	if !changed || jqExpr == "" {
 		jqExpr = preparsedRendering.jq
@@ -142,7 +147,7 @@ func CLIError(cmd *cobra.Command, err error) error {
 	}
 
 	envelope := map[string]interface{}{
-		"error":     err.Error(),
+		"error":     redactedErrorText(err, classification),
 		"exit_code": ExitCodeFor(classification),
 	}
 	mergeMachineErrorFields(envelope, err)
@@ -153,7 +158,6 @@ func CLIError(cmd *cobra.Command, err error) error {
 	if marshalErr != nil {
 		return retainClassification(err, classification)
 	}
-	colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
-	printScrubbedJSON(cmd.ErrOrStderr(), jsonData, ShouldColorize(colorFlag))
+	printScrubbedJSON(cmd.ErrOrStderr(), jsonData, stderrColorize(cmd))
 	return markRendered(err, classification)
 }

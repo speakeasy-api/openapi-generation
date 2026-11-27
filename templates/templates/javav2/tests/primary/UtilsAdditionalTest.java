@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -16,6 +17,9 @@ import java.net.http.HttpClient.Version;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
+import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -27,6 +31,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.openapis.openapi.models.operations.SimplePathParameterObjectsRequest;
 import org.openapis.openapi.models.shared.SimpleObject;
 import org.openapis.openapi.utils.BigIntegerString;
+import org.openapis.openapi.utils.Blob;
 import org.openapis.openapi.utils.Globals;
 import org.openapis.openapi.utils.HTTPRequest;
 import org.openapis.openapi.utils.Hook.AfterErrorContextImpl;
@@ -47,6 +54,7 @@ import org.openapis.openapi.utils.Hooks.FailEarlyException;
 import org.openapis.openapi.utils.JSON;
 import org.openapis.openapi.utils.QueryParameter;
 import org.openapis.openapi.utils.TypedObject;
+import org.openapis.openapi.utils.ResponseWithBody;
 import org.openapis.openapi.utils.Utils;
 import org.openapis.openapi.utils.Utils.JsonShape;
 import org.openapis.openapi.utils.Utils.TypeReferenceWithShape;
@@ -479,6 +487,16 @@ public class UtilsAdditionalTest {
     
     private static final class MyHttpResponse implements HttpResponse<InputStream> {
 
+        private final InputStream body;
+
+        MyHttpResponse() {
+            this(new ByteArrayInputStream("hello there".getBytes(StandardCharsets.UTF_8)));
+        }
+
+        MyHttpResponse(InputStream body) {
+            this.body = body;
+        }
+
         @Override
         public int statusCode() {
             return 234;
@@ -501,7 +519,7 @@ public class UtilsAdditionalTest {
 
         @Override
         public InputStream body() {
-            return new ByteArrayInputStream("hello there".getBytes(StandardCharsets.UTF_8));
+            return body;
         }
 
         @Override
@@ -730,4 +748,37 @@ public class UtilsAdditionalTest {
         assertEquals(Utils.enhancedHash(1), Utils.enhancedHash(1.0));
         assertEquals(Utils.enhancedHash(1, null), Utils.enhancedHash(1.0, null));
     }
+
+    @Test
+    void testUnmarshalSurfacesBodyTimeoutsAsUncheckedIO() {
+        InputStream timingOut = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw new HttpTimeoutException("request timed out");
+            }
+        };
+        UncheckedIOException thrown = assertThrows(UncheckedIOException.class,
+                () -> Utils.unmarshal(new MyHttpResponse(timingOut), new TypeReference<Map<String, Object>>() {}));
+        assertTrue(thrown.getCause() instanceof HttpTimeoutException, String.valueOf(thrown.getCause()));
+
+        Flow.Publisher<List<ByteBuffer>> asyncTimingOut = subscriber -> {
+            subscriber.onSubscribe(new Flow.Subscription() {
+                @Override
+                public void request(long n) {
+                }
+
+                @Override
+                public void cancel() {
+                }
+            });
+            subscriber.onError(new HttpTimeoutException("request timed out"));
+        };
+        HttpResponse<Blob> asyncResponse = new ResponseWithBody<>(new MyHttpResponse(), in -> Blob.from(asyncTimingOut));
+        ExecutionException asyncThrown = assertThrows(ExecutionException.class,
+                () -> Utils.unmarshalAsync(asyncResponse, new TypeReference<Map<String, Object>>() {}).get());
+        assertTrue(asyncThrown.getCause() instanceof UncheckedIOException, String.valueOf(asyncThrown.getCause()));
+        assertTrue(asyncThrown.getCause().getCause() instanceof HttpTimeoutException,
+                String.valueOf(asyncThrown.getCause().getCause()));
+    }
+
 }

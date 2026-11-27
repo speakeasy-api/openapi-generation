@@ -5,11 +5,13 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.AsyncRequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.models.operations.async.GetSingleNamespaceBarPetRequestBuilder;
 import org.openapis.openapi.models.operations.async.GetSingleNamespaceBarPetResponse;
 import org.openapis.openapi.operations.GetSingleNamespaceBarPet;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class AsyncSingleBar {
     private static final Headers _headers = Headers.EMPTY;
@@ -51,8 +53,21 @@ public class AsyncSingleBar {
      * @return {@code CompletableFuture<GetSingleNamespaceBarPetResponse>} - The async response
      */
     public CompletableFuture<GetSingleNamespaceBarPetResponse> getSingleNamespaceBarPetDirect() {
+        return getSingleNamespaceBarPet(null);
+    }
+
+    /**
+     * Get Single Namespace Bar Pet
+     *
+     * <p>This endpoint tests using a single component from the bar namespace.
+     * No import aliasing should be needed since there's no conflict within this group.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetSingleNamespaceBarPetResponse>} - The async response
+     */
+    public CompletableFuture<GetSingleNamespaceBarPetResponse> getSingleNamespaceBarPet(@Nullable Options options) {
         AsyncRequestlessOperation<GetSingleNamespaceBarPetResponse> operation =
-                new GetSingleNamespaceBarPet.Async(sdkConfiguration, _headers);
+                new GetSingleNamespaceBarPet.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 }

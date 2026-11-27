@@ -65,10 +65,13 @@ function getErrorMessageAccessorString(
   }
   let expr = "payload";
   let nullable = false;
+  let owner: TypeDef = type;
   fields.forEach((f, i) => {
     const name = sanitizeFieldName(f.Name, i == 0 ? className : "");
     const access = `${expr}${nullable ? "?." : "."}${name}`;
-    if (needsOptionalNullableWrapper(f)) {
+    const wrapped = needsOptionalNullableWrapper(f, owner);
+    owner = f.Type;
+    if (wrapped) {
       const inner =
         i == fields.length - 1
           ? "string"

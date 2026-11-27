@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type GetPositionalDefaultRequest = {
   id?: string | undefined;
@@ -17,9 +18,11 @@ export type GetPositionalDefaultRequest$Outbound = {
 export const GetPositionalDefaultRequest$outboundSchema: z.ZodMiniType<
   GetPositionalDefaultRequest$Outbound,
   GetPositionalDefaultRequest
-> = z.object({
-  id: z._default(z.string(), "default-id"),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    id: z._default(z.string(), "default-id"),
+  })
+);
 
 export function getPositionalDefaultRequestToJSON(
   getPositionalDefaultRequest: GetPositionalDefaultRequest,

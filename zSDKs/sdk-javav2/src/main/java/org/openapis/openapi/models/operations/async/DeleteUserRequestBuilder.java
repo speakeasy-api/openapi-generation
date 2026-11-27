@@ -6,12 +6,15 @@ package org.openapis.openapi.models.operations.async;
 import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.lang.String;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.operations.DeleteUserRequest;
 import org.openapis.openapi.operations.DeleteUser;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class DeleteUserRequestBuilder {
@@ -19,16 +22,23 @@ public class DeleteUserRequestBuilder {
     private final Headers _headers = new Headers();
     private final DeleteUserRequest.Builder pojoBuilder;
     private DeleteUserRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public DeleteUserRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = DeleteUserRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public DeleteUserRequestBuilder id(@Nonnull String id) {
         this.pojoBuilder.id(id);
         this._setterCalled = true;
+        return this;
+    }
+
+    public DeleteUserRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -52,8 +62,9 @@ public class DeleteUserRequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<DeleteUserResponse> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<DeleteUserRequest, DeleteUserResponse> operation =
-                new DeleteUser.Async(sdkConfiguration, _headers);
+                new DeleteUser.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse);
     }
 }

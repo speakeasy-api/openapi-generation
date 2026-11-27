@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.9.29",
+  core: "3.9.30",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
   globalSecurity: "2.81.12",
@@ -442,7 +442,6 @@ function isTestSkipped(test: string): boolean {
     "optional-nullable-array-params-null-and-unset",
     "optional-nullable-array-params-set",
     "optional-nullable-deep-object-param",
-    "optional-nullable-special-header-params",
     "optional-nullable-urlencoded-body",
     "agent-mode-does-not-leak-between-invocations",
     "catalog-lists-values",
@@ -590,6 +589,8 @@ function isTestSkipped(test: string): boolean {
     "unions-body-variant-overloads-nested-union",
     "unions-body-variant-overloads-open-enum",
     "request-bodies-base64-file-input-raw-bytes",
+    "enum-values",
+    "auth-typed-error-inspection-omits-credentials",
   ].includes(test);
 }
 

@@ -16,7 +16,7 @@ features:
     additionalProperties: 0.1.1
     bigint: 0.1.0
     constsAndDefaults: 0.1.2
-    core: 2.0.6
+    core: 2.0.8
     customSecuritySchemes: 0.1.1
     decimal: 0.1.0
     defaultEnabledRetries: 0.1.0
@@ -58,7 +58,7 @@ trackedFiles:
   manifest.json:
     last_write_checksum: sha1:21c466edb4930e35172f9684728e020312e88dea
   package.json:
-    last_write_checksum: sha1:e061f712de053b510ff7fc28de5e054137cf7e38
+    last_write_checksum: sha1:9c32502f14f5999eb6676bfa90b6d194a6d4d419
   server.json:
     last_write_checksum: sha1:cdd68ed3cc00a507a2bc71e85823fe10482e2527
   src/__tests__/assertions.ts:
@@ -412,7 +412,7 @@ trackedFiles:
   src/__tests__/mockserver/internal/sdk/types/stream/stream.go:
     last_write_checksum: sha1:c48811a5243fa7f9e23c67966b140c52614b58bd
   src/__tests__/mockserver/internal/sdk/utils/json.go:
-    last_write_checksum: sha1:5e20daa1ddf6ebe49c4c0f34fd0051c43e6b7ff9
+    last_write_checksum: sha1:22904cb9788737f288acdab97255bc78d37531bc
   src/__tests__/mockserver/internal/sdk/utils/reflect.go:
     last_write_checksum: sha1:1e3a0ca0387685b6b21c0a6a75650b8611c76ee3
   src/__tests__/mockserver/internal/sdk/utils/sort.go:
@@ -582,7 +582,7 @@ trackedFiles:
   src/lib/security.ts:
     last_write_checksum: sha1:4931e115d6ca115d26530659e523ced9882ab019
   src/lib/url.ts:
-    last_write_checksum: sha1:3e7c9ebe1110bd9280129df93a65b697f7a77657
+    last_write_checksum: sha1:7f6024969d51b27c71f40a233a825f9608ebcf2a
   src/mcp-server/build.mts:
     last_write_checksum: sha1:c6f73b6c371dfcb9c6fe1265231b4459f61f0743
   src/mcp-server/cli.ts:

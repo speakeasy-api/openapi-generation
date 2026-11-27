@@ -5,7 +5,7 @@ const supportedFeatures = {
   additionalProperties: "0.1.1",
   bigint: "0.1.0",
   constsAndDefaults: "0.1.2",
-  core: "2.0.6",
+  core: "2.0.8",
   customSecuritySchemes: "0.1.1",
   decimal: "0.1.0",
   deepObjectParams: "0.1.0",
@@ -704,7 +704,10 @@ function isTestSkipped(test: string): boolean {
     "unions-body-variant-overloads-nested-union",
     "unions-body-variant-overloads-open-enum",
     "request-bodies-base64-file-input-raw-bytes",
-    "pagination-limit-offset-page-num-pages-missing",
+    "parameters-header-params-enum",
+    "parameters-header-params-string-formats",
+    "enum-values",
+    "auth-typed-error-inspection-omits-credentials",
   ].includes(test);
 }
 

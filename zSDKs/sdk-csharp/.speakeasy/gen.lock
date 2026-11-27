@@ -6,16 +6,16 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 32b2e2e6cc08d8d7fb71890a899beee2
+  configChecksum: e6d51aa35fbf85a849291d74d86d7eb0
   repoURL: https://github.com/speakeasy-sdks/test-sdk
   installationURL: https://github.com/speakeasy-sdks/test-sdk
 features:
   csharp:
     additionalDependencies: 0.1.0
-    additionalProperties: 0.0.2
+    additionalProperties: 0.0.3
     bigint: 0.2.1
     constsAndDefaults: 0.0.3
-    core: 3.15.30
+    core: 3.15.33
     customSecuritySchemes: 0.1.0
     decimal: 0.1.0
     deprecations: 2.81.2
@@ -60,7 +60,7 @@ trackedFiles:
   Tests/ConflictsTests.cs:
     last_write_checksum: sha1:448ba240c260d5d8847bfc7452f858fb21b33494
   Tests/SDKTests.cs:
-    last_write_checksum: sha1:d2ce3cb285f1be79c01a4b5947d5014dc556ac45
+    last_write_checksum: sha1:b8cff4270d9d8e201dd014b3d2d0e77d8d43b814
   Tests/SinglebarTests.cs:
     last_write_checksum: sha1:bd9a51e35edf29712a72db64f61d0e49cd195eb9
   Tests/SinglefooTests.cs:
@@ -458,7 +458,7 @@ trackedFiles:
   Tests/mockserver/internal/sdk/types/stream/stream.go:
     last_write_checksum: sha1:c48811a5243fa7f9e23c67966b140c52614b58bd
   Tests/mockserver/internal/sdk/utils/json.go:
-    last_write_checksum: sha1:5e20daa1ddf6ebe49c4c0f34fd0051c43e6b7ff9
+    last_write_checksum: sha1:22904cb9788737f288acdab97255bc78d37531bc
   Tests/mockserver/internal/sdk/utils/reflect.go:
     last_write_checksum: sha1:1e3a0ca0387685b6b21c0a6a75650b8611c76ee3
   Tests/mockserver/internal/sdk/utils/sort.go:
@@ -1226,9 +1226,9 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Models/MCPPolicy.cs:
     last_write_checksum: sha1:33763fc7aaa15da0d96acbfa5740f5c06b3cad4b
   src/Speakeasy/OpenAPI/Models/Metadata.cs:
-    last_write_checksum: sha1:01c901b6f16e41cc240cfedad0a7a5f956791c58
+    last_write_checksum: sha1:e4b61f36b9289abd8fc31b27703a8bfabc680243
   src/Speakeasy/OpenAPI/Models/MetadataAny.cs:
-    last_write_checksum: sha1:3eaabff608f735ad623b011426976b76fe552013
+    last_write_checksum: sha1:a142591d6f9fdaaafd31d330bca38852fd8fbbf6
   src/Speakeasy/OpenAPI/Models/MyApiKey.cs:
     last_write_checksum: sha1:70da72b11dec65c3372014e02c58cc697a69ed80
   src/Speakeasy/OpenAPI/Models/MyObject.cs:
@@ -1455,8 +1455,10 @@ trackedFiles:
     last_write_checksum: sha1:68b1babf5601870be1cc1cedbc9a7e161d111cc5
   src/Speakeasy/OpenAPI/Types.cs:
     last_write_checksum: sha1:7775fbb89f62699087683cf47642c3ead6b62861
+  src/Speakeasy/OpenAPI/Utils/AdditionalPropertiesAdapter.cs:
+    last_write_checksum: sha1:64fb3e7e137fc1518e5573406d5e3da76c463683
   src/Speakeasy/OpenAPI/Utils/AnyDeserializer.cs:
-    last_write_checksum: sha1:0132e56c9b583ca2b8ec632c9ef924600dd0cd68
+    last_write_checksum: sha1:040beb977b4413c34b462cdbb69653f7cc7461da
   src/Speakeasy/OpenAPI/Utils/BigIntStrConverter.cs:
     last_write_checksum: sha1:62c143c14a8ca2a1df4731614a09b993e085923f
   src/Speakeasy/OpenAPI/Utils/Constants.cs:
@@ -1484,9 +1486,9 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Utils/OptionalNullableJsonConverter.cs:
     last_write_checksum: sha1:bf8eec6e762302070ff3a32d58ebc04347c8ed79
   src/Speakeasy/OpenAPI/Utils/RequestBodySerializer.cs:
-    last_write_checksum: sha1:4f68b905a9c9caee72cafe309fb8f991b9e18a7b
+    last_write_checksum: sha1:38292e65b7616271d7581e557885b96dcfd5b5b5
   src/Speakeasy/OpenAPI/Utils/ResponseBodyDeserializer.cs:
-    last_write_checksum: sha1:d466d0e2124070f8010d396be9fa10dd9a7fb9d0
+    last_write_checksum: sha1:78068c96ca7651675293c458e56b8e7ceeac218d
   src/Speakeasy/OpenAPI/Utils/Retries/BackoffStrategy.cs:
     last_write_checksum: sha1:1cc25eb8427b20a80dadcf8a53062a3a70860fd4
   src/Speakeasy/OpenAPI/Utils/Retries/Retries.cs:
@@ -1512,9 +1514,9 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Utils/URLBuilder.cs:
     last_write_checksum: sha1:27aa6dd3713a24f20a7737dfb966c3c673529cb5
   src/Speakeasy/OpenAPI/Utils/UnionDeserializer.cs:
-    last_write_checksum: sha1:9ddf50cc9aee44e22210ad6a12b6001f997487b7
+    last_write_checksum: sha1:2c4d3e3eb0ccf69dd87c376fad477e81173b6b42
   src/Speakeasy/OpenAPI/Utils/Utilities.cs:
-    last_write_checksum: sha1:868a41b840b16955fb0530f8220cf2be15f72967
+    last_write_checksum: sha1:7bd106d1bd0e62bd94ce36521069eb2cf54fb354
 examples:
   _operation_with_leading_and_trailing_underscores_:
     "":

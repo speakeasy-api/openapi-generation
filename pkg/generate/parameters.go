@@ -508,6 +508,19 @@ func (g *Generator) handleQueryParameters(ctx context.Context, opts handleSpecif
 	return queryParams, globalParams, nil
 }
 
+func schemaParamType(paramType string) schemas.ParamType {
+	switch paramType {
+	case ast.ParamTypePathParam:
+		return schemas.ParamTypePath
+	case ast.ParamTypeQueryParam:
+		return schemas.ParamTypeQuery
+	case ast.ParamTypeHeader:
+		return schemas.ParamTypeHeader
+	default:
+		return ""
+	}
+}
+
 func (g *Generator) handleContentParameter(ctx context.Context, paramType string, contextStack ast.ContextStack, rp *oas.ReferencedParameter, globalNameOverrides []*extensions.NameOverride, scope ast.Scope, docInfo *document.DocumentInfo) (*param, error) {
 	p := rp.MustGetObject()
 
@@ -539,6 +552,7 @@ func (g *Generator) handleContentParameter(ctx context.Context, paramType string
 			paramField, err := g.schemas.HandleSchema(ctx, schemas.Params{
 				ContextStack:        addPropScope(contextStack, rp),
 				SerializationMethod: ast.SerializationMethodJSON,
+				ParamType:           schemaParamType(paramType),
 				Schema:              schema,
 				Scope:               s,
 				IsRequest:           true,

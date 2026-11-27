@@ -14,6 +14,16 @@ OASOneOf Resource
 
 ```terraform
 resource "testing_oas_one_of" "my_oasoneof" {
+  optional_const_discriminator_request_and_response = {
+    beta = {
+      beta_value = 0.44
+    }
+  }
+  optional_const_discriminator_request_and_response_repeat = {
+    alpha = {
+      alpha_value = "...my_alpha_value..."
+    }
+  }
   optional_discriminator_request_and_response = {
     allof = {
       nondiscriminator = "...my_nondiscriminator..."
@@ -173,6 +183,8 @@ resource "testing_oas_one_of" "my_oasoneof" {
 
 ### Optional
 
+- `optional_const_discriminator_request_and_response` (Attributes) Discriminated oneOf whose members declare the discriminator property as a const. The same member schemas are referenced again by the next property, so Terraform schema assembly reaches each shared member type twice within one entity. (see [below for nested schema](#nestedatt--optional_const_discriminator_request_and_response))
+- `optional_const_discriminator_request_and_response_repeat` (Attributes) Second reference to the const-discriminated members above; generation must keep the const discriminator property on the shared member models. (see [below for nested schema](#nestedatt--optional_const_discriminator_request_and_response_repeat))
 - `optional_discriminator_request_and_response` (Attributes) optional_discriminator_request_and_response oneOf level description (see [below for nested schema](#nestedatt--optional_discriminator_request_and_response))
 - `optional_discriminator_request_only` (Attributes) optional_discriminator_request_only oneOf level description (see [below for nested schema](#nestedatt--optional_discriminator_request_only))
 - `optional_discriminator_request_required_response` (Attributes) optional_discriminator_request_required_response oneOf level description (see [below for nested schema](#nestedatt--optional_discriminator_request_required_response))
@@ -545,6 +557,56 @@ Optional:
 Optional:
 
 - `object_string` (String)
+
+
+
+<a id="nestedatt--optional_const_discriminator_request_and_response"></a>
+### Nested Schema for `optional_const_discriminator_request_and_response`
+
+Optional:
+
+- `alpha` (Attributes) (see [below for nested schema](#nestedatt--optional_const_discriminator_request_and_response--alpha))
+- `beta` (Attributes) (see [below for nested schema](#nestedatt--optional_const_discriminator_request_and_response--beta))
+
+<a id="nestedatt--optional_const_discriminator_request_and_response--alpha"></a>
+### Nested Schema for `optional_const_discriminator_request_and_response.alpha`
+
+Optional:
+
+- `alpha_value` (String)
+
+
+<a id="nestedatt--optional_const_discriminator_request_and_response--beta"></a>
+### Nested Schema for `optional_const_discriminator_request_and_response.beta`
+
+Optional:
+
+- `beta_value` (Number)
+
+
+
+<a id="nestedatt--optional_const_discriminator_request_and_response_repeat"></a>
+### Nested Schema for `optional_const_discriminator_request_and_response_repeat`
+
+Optional:
+
+- `alpha` (Attributes) (see [below for nested schema](#nestedatt--optional_const_discriminator_request_and_response_repeat--alpha))
+- `beta` (Attributes) (see [below for nested schema](#nestedatt--optional_const_discriminator_request_and_response_repeat--beta))
+
+<a id="nestedatt--optional_const_discriminator_request_and_response_repeat--alpha"></a>
+### Nested Schema for `optional_const_discriminator_request_and_response_repeat.alpha`
+
+Optional:
+
+- `alpha_value` (String)
+
+
+<a id="nestedatt--optional_const_discriminator_request_and_response_repeat--beta"></a>
+### Nested Schema for `optional_const_discriminator_request_and_response_repeat.beta`
+
+Optional:
+
+- `beta_value` (Number)
 
 
 

@@ -8,10 +8,12 @@ import static org.openapis.openapi.operations.Operations.RequestOperation;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.lang.Boolean;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.shared.ShapeRequest;
 import org.openapis.openapi.operations.CreateWithUnion;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class CreateWithUnionRequestBuilder {
@@ -19,11 +21,13 @@ public class CreateWithUnionRequestBuilder {
     private final Headers _headers = new Headers();
     private final CreateWithUnionRequest.Builder pojoBuilder;
     private CreateWithUnionRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public CreateWithUnionRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = CreateWithUnionRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public CreateWithUnionRequestBuilder dryRun(@Nullable Boolean dryRun) {
@@ -35,6 +39,11 @@ public class CreateWithUnionRequestBuilder {
     public CreateWithUnionRequestBuilder shapeRequest(@Nonnull ShapeRequest shapeRequest) {
         this.pojoBuilder.shapeRequest(shapeRequest);
         this._setterCalled = true;
+        return this;
+    }
+
+    public CreateWithUnionRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -58,8 +67,9 @@ public class CreateWithUnionRequestBuilder {
      * @return The response from the server.
      */
     public CreateWithUnionResponse call() {
+        Options options = optionsBuilder.build();
         RequestOperation<CreateWithUnionRequest, CreateWithUnionResponse> operation =
-                new CreateWithUnion.Sync(sdkConfiguration, _headers);
+                new CreateWithUnion.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(this._buildRequest()));
     }
 }

@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.31.12",
+  core: "3.31.15",
   flattening: "2.82.1",
   globalSecurity: "2.82.16",
   methodSecurity: "2.82.8",
@@ -9,7 +9,7 @@ const supportedFeatures = {
   globals: "2.82.2",
   enums: "2.83.2",
   openEnums: "0.1.4",
-  allowReserved: "0.2.0",
+  allowReserved: "0.2.1",
   openDiscriminatedUnions: "0.1.0",
   serverIDs: "2.81.2",
   nameOverrides: "2.81.4",
@@ -24,7 +24,7 @@ const supportedFeatures = {
   inputOutputModels: "2.82.1",
   ignores: "2.81.1",
   typeOverrides: "2.81.1",
-  errors: "2.86.3",
+  errors: "2.86.4",
   acceptHeaders: "2.81.2",
   multiLevelTagging: "2.87.3",
   devContainers: "2.90.1",
@@ -64,7 +64,7 @@ const supportedFeatures = {
   enumUnions: "0.1.0",
   reactQueryHooks: "0.3.0",
   customCodeRegions: "0.1.1",
-  mcpServer: "1.0.0",
+  mcpServer: "1.0.1",
   jsonlResponses: "0.2.1",
   examplesDirectory: "0.2.1",
   modelNamespaces: "0.1.1",
@@ -439,7 +439,9 @@ function isTestSkipped(test: string): boolean {
     "unions-body-variant-overloads-nested-union",
     "unions-body-variant-overloads-open-enum",
     "request-bodies-base64-file-input-raw-bytes",
-    "pagination-limit-offset-page-num-pages-missing",
+    "parameters-header-params-enum",
+    "parameters-header-params-string-formats",
+    "enum-values",
   ].includes(test);
 }
 

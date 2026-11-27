@@ -49,7 +49,7 @@ interface StartCommandFlags {
   {{- else }}
   readonly "server-url": string;
   {{- end}}
-  {{- if $globalSDK.Servers}}{{if $serverMap}}
+  {{- if $hasServers}}{{if $serverMap}}
   {{- addImport "../../../lib/config.js" "SDKOptions" }}
   readonly server?: SDKOptions["server"];
   {{- else}}

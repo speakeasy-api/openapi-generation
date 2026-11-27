@@ -463,6 +463,180 @@ func (u OASOneOfRequestOptionalDiscriminatorRequestAndResponse) MarshalJSON() ([
 	return nil, errors.New("could not marshal union type OASOneOfRequestOptionalDiscriminatorRequestAndResponse: all fields are null")
 }
 
+type OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseType string
+
+const (
+	OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseTypeAlpha OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseType = "alpha"
+	OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseTypeBeta  OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseType = "beta"
+)
+
+// OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse - Discriminated oneOf whose members declare the discriminator property as a const. The same member schemas are referenced again by the next property, so Terraform schema assembly reaches each shared member type twice within one entity.
+type OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse struct {
+	OASOneOfConstDiscriminatorAlpha *OASOneOfConstDiscriminatorAlpha `queryParam:"inline" union:"member"`
+	OASOneOfConstDiscriminatorBeta  *OASOneOfConstDiscriminatorBeta  `queryParam:"inline" union:"member"`
+
+	Type OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseType
+}
+
+func CreateOASOneOfRequestOptionalConstDiscriminatorRequestAndResponseAlpha(alpha OASOneOfConstDiscriminatorAlpha) OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse {
+	typ := OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseTypeAlpha
+
+	return OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse{
+		OASOneOfConstDiscriminatorAlpha: &alpha,
+		Type:                            typ,
+	}
+}
+
+func CreateOASOneOfRequestOptionalConstDiscriminatorRequestAndResponseBeta(beta OASOneOfConstDiscriminatorBeta) OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse {
+	typ := OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseTypeBeta
+
+	return OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse{
+		OASOneOfConstDiscriminatorBeta: &beta,
+		Type:                           typ,
+	}
+}
+
+func (u *OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse) UnmarshalJSON(data []byte) (err error) {
+	previous := *u
+	*u = OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse{}
+	defer func() {
+		if err != nil {
+			*u = previous
+		}
+	}()
+
+	type discriminator struct {
+		Kind string `json:"kind"`
+	}
+
+	dis := new(discriminator)
+	if err := json.Unmarshal(data, &dis); err != nil {
+		return fmt.Errorf("could not unmarshal discriminator: %w", err)
+	}
+
+	switch dis.Kind {
+	case "alpha":
+		oasOneOfConstDiscriminatorAlpha := new(OASOneOfConstDiscriminatorAlpha)
+		if err := utils.UnmarshalJSON(data, &oasOneOfConstDiscriminatorAlpha, "", true, nil); err != nil {
+			return fmt.Errorf("could not unmarshal `%s` into expected (Kind == alpha) type OASOneOfConstDiscriminatorAlpha within OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse: %w", string(data), err)
+		}
+
+		u.OASOneOfConstDiscriminatorAlpha = oasOneOfConstDiscriminatorAlpha
+		u.Type = OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseTypeAlpha
+		return nil
+	case "beta":
+		oasOneOfConstDiscriminatorBeta := new(OASOneOfConstDiscriminatorBeta)
+		if err := utils.UnmarshalJSON(data, &oasOneOfConstDiscriminatorBeta, "", true, nil); err != nil {
+			return fmt.Errorf("could not unmarshal `%s` into expected (Kind == beta) type OASOneOfConstDiscriminatorBeta within OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse: %w", string(data), err)
+		}
+
+		u.OASOneOfConstDiscriminatorBeta = oasOneOfConstDiscriminatorBeta
+		u.Type = OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseTypeBeta
+		return nil
+	}
+
+	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse", string(data))
+}
+
+func (u OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse) MarshalJSON() ([]byte, error) {
+	if u.OASOneOfConstDiscriminatorAlpha != nil {
+		return utils.MarshalJSON(u.OASOneOfConstDiscriminatorAlpha, "", true)
+	}
+
+	if u.OASOneOfConstDiscriminatorBeta != nil {
+		return utils.MarshalJSON(u.OASOneOfConstDiscriminatorBeta, "", true)
+	}
+
+	return nil, errors.New("could not marshal union type OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse: all fields are null")
+}
+
+type OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatType string
+
+const (
+	OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatTypeAlpha OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatType = "alpha"
+	OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatTypeBeta  OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatType = "beta"
+)
+
+// OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat - Second reference to the const-discriminated members above; generation must keep the const discriminator property on the shared member models.
+type OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat struct {
+	OASOneOfConstDiscriminatorAlpha *OASOneOfConstDiscriminatorAlpha `queryParam:"inline" union:"member"`
+	OASOneOfConstDiscriminatorBeta  *OASOneOfConstDiscriminatorBeta  `queryParam:"inline" union:"member"`
+
+	Type OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatType
+}
+
+func CreateOASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatAlpha(alpha OASOneOfConstDiscriminatorAlpha) OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat {
+	typ := OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatTypeAlpha
+
+	return OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat{
+		OASOneOfConstDiscriminatorAlpha: &alpha,
+		Type:                            typ,
+	}
+}
+
+func CreateOASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatBeta(beta OASOneOfConstDiscriminatorBeta) OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat {
+	typ := OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatTypeBeta
+
+	return OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat{
+		OASOneOfConstDiscriminatorBeta: &beta,
+		Type:                           typ,
+	}
+}
+
+func (u *OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat) UnmarshalJSON(data []byte) (err error) {
+	previous := *u
+	*u = OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat{}
+	defer func() {
+		if err != nil {
+			*u = previous
+		}
+	}()
+
+	type discriminator struct {
+		Kind string `json:"kind"`
+	}
+
+	dis := new(discriminator)
+	if err := json.Unmarshal(data, &dis); err != nil {
+		return fmt.Errorf("could not unmarshal discriminator: %w", err)
+	}
+
+	switch dis.Kind {
+	case "alpha":
+		oasOneOfConstDiscriminatorAlpha := new(OASOneOfConstDiscriminatorAlpha)
+		if err := utils.UnmarshalJSON(data, &oasOneOfConstDiscriminatorAlpha, "", true, nil); err != nil {
+			return fmt.Errorf("could not unmarshal `%s` into expected (Kind == alpha) type OASOneOfConstDiscriminatorAlpha within OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat: %w", string(data), err)
+		}
+
+		u.OASOneOfConstDiscriminatorAlpha = oasOneOfConstDiscriminatorAlpha
+		u.Type = OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatTypeAlpha
+		return nil
+	case "beta":
+		oasOneOfConstDiscriminatorBeta := new(OASOneOfConstDiscriminatorBeta)
+		if err := utils.UnmarshalJSON(data, &oasOneOfConstDiscriminatorBeta, "", true, nil); err != nil {
+			return fmt.Errorf("could not unmarshal `%s` into expected (Kind == beta) type OASOneOfConstDiscriminatorBeta within OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat: %w", string(data), err)
+		}
+
+		u.OASOneOfConstDiscriminatorBeta = oasOneOfConstDiscriminatorBeta
+		u.Type = OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeatTypeBeta
+		return nil
+	}
+
+	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat", string(data))
+}
+
+func (u OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat) MarshalJSON() ([]byte, error) {
+	if u.OASOneOfConstDiscriminatorAlpha != nil {
+		return utils.MarshalJSON(u.OASOneOfConstDiscriminatorAlpha, "", true)
+	}
+
+	if u.OASOneOfConstDiscriminatorBeta != nil {
+		return utils.MarshalJSON(u.OASOneOfConstDiscriminatorBeta, "", true)
+	}
+
+	return nil, errors.New("could not marshal union type OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat: all fields are null")
+}
+
 type OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectAllOf struct {
 	//lint:ignore U1000 accessed via reflection for JSON marshaling
 	discriminator    string   `const:"allof" json:"discriminator"`
@@ -2867,25 +3041,16 @@ func (u RequiredRefObjectRequestOnly) MarshalJSON() ([]byte, error) {
 type OASOneOfRequestRequiredRefObjectRequestAndResponseType string
 
 const (
-	OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber OASOneOfRequestRequiredRefObjectRequestAndResponseType = "OASOneOfObjectNumber"
 	OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectString OASOneOfRequestRequiredRefObjectRequestAndResponseType = "OASOneOfObjectString"
+	OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber OASOneOfRequestRequiredRefObjectRequestAndResponseType = "OASOneOfObjectNumber"
 )
 
 // OASOneOfRequestRequiredRefObjectRequestAndResponse - required_ref_object_request_and_response oneOf level description
 type OASOneOfRequestRequiredRefObjectRequestAndResponse struct {
-	OASOneOfObjectNumber *OASOneOfObjectNumber `queryParam:"inline" union:"member"`
 	OASOneOfObjectString *OASOneOfObjectString `queryParam:"inline" union:"member"`
+	OASOneOfObjectNumber *OASOneOfObjectNumber `queryParam:"inline" union:"member"`
 
 	Type OASOneOfRequestRequiredRefObjectRequestAndResponseType
-}
-
-func CreateOASOneOfRequestRequiredRefObjectRequestAndResponseOASOneOfObjectNumber(oasOneOfObjectNumber OASOneOfObjectNumber) OASOneOfRequestRequiredRefObjectRequestAndResponse {
-	typ := OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber
-
-	return OASOneOfRequestRequiredRefObjectRequestAndResponse{
-		OASOneOfObjectNumber: &oasOneOfObjectNumber,
-		Type:                 typ,
-	}
 }
 
 func CreateOASOneOfRequestRequiredRefObjectRequestAndResponseOASOneOfObjectString(oasOneOfObjectString OASOneOfObjectString) OASOneOfRequestRequiredRefObjectRequestAndResponse {
@@ -2893,6 +3058,15 @@ func CreateOASOneOfRequestRequiredRefObjectRequestAndResponseOASOneOfObjectStrin
 
 	return OASOneOfRequestRequiredRefObjectRequestAndResponse{
 		OASOneOfObjectString: &oasOneOfObjectString,
+		Type:                 typ,
+	}
+}
+
+func CreateOASOneOfRequestRequiredRefObjectRequestAndResponseOASOneOfObjectNumber(oasOneOfObjectNumber OASOneOfObjectNumber) OASOneOfRequestRequiredRefObjectRequestAndResponse {
+	typ := OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber
+
+	return OASOneOfRequestRequiredRefObjectRequestAndResponse{
+		OASOneOfObjectNumber: &oasOneOfObjectNumber,
 		Type:                 typ,
 	}
 }
@@ -2909,19 +3083,19 @@ func (u *OASOneOfRequestRequiredRefObjectRequestAndResponse) UnmarshalJSON(data 
 	var candidates []utils.UnionCandidate
 
 	// Collect all valid candidates
-	var oasOneOfObjectNumber OASOneOfObjectNumber = OASOneOfObjectNumber{}
-	if err := utils.UnmarshalJSON(data, &oasOneOfObjectNumber, "", true, nil); err == nil {
-		candidates = append(candidates, utils.UnionCandidate{
-			Type:  OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber,
-			Value: &oasOneOfObjectNumber,
-		})
-	}
-
 	var oasOneOfObjectString OASOneOfObjectString = OASOneOfObjectString{}
 	if err := utils.UnmarshalJSON(data, &oasOneOfObjectString, "", true, nil); err == nil {
 		candidates = append(candidates, utils.UnionCandidate{
 			Type:  OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectString,
 			Value: &oasOneOfObjectString,
+		})
+	}
+
+	var oasOneOfObjectNumber OASOneOfObjectNumber = OASOneOfObjectNumber{}
+	if err := utils.UnmarshalJSON(data, &oasOneOfObjectNumber, "", true, nil); err == nil {
+		candidates = append(candidates, utils.UnionCandidate{
+			Type:  OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber,
+			Value: &oasOneOfObjectNumber,
 		})
 	}
 
@@ -2938,11 +3112,11 @@ func (u *OASOneOfRequestRequiredRefObjectRequestAndResponse) UnmarshalJSON(data 
 	// Set the union type and value based on the best candidate
 	u.Type = best.Type.(OASOneOfRequestRequiredRefObjectRequestAndResponseType)
 	switch best.Type {
-	case OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber:
-		u.OASOneOfObjectNumber = best.Value.(*OASOneOfObjectNumber)
-		return nil
 	case OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectString:
 		u.OASOneOfObjectString = best.Value.(*OASOneOfObjectString)
+		return nil
+	case OASOneOfRequestRequiredRefObjectRequestAndResponseTypeOASOneOfObjectNumber:
+		u.OASOneOfObjectNumber = best.Value.(*OASOneOfObjectNumber)
 		return nil
 	}
 
@@ -2950,12 +3124,12 @@ func (u *OASOneOfRequestRequiredRefObjectRequestAndResponse) UnmarshalJSON(data 
 }
 
 func (u OASOneOfRequestRequiredRefObjectRequestAndResponse) MarshalJSON() ([]byte, error) {
-	if u.OASOneOfObjectNumber != nil {
-		return utils.MarshalJSON(u.OASOneOfObjectNumber, "", true)
-	}
-
 	if u.OASOneOfObjectString != nil {
 		return utils.MarshalJSON(u.OASOneOfObjectString, "", true)
+	}
+
+	if u.OASOneOfObjectNumber != nil {
+		return utils.MarshalJSON(u.OASOneOfObjectNumber, "", true)
 	}
 
 	return nil, errors.New("could not marshal union type OASOneOfRequestRequiredRefObjectRequestAndResponse: all fields are null")
@@ -3160,6 +3334,10 @@ type OASOneOfRequest struct {
 	OptionalDiscriminatorRequestOnly *OptionalDiscriminatorRequestOnly `json:"optional_discriminator_request_only,omitempty"`
 	// optional_discriminator_request_and_response oneOf level description
 	OptionalDiscriminatorRequestAndResponse *OASOneOfRequestOptionalDiscriminatorRequestAndResponse `json:"optional_discriminator_request_and_response,omitempty"`
+	// Discriminated oneOf whose members declare the discriminator property as a const. The same member schemas are referenced again by the next property, so Terraform schema assembly reaches each shared member type twice within one entity.
+	OptionalConstDiscriminatorRequestAndResponse *OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse `json:"optional_const_discriminator_request_and_response,omitempty"`
+	// Second reference to the const-discriminated members above; generation must keep the const discriminator property on the shared member models.
+	OptionalConstDiscriminatorRequestAndResponseRepeat *OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat `json:"optional_const_discriminator_request_and_response_repeat,omitempty"`
 	// optional_discriminator_request_required_response oneOf level description
 	OptionalDiscriminatorRequestRequiredResponse *OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse `json:"optional_discriminator_request_required_response,omitempty"`
 	// optional_inline_object_request_only oneOf level description
@@ -3266,6 +3444,48 @@ func (o *OASOneOfRequest) GetOptionalDiscriminatorRequestAndResponseNumber() *OA
 func (o *OASOneOfRequest) GetOptionalDiscriminatorRequestAndResponseAllof() *OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf {
 	if v := o.GetOptionalDiscriminatorRequestAndResponse(); v != nil {
 		return v.OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf
+	}
+	return nil
+}
+
+func (o *OASOneOfRequest) GetOptionalConstDiscriminatorRequestAndResponse() *OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse {
+	if o == nil {
+		return nil
+	}
+	return o.OptionalConstDiscriminatorRequestAndResponse
+}
+
+func (o *OASOneOfRequest) GetOptionalConstDiscriminatorRequestAndResponseAlpha() *OASOneOfConstDiscriminatorAlpha {
+	if v := o.GetOptionalConstDiscriminatorRequestAndResponse(); v != nil {
+		return v.OASOneOfConstDiscriminatorAlpha
+	}
+	return nil
+}
+
+func (o *OASOneOfRequest) GetOptionalConstDiscriminatorRequestAndResponseBeta() *OASOneOfConstDiscriminatorBeta {
+	if v := o.GetOptionalConstDiscriminatorRequestAndResponse(); v != nil {
+		return v.OASOneOfConstDiscriminatorBeta
+	}
+	return nil
+}
+
+func (o *OASOneOfRequest) GetOptionalConstDiscriminatorRequestAndResponseRepeat() *OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat {
+	if o == nil {
+		return nil
+	}
+	return o.OptionalConstDiscriminatorRequestAndResponseRepeat
+}
+
+func (o *OASOneOfRequest) GetOptionalConstDiscriminatorRequestAndResponseRepeatAlpha() *OASOneOfConstDiscriminatorAlpha {
+	if v := o.GetOptionalConstDiscriminatorRequestAndResponseRepeat(); v != nil {
+		return v.OASOneOfConstDiscriminatorAlpha
+	}
+	return nil
+}
+
+func (o *OASOneOfRequest) GetOptionalConstDiscriminatorRequestAndResponseRepeatBeta() *OASOneOfConstDiscriminatorBeta {
+	if v := o.GetOptionalConstDiscriminatorRequestAndResponseRepeat(); v != nil {
+		return v.OASOneOfConstDiscriminatorBeta
 	}
 	return nil
 }

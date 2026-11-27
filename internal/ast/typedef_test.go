@@ -610,6 +610,77 @@ func TestTypeDef_Clone(t *testing.T) {
 				assert.Len(t, cloned.Fields[0].Type.Fields, len(original.Fields[0].Type.Fields))
 			},
 		},
+		{
+			name: "unions sharing member TypeDefs",
+			td: func() *TypeDef {
+				members := TypeDefs{
+					{
+						Name: "MemberA",
+						Type: DataTypeClass,
+						Fields: Fields{
+							{Name: "type", Type: &TypeDef{Type: DataTypeString}},
+						},
+					},
+					{Name: "MemberB", Type: DataTypeClass},
+				}
+
+				return &TypeDef{
+					Name: "Root",
+					Type: DataTypeClass,
+					Fields: Fields{
+						{
+							Name: "first",
+							Type: &TypeDef{Name: "FirstUnion", Type: DataTypeUnion, AssociatedTypes: members},
+						},
+						{
+							Name: "second",
+							Type: &TypeDef{Name: "SecondUnion", Type: DataTypeUnion, AssociatedTypes: TypeDefs{members[0], members[1]}},
+						},
+					},
+				}
+			}(),
+			test: func(t *testing.T, original, cloned *TypeDef) {
+				t.Helper()
+				originalMembers := original.Fields.GetField("first").Type.AssociatedTypes
+				first := cloned.Fields.GetField("first").Type.AssociatedTypes
+				second := cloned.Fields.GetField("second").Type.AssociatedTypes
+				require.Len(t, first, len(originalMembers))
+				require.Len(t, second, len(originalMembers))
+
+				for i, member := range originalMembers {
+					assert.NotSame(t, member, first[i])
+					assert.NotSame(t, member, second[i])
+					assert.Same(t, first[i], second[i])
+				}
+
+				second[0].Fields = nil
+				assert.NotEmpty(t, originalMembers[0].Fields)
+			},
+		},
+		{
+			name: "classes sharing FieldDefs",
+			td: func() *TypeDef {
+				shared := &FieldDef{Name: "id", Type: &TypeDef{Type: DataTypeString}}
+
+				return &TypeDef{
+					Name: "Root",
+					Type: DataTypeClass,
+					Fields: Fields{
+						{Name: "first", Type: &TypeDef{Name: "First", Type: DataTypeClass, Fields: Fields{shared}}},
+						{Name: "second", Type: &TypeDef{Name: "Second", Type: DataTypeClass, Fields: Fields{shared}}},
+					},
+				}
+			}(),
+			test: func(t *testing.T, original, cloned *TypeDef) {
+				t.Helper()
+				shared := original.Fields.GetField("first").Type.Fields[0]
+				first := cloned.Fields.GetField("first").Type.Fields[0]
+				second := cloned.Fields.GetField("second").Type.Fields[0]
+				assert.NotSame(t, shared, first)
+				assert.NotSame(t, shared, second)
+				assert.Same(t, first, second)
+			},
+		},
 	}
 
 	for _, tt := range tests {

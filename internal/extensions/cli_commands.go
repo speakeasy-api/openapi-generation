@@ -305,29 +305,84 @@ type CLICommandContinuationBinding struct {
 	Optional       bool                                    `json:"optional,omitempty" yaml:"optional,omitempty"`
 	Flag           string                                  `json:"flag,omitempty" yaml:"flag,omitempty"`
 	UnlessRequest  *CLICommandContinuationRequestCondition `json:"unlessRequest,omitempty" yaml:"unlessRequest,omitempty"`
+	// StreamAuthoritativeWhen marks streamed events that report the binding's
+	// final value: a matching event without the value clears the one captured
+	// from earlier events.
+	StreamAuthoritativeWhen *CLICommandContinuationRequestCondition `json:"streamAuthoritativeWhen,omitempty" yaml:"streamAuthoritativeWhen,omitempty"`
 }
 
+// CLICommandContinuationRequestCondition matches a JSON value by equality
+// (Operator "equals") or by presence (Operator "exists"), where a null value
+// counts as absent.
 type CLICommandContinuationRequestCondition struct {
 	Path          string `json:"path" yaml:"path"`
 	Pointer       string `json:"pointer" yaml:"pointer"`
+	Operator      string `json:"operator" yaml:"operator"`
+	Equals        any    `json:"equals" yaml:"equals"`
+	Exists        bool   `json:"exists,omitempty" yaml:"exists,omitempty"`
+	equalsPresent bool
+}
+
+type CLICommandContinuationOmit struct {
+	Path          string                                  `json:"path" yaml:"path"`
+	Pointer       string                                  `json:"pointer" yaml:"pointer"`
+	PathSegments  []string                                `json:"pathSegments" yaml:"pathSegments"`
+	UnlessRequest *CLICommandContinuationRequestCondition `json:"unlessRequest,omitempty" yaml:"unlessRequest,omitempty"`
+}
+
+type CLICommandContinuationMergeDrop struct {
+	Path          string `json:"path" yaml:"path"`
+	Pointer       string `json:"pointer" yaml:"pointer"`
+	Field         string `json:"field" yaml:"field"`
 	Equals        any    `json:"equals" yaml:"equals"`
 	equalsPresent bool
 }
 
+type CLICommandContinuationKeepFirst struct {
+	Path            string `json:"path" yaml:"path"`
+	Pointer         string `json:"pointer" yaml:"pointer"`
+	Fallback        string `json:"fallback,omitempty" yaml:"fallback,omitempty"`
+	FallbackPointer string `json:"fallbackPointer,omitempty" yaml:"fallbackPointer,omitempty"`
+}
+
+type CLICommandContinuationCollect struct {
+	To           string   `json:"to" yaml:"to"`
+	ToPointer    string   `json:"toPointer" yaml:"toPointer"`
+	From         []string `json:"from" yaml:"from"`
+	FromPointers []string `json:"fromPointers" yaml:"fromPointers"`
+	Unique       bool     `json:"unique" yaml:"unique"`
+}
+
+type CLICommandContinuationSumBy struct {
+	Path    string `json:"path" yaml:"path"`
+	Pointer string `json:"pointer" yaml:"pointer"`
+	Key     string `json:"key" yaml:"key"`
+	Value   string `json:"value" yaml:"value"`
+}
+
 // CLICommandContinuation re-sends a command's request while the response's
 // output.outcome state classifies as continue, filling Bind values from the
-// response that stopped. Merge paths are arrays concatenated across hops and
-// Sum paths numbers summed across hops; every other field of a discrete
-// result comes from the last hop.
+// response that stopped and removing Omit fields. UnlessRequest conditions
+// that match the first request turn continuation off for that invocation.
+// For discrete results, Merge paths are arrays concatenated across hops, Sum
+// paths numbers summed across hops, KeepFirst fields come from the first hop,
+// Collect gathers strings from every hop, and SumBy combines keyed counters;
+// every other field comes from the last hop.
 type CLICommandContinuation struct {
-	Bind        []CLICommandContinuationBinding `json:"bind" yaml:"bind"`
-	MergeFrom   []string                        `json:"mergeFrom,omitempty" yaml:"mergeFrom,omitempty"`
-	Merge       []string                        `json:"merge,omitempty" yaml:"merge,omitempty"`
-	SumFrom     []string                        `json:"sumFrom,omitempty" yaml:"sumFrom,omitempty"`
-	Sum         []string                        `json:"sum,omitempty" yaml:"sum,omitempty"`
-	MaxHops     int                             `json:"maxHops" yaml:"maxHops"`
-	Default     bool                            `json:"default" yaml:"default"`
-	OperationID string                          `json:"operationId,omitempty" yaml:"operationId,omitempty"`
+	Bind                  []CLICommandContinuationBinding          `json:"bind" yaml:"bind"`
+	Omit                  []CLICommandContinuationOmit             `json:"omit,omitempty" yaml:"omit,omitempty"`
+	UnlessRequest         []CLICommandContinuationRequestCondition `json:"unlessRequest,omitempty" yaml:"unlessRequest,omitempty"`
+	MergeFrom             []string                                 `json:"mergeFrom,omitempty" yaml:"mergeFrom,omitempty"`
+	Merge                 []string                                 `json:"merge,omitempty" yaml:"merge,omitempty"`
+	MergeDropLeadingWhere []CLICommandContinuationMergeDrop        `json:"mergeDropLeadingWhere,omitempty" yaml:"mergeDropLeadingWhere,omitempty"`
+	SumFrom               []string                                 `json:"sumFrom,omitempty" yaml:"sumFrom,omitempty"`
+	Sum                   []string                                 `json:"sum,omitempty" yaml:"sum,omitempty"`
+	KeepFirst             []CLICommandContinuationKeepFirst        `json:"keepFirst,omitempty" yaml:"keepFirst,omitempty"`
+	Collect               []CLICommandContinuationCollect          `json:"collect,omitempty" yaml:"collect,omitempty"`
+	SumBy                 []CLICommandContinuationSumBy            `json:"sumBy,omitempty" yaml:"sumBy,omitempty"`
+	MaxHops               int                                      `json:"maxHops" yaml:"maxHops"`
+	Default               bool                                     `json:"default" yaml:"default"`
+	OperationID           string                                   `json:"operationId,omitempty" yaml:"operationId,omitempty"`
 }
 
 // CLICommandAsyncParameter identifies the poll-operation parameter that
@@ -366,8 +421,8 @@ type CLICommandAsyncID struct {
 // the API's enum value so overlays replace classifications instead of
 // appending duplicate set members. The failure-detail shape is
 // declaration-driven: ErrorField binds the poll-response root member holding
-// the failure detail object and ErrorMessageField the string member inside
-// it that carries the human message. Both default to the v1 shape
+// the failure detail object (or an array of them) and ErrorMessageField the
+// string member inside it that carries the human message. Both default to the v1 shape
 // ("error"/"message"), and only declaring either opts the pair into strict
 // linking against the poll response schema (a defaulted pair keeps the v1
 // best-effort runtime reads, so existing recipes cannot start failing
@@ -618,8 +673,15 @@ var cliOutputStreamMetadataKeys = []string{"select", "label", "complete", "when"
 var cliOperationKeys = []string{"output", "flags", "preferShorthand", "continuation"}
 
 var (
-	cliContinuationKeys        = []string{"bind", "merge", "sum", "maxHops", "default"}
-	cliContinuationBindingKeys = []string{"from", "streamFrom", "to", "optional", "unlessRequest"}
+	cliContinuationKeys          = []string{"bind", "omit", "unlessRequest", "merge", "sum", "keepFirst", "collect", "sumBy", "maxHops", "default"}
+	cliContinuationBindingKeys   = []string{"from", "streamFrom", "to", "optional", "unlessRequest", "streamAuthoritativeWhen"}
+	cliContinuationConditionKeys = []string{"path", "equals", "exists"}
+	cliContinuationOmitKeys      = []string{"path", "unlessRequest"}
+	cliContinuationMergeKeys     = []string{"path", "dropLeadingWhere"}
+	cliContinuationDropKeys      = []string{"field", "equals"}
+	cliContinuationKeepFirstKeys = []string{"path", "fallback"}
+	cliContinuationCollectKeys   = []string{"to", "from", "unique"}
+	cliContinuationSumByKeys     = []string{"path", "key", "value"}
 	// cliOutcomeStateKind extends the async classifications with continue,
 	// which only a continuation recipe acts on; async polling has no resume
 	// value to send.
@@ -1646,15 +1708,25 @@ func (d *cliManifestDecoder) decodeContinuation(owner string, node *yaml.Node) (
 		return nil, err
 	}
 	recipe := &CLICommandContinuation{MaxHops: cliContinuationDefaultMaxHops, Default: true}
-	var bindNode *yaml.Node
+	var bindNode, omitNode *yaml.Node
 	for _, entry := range entries {
 		switch entry.Key.Value {
 		case "bind":
 			bindNode = entry.Value
+		case "omit":
+			omitNode = entry.Value
+		case "unlessRequest":
+			recipe.UnlessRequest, err = d.decodeContinuationRequestConditions(owner, entry.Value)
 		case "merge":
-			recipe.MergeFrom, recipe.Merge, err = cliDecodeContinuationPaths(entry.Value, "continuation.merge", true)
+			err = d.decodeContinuationMerge(owner, recipe, entry.Value)
 		case "sum":
 			recipe.SumFrom, recipe.Sum, err = cliDecodeContinuationPaths(entry.Value, "continuation.sum", true)
+		case "keepFirst":
+			recipe.KeepFirst, err = d.decodeContinuationKeepFirst(owner, entry.Value)
+		case "collect":
+			recipe.Collect, err = d.decodeContinuationCollect(owner, entry.Value)
+		case "sumBy":
+			recipe.SumBy, err = d.decodeContinuationSumBy(owner, entry.Value)
 		case "maxHops":
 			if entry.Value.Kind != yaml.ScalarNode || entry.Value.Tag != "!!int" {
 				err = stderrors.New("continuation.maxHops must be an integer of at least 1")
@@ -1693,54 +1765,418 @@ func (d *cliManifestDecoder) decodeContinuation(owner string, node *yaml.Node) (
 	if !required {
 		return nil, fmt.Errorf("line %d: %s continuation.bind must include at least one binding that is not optional; the next request needs a resume value", bindNode.Line, owner)
 	}
+	if omitNode != nil {
+		if recipe.Omit, err = d.decodeContinuationOmits(owner, omitNode, targets); err != nil {
+			return nil, err
+		}
+	}
+	if err := cliCheckContinuationResultTargets(owner, recipe); err != nil {
+		return nil, err
+	}
 	return recipe, nil
 }
 
-func (d *cliManifestDecoder) decodeContinuationRequestCondition(owner string, node *yaml.Node) (*CLICommandContinuationRequestCondition, error) {
-	entries, err := cliMapEntries(node, owner+" continuation.bind.unlessRequest")
+func cliContinuationItems(node *yaml.Node, what string) ([]*yaml.Node, error) {
+	if node.Kind != yaml.SequenceNode {
+		return []*yaml.Node{node}, nil
+	}
+	if len(node.Content) == 0 {
+		return nil, fmt.Errorf("line %d: %s must list at least one entry", node.Line, what)
+	}
+	return node.Content, nil
+}
+
+func cliDecodeContinuationPropertyPath(node *yaml.Node, what string) (string, string, []string, error) {
+	path, pointer, segments, err := cliDecodeAsyncPointer(node, what)
+	if err != nil {
+		return "", "", nil, err
+	}
+	fields := make([]string, 0, len(segments))
+	for _, segment := range segments {
+		if segment.IsIndex {
+			return "", "", nil, fmt.Errorf("%s %s must name object properties only", what, path)
+		}
+		fields = append(fields, segment.Field)
+	}
+	return path, pointer, fields, nil
+}
+
+func cliDecodeContinuationEquals(node *yaml.Node, what string) (any, error) {
+	if !cliYAMLScalar(node) {
+		return nil, fmt.Errorf("%s must be a scalar", what)
+	}
+	var value any
+	if err := node.Decode(&value); err != nil {
+		return nil, err
+	}
+	var numeric float64
+	switch number := value.(type) {
+	case int:
+		numeric = float64(number)
+	case int64:
+		numeric = float64(number)
+	case uint64:
+		numeric = float64(number)
+	case float64:
+		numeric = number
+	}
+	if math.IsNaN(numeric) || math.IsInf(numeric, 0) || math.Abs(numeric) > 9007199254740991 {
+		return nil, fmt.Errorf("%s numbers must be finite and between -9007199254740991 and 9007199254740991", what)
+	}
+	return value, nil
+}
+
+func (d *cliManifestDecoder) decodeContinuationRequestConditions(owner string, node *yaml.Node) ([]CLICommandContinuationRequestCondition, error) {
+	items, err := cliContinuationItems(node, owner+" continuation.unlessRequest")
+	if err != nil {
+		return nil, err
+	}
+	conditions := make([]CLICommandContinuationRequestCondition, 0, len(items))
+	for _, item := range items {
+		condition, err := d.decodeContinuationRequestCondition(owner, "continuation.unlessRequest", item, true)
+		if err != nil {
+			return nil, err
+		}
+		conditions = append(conditions, *condition)
+	}
+	return conditions, nil
+}
+
+func (d *cliManifestDecoder) decodeContinuationRequestCondition(owner, what string, node *yaml.Node, allowExists bool) (*CLICommandContinuationRequestCondition, error) {
+	entries, err := cliMapEntries(node, owner+" "+what)
 	if err != nil {
 		return nil, err
 	}
 	condition := &CLICommandContinuationRequestCondition{}
+	existsPresent := false
 	for _, entry := range entries {
 		switch entry.Key.Value {
 		case "path":
-			condition.Path, condition.Pointer, _, err = cliDecodeAsyncPointer(entry.Value, "continuation.bind.unlessRequest.path")
+			condition.Path, condition.Pointer, _, err = cliDecodeAsyncPointer(entry.Value, what+".path")
 		case "equals":
-			if !cliYAMLScalar(entry.Value) {
-				err = stderrors.New("continuation.bind.unlessRequest.equals must be a scalar")
-			} else {
-				err = entry.Value.Decode(&condition.Equals)
-				condition.equalsPresent = err == nil
+			condition.Equals, err = cliDecodeContinuationEquals(entry.Value, what+".equals")
+			condition.equalsPresent = err == nil
+		case "exists":
+			if !allowExists {
+				return nil, fmt.Errorf("line %d: %s %s accepts equals only", entry.Key.Line, owner, what)
 			}
+			condition.Exists, err = cliScalarBool(entry.Value, what+".exists")
+			existsPresent = err == nil
 		default:
-			return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest has unknown key %q", entry.Key.Line, owner, entry.Key.Value)
+			return nil, fmt.Errorf("line %d: %s %s has unknown key %q%s", entry.Key.Line, owner, what, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliContinuationConditionKeys))
+		}
+		if err != nil {
+			return nil, fmt.Errorf("line %d: %s: %w", entry.Value.Line, owner, err)
+		}
+	}
+	if condition.Path == "" {
+		return nil, fmt.Errorf("line %d: %s %s requires path", node.Line, owner, what)
+	}
+	switch {
+	case condition.equalsPresent && existsPresent:
+		return nil, fmt.Errorf("line %d: %s %s declares both equals and exists; declare exactly one", node.Line, owner, what)
+	case existsPresent:
+		condition.Operator = "exists"
+	case condition.equalsPresent:
+		condition.Operator = "equals"
+	case allowExists:
+		return nil, fmt.Errorf("line %d: %s %s requires equals or exists", node.Line, owner, what)
+	default:
+		return nil, fmt.Errorf("line %d: %s %s requires equals", node.Line, owner, what)
+	}
+	return condition, nil
+}
+
+func (d *cliManifestDecoder) decodeContinuationOmits(owner string, node *yaml.Node, bound map[string]bool) ([]CLICommandContinuationOmit, error) {
+	items, err := cliContinuationItems(node, owner+" continuation.omit")
+	if err != nil {
+		return nil, err
+	}
+	seen := map[string]bool{}
+	omits := make([]CLICommandContinuationOmit, 0, len(items))
+	for _, item := range items {
+		omit := CLICommandContinuationOmit{}
+		if item.Kind == yaml.ScalarNode {
+			omit.Path, omit.Pointer, omit.PathSegments, err = cliDecodeContinuationPropertyPath(item, "continuation.omit.path")
+			if err != nil {
+				return nil, fmt.Errorf("line %d: %s: %w", item.Line, owner, err)
+			}
+		} else {
+			entries, err := cliMapEntries(item, owner+" continuation.omit entry")
+			if err != nil {
+				return nil, err
+			}
+			for _, entry := range entries {
+				switch entry.Key.Value {
+				case "path":
+					omit.Path, omit.Pointer, omit.PathSegments, err = cliDecodeContinuationPropertyPath(entry.Value, "continuation.omit.path")
+				case "unlessRequest":
+					omit.UnlessRequest, err = d.decodeContinuationRequestCondition(owner, "continuation.omit.unlessRequest", entry.Value, true)
+				default:
+					return nil, fmt.Errorf("line %d: %s continuation.omit has unknown key %q%s", entry.Key.Line, owner, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliContinuationOmitKeys))
+				}
+				if err != nil {
+					return nil, fmt.Errorf("line %d: %s: %w", entry.Value.Line, owner, err)
+				}
+			}
+			if omit.Path == "" {
+				return nil, fmt.Errorf("line %d: %s continuation.omit entry requires path (the request-body field removed from later requests)", item.Line, owner)
+			}
+		}
+		if bound[omit.Pointer] {
+			return nil, fmt.Errorf("line %d: %s continuation.omit %s is also a continuation.bind target; a request field cannot be both set and removed", item.Line, owner, omit.Path)
+		}
+		for target := range bound {
+			if strings.HasPrefix(target, omit.Pointer+"/") || strings.HasPrefix(omit.Pointer, target+"/") {
+				return nil, fmt.Errorf("line %d: %s continuation.omit %s overlaps a continuation.bind target; omitting a parent or child of a bound field would remove or corrupt the bound value", item.Line, owner, omit.Path)
+			}
+		}
+		if seen[omit.Pointer] {
+			return nil, fmt.Errorf("line %d: %s continuation.omit lists %s more than once", item.Line, owner, omit.Path)
+		}
+		seen[omit.Pointer] = true
+		omits = append(omits, omit)
+	}
+	return omits, nil
+}
+
+func (d *cliManifestDecoder) decodeContinuationMerge(owner string, recipe *CLICommandContinuation, node *yaml.Node) error {
+	items, err := cliContinuationItems(node, "continuation.merge")
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		var (
+			path, pointer string
+			drop          *CLICommandContinuationMergeDrop
+		)
+		if item.Kind == yaml.ScalarNode {
+			if path, pointer, _, err = cliDecodeContinuationPropertyPath(item, "continuation.merge"); err != nil {
+				return err
+			}
+		} else {
+			entries, err := cliMapEntries(item, owner+" continuation.merge entry")
+			if err != nil {
+				return err
+			}
+			for _, entry := range entries {
+				switch entry.Key.Value {
+				case "path":
+					path, pointer, _, err = cliDecodeContinuationPropertyPath(entry.Value, "continuation.merge")
+				case "dropLeadingWhere":
+					drop, err = d.decodeContinuationMergeDrop(owner, entry.Value)
+				default:
+					return fmt.Errorf("continuation.merge has unknown key %q%s", entry.Key.Value, cliDidYouMean(entry.Key.Value, cliContinuationMergeKeys))
+				}
+				if err != nil {
+					return err
+				}
+			}
+			if path == "" {
+				return stderrors.New("continuation.merge entry requires path")
+			}
+		}
+		if cliContains(recipe.Merge, pointer) {
+			return fmt.Errorf("continuation.merge lists %s more than once", path)
+		}
+		recipe.MergeFrom = append(recipe.MergeFrom, path)
+		recipe.Merge = append(recipe.Merge, pointer)
+		if drop != nil {
+			drop.Path, drop.Pointer = path, pointer
+			recipe.MergeDropLeadingWhere = append(recipe.MergeDropLeadingWhere, *drop)
+		}
+	}
+	return nil
+}
+
+func (d *cliManifestDecoder) decodeContinuationMergeDrop(owner string, node *yaml.Node) (*CLICommandContinuationMergeDrop, error) {
+	entries, err := cliMapEntries(node, owner+" continuation.merge.dropLeadingWhere")
+	if err != nil {
+		return nil, err
+	}
+	drop := &CLICommandContinuationMergeDrop{}
+	for _, entry := range entries {
+		switch entry.Key.Value {
+		case "field":
+			drop.Field, err = cliScalarString(entry.Value, "continuation.merge.dropLeadingWhere.field")
+			if err == nil && drop.Field == "" {
+				err = stderrors.New("continuation.merge.dropLeadingWhere.field must name a property")
+			}
+		case "equals":
+			drop.Equals, err = cliDecodeContinuationEquals(entry.Value, "continuation.merge.dropLeadingWhere.equals")
+			drop.equalsPresent = err == nil
+		default:
+			return nil, fmt.Errorf("continuation.merge.dropLeadingWhere has unknown key %q%s", entry.Key.Value, cliDidYouMean(entry.Key.Value, cliContinuationDropKeys))
 		}
 		if err != nil {
 			return nil, err
 		}
 	}
-	if condition.Path == "" {
-		return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest requires path", node.Line, owner)
+	if drop.Field == "" || !drop.equalsPresent {
+		return nil, stderrors.New("continuation.merge.dropLeadingWhere requires field and equals")
 	}
-	if !condition.equalsPresent {
-		return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest requires equals", node.Line, owner)
+	return drop, nil
+}
+
+func (d *cliManifestDecoder) decodeContinuationKeepFirst(owner string, node *yaml.Node) ([]CLICommandContinuationKeepFirst, error) {
+	items, err := cliContinuationItems(node, "continuation.keepFirst")
+	if err != nil {
+		return nil, err
 	}
-	var numeric float64
-	switch value := condition.Equals.(type) {
-	case int:
-		numeric = float64(value)
-	case int64:
-		numeric = float64(value)
-	case uint64:
-		numeric = float64(value)
-	case float64:
-		numeric = value
+	var kept []CLICommandContinuationKeepFirst
+	for _, item := range items {
+		entry := CLICommandContinuationKeepFirst{}
+		if item.Kind == yaml.ScalarNode {
+			if entry.Path, entry.Pointer, _, err = cliDecodeContinuationPropertyPath(item, "continuation.keepFirst"); err != nil {
+				return nil, err
+			}
+		} else {
+			fields, err := cliMapEntries(item, owner+" continuation.keepFirst entry")
+			if err != nil {
+				return nil, err
+			}
+			for _, field := range fields {
+				switch field.Key.Value {
+				case "path":
+					entry.Path, entry.Pointer, _, err = cliDecodeContinuationPropertyPath(field.Value, "continuation.keepFirst")
+				case "fallback":
+					entry.Fallback, entry.FallbackPointer, _, err = cliDecodeContinuationPropertyPath(field.Value, "continuation.keepFirst.fallback")
+				default:
+					return nil, fmt.Errorf("continuation.keepFirst has unknown key %q%s", field.Key.Value, cliDidYouMean(field.Key.Value, cliContinuationKeepFirstKeys))
+				}
+				if err != nil {
+					return nil, err
+				}
+			}
+			if entry.Path == "" {
+				return nil, stderrors.New("continuation.keepFirst entry requires path")
+			}
+			if entry.FallbackPointer == entry.Pointer {
+				return nil, fmt.Errorf("continuation.keepFirst %s names itself as its fallback", entry.Path)
+			}
+		}
+		if slices.ContainsFunc(kept, func(other CLICommandContinuationKeepFirst) bool { return other.Pointer == entry.Pointer }) {
+			return nil, fmt.Errorf("continuation.keepFirst lists %s more than once", entry.Path)
+		}
+		kept = append(kept, entry)
 	}
-	if math.IsNaN(numeric) || math.IsInf(numeric, 0) || math.Abs(numeric) > 9007199254740991 {
-		return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest.equals numbers must be finite and between -9007199254740991 and 9007199254740991", node.Line, owner)
+	return kept, nil
+}
+
+func (d *cliManifestDecoder) decodeContinuationCollect(owner string, node *yaml.Node) ([]CLICommandContinuationCollect, error) {
+	items, err := cliContinuationItems(node, "continuation.collect")
+	if err != nil {
+		return nil, err
 	}
-	return condition, nil
+	var collects []CLICommandContinuationCollect
+	for _, item := range items {
+		entries, err := cliMapEntries(item, owner+" continuation.collect entry")
+		if err != nil {
+			return nil, err
+		}
+		collect := CLICommandContinuationCollect{Unique: true}
+		for _, entry := range entries {
+			switch entry.Key.Value {
+			case "to":
+				collect.To, collect.ToPointer, _, err = cliDecodeContinuationPropertyPath(entry.Value, "continuation.collect.to")
+			case "from":
+				collect.From, collect.FromPointers, err = cliDecodeContinuationPaths(entry.Value, "continuation.collect.from", true)
+			case "unique":
+				collect.Unique, err = cliScalarBool(entry.Value, "continuation.collect.unique")
+			default:
+				return nil, fmt.Errorf("continuation.collect has unknown key %q%s", entry.Key.Value, cliDidYouMean(entry.Key.Value, cliContinuationCollectKeys))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+		if collect.To == "" || len(collect.From) == 0 {
+			return nil, stderrors.New("continuation.collect entry requires to (the combined-result array) and from (the paths read from every response)")
+		}
+		if slices.ContainsFunc(collects, func(other CLICommandContinuationCollect) bool { return other.ToPointer == collect.ToPointer }) {
+			return nil, fmt.Errorf("continuation.collect lists %s more than once", collect.To)
+		}
+		collects = append(collects, collect)
+	}
+	return collects, nil
+}
+
+func (d *cliManifestDecoder) decodeContinuationSumBy(owner string, node *yaml.Node) ([]CLICommandContinuationSumBy, error) {
+	items, err := cliContinuationItems(node, "continuation.sumBy")
+	if err != nil {
+		return nil, err
+	}
+	var sums []CLICommandContinuationSumBy
+	for _, item := range items {
+		entries, err := cliMapEntries(item, owner+" continuation.sumBy entry")
+		if err != nil {
+			return nil, err
+		}
+		sum := CLICommandContinuationSumBy{}
+		for _, entry := range entries {
+			switch entry.Key.Value {
+			case "path":
+				sum.Path, sum.Pointer, _, err = cliDecodeContinuationPropertyPath(entry.Value, "continuation.sumBy.path")
+			case "key":
+				sum.Key, err = cliScalarString(entry.Value, "continuation.sumBy.key")
+			case "value":
+				sum.Value, err = cliScalarString(entry.Value, "continuation.sumBy.value")
+			default:
+				return nil, fmt.Errorf("continuation.sumBy has unknown key %q%s", entry.Key.Value, cliDidYouMean(entry.Key.Value, cliContinuationSumByKeys))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+		if sum.Path == "" || sum.Key == "" || sum.Value == "" {
+			return nil, stderrors.New("continuation.sumBy entry requires path, key, and value")
+		}
+		if sum.Key == sum.Value {
+			return nil, fmt.Errorf("continuation.sumBy %s uses %q as both key and value", sum.Path, sum.Key)
+		}
+		if slices.ContainsFunc(sums, func(other CLICommandContinuationSumBy) bool { return other.Pointer == sum.Pointer }) {
+			return nil, fmt.Errorf("continuation.sumBy lists %s more than once", sum.Path)
+		}
+		sums = append(sums, sum)
+	}
+	return sums, nil
+}
+
+func cliCheckContinuationResultTargets(owner string, recipe *CLICommandContinuation) error {
+	owners := map[string]string{}
+	claim := func(pointer, path, field string) error {
+		if previous, ok := owners[pointer]; ok {
+			return fmt.Errorf("%s continuation lists %s in both %s and %s; each combined-result field takes one rule", owner, path, previous, field)
+		}
+		owners[pointer] = field
+		return nil
+	}
+	for i, pointer := range recipe.Merge {
+		if err := claim(pointer, recipe.MergeFrom[i], "merge"); err != nil {
+			return err
+		}
+	}
+	for i, pointer := range recipe.Sum {
+		if err := claim(pointer, recipe.SumFrom[i], "sum"); err != nil {
+			return err
+		}
+	}
+	for _, kept := range recipe.KeepFirst {
+		if err := claim(kept.Pointer, kept.Path, "keepFirst"); err != nil {
+			return err
+		}
+	}
+	for _, collect := range recipe.Collect {
+		if err := claim(collect.ToPointer, collect.To, "collect"); err != nil {
+			return err
+		}
+	}
+	for _, sum := range recipe.SumBy {
+		if err := claim(sum.Pointer, sum.Path, "sumBy"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func cliYAMLScalar(node *yaml.Node) bool {
@@ -1772,7 +2208,9 @@ func (d *cliManifestDecoder) decodeContinuationBinding(owner string, node *yaml.
 		case "optional":
 			binding.Optional, err = cliScalarBool(entry.Value, "continuation.bind.optional")
 		case "unlessRequest":
-			binding.UnlessRequest, err = d.decodeContinuationRequestCondition(owner, entry.Value)
+			binding.UnlessRequest, err = d.decodeContinuationRequestCondition(owner, "continuation.bind.unlessRequest", entry.Value, true)
+		case "streamAuthoritativeWhen":
+			binding.StreamAuthoritativeWhen, err = d.decodeContinuationRequestCondition(owner, "continuation.bind.streamAuthoritativeWhen", entry.Value, false)
 		default:
 			return nil, fmt.Errorf("line %d: %s continuation.bind has unknown key %q%s", entry.Key.Line, owner, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliContinuationBindingKeys))
 		}
@@ -1785,6 +2223,9 @@ func (d *cliManifestDecoder) decodeContinuationBinding(owner string, node *yaml.
 	}
 	if binding.From == "" && len(binding.StreamFrom) == 0 {
 		return nil, fmt.Errorf("line %d: %s continuation.bind entry for %s requires from (JSON response) or streamFrom (streamed events)", node.Line, owner, binding.To)
+	}
+	if binding.StreamAuthoritativeWhen != nil && len(binding.StreamFrom) == 0 {
+		return nil, fmt.Errorf("line %d: %s continuation.bind entry for %s declares streamAuthoritativeWhen without streamFrom", node.Line, owner, binding.To)
 	}
 	return binding, nil
 }

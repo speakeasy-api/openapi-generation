@@ -316,7 +316,7 @@ describe("simple encoding", () => {
       encode("id", ":/?#[]@!$&'()*+,;=", {
         charEncoding: "percentExceptReserved",
       }),
-    ).toEqual(":/?#[]@!$&'()*+,;=");
+    ).toEqual(":/%3F%23[]@!$&'()*+,;=");
   });
 
   it("still percent-encodes non-reserved characters with charEncoding percentExceptReserved", () => {
@@ -771,6 +771,10 @@ describe("allowReserved query encoding", () => {
       expect(encodeForm("q", "100%", reserved)).toEqual("q=100%25");
     });
 
+    it("passes '?' through but encodes '#'", () => {
+      expect(encodeForm("q", "a?b#c", reserved)).toEqual("q=a?b%23c");
+    });
+
     it("does not decode a pre-existing percent escape", () => {
       expect(encodeForm("q", "a%2Fb", reserved)).toEqual("q=a%252Fb");
     });
@@ -847,6 +851,10 @@ describe("allowReserved path encoding", () => {
       expect(encodeSimple("id", ["a:b", "c/d"], reserved)).toEqual("a:b,c/d");
     });
 
+    it("encodes '?' and '#'", () => {
+      expect(encodeSimple("id", "a?b#c", reserved)).toEqual("a%3Fb%23c");
+    });
+
     // Every character encodeSimple emits is part of the path segment, so
     // member names follow the same rule as the values beside them.
     it("applies allowReserved to object member names", () => {
@@ -878,11 +886,19 @@ describe("allowReserved path encoding", () => {
         ";id=k:1,v/1",
       );
     });
+
+    it("encodes '?' and '#'", () => {
+      expect(encodeMatrix("id", "a?b#c", reserved)).toEqual(";id=a%3Fb%23c");
+    });
   });
 
   describe("label style", () => {
     it("applies allowReserved to object member names", () => {
       expect(encodeLabel("id", { "k:1": "v/1" }, reserved)).toEqual(".k:1.v/1");
+    });
+
+    it("encodes '?' and '#'", () => {
+      expect(encodeLabel("id", "a?b#c", reserved)).toEqual(".a%3Fb%23c");
     });
   });
 });

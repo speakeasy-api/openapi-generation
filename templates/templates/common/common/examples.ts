@@ -2,6 +2,7 @@ require("common/faker.ts");
 require("common/typematching.ts");
 require("common/constants.ts");
 require("common/annotations.ts");
+require("common/patterns.ts");
 
 const DEBUG_EXAMPLE_LOGGING = false; // Set this to true to enable very verbose logging of example generation results (don't leave this set to true outside local dev)
 const DEBUG_EXAMPLE_OP_FILTER = ""; // Set this to a specific operation ID to only log example results for that operation (don't leave this set outside local dev)
@@ -547,7 +548,7 @@ function calculateExample(
 
     // If we have a const value always use this as nothing else is valid
     if (fieldDef.Const) {
-      example = fieldDef.Const.Value;
+      example = withSortedKeys(fieldDef.Const.Value);
     }
 
     // If we have no example try to find a source
@@ -1124,6 +1125,7 @@ function calculateBasicExample(
       } else {
         example = templatePlaceholderString(arrayIdx);
       }
+      example = conformExampleToPattern(fieldDef, example);
     }
 
     return example;
@@ -1994,6 +1996,36 @@ function fakeNumber(fieldType: string) {
   }
 }
 
+// Targets whose clients reject parameter values that do not match a portable
+// schema pattern.
+const patternEnforcingLanguages = new Set(["typescript"]);
+
+function conformExampleToPattern(fieldDef: FieldDef, value: string): string {
+  if (
+    !patternEnforcingLanguages.has(context.Global.Config.Language) ||
+    !isParameterField(fieldDef)
+  ) {
+    return value;
+  }
+  const pattern = portableStringPattern(fieldDef.Type);
+  if (!pattern) {
+    return value;
+  }
+  const rawMaxLength = fieldDef.Type.Validations?.MaxLength;
+  const maxLength = rawMaxLength == null ? Infinity : Number(rawMaxLength);
+  const fits = (s: string) => [...s].length <= maxLength;
+  if (fits(value) && new RegExp(pattern, "u").test(value)) {
+    return value;
+  }
+  for (const repeat of [3, 1, 0]) {
+    const example = exampleForPortablePattern(pattern, repeat);
+    if (example !== undefined && fits(example)) {
+      return example;
+    }
+  }
+  return value;
+}
+
 function templatePlaceholderString(arrayIdx?: number) {
   return `<value${arrayIdx !== undefined ? ` ${arrayIdx + 1}` : ""}>`;
 }
@@ -2325,4 +2357,20 @@ function getExampleByName(examples: Example[], name: string): Example | null {
 
 function getExampleFileDeclaration() {
   return `${FILE_DIRECTIVE_KEY} ${EXAMPLE_FILE}`;
+}
+
+// Values decoded from the document into Go maps reach templates with an
+// unstable key order; rebuild them so rendered output is deterministic.
+function withSortedKeys(value: any): any {
+  if (Array.isArray(value)) {
+    return value.map(withSortedKeys);
+  }
+  if (value !== null && typeof value === "object") {
+    const sorted: Record<string, any> = Object.create(null);
+    for (const key of Object.keys(value).sort()) {
+      sorted[key] = withSortedKeys(value[key]);
+    }
+    return sorted;
+  }
+  return value;
 }

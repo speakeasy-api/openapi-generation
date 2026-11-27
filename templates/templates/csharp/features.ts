@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.15.30",
+  core: "3.15.33",
   getRequestBodies: "2.81.1",
   flattening: "2.81.3",
   methodArguments: "0.2.1",
@@ -29,7 +29,7 @@ const supportedFeatures = {
   unions: "1.2.5",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
-  additionalProperties: "0.0.2",
+  additionalProperties: "0.0.3",
   errors: "1.1.0",
   responseFormat: "0.0.4",
   constsAndDefaults: "0.0.3",
@@ -441,6 +441,10 @@ function isTestSkipped(test: string): boolean {
     "hooks-client-credentials-scopes-from-env",
     "debug-env-var-false-keeps-logging-off",
     "request-bodies-base64-file-input-raw-bytes",
+    "parameters-header-params-enum",
+    "parameters-header-params-string-formats",
+    "enum-values",
+    "auth-typed-error-inspection-omits-credentials",
   ].includes(test);
 }
 

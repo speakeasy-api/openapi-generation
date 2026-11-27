@@ -3,6 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
+import { lazySchema as lazySchema$ } from "../lib/schemas.js";
 
 export type Namespaced = {
   namespace?: "baz" | undefined;
@@ -17,9 +18,11 @@ export type Namespaced$Outbound = {
 export const Namespaced$outboundSchema: z.ZodMiniType<
   Namespaced$Outbound,
   Namespaced
-> = z.object({
-  namespace: z.optional(z.literal("baz")),
-});
+> = /* @__PURE__ */ lazySchema$(() =>
+  z.object({
+    namespace: z.optional(z.literal("baz")),
+  })
+);
 
 export function namespacedToJSON(namespaced: Namespaced): string {
   return JSON.stringify(Namespaced$outboundSchema.parse(namespaced));

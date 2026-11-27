@@ -7,18 +7,27 @@ import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
 import jakarta.annotation.Nullable;
 import java.lang.String;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.Deprecated1;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class Deprecated1RequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
     private String serverURL;
+    private final Options.Builder optionsBuilder;
 
     public Deprecated1RequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public Deprecated1RequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public Deprecated1RequestBuilder serverURL(@Nullable String serverURL) {
@@ -39,8 +48,9 @@ public class Deprecated1RequestBuilder {
      * @return The response from the server.
      */
     public Deprecated1Response call() {
+        Options options = optionsBuilder.build();
         RequestlessOperation<Deprecated1Response> operation =
-                new Deprecated1.Sync(sdkConfiguration, serverURL, _headers);
+                new Deprecated1.Sync(sdkConfiguration, serverURL, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }

@@ -1,0 +1,64 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/parameterPatterns/{storeId}:
+    post:
+      operationId: parameterPatternsSharedComponent
+      description: >-
+        A path parameter with a pattern and no example, a query parameter with
+        a pattern and a matching default, and an object schema used both as a
+        deepObject query parameter and as the JSON request body. The pattern
+        on the object's property constrains neither usage on the client, so
+        the same value is accepted in both places.
+      tags:
+        - parameterPatterns
+      parameters:
+        - name: storeId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9_]+$'
+        - name: sort
+          in: query
+          schema:
+            type: string
+            pattern: '^[a-z]+$'
+            default: name
+        - name: filter
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            $ref: '#/components/schemas/PatternFilter'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatternFilter'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+components:
+  schemas:
+    PatternFilter:
+      description: An object schema whose string property declares a pattern.
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z]+$'

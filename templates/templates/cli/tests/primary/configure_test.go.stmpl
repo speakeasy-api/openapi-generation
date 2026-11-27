@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"{{getGolangPackage}}/internal/cli"
+	"{{getGolangPackage}}/internal/clierrors"
 	"{{getGolangPackage}}/internal/config"
 )
 
@@ -156,6 +158,89 @@ func TestWhoamiShowsOutputFormatPreference(t *testing.T) {
 	})
 }
 
+func TestConfiguredOutputFormatIsValidated(t *testing.T) {
+	run := func(t *testing.T, env, configured string, args ...string) (*CLITestHarness, error) {
+		resetConfig(t)
+		h := NewCLITestHarness(t)
+		h.resetAndSetupEnv()
+		if configured != "" {
+			writeConfigFile(t, os.Getenv("HOME"), map[string]interface{}{"output_format": configured})
+		}
+		t.Setenv("CLI_OUTPUT_FORMAT", env)
+		root, err := cli.NewRootCommand()
+		require.NoError(t, err)
+		root.SetOut(h.stdout)
+		root.SetErr(h.stderr)
+		return h, cli.ExecuteRoot(context.Background(), root, args)
+	}
+
+	t.Run("env", func(t *testing.T) {
+		h, err := run(t, "bogus", "", "methods", "method-get")
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		assert.Contains(t, h.GetStderr(), `invalid output format "bogus" from CLI_OUTPUT_FORMAT`)
+		assert.Empty(t, h.GetStdout())
+	})
+
+	t.Run("config", func(t *testing.T) {
+		h, err := run(t, "", "bogus", "methods", "method-get")
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		assert.Contains(t, h.GetStderr(), `invalid output format "bogus" from output_format in `)
+	})
+
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "version", args: []string{"version"}},
+		{name: "help", args: []string{"help"}},
+		{name: "completion", args: []string{"completion", "bash"}},
+		{name: "shell completion request", args: []string{"__complete", "methods", ""}, want: "method-get"},
+	} {
+		for _, source := range []struct {
+			name, env, configured, message string
+		}{
+			{name: "env", env: "bogus", message: `Warning: invalid output format "bogus" from CLI_OUTPUT_FORMAT`},
+			{name: "config", configured: "bogus", message: `Warning: invalid output format "bogus" from output_format in `},
+		} {
+			t.Run("local commands warn and run/"+source.name+"/"+tc.name, func(t *testing.T) {
+				h, err := run(t, source.env, source.configured, tc.args...)
+				require.NoError(t, err, h.GetStderr())
+				assert.Contains(t, h.GetStderr(), source.message)
+				if tc.want != "" {
+					assert.Contains(t, h.GetStdout(), tc.want)
+				}
+			})
+		}
+	}
+
+	t.Run("flag overrides", func(t *testing.T) {
+		h, err := run(t, "bogus", "", "version", "--output-format", "json")
+		require.NoError(t, err, h.GetStderr())
+	})
+
+	t.Run("settings commands still run", func(t *testing.T) {
+		h, err := run(t, "bogus", "", "whoami", "--no-interactive")
+		require.NoError(t, err, h.GetStderr())
+		assert.Regexp(t, `--output-format\s+\[env\s*\]\s+bogus`, h.GetStdout())
+	})
+
+	t.Run("parse errors use the env format", func(t *testing.T) {
+		h, err := run(t, "json", "", "--no-such-flag")
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		assert.Equal(t, "CLI_VALIDATION", jsonGetString(h.GetStderr(), "error_reason"), h.GetStderr())
+	})
+
+	t.Run("parse errors use the config format", func(t *testing.T) {
+		h, err := run(t, "", "json", "--no-such-flag")
+		require.Error(t, err)
+		assert.Equal(t, "CLI_VALIDATION", jsonGetString(h.GetStderr(), "error_reason"), h.GetStderr())
+	})
+}
+
 func TestResolveCredentialDefaultPrecedence(t *testing.T) {
 	for _, tt := range []struct {
 		name string
@@ -221,8 +306,9 @@ func TestConfigureSkipsOptionalCredentials(t *testing.T) {
 
 {{- if not (isInteractiveAuthEnabled)}}
 	// Verify intro messages (readline mode only — guided forms don't print these)
-	assert.Contains(t, output, "Configure ")
-	assert.Contains(t, output, "Enter - to clear a previously set value.")
+	assert.Contains(t, h.GetStderr(), "Configure ")
+	assert.Contains(t, h.GetStderr(), "Enter - to clear a previously set value.")
+	assert.NotContains(t, output, "Enter - to clear a previously set value.")
 {{- end}}
 
 	// Verify completion message
@@ -313,10 +399,11 @@ func TestConfigureMaskSecretDisplay(t *testing.T) {
 
 	// Should NOT contain the full secret in any mode
 	assert.NotContains(t, output, "sk-1234567890abcdef")
+	assert.NotContains(t, h.GetStderr(), "sk-1234567890abcdef")
 
 {{- if not (isInteractiveAuthEnabled)}}
 	// In readline mode, existing value should be masked inline in the prompt
-	assert.Contains(t, output, "sk******ef")
+	assert.Contains(t, h.GetStderr(), "sk******ef")
 {{- end}}
 	// In guided form mode, the masked value is used as a Placeholder which may not
 	// appear in accessible text output. The key assertion is that the full secret
@@ -348,6 +435,84 @@ func TestConfigureCreatesConfigDir(t *testing.T) {
 
 	_, err = os.Stat(configPath)
 	assert.NoError(t, err, "config.yaml should exist")
+}
+
+func TestSaveConfigTightensExistingPermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX permission bits")
+	}
+	_, tmpDir := setupConfigureTest(t)
+	configPath := cliConfigPath(tmpDir)
+	configDir := filepath.Dir(configPath)
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
+	require.NoError(t, os.Chmod(configDir, 0o755))
+	require.NoError(t, os.WriteFile(configPath, []byte("version: 0\n"), 0o644))
+	require.NoError(t, os.Chmod(configPath, 0o644))
+
+	require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
+	require.NoError(t, config.SaveConfig(&config.Config{}))
+
+	fileInfo, err := os.Stat(configPath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o600), fileInfo.Mode().Perm())
+	dirInfo, err := os.Stat(configDir)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o700), dirInfo.Mode().Perm())
+
+	entries, err := os.ReadDir(configDir)
+	require.NoError(t, err)
+	require.Len(t, entries, 1, "temporary files must not be left behind")
+	assert.Equal(t, "config.yaml", entries[0].Name())
+
+	data, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+	var saved map[string]any
+	require.NoError(t, yaml.Unmarshal(data, &saved))
+	assert.Equal(t, config.ConfigVersion, saved["version"])
+}
+
+func TestSaveConfigWritesThroughSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need elevated privileges")
+	}
+	_, tmpDir := setupConfigureTest(t)
+	configPath := cliConfigPath(tmpDir)
+	require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0o700))
+	targetDir := filepath.Join(tmpDir, "dotfiles")
+	require.NoError(t, os.MkdirAll(targetDir, 0o700))
+	target := filepath.Join(targetDir, "config.yaml")
+	require.NoError(t, os.WriteFile(target, []byte("version: 0\n"), 0o644))
+	require.NoError(t, os.Symlink(target, configPath))
+
+	require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
+	require.NoError(t, config.SaveConfig(&config.Config{}))
+
+	linkInfo, err := os.Lstat(configPath)
+	require.NoError(t, err)
+	assert.NotZero(t, linkInfo.Mode()&os.ModeSymlink, "config.yaml should remain a symlink")
+	targetInfo, err := os.Stat(target)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o600), targetInfo.Mode().Perm())
+	data, err := os.ReadFile(target)
+	require.NoError(t, err)
+	assert.NotEqual(t, "version: 0\n", string(data))
+}
+
+func TestSaveConfigRefusesDanglingSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need elevated privileges")
+	}
+	_, tmpDir := setupConfigureTest(t)
+	configPath := cliConfigPath(tmpDir)
+	require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0o700))
+	require.NoError(t, os.Symlink(filepath.Join(tmpDir, "missing", "config.yaml"), configPath))
+
+	require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
+	require.Error(t, config.SaveConfig(&config.Config{}))
+
+	linkInfo, err := os.Lstat(configPath)
+	require.NoError(t, err)
+	assert.NotZero(t, linkInfo.Mode()&os.ModeSymlink, "a dangling config.yaml symlink must not be replaced")
 }
 
 // TestConfigureNoInteractiveStoresFlags verifies that the compatibility

@@ -157,6 +157,15 @@ const (
 func (e ServerPORT) ToPointer() *ServerPORT {
 	return &e
 }
+
+// ServerPORTValues returns every known ServerPORT value in schema order.
+func ServerPORTValues() []ServerPORT {
+	return []ServerPORT{
+		ServerPORTEighty,
+		ServerPORTEightThousandAndEighty,
+		ServerPORTFourHundredAndFortyThree,
+	}
+}
 func (e *ServerPORT) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

@@ -17,6 +17,13 @@ const (
 func (e PaymentUpdatedType) ToPointer() *PaymentUpdatedType {
 	return &e
 }
+
+// PaymentUpdatedTypeValues returns every known PaymentUpdatedType value in schema order.
+func PaymentUpdatedTypeValues() []PaymentUpdatedType {
+	return []PaymentUpdatedType{
+		PaymentUpdatedTypePaymentUpdated,
+	}
+}
 func (e *PaymentUpdatedType) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

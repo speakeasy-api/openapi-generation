@@ -16,6 +16,28 @@ func (r *OASOneOfResourceModel) RefreshFromSharedOASOneOfResponse(ctx context.Co
 
 	if resp != nil {
 		r.ID = types.StringPointerValue(resp.ID)
+		if resp.OptionalConstDiscriminatorRequestAndResponse != nil {
+			r.OptionalConstDiscriminatorRequestAndResponse = &tfTypes.OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse{}
+			if resp.OptionalConstDiscriminatorRequestAndResponse.OASOneOfConstDiscriminatorAlpha != nil {
+				r.OptionalConstDiscriminatorRequestAndResponse.Alpha = &tfTypes.OASOneOfConstDiscriminatorAlpha{}
+				r.OptionalConstDiscriminatorRequestAndResponse.Alpha.AlphaValue = types.StringPointerValue(resp.OptionalConstDiscriminatorRequestAndResponse.OASOneOfConstDiscriminatorAlpha.AlphaValue)
+			}
+			if resp.OptionalConstDiscriminatorRequestAndResponse.OASOneOfConstDiscriminatorBeta != nil {
+				r.OptionalConstDiscriminatorRequestAndResponse.Beta = &tfTypes.OASOneOfConstDiscriminatorBeta{}
+				r.OptionalConstDiscriminatorRequestAndResponse.Beta.BetaValue = types.Float64PointerValue(resp.OptionalConstDiscriminatorRequestAndResponse.OASOneOfConstDiscriminatorBeta.BetaValue)
+			}
+		}
+		if resp.OptionalConstDiscriminatorRequestAndResponseRepeat != nil {
+			r.OptionalConstDiscriminatorRequestAndResponseRepeat = &tfTypes.OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat{}
+			if resp.OptionalConstDiscriminatorRequestAndResponseRepeat.OASOneOfConstDiscriminatorAlpha != nil {
+				r.OptionalConstDiscriminatorRequestAndResponseRepeat.Alpha = &tfTypes.OASOneOfConstDiscriminatorAlpha{}
+				r.OptionalConstDiscriminatorRequestAndResponseRepeat.Alpha.AlphaValue = types.StringPointerValue(resp.OptionalConstDiscriminatorRequestAndResponseRepeat.OASOneOfConstDiscriminatorAlpha.AlphaValue)
+			}
+			if resp.OptionalConstDiscriminatorRequestAndResponseRepeat.OASOneOfConstDiscriminatorBeta != nil {
+				r.OptionalConstDiscriminatorRequestAndResponseRepeat.Beta = &tfTypes.OASOneOfConstDiscriminatorBeta{}
+				r.OptionalConstDiscriminatorRequestAndResponseRepeat.Beta.BetaValue = types.Float64PointerValue(resp.OptionalConstDiscriminatorRequestAndResponseRepeat.OASOneOfConstDiscriminatorBeta.BetaValue)
+			}
+		}
 		if resp.OptionalDiscriminatorRequestAndResponse != nil {
 			r.OptionalDiscriminatorRequestAndResponse = &tfTypes.OASOneOfRequestOptionalDiscriminatorRequestAndResponse{}
 			if resp.OptionalDiscriminatorRequestAndResponse.OASOneOfResponseOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf != nil {
@@ -596,6 +618,80 @@ func (r *OASOneOfResourceModel) ToSharedOASOneOfRequest(ctx context.Context) (*s
 		if oasOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf != nil {
 			optionalDiscriminatorRequestAndResponse = &shared.OASOneOfRequestOptionalDiscriminatorRequestAndResponse{
 				OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf: oasOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf,
+			}
+		}
+	}
+	var optionalConstDiscriminatorRequestAndResponse *shared.OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse
+	if r.OptionalConstDiscriminatorRequestAndResponse != nil {
+		var oasOneOfConstDiscriminatorAlpha *shared.OASOneOfConstDiscriminatorAlpha
+		if r.OptionalConstDiscriminatorRequestAndResponse.Alpha != nil {
+			alphaValue := new(string)
+			if !r.OptionalConstDiscriminatorRequestAndResponse.Alpha.AlphaValue.IsUnknown() && !r.OptionalConstDiscriminatorRequestAndResponse.Alpha.AlphaValue.IsNull() {
+				*alphaValue = r.OptionalConstDiscriminatorRequestAndResponse.Alpha.AlphaValue.ValueString()
+			} else {
+				alphaValue = nil
+			}
+			oasOneOfConstDiscriminatorAlpha = &shared.OASOneOfConstDiscriminatorAlpha{
+				AlphaValue: alphaValue,
+			}
+		}
+		if oasOneOfConstDiscriminatorAlpha != nil {
+			optionalConstDiscriminatorRequestAndResponse = &shared.OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse{
+				OASOneOfConstDiscriminatorAlpha: oasOneOfConstDiscriminatorAlpha,
+			}
+		}
+		var oasOneOfConstDiscriminatorBeta *shared.OASOneOfConstDiscriminatorBeta
+		if r.OptionalConstDiscriminatorRequestAndResponse.Beta != nil {
+			betaValue := new(float64)
+			if !r.OptionalConstDiscriminatorRequestAndResponse.Beta.BetaValue.IsUnknown() && !r.OptionalConstDiscriminatorRequestAndResponse.Beta.BetaValue.IsNull() {
+				*betaValue = r.OptionalConstDiscriminatorRequestAndResponse.Beta.BetaValue.ValueFloat64()
+			} else {
+				betaValue = nil
+			}
+			oasOneOfConstDiscriminatorBeta = &shared.OASOneOfConstDiscriminatorBeta{
+				BetaValue: betaValue,
+			}
+		}
+		if oasOneOfConstDiscriminatorBeta != nil {
+			optionalConstDiscriminatorRequestAndResponse = &shared.OASOneOfRequestOptionalConstDiscriminatorRequestAndResponse{
+				OASOneOfConstDiscriminatorBeta: oasOneOfConstDiscriminatorBeta,
+			}
+		}
+	}
+	var optionalConstDiscriminatorRequestAndResponseRepeat *shared.OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat
+	if r.OptionalConstDiscriminatorRequestAndResponseRepeat != nil {
+		var oasOneOfConstDiscriminatorAlpha1 *shared.OASOneOfConstDiscriminatorAlpha
+		if r.OptionalConstDiscriminatorRequestAndResponseRepeat.Alpha != nil {
+			alphaValue1 := new(string)
+			if !r.OptionalConstDiscriminatorRequestAndResponseRepeat.Alpha.AlphaValue.IsUnknown() && !r.OptionalConstDiscriminatorRequestAndResponseRepeat.Alpha.AlphaValue.IsNull() {
+				*alphaValue1 = r.OptionalConstDiscriminatorRequestAndResponseRepeat.Alpha.AlphaValue.ValueString()
+			} else {
+				alphaValue1 = nil
+			}
+			oasOneOfConstDiscriminatorAlpha1 = &shared.OASOneOfConstDiscriminatorAlpha{
+				AlphaValue: alphaValue1,
+			}
+		}
+		if oasOneOfConstDiscriminatorAlpha1 != nil {
+			optionalConstDiscriminatorRequestAndResponseRepeat = &shared.OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat{
+				OASOneOfConstDiscriminatorAlpha: oasOneOfConstDiscriminatorAlpha1,
+			}
+		}
+		var oasOneOfConstDiscriminatorBeta1 *shared.OASOneOfConstDiscriminatorBeta
+		if r.OptionalConstDiscriminatorRequestAndResponseRepeat.Beta != nil {
+			betaValue1 := new(float64)
+			if !r.OptionalConstDiscriminatorRequestAndResponseRepeat.Beta.BetaValue.IsUnknown() && !r.OptionalConstDiscriminatorRequestAndResponseRepeat.Beta.BetaValue.IsNull() {
+				*betaValue1 = r.OptionalConstDiscriminatorRequestAndResponseRepeat.Beta.BetaValue.ValueFloat64()
+			} else {
+				betaValue1 = nil
+			}
+			oasOneOfConstDiscriminatorBeta1 = &shared.OASOneOfConstDiscriminatorBeta{
+				BetaValue: betaValue1,
+			}
+		}
+		if oasOneOfConstDiscriminatorBeta1 != nil {
+			optionalConstDiscriminatorRequestAndResponseRepeat = &shared.OASOneOfRequestOptionalConstDiscriminatorRequestAndResponseRepeat{
+				OASOneOfConstDiscriminatorBeta: oasOneOfConstDiscriminatorBeta1,
 			}
 		}
 	}
@@ -1517,23 +1613,6 @@ func (r *OASOneOfResourceModel) ToSharedOASOneOfRequest(ctx context.Context) (*s
 		}
 	}
 	var requiredRefObjectRequestAndResponse shared.OASOneOfRequestRequiredRefObjectRequestAndResponse
-	var oasOneOfObjectNumber3 *shared.OASOneOfObjectNumber
-	if r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber != nil {
-		objectNumber25 := new(float64)
-		if !r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.IsUnknown() && !r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.IsNull() {
-			*objectNumber25 = r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.ValueFloat64()
-		} else {
-			objectNumber25 = nil
-		}
-		oasOneOfObjectNumber3 = &shared.OASOneOfObjectNumber{
-			ObjectNumber: objectNumber25,
-		}
-	}
-	if oasOneOfObjectNumber3 != nil {
-		requiredRefObjectRequestAndResponse = shared.OASOneOfRequestRequiredRefObjectRequestAndResponse{
-			OASOneOfObjectNumber: oasOneOfObjectNumber3,
-		}
-	}
 	var oasOneOfObjectString3 *shared.OASOneOfObjectString
 	if r.RequiredRefObjectRequestAndResponse.OASOneOfObjectString != nil {
 		objectString25 := new(string)
@@ -1549,6 +1628,23 @@ func (r *OASOneOfResourceModel) ToSharedOASOneOfRequest(ctx context.Context) (*s
 	if oasOneOfObjectString3 != nil {
 		requiredRefObjectRequestAndResponse = shared.OASOneOfRequestRequiredRefObjectRequestAndResponse{
 			OASOneOfObjectString: oasOneOfObjectString3,
+		}
+	}
+	var oasOneOfObjectNumber3 *shared.OASOneOfObjectNumber
+	if r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber != nil {
+		objectNumber25 := new(float64)
+		if !r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.IsUnknown() && !r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.IsNull() {
+			*objectNumber25 = r.RequiredRefObjectRequestAndResponse.OASOneOfObjectNumber.ObjectNumber.ValueFloat64()
+		} else {
+			objectNumber25 = nil
+		}
+		oasOneOfObjectNumber3 = &shared.OASOneOfObjectNumber{
+			ObjectNumber: objectNumber25,
+		}
+	}
+	if oasOneOfObjectNumber3 != nil {
+		requiredRefObjectRequestAndResponse = shared.OASOneOfRequestRequiredRefObjectRequestAndResponse{
+			OASOneOfObjectNumber: oasOneOfObjectNumber3,
 		}
 	}
 	var requiredRefPrimitivesRequestOnly shared.RequiredRefPrimitivesRequestOnly
@@ -1650,34 +1746,36 @@ func (r *OASOneOfResourceModel) ToSharedOASOneOfRequest(ctx context.Context) (*s
 		}
 	}
 	out := shared.OASOneOfRequest{
-		OptionalDiscriminatorRequestOnly:             optionalDiscriminatorRequestOnly,
-		OptionalDiscriminatorRequestAndResponse:      optionalDiscriminatorRequestAndResponse,
-		OptionalDiscriminatorRequestRequiredResponse: optionalDiscriminatorRequestRequiredResponse,
-		OptionalInlineObjectRequestOnly:              optionalInlineObjectRequestOnly,
-		OptionalInlineObjectRequestAndResponse:       optionalInlineObjectRequestAndResponse,
-		OptionalInlinePrimitivesRequestOnly:          optionalInlinePrimitivesRequestOnly,
-		OptionalInlinePrimitivesRequestAndResponse:   optionalInlinePrimitivesRequestAndResponse,
-		OptionalInlineStringsRequestOnly:             optionalInlineStringsRequestOnly,
-		OptionalInlineStringsRequestAndResponse:      optionalInlineStringsRequestAndResponse,
-		OptionalListDiscriminator:                    optionalListDiscriminator,
-		OptionalRefObjectRequestOnly:                 optionalRefObjectRequestOnly,
-		OptionalRefObjectRequestAndResponse:          optionalRefObjectRequestAndResponse,
-		OptionalRefPrimitivesRequestOnly:             optionalRefPrimitivesRequestOnly,
-		OptionalRefPrimitivesRequestAndResponse:      optionalRefPrimitivesRequestAndResponse,
-		OptionalSetDiscriminator:                     optionalSetDiscriminator,
-		RequiredDiscriminatorRequestOnly:             requiredDiscriminatorRequestOnly,
-		RequiredDiscriminatorRequestAndResponse:      requiredDiscriminatorRequestAndResponse,
-		RequiredDiscriminatorRequestOptionalResponse: requiredDiscriminatorRequestOptionalResponse,
-		RequiredInlineObjectRequestOnly:              requiredInlineObjectRequestOnly,
-		RequiredInlineObjectRequestAndResponse:       requiredInlineObjectRequestAndResponse,
-		RequiredInlinePrimitivesRequestOnly:          requiredInlinePrimitivesRequestOnly,
-		RequiredInlinePrimitivesRequestAndResponse:   requiredInlinePrimitivesRequestAndResponse,
-		RequiredListDiscriminator:                    requiredListDiscriminator,
-		RequiredRefObjectRequestOnly:                 requiredRefObjectRequestOnly,
-		RequiredRefObjectRequestAndResponse:          requiredRefObjectRequestAndResponse,
-		RequiredRefPrimitivesRequestOnly:             requiredRefPrimitivesRequestOnly,
-		RequiredRefPrimitivesRequestAndResponse:      requiredRefPrimitivesRequestAndResponse,
-		RequiredSetDiscriminator:                     requiredSetDiscriminator,
+		OptionalDiscriminatorRequestOnly:                   optionalDiscriminatorRequestOnly,
+		OptionalDiscriminatorRequestAndResponse:            optionalDiscriminatorRequestAndResponse,
+		OptionalConstDiscriminatorRequestAndResponse:       optionalConstDiscriminatorRequestAndResponse,
+		OptionalConstDiscriminatorRequestAndResponseRepeat: optionalConstDiscriminatorRequestAndResponseRepeat,
+		OptionalDiscriminatorRequestRequiredResponse:       optionalDiscriminatorRequestRequiredResponse,
+		OptionalInlineObjectRequestOnly:                    optionalInlineObjectRequestOnly,
+		OptionalInlineObjectRequestAndResponse:             optionalInlineObjectRequestAndResponse,
+		OptionalInlinePrimitivesRequestOnly:                optionalInlinePrimitivesRequestOnly,
+		OptionalInlinePrimitivesRequestAndResponse:         optionalInlinePrimitivesRequestAndResponse,
+		OptionalInlineStringsRequestOnly:                   optionalInlineStringsRequestOnly,
+		OptionalInlineStringsRequestAndResponse:            optionalInlineStringsRequestAndResponse,
+		OptionalListDiscriminator:                          optionalListDiscriminator,
+		OptionalRefObjectRequestOnly:                       optionalRefObjectRequestOnly,
+		OptionalRefObjectRequestAndResponse:                optionalRefObjectRequestAndResponse,
+		OptionalRefPrimitivesRequestOnly:                   optionalRefPrimitivesRequestOnly,
+		OptionalRefPrimitivesRequestAndResponse:            optionalRefPrimitivesRequestAndResponse,
+		OptionalSetDiscriminator:                           optionalSetDiscriminator,
+		RequiredDiscriminatorRequestOnly:                   requiredDiscriminatorRequestOnly,
+		RequiredDiscriminatorRequestAndResponse:            requiredDiscriminatorRequestAndResponse,
+		RequiredDiscriminatorRequestOptionalResponse:       requiredDiscriminatorRequestOptionalResponse,
+		RequiredInlineObjectRequestOnly:                    requiredInlineObjectRequestOnly,
+		RequiredInlineObjectRequestAndResponse:             requiredInlineObjectRequestAndResponse,
+		RequiredInlinePrimitivesRequestOnly:                requiredInlinePrimitivesRequestOnly,
+		RequiredInlinePrimitivesRequestAndResponse:         requiredInlinePrimitivesRequestAndResponse,
+		RequiredListDiscriminator:                          requiredListDiscriminator,
+		RequiredRefObjectRequestOnly:                       requiredRefObjectRequestOnly,
+		RequiredRefObjectRequestAndResponse:                requiredRefObjectRequestAndResponse,
+		RequiredRefPrimitivesRequestOnly:                   requiredRefPrimitivesRequestOnly,
+		RequiredRefPrimitivesRequestAndResponse:            requiredRefPrimitivesRequestAndResponse,
+		RequiredSetDiscriminator:                           requiredSetDiscriminator,
 	}
 
 	return &out, diags

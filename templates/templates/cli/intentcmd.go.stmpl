@@ -47,6 +47,9 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 		RunE:    runIntent{{$c.FuncName}}Cmd,
 		Annotations: map[string]string{
 			"speakeasy_operation": "{{escapeGoString $c.OpID}}",
+			{{- if $c.SDKOpID}}
+			"speakeasy_sdk_operation": "{{escapeGoString $c.SDKOpID}}",
+			{{- end}}
 			{{- if $c.BodyFlag}}
 			flagutil.AnnotationWholeBodyFlag: "{{$c.BodyFlag}}",
 			{{- end}}

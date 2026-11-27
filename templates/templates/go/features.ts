@@ -8,7 +8,7 @@ const supportedFeatures = {
   globalServerURLs: "2.83.1",
   methodServerURLs: "2.82.2",
   globals: "2.82.3",
-  enums: "2.82.2",
+  enums: "2.82.3",
   serverIDs: "2.81.1",
   nameOverrides: "2.81.4",
   includes: "2.81.1",
@@ -27,7 +27,7 @@ const supportedFeatures = {
   bigint: "0.0.2",
   decimal: "0.1.1",
   devContainers: "2.90.0",
-  constsAndDefaults: "0.1.15",
+  constsAndDefaults: "0.1.16",
   additionalProperties: "0.1.3",
   downloadStreams: "0.1.3",
   tests: "0.16.8",
@@ -442,7 +442,9 @@ function isTestSkipped(test: string): boolean {
     "unions-body-variant-overloads-nested-union",
     "unions-body-variant-overloads-open-enum",
     "request-bodies-base64-file-input-raw-bytes",
-    "pagination-limit-offset-page-num-pages-missing",
+    "parameters-header-params-enum",
+    "parameters-header-params-string-formats",
+    "auth-typed-error-inspection-omits-credentials",
   ].includes(test);
 }
 

@@ -94,13 +94,15 @@ func (e *asyncRuntimeError) MachineErrorFields() map[string]interface{} {
 		if errorMember == "" {
 			errorMember = "error"
 		}
-		errorPayload := e.payload
-		if object, ok := e.payload.(map[string]interface{}); ok {
-			if member, exists := object[errorMember]; exists {
-				errorPayload = member
-			}
+		object, isObject := e.payload.(map[string]interface{})
+		member, exists := object[errorMember]
+		switch {
+		case isObject && exists:
+			fields["error"] = member
+		case !isObject || e.reason != ReasonCLIAsyncFailed:
+			// Without a failure detail, the poll response is the only diagnostic.
+			fields["error"] = e.payload
 		}
-		fields["error"] = errorPayload
 	}
 	return fields
 }
@@ -558,17 +560,13 @@ func asyncElapsed(elapsed time.Duration) string {
 }
 
 // asyncFailureDetail extracts the human failure message through the
-// declared bindings (default "error"/"message").
+// declared bindings (default "error"/"message"). The error member may be an
+// object, a string, or an array of either; the first message found is used.
 func asyncFailureDetail(cfg *asyncConfig, payload interface{}) string {
 	object, ok := payload.(map[string]interface{})
 	if !ok {
 		return ""
 	}
-	errorMember, ok := object[cfg.ErrorField].(map[string]interface{})
-	if !ok {
-		return ""
-	}
-	message, _ := errorMember[cfg.ErrorMessageField].(string)
-	return message
+	return outcomeDetailMessage(object[cfg.ErrorField], cfg.ErrorMessageField)
 }
 {{- end}}

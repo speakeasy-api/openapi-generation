@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod/v4-mini";
-import { safeParse } from "../lib/schemas.js";
+import { lazySchema as lazySchema$, safeParse } from "../lib/schemas.js";
 import { Result as SafeParseResult } from "../types/fp.js";
 import * as types from "../types/primitives.js";
 import { PolicyStep, PolicyStep$inboundSchema } from "./policystep.js";
@@ -18,11 +18,13 @@ export type MCPPolicy = {
 };
 
 /** @internal */
-export const MCPPolicy$inboundSchema: z.ZodMiniType<MCPPolicy, unknown> = z
-  .object({
-    policyId: types.string(),
-    steps: z.array(PolicyStep$inboundSchema),
-  });
+export const MCPPolicy$inboundSchema: z.ZodMiniType<MCPPolicy, unknown> =
+  /* @__PURE__ */ lazySchema$(() =>
+    z.object({
+      policyId: types.string(),
+      steps: z.array(PolicyStep$inboundSchema),
+    })
+  );
 
 export function mcpPolicyFromJSON(
   jsonString: string,

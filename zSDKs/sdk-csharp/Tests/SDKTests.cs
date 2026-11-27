@@ -47,7 +47,7 @@ public class SDKTests
         Assert.Equal(200, (int)res.HttpMeta.Response.StatusCode);
     }
 
-    [Fact(Skip = "test marked as skipped for csharp or generated unit tests not production ready yet")]
+    [Fact]
     public async Task TestSDK_GetUserTestWithResponseBody()
     {
 
@@ -84,7 +84,7 @@ public class SDKTests
         );
     }
 
-    [Fact(Skip = "test marked as skipped for csharp or generated unit tests not production ready yet")]
+    [Fact]
     public async Task TestSDK_GetUserTestWithResponseBodyFields()
     {
 

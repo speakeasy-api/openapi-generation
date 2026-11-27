@@ -21,6 +21,13 @@ const (
 func (e GetImportIDEnumStringID) ToPointer() *GetImportIDEnumStringID {
 	return &e
 }
+
+// GetImportIDEnumStringIDValues returns every known GetImportIDEnumStringID value in schema order.
+func GetImportIDEnumStringIDValues() []GetImportIDEnumStringID {
+	return []GetImportIDEnumStringID{
+		GetImportIDEnumStringIDDefault,
+	}
+}
 func (e *GetImportIDEnumStringID) UnmarshalJSON(data []byte) error {
 	var v string
 	if err := json.Unmarshal(data, &v); err != nil {

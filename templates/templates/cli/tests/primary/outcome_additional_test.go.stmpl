@@ -63,6 +63,12 @@ func newOutcomeServerFirstPage(t *testing.T, status string, withErrors bool, fir
 	}))
 }
 
+var outcomeJqStops = map[string]string{
+	"halt":          "halt",
+	"halt_error(0)": `("stopped\n" | halt_error(0))`,
+	"halt_error(7)": `("stopped" | halt_error(7))`,
+}
+
 func outcomeErrorEnvelope(t *testing.T, stderr string) map[string]interface{} {
 	t.Helper()
 	var envelope map[string]interface{}
@@ -144,6 +150,17 @@ func TestOutcomeDiscreteResponse(t *testing.T) {
 			require.Len(t, detail, 1)
 			assert.Equal(t, "content was blocked", detail[0].(map[string]interface{})["message"])
 		})
+		for label, stop := range outcomeJqStops {
+			t.Run(name+"/jq-halt/"+label, func(t *testing.T) {
+				srv := newOutcomeServer(t, "failed", true)
+				defer srv.Close()
+				h, err := runOutcome(t, srv.URL, append(command, "--jq", ".status, "+stop)...)
+				assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+				assert.Contains(t, h.GetStdout(), "failed")
+				assert.NotContains(t, h.GetStderr(), "stopped")
+				assert.Equal(t, "CLI_OUTCOME_FAILED", outcomeErrorEnvelope(t, h.GetStderr())["error_reason"])
+			})
+		}
 	}
 }
 
@@ -240,6 +257,17 @@ func TestOutcomePaginatedResponse(t *testing.T) {
 			assert.Contains(t, outcomeErrorEnvelope(t, h.GetStderr())["message"], `ended in failure state "failed"`)
 		})
 	}
+	for label, stop := range outcomeJqStops {
+		t.Run("all pages/jq-halt/"+label, func(t *testing.T) {
+			srv := newOutcomeServerFirstPage(t, "completed", false, "failed")
+			defer srv.Close()
+			h, err := runOutcome(t, srv.URL, "outcome", "outcome-list-interactions", "--all", "--jq", ".status, "+stop)
+			assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+			assert.Equal(t, `"failed"`, strings.TrimSpace(h.GetStdout()))
+			assert.NotContains(t, h.GetStderr(), "stopped")
+			assert.Equal(t, "CLI_OUTCOME_FAILED", outcomeErrorEnvelope(t, h.GetStderr())["error_reason"])
+		})
+	}
 }
 
 func TestOutcomeStreamedResponse(t *testing.T) {
@@ -294,5 +322,80 @@ func TestOutcomeStreamedResponse(t *testing.T) {
 		require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope), h.GetStderr())
 		assert.Equal(t, "CLI_OUTCOME_FAILED", envelope["error_reason"])
 		assert.Equal(t, "failed", envelope["state"])
+	})
+	for label, stop := range outcomeJqStops {
+		t.Run("jq-halt/"+label, func(t *testing.T) {
+			srv := newOutcomeServer(t, "failed", true)
+			defer srv.Close()
+			h, err := runOutcome(t, srv.URL, "outcome-say", "hello", "--output-format", "json", "--jq", `.data | select(.event_type == "completed") | .interaction.status, `+stop)
+			assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err), h.GetStderr())
+			assert.Equal(t, `"failed"`, strings.TrimSpace(h.GetStdout()))
+			assert.NotContains(t, h.GetStderr(), "stopped")
+			assert.Equal(t, "CLI_OUTCOME_FAILED", outcomeErrorEnvelope(t, h.GetStderr())["error_reason"])
+		})
+	}
+	t.Run("jq-halt before a failed event", func(t *testing.T) {
+		srv := newOutcomeServer(t, "failed", true)
+		defer srv.Close()
+		h, err := runOutcome(t, srv.URL, "outcome-say", "hello", "--output-format", "json", "--jq", `.data | select(.event_type == "delta") | .content, halt`)
+		require.NoError(t, err, h.GetStderr())
+		assert.Equal(t, "\"Hello\"\n", h.GetStdout())
+		assert.Empty(t, h.GetStderr())
+	})
+}
+
+func TestAsyncMachineErrorDetail(t *testing.T) {
+	newAsyncServer := func(t *testing.T, pollBody string) *httptest.Server {
+		t.Helper()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch {
+			case r.URL.Path == "/continuation/compose":
+				fmt.Fprint(w, `{"id":"job_1","status":"in_progress"}`)
+			case r.URL.Path == "/outcome/interactions/job_1":
+				fmt.Fprint(w, pollBody)
+			default:
+				http.NotFound(w, r)
+			}
+		}))
+		t.Cleanup(srv.Close)
+		return srv
+	}
+
+	t.Run("failure without an error member omits the poll response", func(t *testing.T) {
+		srv := newAsyncServer(t, `{"id":"job_1","status":"failed","output_text":"large result body"}`)
+		h, err := runOutcome(t, srv.URL, "compose-job", "--prompt", "hello", "--agent-mode")
+		assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
+		envelope := outcomeErrorEnvelope(t, h.GetStderr())
+		assert.Equal(t, "CLI_ASYNC_FAILED", envelope["error_reason"])
+		assert.Equal(t, "job_1", envelope["id"])
+		assert.Equal(t, envelope["message"], envelope["error"])
+		assert.NotContains(t, h.GetStderr(), "large result body")
+	})
+
+	t.Run("missing state keeps the poll response", func(t *testing.T) {
+		srv := newAsyncServer(t, `{"id":"job_1","output_text":"diagnostic"}`)
+		h, err := runOutcome(t, srv.URL, "compose-job", "--prompt", "hello", "--agent-mode")
+		assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
+		assert.Empty(t, h.GetStdout())
+		envelope := outcomeErrorEnvelope(t, h.GetStderr())
+		assert.Equal(t, "CLI_PROTOCOL", envelope["error_reason"])
+		assert.Contains(t, envelope["message"], "/status")
+		assert.Equal(t, "job_1", envelope["id"])
+		detail, ok := envelope["error"].(map[string]interface{})
+		require.True(t, ok, h.GetStderr())
+		assert.Equal(t, "diagnostic", detail["output_text"])
+	})
+
+	t.Run("unknown state keeps the poll response", func(t *testing.T) {
+		srv := newAsyncServer(t, `{"id":"job_1","status":"paused","output_text":"diagnostic"}`)
+		h, err := runOutcome(t, srv.URL, "compose-job", "--prompt", "hello", "--agent-mode")
+		require.Error(t, err)
+		envelope := outcomeErrorEnvelope(t, h.GetStderr())
+		assert.Equal(t, "CLI_ASYNC_UNKNOWN_STATE", envelope["error_reason"])
+		detail, ok := envelope["error"].(map[string]interface{})
+		require.True(t, ok, h.GetStderr())
+		assert.Equal(t, "paused", detail["status"])
+		assert.Equal(t, "diagnostic", detail["output_text"])
 	})
 }

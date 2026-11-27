@@ -455,11 +455,6 @@ const testsSkippedByName = [
   // C# SDK RequestBodySerializer.SerializeMultipart does not handle File types
   "postFile",
   "postFileWithEncoding",
-  // C# SDK uses [JsonProperty("additionalProperties")] instead of
-  // [JsonExtensionData], so additional properties in JSON responses are not deserialized
-  // into the dictionary. Un-skip these once the wire format is fixed.
-  "getUser-testWithResponseBody",
-  "getUser-testWithResponseBodyFields",
   // C# SDK pagination: while loop leaves res=null, then assertions access res (Java also skips this test)
   "getUnionErrors",
 ];

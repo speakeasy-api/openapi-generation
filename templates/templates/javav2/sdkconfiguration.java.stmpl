@@ -233,6 +233,17 @@ package {{$pkg}};
         {{javaImportUtils}}.checkNotNull(retryConfig, "retryConfig");
         this.retryConfig = retryConfig;
     }
+
+    private {{javaImportOptional}}<{{javaImport "java.time.Duration"}}> timeout = {{javaImportOptional}}.empty();
+
+    public {{javaImportOptional}}<{{javaImport "java.time.Duration"}}> timeout() {
+        return timeout;
+    }
+
+    public void setTimeout({{javaImportOptional}}<{{javaImport "java.time.Duration"}}> timeout) {
+        {{javaImportUtils}}.checkNotNull(timeout, "timeout");
+        this.timeout = timeout;
+    }
     {{- if asyncEnabled}}
     private {{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler = {{javaImport "java.util.concurrent.Executors"}}.newSingleThreadScheduledExecutor();
     

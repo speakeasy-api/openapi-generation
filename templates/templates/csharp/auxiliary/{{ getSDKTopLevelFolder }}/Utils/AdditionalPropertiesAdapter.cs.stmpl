@@ -1,0 +1,201 @@
+{{- if spreadAdditionalProperties -}}
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+
+    internal sealed class AdditionalPropertiesOptions
+    {
+        public AdditionalPropertiesOptions(string[] declaredJsonNames, JsonConverter? itemConverter = null)
+        {
+            DeclaredJsonNames = new HashSet<string>(declaredJsonNames, StringComparer.OrdinalIgnoreCase);
+
+            var readConverters = Utilities.GetDefaultJsonDeserializers().ToList();
+            if (itemConverter != null)
+            {
+                readConverters.Insert(0, itemConverter);
+                WriteSerializer = JsonSerializer.Create(new JsonSerializerSettings()
+                {
+                    NullValueHandling = NullValueHandling.Ignore,
+                    Converters = new JsonConverter[] { itemConverter },
+                });
+            }
+
+            ReadSerializer = JsonSerializer.Create(new JsonSerializerSettings()
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                DateParseHandling = DateParseHandling.None,
+                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+                Converters = readConverters,
+            });
+        }
+
+        public ISet<string> DeclaredJsonNames { get; }
+
+        public JsonSerializer ReadSerializer { get; }
+
+        public JsonSerializer? WriteSerializer { get; }
+    }
+
+    internal interface IAdditionalPropertiesAdapter
+    {
+        Type ValueType { get; }
+
+        bool HasItemConverter { get; }
+    }
+
+    /// <summary>
+    /// Exposes a model's typed additional properties dictionary as Newtonsoft extension data,
+    /// so that additional properties are read from and written to the top level of the JSON object.
+    /// </summary>
+    /// <remarks>
+    /// Keys matching a declared property's JSON name (case-insensitively) are neither read nor written.
+    /// </remarks>
+    internal sealed class AdditionalPropertiesAdapter<T> : IDictionary<string, object?>, IAdditionalPropertiesAdapter
+    {
+        private readonly Func<Dictionary<string, T>?> _get;
+        private readonly Action<Dictionary<string, T>> _set;
+        private readonly AdditionalPropertiesOptions _options;
+
+        public AdditionalPropertiesAdapter(Func<Dictionary<string, T>?> get, Action<Dictionary<string, T>> set, AdditionalPropertiesOptions options)
+        {
+            _get = get;
+            _set = set;
+            _options = options;
+        }
+
+        public Type ValueType => typeof(T);
+
+        public bool HasItemConverter => _options.WriteSerializer != null;
+
+        public object? this[string key]
+        {
+            get => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException(key);
+            set
+            {
+                if (IsDeclared(key))
+                {
+                    return;
+                }
+                var converted = Convert(value);
+                GetOrCreate()[key] = converted;
+            }
+        }
+
+        public ICollection<string> Keys => Written().Select(kv => kv.Key).ToList();
+
+        public ICollection<object?> Values => Written().Select(kv => ToJsonValue(kv.Value)).ToList();
+
+        public int Count => Written().Count();
+
+        public bool IsReadOnly => false;
+
+        public void Add(string key, object? value)
+        {
+            if (IsDeclared(key))
+            {
+                return;
+            }
+            var converted = Convert(value);
+            GetOrCreate().Add(key, converted);
+        }
+
+        public void Add(KeyValuePair<string, object?> item) => Add(item.Key, item.Value);
+
+        public void Clear()
+        {
+            foreach (var key in Keys)
+            {
+                Remove(key);
+            }
+        }
+
+        public bool Contains(KeyValuePair<string, object?> item) =>
+            TryGetValue(item.Key, out var value)
+            && (value is JToken token && item.Value is JToken other ? JToken.DeepEquals(token, other) : Equals(value, item.Value));
+
+        public bool ContainsKey(string key) => !IsDeclared(key) && (_get()?.ContainsKey(key) ?? false);
+
+        public void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
+        {
+            foreach (var item in this)
+            {
+                array[arrayIndex++] = item;
+            }
+        }
+
+        public bool Remove(string key) => !IsDeclared(key) && (_get()?.Remove(key) ?? false);
+
+        public bool Remove(KeyValuePair<string, object?> item) => Contains(item) && Remove(item.Key);
+
+        public bool TryGetValue(string key, out object? value)
+        {
+            var inner = _get();
+            if (!IsDeclared(key) && inner != null && inner.TryGetValue(key, out var typed))
+            {
+                value = ToJsonValue(typed);
+                return true;
+            }
+            value = null;
+            return false;
+        }
+
+        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
+        {
+            foreach (var kv in Written())
+            {
+                yield return new KeyValuePair<string, object?>(kv.Key, ToJsonValue(kv.Value));
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        private IEnumerable<KeyValuePair<string, T>> Written()
+        {
+            var inner = _get();
+            if (inner == null)
+            {
+                return Enumerable.Empty<KeyValuePair<string, T>>();
+            }
+            return inner.Where(kv => !IsDeclared(kv.Key));
+        }
+
+        private bool IsDeclared(string key) => _options.DeclaredJsonNames.Contains(key);
+
+        private object? ToJsonValue(T value) =>
+            value != null && _options.WriteSerializer != null ? JToken.FromObject(value, _options.WriteSerializer) : value;
+
+        private Dictionary<string, T> GetOrCreate()
+        {
+            var inner = _get();
+            if (inner == null)
+            {
+                inner = new Dictionary<string, T>();
+                _set(inner);
+            }
+            return inner;
+        }
+
+        private T Convert(object? value)
+        {
+            var token = value as JToken ?? (value == null ? JValue.CreateNull() : new JValue(value));
+            if (typeof(T) == typeof(object))
+            {
+                return (T)AnyDeserializer.ParseToken(token)!;
+            }
+            // JToken.ToObject<decimal> rounds a double token to 15 significant digits; the token's
+            // JSON text keeps the double's round-trip digits.
+            using (var reader = new JsonTextReader(new StringReader(token.ToString(Formatting.None))))
+            {
+                return _options.ReadSerializer.Deserialize<T>(reader)!;
+            }
+        }
+    }
+}
+{{- end }}
