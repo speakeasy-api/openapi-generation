@@ -253,10 +253,7 @@ func TestPaginationLimitOffsetPageNumPagesMissing(t *testing.T) {
 	require.NotNil(t, lastRes)
 	assert.Equal(t, http.StatusOK, lastRes.HTTPMeta.Response.StatusCode)
 	require.NotNil(t, lastRes.Res)
-	numPages, ok := lastRes.Res.NumPages.Get()
-	require.True(t, ok)
-	require.NotNil(t, numPages)
-	assert.Equal(t, int64(3), *numPages)
+	assert.False(t, lastRes.Res.NumPages.IsSet())
 	assert.Equal(t, []int64{14, 15, 16, 17, 18, 19}, lastRes.Res.ResultArray)
 
 	nilRes, err := lastRes.Next()

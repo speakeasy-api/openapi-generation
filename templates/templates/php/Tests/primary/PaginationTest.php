@@ -180,7 +180,7 @@ final class PaginationTest extends TestCase
             [7, 8, 9, 10, 11, 12, 13],
             [14, 15, 16, 17, 18, 19],
         ], $pages);
-        $this->assertSame([null, null, 3], $numPages);
+        $this->assertSame([null, null, null], $numPages);
         $this->assertNotNull($last);
         $this->assertNull(($last->next)());
         $this->assertCount(3, $container);

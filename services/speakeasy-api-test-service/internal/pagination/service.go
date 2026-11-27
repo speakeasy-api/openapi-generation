@@ -547,9 +547,9 @@ func getNonNumericValue(queryValue string, hasBody bool, paginationValue string)
 }
 
 // HandleLimitOffsetPageNumPagesMissing serves three pages of seven items where
-// the first response omits numPages and the second carries numPages: null, so
-// only the final page states the total. Pagination must advance through the
-// first two pages on the result length and stop after the third.
+// no response states a numeric numPages: the second carries numPages: null and
+// the others omit it. Pagination must advance through the first two pages on
+// the result length and stop after the short third page.
 func HandleLimitOffsetPageNumPagesMissing(w http.ResponseWriter, r *http.Request) {
 	const limit = 7
 
@@ -570,12 +570,8 @@ func HandleLimitOffsetPageNumPagesMissing(w http.ResponseWriter, r *http.Request
 	}
 
 	res := map[string]interface{}{"resultArray": results}
-	switch page {
-	case 1:
-	case 2:
+	if page == 2 {
 		res["numPages"] = nil
-	default:
-		res["numPages"] = int(math.Ceil(float64(total) / float64(limit)))
 	}
 
 	w.Header().Set("Content-Type", "application/json")

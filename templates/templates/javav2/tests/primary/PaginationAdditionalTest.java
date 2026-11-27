@@ -189,7 +189,7 @@ public class PaginationAdditionalTest {
         PaginationLimitOffsetPageNumPagesMissingResponse lastRes = iterator.next();
         assertEquals(200, lastRes.statusCode());
         assertTrue(lastRes.res().isPresent());
-        assertEquals(3L, lastRes.res().get().numPages().get());
+        assertFalse(lastRes.res().get().numPages().isPresent());
         assertEquals(List.of(14L, 15L, 16L, 17L, 18L, 19L), lastRes.res().get().resultArray());
 
         assertFalse(iterator.hasNext());

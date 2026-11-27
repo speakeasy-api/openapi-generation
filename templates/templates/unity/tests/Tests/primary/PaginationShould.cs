@@ -118,7 +118,7 @@ public class PaginationShould
                         Assert.NotNull(lastRes);
                         Assert.AreEqual(200, lastRes.StatusCode);
                         Assert.NotNull(lastRes.Res);
-                        Assert.AreEqual(3, lastRes.Res.NumPages);
+                        Assert.Null(lastRes.Res.NumPages);
                         CollectionAssert.AreEqual(
                             new List<long> { 14, 15, 16, 17, 18, 19 },
                             lastRes.Res.ResultArray

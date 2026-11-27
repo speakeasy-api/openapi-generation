@@ -209,7 +209,7 @@ module OpenApiSDK
         [[0, 1, 2, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12, 13], [14, 15, 16, 17, 18, 19]],
         pages
       )
-      assert_equal([nil, nil, 3], num_pages)
+      assert_equal([nil, nil, nil], num_pages)
       assert_nil(T.must(last).next_page.call)
       assert_equal(3, log.size)
     end

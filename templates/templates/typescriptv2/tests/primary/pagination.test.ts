@@ -172,7 +172,7 @@ test("Test Pagination LimitOffset Page NumPages Missing", async () => {
   expect(lastRes).not.toBeNull();
   expect(lastRes!.httpMeta.response.status).toBe(200);
   expect(lastRes!.res).toBeDefined();
-  expect(lastRes!.res!.numPages).toBe(3);
+  expect(lastRes!.res!.numPages).toBeUndefined();
   expect(lastRes!.res!.resultArray).toEqual([14, 15, 16, 17, 18, 19]);
 
   const nullRes = await lastRes!.next();

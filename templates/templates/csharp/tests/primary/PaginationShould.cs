@@ -234,7 +234,7 @@ public class PaginationShould
         Assert.NotNull(lastRes);
         Assert.Equal(HttpStatusCode.OK, lastRes.HttpMeta.Response.StatusCode);
         Assert.NotNull(lastRes.Res);
-        Assert.Equal(3L, lastRes.Res.NumPages.Value);
+        Assert.False(lastRes.Res.NumPages.IsSet);
         Assert.Equal(new List<long> { 14, 15, 16, 17, 18, 19 }, lastRes.Res.ResultArray);
 
         var nullRes = await lastRes.Next!();

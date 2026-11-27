@@ -265,7 +265,7 @@ def test_pagination_limit_offset_page_num_pages_missing():
     assert last_res.http_meta.response is not None
     assert last_res.http_meta.response.status_code == 200
     assert last_res.res is not None
-    assert last_res.res.num_pages == 3
+    assert isinstance(last_res.res.num_pages, Unset)
     assert last_res.res.result_array == [14, 15, 16, 17, 18, 19]
 
     null_res = last_res.next()
