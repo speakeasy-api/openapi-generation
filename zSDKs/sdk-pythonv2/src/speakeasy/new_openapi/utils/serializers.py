@@ -120,6 +120,29 @@ without it (e.g. of user-constructed request payloads) stays strict. Pass
 opt in when parsing response payloads manually."""
 
 
+def _build_wrapper_model(name: str, typ: Any) -> Any:
+    return create_model(
+        name,
+        body=(typ, ...),
+        __config__=ConfigDict(populate_by_name=True, arbitrary_types_allowed=True),
+    )
+
+
+@functools.lru_cache(maxsize=1024)
+def _cached_wrapper_model(name: str, typ: Any, _typ_repr: str) -> Any:
+    return _build_wrapper_model(name, typ)
+
+
+def _wrapper_model(name: str, typ: Any) -> Any:
+    # Building a pydantic model compiles its schema, so reuse one per type.
+    # repr(typ) is part of the key because unions with the same members compare
+    # equal in any order, while the member order affects validation.
+    try:
+        return _cached_wrapper_model(name, typ, repr(typ))
+    except TypeError:
+        return _build_wrapper_model(name, typ)
+
+
 def unmarshal_json(raw, typ: Any) -> Any:
     return unmarshal(
         from_json(raw), typ, coerce_iterables=False, allow_unknown_union_variants=True
@@ -134,11 +157,7 @@ def unmarshal(
 ) -> Any:
     if coerce_iterables:
         val = _coerce_iterables_for_type(val, typ)
-    unmarshaller = create_model(
-        "Unmarshaller",
-        body=(typ, ...),
-        __config__=ConfigDict(populate_by_name=True, arbitrary_types_allowed=True),
-    )
+    unmarshaller = _wrapper_model("Unmarshaller", typ)
 
     if allow_unknown_union_variants:
         m = unmarshaller.model_validate(
@@ -270,11 +289,7 @@ def marshal_json(val, typ):
     if is_nullable(typ) and val is None:
         return "null"
 
-    marshaller = create_model(
-        "Marshaller",
-        body=(typ, ...),
-        __config__=ConfigDict(populate_by_name=True, arbitrary_types_allowed=True),
-    )
+    marshaller = _wrapper_model("Marshaller", typ)
 
     m = marshaller(body=val)
 
