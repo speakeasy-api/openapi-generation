@@ -578,6 +578,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/csharp/usage/test.stmpl":                                                                                 0o644,
 	"templates/csharpv2":                                                                                                0o20000000755,
 	"templates/csharpv2/HIDDEN":                                                                                         0o644,
+	"templates/csharpv2/README.md":                                                                                      0o644,
 	"templates/csharpv2/auxiliary":                                                                                      0o20000000755,
 	"templates/csharpv2/auxiliary/v2":                                                                                   0o20000000755,
 	"templates/csharpv2/auxiliary/v2/{{getGeneratorsTopLevelFolder}}":                                                   0o20000000755,

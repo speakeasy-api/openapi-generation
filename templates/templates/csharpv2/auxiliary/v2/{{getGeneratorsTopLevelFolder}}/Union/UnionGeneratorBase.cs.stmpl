@@ -73,9 +73,8 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
                     .Select(a => a.NamedArguments.FirstOrDefault(n => n.Key == "Factory").Value.Value as string ?? "")
                     .ToEquatableArray();
 
-                var distinctiveJsonProp = GetDistinctiveJsonPropertyName(p.Type);
+                var requiredJsonProps = GetRequiredJsonPropertyNames(p.Type);
                 var factoryMethodName = FindFactoryMethodName(classSymbol, p.Type);
-                var hasAdditionalProperties = HasAdditionalPropertiesProperty(p.Type);
                 var isValueType = UnwrapNullable(p.Type).IsValueType;
                 var isOpenUnion = UnwrapNullable(p.Type).AllInterfaces
                     .Any(i => i.ToDisplayString() == OpenUnionInterfaceName);
@@ -85,9 +84,8 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
                     FullyQualifiedType: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier)),
                     DiscriminatorValues: discValues,
                     DiscriminatorFactories: discFactories,
-                    DistinctiveJsonPropertyName: distinctiveJsonProp,
+                    RequiredJsonPropertyNames: requiredJsonProps,
                     FactoryMethodName: factoryMethodName,
-                    HasAdditionalProperties: hasAdditionalProperties,
                     IsValueType: isValueType,
                     IsOpenUnion: isOpenUnion
                 );
@@ -106,36 +104,32 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
         return new UnionModel(classSymbol.Name, namespaceDecl, fqn, nullable, discriminatorField, open, unknownMember, properties{{if schemaValidationLenient}}, HasValidationFailure: classSymbol.GetMembers("ValidationFailure").OfType<IPropertySymbol>().Any(IsJsonIgnored){{end}});
     }
 
-    /// <summary>Returns the JSON name of the first <c>[JsonPropertyName]</c>-annotated public
-    /// property on <paramref name="type"/> (unwrapping nullable), or <c>null</c> if none exists.
+    /// <summary>Returns the JSON names of the <c>[JsonRequired]</c>-annotated public
+    /// properties on <paramref name="type"/> (unwrapping nullable), or an empty array if none exists.
     /// Used as a structural pre-filter hint during deserialization: before attempting a full
-    /// deserialize of a variant, the converter checks that this property is present in the JSON
-    /// object, skipping variants whose distinctive field is absent.</summary>
-    private static string? GetDistinctiveJsonPropertyName(ITypeSymbol type)
+    /// deserialize of a variant, the converter checks that these properties are present in the JSON
+    /// object, skipping variants whose required field is absent.</summary>
+    private static EquatableArray<string> GetRequiredJsonPropertyNames(ITypeSymbol type)
     {
         // The prior check unwrapped any annotated INamedTypeSymbol with type
         // arguments, which incorrectly peeled `List<One>?` → `One` and let an
-        // unrelated element-type `[JsonPropertyName]` leak through as the
-        // union variant's "distinctive" field. Restrict to `Nullable<T>` so
-        // collection variants surface no distinctive property and fall through
+        // unrelated element-type `[JsonRequired]` member leak through as the
+        // union variant's required field. Restrict to `Nullable<T>` so
+        // collection variants surface no required property and fall through
         // to speculative deserialization.
         var underlying = UnwrapNullable(type);
 
         if (underlying is not INamedTypeSymbol namedType)
-            return null;
+            return EquatableArray<string>.Empty;
 
-        var prop = namedType.GetMembers()
+        return namedType.GetMembers()
             .OfType<IPropertySymbol>()
             .Where(p => p.DeclaredAccessibility == Accessibility.Public)
-            .FirstOrDefault(p => p.GetAttributes()
-                .Any(a => a.AttributeClass?.Name == "JsonPropertyNameAttribute"));
-
-        if (prop == null)
-            return null;
-
-        var attr = prop.GetAttributes()
-            .First(a => a.AttributeClass?.Name == "JsonPropertyNameAttribute");
-        return attr.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? prop.Name;
+            .Where(p => p.GetAttributes().Any(a => a.AttributeClass?.Name == "JsonRequiredAttribute"))
+            .Select(p => p.GetAttributes()
+                .FirstOrDefault(a => a.AttributeClass?.Name == "JsonPropertyNameAttribute")
+                ?.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? p.Name)
+            .ToEquatableArray();
     }
 
     /// <summary>Returns the nullable-annotated properties that represent union variants.
@@ -340,14 +334,6 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
             ?.Name;
     }
 
-    private static bool HasAdditionalPropertiesProperty(ITypeSymbol propertyType)
-    {
-        var unwrapped = UnwrapNullable(propertyType);
-        if (unwrapped is not INamedTypeSymbol namedType)
-            return false;
-        return namedType.GetMembers("AdditionalProperties").OfType<IPropertySymbol>().Any();
-    }
-
     private static ITypeSymbol UnwrapNullable(ITypeSymbol type)
     {
         // Only unwrap Nullable<T> value types (int?, bool?, etc.), not nullable reference types.
@@ -363,9 +349,8 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
         string FullyQualifiedType,
         EquatableArray<string> DiscriminatorValues,
         EquatableArray<string> DiscriminatorFactories, // per-value factory, parallel to DiscriminatorValues; "" if unset
-        string? DistinctiveJsonPropertyName,  // first [JsonPropertyName] on the variant type, for structural hinting
+        EquatableArray<string> RequiredJsonPropertyNames, // [JsonRequired] JSON names on the variant type, for structural hinting
         string? FactoryMethodName,            // matched static Create* method on the union class
-        bool HasAdditionalProperties,         // whether the variant type exposes AdditionalProperties
         bool IsValueType,                     // whether the unwrapped variant type is a value type
         bool IsOpenUnion                      // whether the variant type implements IOpenUnion
     );
