@@ -68,6 +68,14 @@ func NewRootCommand() (*cobra.Command, error) {
 				}
 				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %v\n", err)
 			}
+			if cmd.Annotations["speakeasy_settings_command"] != "true" {
+				if err := output.ValidateConfiguredOutputFormat(cmd); err != nil {
+					if !config.RunsWithoutConfig(cmd) {
+						return err
+					}
+					fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %v\n", err)
+				}
+			}
 			config.SetKeyringWarningOutput(cmd.ErrOrStderr())
 			if noKeyring, changed := flagutil.GetBoolFlag(cmd, "no-keyring"); changed {
 				if noKeyring {
@@ -362,6 +370,7 @@ func InterruptContext(parent context.Context) (context.Context, context.CancelFu
 
 func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string) error {
 	// Cobra aborts on an unknown command or flag before PersistentPreRunE runs.
+	_ = config.Init("cli", "CLI")
 	output.InitAgentMode(root)
 	target, _, _ := root.Find(args)
 	if target == nil {

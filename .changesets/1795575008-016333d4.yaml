@@ -1,0 +1,10 @@
+id: 1795575008-016333d4
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: an invalid output format from the environment or config file now fails with a usage error naming its source, and parse errors honour the environment or config output format
+author: TristanSpeakEasy
+date: "2026-11-25"

@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -118,7 +119,32 @@ func resolveErrorOutputFormat(cmd *cobra.Command) string {
 	if format := preparsedRendering.outputFormat; format != "" {
 		return flagutil.ResolveOutputFormat(cmd, format, IsAgentMode())
 	}
-	return flagutil.ResolveOutputFormat(cmd, config.GetString("output-format"), IsAgentMode())
+	return flagutil.ResolveOutputFormat(cmd, configuredOutputFormat(), IsAgentMode())
+}
+
+// configuredOutputFormat returns the env or config output format, or "" when
+// it is not one of Formats.
+func configuredOutputFormat() string {
+	if format := config.GetString("output-format"); slices.Contains(Formats, format) {
+		return format
+	}
+	return ""
+}
+
+// ValidateConfiguredOutputFormat rejects an env or config output format that
+// is not one of Formats when --output-format does not override it.
+func ValidateConfiguredOutputFormat(cmd *cobra.Command) error {
+	if flagutil.FlagChanged(cmd, "output-format") {
+		return nil
+	}
+	format, source := config.GetEnvValue("output-format"), config.EnvVarName("output-format")
+	if format == "" {
+		format, source = config.GetConfigValue("output-format"), "output_format in "+config.GetConfigPath()
+	}
+	if format == "" || slices.Contains(Formats, format) {
+		return nil
+	}
+	return flagutil.WithCLIValidation(fmt.Errorf("invalid output format %q from %s; valid options: %s", format, source, strings.Join(Formats, ", ")))
 }
 
 // configuredTimeout returns the timeout setting: --timeout, then env/config.

@@ -14,6 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"{{getGolangPackage}}/internal/cli"
+	"{{getGolangPackage}}/internal/clierrors"
 	"{{getGolangPackage}}/internal/config"
 )
 
@@ -154,6 +155,89 @@ func TestWhoamiShowsOutputFormatPreference(t *testing.T) {
 		require.NoError(t, cli.ExecuteRoot(context.Background(), root, []string{"whoami", "--no-interactive"}))
 		assert.Contains(t, h.GetStdout(), "Preferences:")
 		assert.Regexp(t, `--output-format\s+\[default\]\s+pretty`, h.GetStdout())
+	})
+}
+
+func TestConfiguredOutputFormatIsValidated(t *testing.T) {
+	run := func(t *testing.T, env, configured string, args ...string) (*CLITestHarness, error) {
+		resetConfig(t)
+		h := NewCLITestHarness(t)
+		h.resetAndSetupEnv()
+		if configured != "" {
+			writeConfigFile(t, os.Getenv("HOME"), map[string]interface{}{"output_format": configured})
+		}
+		t.Setenv("CLI_OUTPUT_FORMAT", env)
+		root, err := cli.NewRootCommand()
+		require.NoError(t, err)
+		root.SetOut(h.stdout)
+		root.SetErr(h.stderr)
+		return h, cli.ExecuteRoot(context.Background(), root, args)
+	}
+
+	t.Run("env", func(t *testing.T) {
+		h, err := run(t, "bogus", "", "methods", "method-get")
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		assert.Contains(t, h.GetStderr(), `invalid output format "bogus" from CLI_OUTPUT_FORMAT`)
+		assert.Empty(t, h.GetStdout())
+	})
+
+	t.Run("config", func(t *testing.T) {
+		h, err := run(t, "", "bogus", "methods", "method-get")
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		assert.Contains(t, h.GetStderr(), `invalid output format "bogus" from output_format in `)
+	})
+
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "version", args: []string{"version"}},
+		{name: "help", args: []string{"help"}},
+		{name: "completion", args: []string{"completion", "bash"}},
+		{name: "shell completion request", args: []string{"__complete", "methods", ""}, want: "method-get"},
+	} {
+		for _, source := range []struct {
+			name, env, configured, message string
+		}{
+			{name: "env", env: "bogus", message: `Warning: invalid output format "bogus" from CLI_OUTPUT_FORMAT`},
+			{name: "config", configured: "bogus", message: `Warning: invalid output format "bogus" from output_format in `},
+		} {
+			t.Run("local commands warn and run/"+source.name+"/"+tc.name, func(t *testing.T) {
+				h, err := run(t, source.env, source.configured, tc.args...)
+				require.NoError(t, err, h.GetStderr())
+				assert.Contains(t, h.GetStderr(), source.message)
+				if tc.want != "" {
+					assert.Contains(t, h.GetStdout(), tc.want)
+				}
+			})
+		}
+	}
+
+	t.Run("flag overrides", func(t *testing.T) {
+		h, err := run(t, "bogus", "", "version", "--output-format", "json")
+		require.NoError(t, err, h.GetStderr())
+	})
+
+	t.Run("settings commands still run", func(t *testing.T) {
+		h, err := run(t, "bogus", "", "whoami", "--no-interactive")
+		require.NoError(t, err, h.GetStderr())
+		assert.Regexp(t, `--output-format\s+\[env\s*\]\s+bogus`, h.GetStdout())
+	})
+
+	t.Run("parse errors use the env format", func(t *testing.T) {
+		h, err := run(t, "json", "", "--no-such-flag")
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		assert.Equal(t, "CLI_VALIDATION", jsonGetString(h.GetStderr(), "error_reason"), h.GetStderr())
+	})
+
+	t.Run("parse errors use the config format", func(t *testing.T) {
+		h, err := run(t, "", "json", "--no-such-flag")
+		require.Error(t, err)
+		assert.Equal(t, "CLI_VALIDATION", jsonGetString(h.GetStderr(), "error_reason"), h.GetStderr())
 	})
 }
 
