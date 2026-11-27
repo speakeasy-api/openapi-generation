@@ -83,6 +83,17 @@ func() (*{{sanitizeClass .Local.Response.Type "" false}}, error){
     if err != nil {
         return nil, err
     }
+    {{- if $pagination.Outputs.Results }}
+    if nPs.IsNumeric() {
+        nPsVal, err := nPs.GetNumeric()
+        if err != nil {
+            return nil, err
+        }
+        if int(nPsVal) <= int(p) {
+            return nil, nil
+        }
+    }
+    {{- else }}
     if !nPs.IsNumeric() {
         return nil, nil
     }
@@ -95,6 +106,7 @@ func() (*{{sanitizeClass .Local.Response.Type "" false}}, error){
     if int(nPsVal) <= int(p) {
         return nil, nil
     }
+    {{- end }}
     {{- end }}
     {{- end }}
     {{- if $offsetInput }}

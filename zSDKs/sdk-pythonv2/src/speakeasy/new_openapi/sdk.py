@@ -612,7 +612,11 @@ class SDK(BaseSDK):
             if not http_res.text:
                 return None
             results = JSONPath("$.pages").parse(body)
-            if len(results) == 0 or len(results[0]) == 0:
+            if (
+                len(results) == 0
+                or not isinstance(results[0], list)
+                or len(results[0]) == 0
+            ):
                 return None
 
             return self.get_union_errors(
@@ -3603,7 +3607,11 @@ class AsyncSDK(AsyncBaseSDK):
             if not http_res.text:
                 return empty_result()
             results = JSONPath("$.pages").parse(body)
-            if len(results) == 0 or len(results[0]) == 0:
+            if (
+                len(results) == 0
+                or not isinstance(results[0], list)
+                or len(results[0]) == 0
+            ):
                 return empty_result()
 
             return self.get_union_errors(

@@ -722,7 +722,7 @@ trackedFiles:
   src/speakeasy/new_openapi/py.typed:
     last_write_checksum: sha1:8efc425ffe830805ffcc0f3055871bdcdc542c60
   src/speakeasy/new_openapi/sdk.py:
-    last_write_checksum: sha1:d02da6c3f68e8eb61625adf9cee941aea1aa1672
+    last_write_checksum: sha1:8bd0523f60e0bb49724ea98869c5e1aebd3f34e7
   src/speakeasy/new_openapi/sdkconfiguration.py:
     last_write_checksum: sha1:4f1a0987e4f27a53ff6ba325a4a2d286d5d0490b
   src/speakeasy/new_openapi/singlebar.py:
@@ -732,7 +732,7 @@ trackedFiles:
   src/speakeasy/new_openapi/subgroup.py:
     last_write_checksum: sha1:3ca68a593986ce0d12981cc7dc11b2bceebc9670
   src/speakeasy/new_openapi/tag1.py:
-    last_write_checksum: sha1:e7611f7deb992e771ce1117040bb40d21305f466
+    last_write_checksum: sha1:ddfc1cd01693193afa0f066734a1985cf61247bd
   src/speakeasy/new_openapi/tag2.py:
     last_write_checksum: sha1:e185a5357b789a9ad8654526dca639e034a123ca
   src/speakeasy/new_openapi/tag3.py:

@@ -468,7 +468,7 @@ module OpenApiSDK
               results = results[0]
             end
 
-            if results.count.zero?
+            if !results.is_a?(::Array) || results.count.zero?
               next nil
             end
 

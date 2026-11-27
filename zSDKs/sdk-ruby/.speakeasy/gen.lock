@@ -1403,7 +1403,7 @@ trackedFiles:
   lib/open_api_sdk/subgroup.rb:
     last_write_checksum: sha1:473e311c24ce3cfc34512a6ffc4ae5cc33817388
   lib/open_api_sdk/tag1.rb:
-    last_write_checksum: sha1:56f08c4359d43e3d8087656bcc6e14afcb76d4e3
+    last_write_checksum: sha1:af1f0e0bf4dfb37d8effdc3e82472d6c7c0bdd19
   lib/open_api_sdk/tag2.rb:
     last_write_checksum: sha1:bfea25dc2729b0c3c4e19d6a1cbaf81706d8b460
   lib/open_api_sdk/tag3.rb:

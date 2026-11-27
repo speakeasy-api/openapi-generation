@@ -224,6 +224,43 @@ func TestPaginationLimitOffsetPageBodyNullable(t *testing.T) {
 	require.Nil(t, nilRes)
 }
 
+func TestPaginationLimitOffsetPageNumPagesMissing(t *testing.T) {
+	recordTest("pagination-limit-offset-page-num-pages-missing")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	var page int64 = 1
+	var limit int64 = 7
+	res, err := s.Pagination.PaginationLimitOffsetPageNumPagesMissing(context.Background(), page, &limit)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	assert.False(t, res.Res.NumPages.IsSet())
+	assert.Equal(t, []int64{0, 1, 2, 3, 4, 5, 6}, res.Res.ResultArray)
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, http.StatusOK, nextRes.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, nextRes.Res)
+	assert.True(t, nextRes.Res.NumPages.IsNull())
+	assert.Equal(t, []int64{7, 8, 9, 10, 11, 12, 13}, nextRes.Res.ResultArray)
+
+	lastRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.NotNil(t, lastRes)
+	assert.Equal(t, http.StatusOK, lastRes.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, lastRes.Res)
+	assert.False(t, lastRes.Res.NumPages.IsSet())
+	assert.Equal(t, []int64{14, 15, 16, 17, 18, 19}, lastRes.Res.ResultArray)
+
+	nilRes, err := lastRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nilRes)
+}
+
 func TestPaginationLimitOffsetPageBodyOptionalNullable(t *testing.T) {
 	recordTest("pagination-limit-offset-page-body-optional-nullable")
 

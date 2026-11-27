@@ -23,10 +23,17 @@
 
                 var numPages = body.SelectToken("{{ sanitizeJsonPath $pagination.Outputs.NumPages }}");
 
+                {{- if $pagination.Outputs.Results }}
+                if (numPages != null && (numPages.Type == JTokenType.Integer || numPages.Type == JTokenType.Float) && numPages.Value<long>() <= page)
+                {
+                    return null;
+                }
+                {{- else }}
                 if (numPages == null || numPages.Value<long>() <= page)
                 {
                     return null;
                 }
+                {{- end }}
 
     {{- end }}
   {{- end }}

@@ -407,6 +407,7 @@ const (
 	TestPaginationLimitOffsetPageBody
 	TestPaginationLimitOffsetPageBodyNullable
 	TestPaginationLimitOffsetPageBodyOptionalNullable
+	TestPaginationLimitOffsetPageNumPagesMissing
 	TestPaginationLimitOffsetDeepOutputsPageBody
 	TestPaginationLimitOffsetPageParams
 	TestPaginationLimitOffsetPageParamsFlat

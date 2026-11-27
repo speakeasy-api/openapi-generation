@@ -67,6 +67,7 @@ func main() {
 	r.HandleFunc("/pagination/cursor/deep_nested_outputs", pagination.HandleCursorDeepNestedOutputs).Methods(http.MethodGet)
 	r.HandleFunc("/pagination/limitoffset/nullable_offset", pagination.HandleLimitOffsetNullable).Methods(http.MethodGet)
 	r.HandleFunc("/pagination/limitoffset/nullable_body", pagination.HandleLimitOffsetPageNullableBody).Methods(http.MethodPut)
+	r.HandleFunc("/pagination/limitoffset/page/num_pages_missing", pagination.HandleLimitOffsetPageNumPagesMissing).Methods(http.MethodGet)
 	r.HandleFunc("/retries", retries.HandleRetries).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/errors/errorUnion/malformed", errors.HandleMalformedErrorUnionResponse).Methods(http.MethodGet)
 	r.HandleFunc("/errors/{status_code}", errors.HandleErrors).Methods(http.MethodGet, http.MethodPost)

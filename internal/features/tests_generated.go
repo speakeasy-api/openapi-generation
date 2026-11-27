@@ -676,6 +676,8 @@ func (t Test) String() string {
         return "pagination-limit-offset-page-body-nullable"
     case TestPaginationLimitOffsetPageBodyOptionalNullable:
         return "pagination-limit-offset-page-body-optional-nullable"
+    case TestPaginationLimitOffsetPageNumPagesMissing:
+        return "pagination-limit-offset-page-num-pages-missing"
     case TestPaginationLimitOffsetPageParams:
         return "pagination-limit-offset-page-params"
     case TestPaginationLimitOffsetPageParamsConst:
@@ -2240,6 +2242,8 @@ func TestFromString(s string) Test {
         return TestPaginationLimitOffsetPageBodyNullable
     case "pagination-limit-offset-page-body-optional-nullable":
         return TestPaginationLimitOffsetPageBodyOptionalNullable
+    case "pagination-limit-offset-page-num-pages-missing":
+        return TestPaginationLimitOffsetPageNumPagesMissing
     case "pagination-limit-offset-page-params":
         return TestPaginationLimitOffsetPageParams
     case "pagination-limit-offset-page-params-const":
@@ -3467,6 +3471,7 @@ var testList = []Test{
     TestPaginationLimitOffsetPageBody,
     TestPaginationLimitOffsetPageBodyNullable,
     TestPaginationLimitOffsetPageBodyOptionalNullable,
+    TestPaginationLimitOffsetPageNumPagesMissing,
     TestPaginationLimitOffsetPageParams,
     TestPaginationLimitOffsetPageParamsConst,
     TestPaginationLimitOffsetPageParamsFlat,

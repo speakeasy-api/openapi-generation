@@ -266,9 +266,9 @@ class Tag1
                     $results = $jsonObject->get('$.resultArray');
 
                     if (is_array($results)) {
-                        $results = $results[0];
+                        $results = $results[0] ?? null;
                     }
-                    if (count($results) === 0) {
+                    if (! is_array($results) || count($results) === 0) {
                         return null;
                     }
 

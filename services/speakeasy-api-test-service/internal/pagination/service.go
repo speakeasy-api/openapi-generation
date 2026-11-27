@@ -545,3 +545,37 @@ func getNonNumericValue(queryValue string, hasBody bool, paginationValue string)
 		}
 	}
 }
+
+// HandleLimitOffsetPageNumPagesMissing serves three pages of seven items where
+// no response states a numeric numPages: the second carries numPages: null and
+// the others omit it. Pagination must advance through the first two pages on
+// the result length and stop after the short third page.
+func HandleLimitOffsetPageNumPagesMissing(w http.ResponseWriter, r *http.Request) {
+	const limit = 7
+
+	page, err := strconv.Atoi(r.FormValue("page"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	if requested := r.FormValue("limit"); requested != "" && requested != strconv.Itoa(limit) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("limit must be 7"))
+		return
+	}
+
+	start := (page - 1) * limit
+	results := make([]interface{}, 0)
+	for i := start; i < total && len(results) < limit; i++ {
+		results = append(results, i)
+	}
+
+	res := map[string]interface{}{"resultArray": results}
+	if page == 2 {
+		res["numPages"] = nil
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		w.WriteHeader(500)
+	}
+}

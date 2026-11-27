@@ -1,0 +1,67 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /pagination/limitoffset/page/num_pages_missing:
+    get:
+      operationId: paginationLimitOffsetPageNumPagesMissing
+      servers:
+        - url: http://localhost:35456
+      description: >-
+        Tests offsetLimit page pagination that declares both a numPages and a
+        results output when no response carries a numeric numPages. The test
+        service omits numPages from the first and final pages and returns null
+        on the second. A missing or null total must not be treated as the last
+        page: pagination falls back to the results length and advances until a
+        page is short or empty, so all three pages are returned and the short
+        final page ends pagination without a fourth request.
+      tags:
+        - pagination
+      parameters:
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  numPages:
+                    type:
+                      - integer
+                      - "null"
+                  resultArray:
+                    type: array
+                    items:
+                      type: integer
+                required:
+                  - resultArray
+      x-speakeasy-pagination:
+        type: offsetLimit
+        inputs:
+          - name: page
+            in: parameters
+            type: page
+          - name: limit
+            in: parameters
+            type: limit
+        outputs:
+          numPages: $.numPages
+          results: $.resultArray
