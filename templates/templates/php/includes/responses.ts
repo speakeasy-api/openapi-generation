@@ -375,10 +375,10 @@ function templatePagination(op: Operation): string {
         op.Extensions.Pagination.Outputs.Results,
       )}');\n
     if (is_array($results)) {
-        $results = $results[0];
+        $results = $results[0] ?? null;
     }\n`;
     }
-    response += `${indent}if (count($results) === 0) {
+    response += `${indent}if (! is_array($results) || count($results) === 0) {
         return null;
     }\n`;
     if (limitInput) {

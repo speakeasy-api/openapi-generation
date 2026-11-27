@@ -286,7 +286,11 @@ class Tag1(BaseSDK):
             if not http_res.text:
                 return None
             results = JSONPath("$.resultArray").parse(body)
-            if len(results) == 0 or len(results[0]) == 0:
+            if (
+                len(results) == 0
+                or not isinstance(results[0], list)
+                or len(results[0]) == 0
+            ):
                 return None
 
             return self.list_test1(
@@ -752,7 +756,11 @@ class AsyncTag1(AsyncBaseSDK):
             if not http_res.text:
                 return empty_result()
             results = JSONPath("$.resultArray").parse(body)
-            if len(results) == 0 or len(results[0]) == 0:
+            if (
+                len(results) == 0
+                or not isinstance(results[0], list)
+                or len(results[0]) == 0
+            ):
                 return empty_result()
 
             return self.list_test1(

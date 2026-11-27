@@ -485,7 +485,7 @@ function templatePagination(op: Operation): string {
     results = results[0]
   end\n`;
     }
-    response += `${indent}if results.count.zero?
+    response += `${indent}if !results.is_a?(::Array) || results.count.zero?
     next nil
   end\n`;
     if (limitInput) {

@@ -85,7 +85,7 @@
 
             {{- if $pagination.Outputs.Results }}
             results = JSONPath("{{ sanitizeJsonPath $pagination.Outputs.Results }}").parse(body)
-            if len(results) == 0 or len(results[0]) == 0:
+            if len(results) == 0 or not isinstance(results[0], list) or len(results[0]) == 0:
                 return {{asyncSelectPagination "empty_result()" "None"}}
 
             {{- if $limitInput }}
