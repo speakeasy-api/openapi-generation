@@ -16,12 +16,20 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A metadata object with additionalProperties true (any type) - should be flattened.
     /// </summary>
+    [JsonObject(MissingMemberHandling = global::Newtonsoft.Json.MissingMemberHandling.Ignore)]
     public partial class MetadataAny
     {
         [JsonProperty("notes", Required = Newtonsoft.Json.Required.DisallowNull)]
         public string? Notes { get; set; }
 
-        [JsonProperty("additionalProperties")]
+        [JsonIgnore]
         public Dictionary<string, object>? AdditionalProperties { get; set; }
+
+        private static readonly global::Speakeasy.OpenAPI.Utils.AdditionalPropertiesOptions _additionalPropertiesOptions = new global::Speakeasy.OpenAPI.Utils.AdditionalPropertiesOptions(new string[] { "notes" });
+
+        private global::Speakeasy.OpenAPI.Utils.AdditionalPropertiesAdapter<object>? _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object?> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new global::Speakeasy.OpenAPI.Utils.AdditionalPropertiesAdapter<object>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
     }
 }

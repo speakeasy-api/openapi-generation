@@ -88,6 +88,77 @@ function templateGetPropValue(varName: string): string {
 }
 registerTemplateFunc("templateGetPropValue", templateGetPropValue);
 
+// @ts-ignore
+function spreadAdditionalProperties(): boolean {
+  return !!context.Global.Config.FixFlags?.["spreadAdditionalProperties"];
+}
+registerTemplateFunc("spreadAdditionalProperties", spreadAdditionalProperties);
+
+// Additional properties are read as extension data, which tokenizes each value with
+// the reader settings before conversion: ISO-shaped strings must stay strings.
+// @ts-ignore
+function dateParseHandlingNone(): boolean {
+  return (
+    !!context.Global.Config.PresenceAwareJSONSerialization ||
+    spreadAdditionalProperties()
+  );
+}
+registerTemplateFunc("dateParseHandlingNone", dateParseHandlingNone);
+
+function getAdditionalPropertiesField(typeDef: TypeDef): FieldDef | undefined {
+  if (!spreadAdditionalProperties()) return undefined;
+  return typeDef.Fields?.find((f: FieldDef) => f.IsAdditionalProperties);
+}
+
+// @ts-ignore
+function templateAdditionalPropertiesMembers(
+  typeDef: TypeDef,
+  className: string,
+  usageLocation: string,
+  indent: number,
+): string {
+  const apField = getAdditionalPropertiesField(typeDef);
+  if (!apField) return "";
+
+  const name = sanitizeFieldName(apField.Name, className);
+  const valueType = sanitizeItemType(apField.Type, usageLocation, "", false);
+
+  const declaredJsonNames: string[] = [];
+  for (const field of typeDef.Fields) {
+    if (field.IsAdditionalProperties) continue;
+    for (const annotation of field.Annotations) {
+      if (!annotation.IsType("json")) continue;
+      const json = annotation as JSONAnnotation;
+      if (json.Ignore) continue;
+      declaredJsonNames.push(`"${escapeString(json.FieldName)}"`);
+    }
+  }
+
+  const optionsArgs = [`new string[] { ${declaredJsonNames.join(", ")} }`];
+  const itemConverter = getJsonConverterType(apField.Type.ItemType);
+  if (itemConverter != "") {
+    optionsArgs.push(`new ${itemConverter}()`);
+  }
+  const options = optionsArgs.join(", ");
+  const utils = `global::${getScopeNamespace("utils", true)}`;
+
+  return indentString(
+    `
+
+private static readonly ${utils}.AdditionalPropertiesOptions _additionalPropertiesOptions = new ${utils}.AdditionalPropertiesOptions(${options});
+
+private ${utils}.AdditionalPropertiesAdapter<${valueType}>? _additionalPropertiesAdapter;
+
+[JsonExtensionData]
+private IDictionary<string, object?> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new ${utils}.AdditionalPropertiesAdapter<${valueType}>(() => ${name}, value => ${name} = value, _additionalPropertiesOptions);`,
+    indent,
+  );
+}
+registerTemplateFunc(
+  "templateAdditionalPropertiesMembers",
+  templateAdditionalPropertiesMembers,
+);
+
 // Smart-union scoring (unionStrategy: populated-fields) relies on the Required
 // JsonProperty attribute and OptionalNullable wrapper type, which are only emitted
 // when presenceAwareJsonSerialization is enabled.

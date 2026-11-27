@@ -55,6 +55,7 @@ namespace Speakeasy.OpenAPI.Utils
             return new JsonSerializerSettings() {
                 NullValueHandling = NullValueHandling.Ignore,
                 DateParseHandling = DateParseHandling.None,
+                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
                 Converters = GetDefaultJsonDeserializers()
             };
         }

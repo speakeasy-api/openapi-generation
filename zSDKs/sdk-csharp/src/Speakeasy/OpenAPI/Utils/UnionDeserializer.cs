@@ -294,16 +294,14 @@ namespace Speakeasy.OpenAPI.Utils
 
         private static void ScoreObject(UnionCandidateScore score, Type type, object? value, JObject jo)
         {
+            if (value != null && GetExtensionData(type, value) is ICollection<KeyValuePair<string, object?>> extensionData)
+            {
+                score.AdditionalProperties += extensionData.Count;
+                ScoreExtensionDataValues(score, extensionData, jo);
+            }
             foreach (var (prop, attr) in EnumerateJsonProperties(type))
             {
                 var name = attr.PropertyName ?? prop.Name;
-
-                if (name == "additionalProperties")
-                {
-                    var extra = value != null ? prop.GetValue(value) : null;
-                    if (extra is IDictionary extraDict) score.AdditionalProperties += extraDict.Count;
-                    continue;
-                }
 
                 if (jo.TryGetValue(name, out var token) && token != null)
                 {
@@ -400,6 +398,71 @@ namespace Speakeasy.OpenAPI.Utils
                 return (prop.PropertyType, v);
             }
             return (wrapperType, null);
+        }
+
+        private static object? GetExtensionData(Type type, object value)
+        {
+            var prop = type.GetProperties(BindingFlags.NonPublic | BindingFlags.Instance)
+                           .FirstOrDefault(p => p.IsDefined(typeof(JsonExtensionDataAttribute)));
+            return prop?.GetValue(value);
+        }
+
+        // Only mismatches count: scoring extras as matched would let them outrank declared fields.
+        private static void ScoreExtensionDataValues(UnionCandidateScore score, ICollection<KeyValuePair<string, object?>> extensionData, JObject jo)
+        {
+            if (!(extensionData is IAdditionalPropertiesAdapter adapter))
+            {
+                return;
+            }
+            var extrasScore = new UnionCandidateScore();
+            foreach (var kv in extensionData)
+            {
+                if (!jo.TryGetValue(kv.Key, out var raw))
+                {
+                    continue;
+                }
+                if (adapter.HasItemConverter)
+                {
+                    // The item converter defines the wire form; the adapter yields the token it writes.
+                    var written = kv.Value is JToken token ? token.Type : JTokenType.Null;
+                    if (written != raw.Type) extrasScore.Inexact++;
+                }
+                else if (!IsExactExtraLeaf(adapter.ValueType, kv.Value, raw))
+                {
+                    ScoreValue(extrasScore, adapter.ValueType, kv.Value, raw);
+                }
+            }
+            score.Inexact += extrasScore.Inexact;
+        }
+
+        // Conversion does not validate: undefined integers convert to closed enums and loose strings to DateTime.
+        private static bool IsExactExtraLeaf(Type type, object? value, JToken raw)
+        {
+            var target = Nullable.GetUnderlyingType(type) ?? type;
+            return raw.Type switch {
+                JTokenType.Integer => target.IsEnum && value != null && Enum.IsDefined(target, value),
+                JTokenType.String => (target == typeof(DateTime) || target == typeof(DateTimeOffset)) && IsRfc3339DateTime((string?)raw),
+                _ => false,
+            };
+        }
+
+        // RFC 3339 allows lowercase separators and any number of fractional digits; IsIso8601DateTime caps at seven.
+        private static bool IsRfc3339DateTime(string? s)
+        {
+            if (string.IsNullOrEmpty(s)) return false;
+            var normalized = s!.ToUpperInvariant();
+            var dot = normalized.IndexOf('.');
+            if (dot >= 0)
+            {
+                var end = dot + 1;
+                while (end < normalized.Length && normalized[end] >= '0' && normalized[end] <= '9')
+                    end++;
+                if (end - dot - 1 > 7)
+                {
+                    normalized = normalized.Substring(0, dot + 8) + normalized.Substring(end);
+                }
+            }
+            return IsIso8601DateTime(normalized);
         }
 
         private static IEnumerable<(PropertyInfo Prop, JsonPropertyAttribute Attr)> EnumerateJsonProperties(Type type)

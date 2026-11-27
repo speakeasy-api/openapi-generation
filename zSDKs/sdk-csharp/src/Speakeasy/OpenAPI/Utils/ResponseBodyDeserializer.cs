@@ -25,7 +25,7 @@ namespace Speakeasy.OpenAPI.Utils
 
         public static T? Deserialize<T>(string json, NullValueHandling nullValueHandling = NullValueHandling.Ignore, MissingMemberHandling missingMemberHandling = MissingMemberHandling.Ignore)
         {
-            return JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings() { NullValueHandling = nullValueHandling, MissingMemberHandling = missingMemberHandling, DateParseHandling = DateParseHandling.None, Converters = Utilities.GetJsonDeserializers(typeof(T)) });
+            return JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings() { NullValueHandling = nullValueHandling, MissingMemberHandling = missingMemberHandling, DateParseHandling = DateParseHandling.None, MetadataPropertyHandling = MetadataPropertyHandling.Ignore, Converters = Utilities.GetJsonDeserializers(typeof(T)) });
         }
 
         public static T DeserializeNotNull<T>(string json, NullValueHandling nullValueHandling = NullValueHandling.Ignore, MissingMemberHandling missingMemberHandling = MissingMemberHandling.Ignore)
@@ -63,6 +63,7 @@ namespace Speakeasy.OpenAPI.Utils
                     Error = (sender, args) => args.ErrorContext.Handled = true,
                     MaxDepth = 64,
                     DateParseHandling = DateParseHandling.None,
+                    MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
                     Converters = Utilities.GetJsonDeserializers(typeof(T)),
                 });
                 return token.ToObject<T>(serializer);

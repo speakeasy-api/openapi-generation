@@ -324,13 +324,27 @@ public class SchemaValidationShould
         // lenient path; the sibling additionalProperties map must survive the
         // best-effort construct rather than being lost along with the bad field.
         var obj = ResponseBodyDeserializer.ConstructUnvalidated<ObjWithStringAdditionalProperties>(
-            "{\"normalField\":{\"unexpected\":true},\"additionalProperties\":{\"extra\":\"kept\"}}"
+            "{\"normalField\":{\"unexpected\":true},\"extra\":\"kept\"}"
         );
 
         Assert.NotNull(obj);
         Assert.Null(obj!.NormalField);
         Assert.NotNull(obj.AdditionalProperties);
         Assert.Equal("kept", obj.AdditionalProperties!["extra"]);
+    }
+
+    [Fact]
+    public void DropWrongTypedAdditionalPropertyDuringLenientConstruct()
+    {
+        // Additional property values are converted to the declared item type (string);
+        // a wrong-typed value is dropped while sibling extras and declared fields survive.
+        var obj = ResponseBodyDeserializer.ConstructUnvalidated<ObjWithStringAdditionalProperties>(
+            "{\"bad\":{\"unexpected\":true},\"extra\":\"kept\",\"normalField\":\"string\"}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal("string", obj!.NormalField);
+        Assert.Equal(new Dictionary<string, string>() { { "extra", "kept" } }, obj.AdditionalProperties);
     }
 
     [Theory]

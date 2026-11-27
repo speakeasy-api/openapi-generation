@@ -7,6 +7,7 @@ using Openapi;
 using Openapi.Models.Shared;
 using Openapi.Utils;
 using System.Net;
+using Newtonsoft.Json;
 
 public class ResponseBodiesShould
 {
@@ -128,7 +129,7 @@ public class ResponseBodiesShould
         };
 
         json = await Helpers.GetSerializedBodyJson(req);
-        Assert.Equal("{\"additionalProperties\":{\"extra1\":\"value1\",\"extra2\":null},\"normalField\":\"string\"}", json);
+        Assert.Equal("{\"normalField\":\"string\",\"extra1\":\"value1\",\"extra2\":null}", json);
 
         res = await sdk.ResponseBodies.ResponseBodyAdditionalPropertiesPostAsync(req);
         Assert.NotNull(res);
@@ -153,7 +154,7 @@ public class ResponseBodiesShould
         };
 
         var json = await Helpers.GetSerializedBodyJson(req);
-        Assert.Equal("{\"additionalProperties\":{\"today\":\"2020-01-01\"},\"normalField\":\"string\"}", json);
+        Assert.Equal("{\"normalField\":\"string\",\"today\":\"2020-01-01\"}", json);
 
         var res = await sdk.ResponseBodies.ResponseBodyAdditionalPropertiesDatePostAsync(req);
         Assert.NotNull(res);
@@ -179,7 +180,7 @@ public class ResponseBodiesShould
         };
 
         var json = await Helpers.GetSerializedBodyJson(req);
-        Assert.Equal("{\"additionalProperties\":{\"bigintStr\":\"123456789012345678901234567890\"},\"normalField\":\"string\"}", json);
+        Assert.Equal("{\"normalField\":\"string\",\"bigintStr\":\"123456789012345678901234567890\"}", json);
 
         var res = await sdk.ResponseBodies.ResponseBodyAdditionalPropertiesComplexNumbersPostAsync(req);
         Assert.NotNull(res);
@@ -206,7 +207,7 @@ public class ResponseBodiesShould
         };
 
         var json = await Helpers.GetSerializedBodyJson(req);
-        Assert.Contains("{\"AdditionalProperties\":[1,2,3],\"additionalProperties\":{\"obj1\":{\"any\":\"any\",\"bool\":true,\"boolOpt\":true,\"date\":\"2020-01-01\",\"dateTime\":\"2020-01-01T00:00:00.0000001Z\",\"enum\":\"one\",\"float32\":1.1,\"int\":1,\"int32\":1,\"int32Enum\":55,\"intEnum\":2,\"num\":1.1,\"str\":\"test\",\"strOpt\":\"testOptional\"}},\"datetime\":\"2020-01-01T00:00:00.0000000Z\"}", json);
+        Assert.Contains("{\"AdditionalProperties\":[1,2,3],\"datetime\":\"2020-01-01T00:00:00.0000000Z\",\"obj1\":{\"any\":\"any\",\"bool\":true,\"boolOpt\":true,\"date\":\"2020-01-01\",\"dateTime\":\"2020-01-01T00:00:00.0000001Z\",\"enum\":\"one\",\"float32\":1.1,\"int\":1,\"int32\":1,\"int32Enum\":55,\"intEnum\":2,\"num\":1.1,\"str\":\"test\",\"strOpt\":\"testOptional\"}}", json);
 
         var res = await sdk.ResponseBodies.ResponseBodyAdditionalPropertiesObjectPostAsync(req);
         Assert.NotNull(res);
@@ -256,5 +257,213 @@ public class ResponseBodiesShould
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
         Assert.Null(res.Object.Json.NormalField);
         Helpers.AssertDictEqual(req.AdditionalProperties, res.Object.Json.AdditionalProperties);
+    }
+
+    [Fact]
+    public void AdditionalPropertiesReadFromTopLevel()
+    {
+        var obj = ResponseBodyDeserializer.Deserialize<ObjWithStringAdditionalProperties>(
+            "{\"normalField\":\"string\",\"extra1\":\"value1\",\"when\":\"2020-01-01T00:00:00.000+02:00\"}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal("string", obj.NormalField);
+        Assert.Equal(
+            new Dictionary<string, string>()
+            {
+                { "extra1", "value1" },
+                { "when", "2020-01-01T00:00:00.000+02:00" },
+            },
+            obj.AdditionalProperties
+        );
+    }
+
+    [Fact]
+    public async Task AdditionalPropertiesSkipDeclaredJsonNamesOnWrite()
+    {
+        var req = new ObjWithStringAdditionalProperties()
+        {
+            NormalField = "string",
+            AdditionalProperties = new Dictionary<string, string>()
+            {
+                { "NormalField", "ignored" },
+                { "extra1", "value1" },
+            },
+        };
+
+        var json = await Helpers.GetSerializedBodyJson(req);
+        Assert.Equal("{\"normalField\":\"string\",\"extra1\":\"value1\"}", json);
+    }
+
+    [Fact]
+    public void AdditionalPropertiesSelfReferenceThrows()
+    {
+        var obj = new ObjWithAnyAdditionalProperties();
+        obj.AdditionalProperties = new Dictionary<string, object>() { { "self", obj } };
+
+        Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => Utilities.SerializeJSON(obj));
+    }
+
+    [Fact]
+    public void AdditionalPropertiesSkipReadOnlyDeclaredJsonNamesOnRead()
+    {
+        var obj = ResponseBodyDeserializer.Deserialize<ConstKindWithIntExtras>(
+            "{\"kind\":\"widget\",\"Kind\":\"widget\",\"count\":5}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(new Dictionary<string, long>() { { "count", 5 } }, obj.AdditionalProperties);
+        Assert.Equal("{\"kind\":\"widget\",\"count\":5}", Utilities.SerializeJSON(obj));
+    }
+
+    [Fact]
+    public void AdditionalPropertiesKeepMetadataPropertyNames()
+    {
+        var obj = ResponseBodyDeserializer.Deserialize<ObjWithAnyAdditionalProperties>(
+            "{\"items\":{\"$ref\":\"#/$defs/Widget\",\"description\":\"d\"},\"node\":{\"$id\":\"1\"},\"list\":{\"$values\":[1]}}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(
+            "{\"items\":{\"$ref\":\"#/$defs/Widget\",\"description\":\"d\"},\"node\":{\"$id\":\"1\"},\"list\":{\"$values\":[1]}}",
+            Utilities.SerializeJSON(obj)
+        );
+    }
+
+    [Fact]
+    public void AdditionalPropertiesAcceptedByStrictMemberMatching()
+    {
+        var obj = ResponseBodyDeserializer.DeserializeUndiscriminatedUnionMember<ObjWithStringAdditionalProperties>(
+            "{\"normalField\":\"string\",\"extra1\":\"value1\"}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(new Dictionary<string, string>() { { "extra1", "value1" } }, obj.AdditionalProperties);
+        Assert.Throws<ResponseBodyDeserializer.MissingMemberException>(
+            () => ResponseBodyDeserializer.DeserializeUndiscriminatedUnionMember<ClosedNormalField>(
+                "{\"normalField\":\"string\",\"extra1\":\"value1\"}"
+            )
+        );
+    }
+
+    [Fact]
+    public void AdditionalPropertiesRejectWrongTypedExtraOnStrictRead()
+    {
+        Assert.Throws<JsonSerializationException>(
+            () => ResponseBodyDeserializer.Deserialize<ObjWithStringAdditionalProperties>(
+                "{\"normalField\":\"string\",\"bad\":{\"a\":1}}"
+            )
+        );
+    }
+
+    [Fact]
+    public void AdditionalPropertiesKeepDecimalDigits()
+    {
+        var obj = ResponseBodyDeserializer.Deserialize<DecimalExtras>("{\"x\":1.2345678901234567}");
+
+        Assert.NotNull(obj);
+        Assert.Equal(new Dictionary<string, decimal>() { { "x", 1.2345678901234567m } }, obj.AdditionalProperties);
+    }
+
+    [Fact]
+    public void AdditionalPropertiesKeepMetadataPropertyNamesInTypedExtras()
+    {
+        var obj = ResponseBodyDeserializer.Deserialize<MapExtras>(
+            "{\"schema\":{\"$ref\":\"#/$defs/Widget\",\"type\":\"object\"}}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(
+            new Dictionary<string, Dictionary<string, string>>()
+            {
+                {
+                    "schema",
+                    new Dictionary<string, string>() { { "$ref", "#/$defs/Widget" }, { "type", "object" } }
+                },
+            },
+            obj.AdditionalProperties
+        );
+    }
+
+    [Fact]
+    public void AdditionalPropertiesKeepDateStringsInTypedExtras()
+    {
+        var obj = ResponseBodyDeserializer.Deserialize<AnyMapExtras>(
+            "{\"event\":{\"when\":\"2020-01-01T00:00:00.000+02:00\"}}"
+        );
+
+        Assert.NotNull(obj);
+        Assert.Equal(
+            new Dictionary<string, Dictionary<string, object>>()
+            {
+                { "event", new Dictionary<string, object>() { { "when", "2020-01-01T00:00:00.000+02:00" } } },
+            },
+            obj.AdditionalProperties
+        );
+    }
+
+    private class ClosedNormalField
+    {
+        [JsonProperty("normalField")]
+        public string NormalField { get; set; }
+    }
+
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
+    private class DecimalExtras
+    {
+        [JsonIgnore]
+        public Dictionary<string, decimal> AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { });
+
+        private AdditionalPropertiesAdapter<decimal> _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<decimal>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
+    }
+
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
+    private class MapExtras
+    {
+        [JsonIgnore]
+        public Dictionary<string, Dictionary<string, string>> AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { });
+
+        private AdditionalPropertiesAdapter<Dictionary<string, string>> _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<Dictionary<string, string>>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
+    }
+
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
+    private class AnyMapExtras
+    {
+        [JsonIgnore]
+        public Dictionary<string, Dictionary<string, object>> AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { });
+
+        private AdditionalPropertiesAdapter<Dictionary<string, object>> _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<Dictionary<string, object>>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
+    }
+
+    [JsonObject(MissingMemberHandling = MissingMemberHandling.Ignore)]
+    private class ConstKindWithIntExtras
+    {
+        [JsonProperty("kind")]
+        public string Kind { get; } = "widget";
+
+        [JsonIgnore]
+        public Dictionary<string, long> AdditionalProperties { get; set; }
+
+        private static readonly AdditionalPropertiesOptions _additionalPropertiesOptions = new AdditionalPropertiesOptions(new string[] { "kind" });
+
+        private AdditionalPropertiesAdapter<long> _additionalPropertiesAdapter;
+
+        [JsonExtensionData]
+        private IDictionary<string, object> _additionalPropertiesJson => _additionalPropertiesAdapter ??= new AdditionalPropertiesAdapter<long>(() => AdditionalProperties, value => AdditionalProperties = value, _additionalPropertiesOptions);
     }
 }

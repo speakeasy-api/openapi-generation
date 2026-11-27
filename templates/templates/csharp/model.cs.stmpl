@@ -4,6 +4,7 @@
 
     {{- templateComments .Local.Comments 1 "class" false}}
     {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
+    {{- templateAdditionalPropertiesClassAnnotation .Local 1}}
     public {{templatePartialModifier}}class {{ $className }}
     {
       {{- if .Local.Extensions.Pagination }}
@@ -37,4 +38,5 @@
         {{- end -}} {{/* endif union */}}
         {{- end -}} {{/* endwith $field */}}
       {{- end -}} {{/* endrange .Local.Fields */}}
+      {{- templateAdditionalPropertiesMembers .Local $className $usageLocation 2}}
     }
