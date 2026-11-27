@@ -1388,6 +1388,32 @@ public class UnionsShould
     }
 
     [Fact]
+    public void UndiscriminatedUnionVariantWithoutOptionalFields()
+    {
+        var text = Compat.DeserializeWithDefaultSettings<PlainChoice>("{\"text\":\"v\"}")!;
+        Assert.Equal(PlainChoiceType.TextFields.ToString(), text.Type.ToString());
+        Assert.Equal("v", text.TextFields!.Text);
+        Assert.Null(text.NumberFields);
+
+        var number = Compat.DeserializeWithDefaultSettings<PlainChoice>("{\"number\":1}")!;
+        Assert.Equal(PlainChoiceType.NumberFields.ToString(), number.Type.ToString());
+        Assert.Equal(1L, number.NumberFields!.Number);
+        Assert.Null(number.TextFields);
+
+        foreach (var json in new[] { "{\"meta\":{\"name\":\"x\"},\"tags\":[\"a\"]}", "{\"tags\":[\"a\"]}" })
+        {
+            var union = Compat.DeserializeWithDefaultSettings<SmartUnionWrappedComplex>(json)!;
+            Assert.Equal(
+                SmartUnionWrappedComplexType.SmartUnionWrappedComplexMember.ToString(),
+                union.Type.ToString()
+            );
+            Assert.NotNull(union.SmartUnionWrappedComplexMember);
+            Assert.Null(union.SmartUnionWrappedPlainNote);
+            Assert.Equal(new List<string> { "a" }, union.SmartUnionWrappedComplexMember!.Tags.Value);
+        }
+    }
+
+    [Fact]
     public async Task SmartUnionOpenEnumsAndSize()
     {
         CommonHelpers.RecordTest("smart-union-open-enums-and-size");
