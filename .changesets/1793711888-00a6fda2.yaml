@@ -6,6 +6,10 @@ targets:
     - unity
     - php
     - ruby
+    - go
+    - pythonv2
+    - typescriptv2
+    - terraform
 type: fix
 bump: patch
 description: keep paginating on the result length when a response omits or nulls numPages

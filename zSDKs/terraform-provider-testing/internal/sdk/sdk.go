@@ -31626,17 +31626,14 @@ func (s *SDK) ListXPaginationOffsetLimitsNested(ctx context.Context, request ope
 		if err != nil {
 			return nil, err
 		}
-		if !nPs.IsNumeric() {
-			return nil, nil
-		}
-
-		nPsVal, err := nPs.GetNumeric()
-		if err != nil {
-			return nil, err
-		}
-		// GetNumeric returns as float64
-		if int(nPsVal) <= int(p) {
-			return nil, nil
+		if nPs.IsNumeric() {
+			nPsVal, err := nPs.GetNumeric()
+			if err != nil {
+				return nil, err
+			}
+			if int(nPsVal) <= int(p) {
+				return nil, nil
+			}
 		}
 		r, err := ajson.Eval(b, "$.data")
 		if err != nil {
@@ -32184,17 +32181,14 @@ func (s *SDK) ListXPaginationSingletonAndList(ctx context.Context, request opera
 		if err != nil {
 			return nil, err
 		}
-		if !nPs.IsNumeric() {
-			return nil, nil
-		}
-
-		nPsVal, err := nPs.GetNumeric()
-		if err != nil {
-			return nil, err
-		}
-		// GetNumeric returns as float64
-		if int(nPsVal) <= int(p) {
-			return nil, nil
+		if nPs.IsNumeric() {
+			nPsVal, err := nPs.GetNumeric()
+			if err != nil {
+				return nil, err
+			}
+			if int(nPsVal) <= int(p) {
+				return nil, nil
+			}
 		}
 		r, err := ajson.Eval(b, "$.data")
 		if err != nil {

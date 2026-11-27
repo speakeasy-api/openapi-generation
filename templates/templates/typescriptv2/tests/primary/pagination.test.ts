@@ -147,6 +147,38 @@ test("Test Pagination LimitOffset Page Body Nullable", async () => {
   expect(nullRes).toBeNull();
 });
 
+test("Test Pagination LimitOffset Page NumPages Missing", async () => {
+  recordTest("pagination-limit-offset-page-num-pages-missing");
+
+  const sdk = new SDK({ serverURL: HTTPBIN_URL });
+
+  const res = await sdk.pagination.paginationLimitOffsetPageNumPagesMissing(
+    1,
+    7,
+  );
+  expect(res.httpMeta.response.status).toBe(200);
+  expect(res.res).toBeDefined();
+  expect(res.res!.numPages).toBeUndefined();
+  expect(res.res!.resultArray).toEqual([0, 1, 2, 3, 4, 5, 6]);
+
+  const nextRes = await res.next();
+  expect(nextRes).not.toBeNull();
+  expect(nextRes!.httpMeta.response.status).toBe(200);
+  expect(nextRes!.res).toBeDefined();
+  expect(nextRes!.res!.numPages).toBeNull();
+  expect(nextRes!.res!.resultArray).toEqual([7, 8, 9, 10, 11, 12, 13]);
+
+  const lastRes = await nextRes!.next();
+  expect(lastRes).not.toBeNull();
+  expect(lastRes!.httpMeta.response.status).toBe(200);
+  expect(lastRes!.res).toBeDefined();
+  expect(lastRes!.res!.numPages).toBe(3);
+  expect(lastRes!.res!.resultArray).toEqual([14, 15, 16, 17, 18, 19]);
+
+  const nullRes = await lastRes!.next();
+  expect(nullRes).toBeNull();
+});
+
 test("Test Pagination LimitOffset Deep Outputs Page Body", async () => {
   recordTest("pagination-limit-offset-deep-outputs-page-body");
 

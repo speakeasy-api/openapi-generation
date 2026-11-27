@@ -32,9 +32,15 @@ const nextFunc = (responseData: unknown): { next: {{$returnType}}, "~next"?: {{$
   {{- else }}
   const numPages = {{ templateJSONPathExpression "responseData" $pagination.Outputs.NumPages }};
   {{- end }}
+  {{- if $pagination.Outputs.Results }}
+  if(typeof numPages === "number" && numPages <= page) {
+      return { next: () => null };
+  }
+  {{- else }}
   if(typeof numPages !== "number" || numPages <= page) {
       return { next: () => null };
   }
+  {{- end }}
   {{- end }}
 
   {{- end }}

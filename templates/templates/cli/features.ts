@@ -377,6 +377,7 @@ function isTestSkipped(test: string): boolean {
     "parameters-header-params-string-formats",
     "enum-values",
     "auth-typed-error-inspection-omits-credentials",
+    "pagination-limit-offset-page-num-pages-missing",
   ].includes(test);
 }
 

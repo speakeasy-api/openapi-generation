@@ -8,6 +8,7 @@ from openapi import SDK
 from openapi.models.operations import *
 from openapi.models.shared import *
 from openapi.utils import *
+from openapi.types.basemodel import Unset
 
 from .common_helpers import *
 from .test_helpers import *
@@ -230,6 +231,41 @@ def test_pagination_limit_offset_page_body_nullable():
     assert body is not None
     assert body.get("page") == 3
     assert last_res.res is not None
+    assert last_res.res.result_array == [14, 15, 16, 17, 18, 19]
+
+    null_res = last_res.next()
+    assert null_res is None
+
+
+def test_pagination_limit_offset_page_num_pages_missing():
+    record_test("pagination-limit-offset-page-num-pages-missing")
+
+    s = SDK(server_url=HTTPBIN_URL)
+    assert s is not None
+
+    res = s.pagination.pagination_limit_offset_page_num_pages_missing(page=1, limit=7)
+
+    assert res is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+    assert res.res is not None
+    assert isinstance(res.res.num_pages, Unset)
+    assert res.res.result_array == [0, 1, 2, 3, 4, 5, 6]
+
+    next_res = res.next()
+    assert next_res is not None
+    assert next_res.http_meta.response is not None
+    assert next_res.http_meta.response.status_code == 200
+    assert next_res.res is not None
+    assert next_res.res.num_pages is None
+    assert next_res.res.result_array == [7, 8, 9, 10, 11, 12, 13]
+
+    last_res = next_res.next()
+    assert last_res is not None
+    assert last_res.http_meta.response is not None
+    assert last_res.http_meta.response.status_code == 200
+    assert last_res.res is not None
+    assert last_res.res.num_pages == 3
     assert last_res.res.result_array == [14, 15, 16, 17, 18, 19]
 
     null_res = last_res.next()
