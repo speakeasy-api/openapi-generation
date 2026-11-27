@@ -182,7 +182,7 @@ trackedFiles:
   internal/cli/renderasset.go:
     last_write_checksum: sha1:6ac1b5552a2f82c3ee4a300084f75af0972bda96
   internal/cli/root.go:
-    last_write_checksum: sha1:59757b92e56ef352cdbe4cb764a2425a05a963c1
+    last_write_checksum: sha1:5dded5d362407301deaded74c9c3727943a60f83
   internal/cli/streammetadata/root.go:
     last_write_checksum: sha1:42a01737002d2daef8a33be267f7060659fdac65
   internal/cli/streammetadata/streammetadata.go:
@@ -232,7 +232,7 @@ trackedFiles:
   internal/clierrors/clierrors.go:
     last_write_checksum: sha1:e17fb3e33e439c6997834182011540427d760857
   internal/config/config.go:
-    last_write_checksum: sha1:34fdbbc4f4910d98d3d42c34d3ca525a38363771
+    last_write_checksum: sha1:dc069e28efc611e012461f187c476c17c6642e57
   internal/config/keyring.go:
     last_write_checksum: sha1:893474c3d2734f82532552c53eb3782623933eb1
   internal/explorer/explorer.go:
@@ -288,7 +288,7 @@ trackedFiles:
   internal/output/outcome.go:
     last_write_checksum: sha1:0ea32db0867358ff91cd5fe6d24de400d09b4fc3
   internal/output/output.go:
-    last_write_checksum: sha1:ce8c3d55f1789ab5b267d32647bc3abefd211a0f
+    last_write_checksum: sha1:63dc1262fcab948dcea23f0164d3dcaedc70a7cf
   internal/output/output_test.go:
     last_write_checksum: sha1:2243fb8acb6a92e15e57cbc9609b36a105b2bf46
   internal/output/outputitems.go:
