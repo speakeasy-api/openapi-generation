@@ -40,7 +40,7 @@
             {{ if $pagination.Outputs.NumPages }}
             num_pages = JSONPath("{{ sanitizeJsonPath $pagination.Outputs.NumPages }}").parse(body)
             {{- if $pagination.Outputs.Results }}
-            if len(num_pages) > 0 and isinstance(num_pages[0], int) and num_pages[0] <= page:
+            if len(num_pages) > 0 and isinstance(num_pages[0], (int, float)) and not isinstance(num_pages[0], bool) and num_pages[0] <= page:
                 return {{asyncSelectPagination "empty_result()" "None"}}
             {{- else }}
             if len(num_pages) == 0 or num_pages[0] <= page:
