@@ -29,7 +29,7 @@ const supportedFeatures = {
   unions: "1.2.5",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
-  additionalProperties: "0.0.2",
+  additionalProperties: "0.0.3",
   errors: "1.1.0",
   responseFormat: "0.0.4",
   constsAndDefaults: "0.0.3",
