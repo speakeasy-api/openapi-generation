@@ -250,7 +250,7 @@ func (g *Generator) transformConfig(ctx context.Context, cfg *config.Config) (*c
 	}
 
 	if langCfg, ok := cfg.Config.Languages[g.target.Target]; ok {
-		if _, ok := langCfg.Cfg["templateVersion"]; ok {
+		if _, ok := langCfg.Cfg["templateVersion"]; ok || g.target.Template == "csharpv2" {
 			templateVersion := strings.TrimPrefix(g.target.Template, g.target.Target)
 			if templateVersion != "" {
 				langCfg.Cfg["templateVersion"] = templateVersion

@@ -18,7 +18,9 @@ func TestGetTarget(t *testing.T) {
 		wantTarget   string
 		wantTemplate string
 	}{
-		{name: "csharp without gen.yaml", target: "csharp", wantTarget: "csharp", wantTemplate: "csharp"},
+		{name: "csharp without gen.yaml", target: "csharp", wantTarget: "csharp", wantTemplate: "csharpv2"},
+		{name: "csharp without templateVersion", target: "csharp", genYAML: "csharp:\n  packageName: SDK\n", wantTarget: "csharp", wantTemplate: "csharpv2"},
+		{name: "csharp templateVersion v1", target: "csharp", genYAML: "csharp:\n  templateVersion: v1\n", wantTarget: "csharp", wantTemplate: "csharpv2"},
 		{name: "csharp templateVersion v2", target: "csharp", genYAML: "csharp:\n  templateVersion: v2\n", wantTarget: "csharp", wantTemplate: "csharpv2"},
 		{name: "csharpv2", target: "csharpv2", genYAML: "csharp:\n  templateVersion: v2\n", wantTarget: "csharp", wantTemplate: "csharpv2"},
 		{name: "typescript without gen.yaml", target: "typescript", wantTarget: "typescript", wantTemplate: "typescriptv2"},
@@ -47,6 +49,16 @@ func TestGetTarget(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.wantTarget, got.Target)
 				assert.Equal(t, tt.wantTemplate, got.Template)
+
+				if got.Target == "csharp" {
+					g.target = got
+					loaded, err := g.LoadConfig(context.Background(), outDir, got.Target)
+					require.NoError(t, err)
+					assert.Equal(t, "v2", loaded.Config.Languages[got.Target].Cfg["templateVersion"])
+					contents, err := os.ReadFile(loaded.ConfigPath)
+					require.NoError(t, err)
+					assert.Contains(t, string(contents), "templateVersion: v2")
+				}
 			})
 		}
 	}
