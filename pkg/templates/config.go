@@ -195,3 +195,25 @@ func ResolveConfig(cfg *config.Configuration, target types.Target, outDir string
 
 	return nil
 }
+
+func GetFixedConfig(target types.Target) (map[string]any, error) {
+	e, err := executor.New(target, "config.ts")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create executor: %w", err)
+	}
+
+	val, err := e.Run("getFixedConfig")
+	if err != nil {
+		if strings.Contains(err.Error(), "failed to find getFixedConfig function") {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get fixed configuration: %w", err)
+	}
+
+	fixed, ok := val.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("getFixedConfig returned %T, expected an object", val)
+	}
+
+	return fixed, nil
+}

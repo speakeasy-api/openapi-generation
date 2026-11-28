@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	stderrors "errors"
 	"fmt"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -499,6 +500,8 @@ type Generator struct {
 
 	generatedLicense generationaccess.GeneratedLicense
 	licenseResolved  bool
+
+	fixedConfigKeys []string
 }
 
 // New constructs a new Generator with some default values and then applies all
@@ -925,7 +928,7 @@ func (g *Generator) saveConfig(ctx context.Context) (configChecksum string, errs
 		config.WithFileSystem(g),
 	}
 
-	if err := config.SaveConfig(g.outDir, &g.subsystem.Config.Configuration, configOpts...); err != nil {
+	if err := config.SaveConfig(g.outDir, g.configurationToSave(), configOpts...); err != nil {
 		return "", []error{err}
 	}
 
@@ -936,6 +939,26 @@ func (g *Generator) saveConfig(ctx context.Context) (configChecksum string, errs
 	}
 
 	return configChecksum, nil
+}
+
+func (g *Generator) configurationToSave() *config.Configuration {
+	cfg := &g.subsystem.Config.Configuration
+
+	langCfg, ok := cfg.Languages[g.target.Target]
+	if !ok || len(g.fixedConfigKeys) == 0 {
+		return cfg
+	}
+
+	langCfg.Cfg = maps.Clone(langCfg.Cfg)
+	for _, key := range g.fixedConfigKeys {
+		delete(langCfg.Cfg, key)
+	}
+
+	saved := *cfg
+	saved.Languages = maps.Clone(cfg.Languages)
+	saved.Languages[g.target.Target] = langCfg
+
+	return &saved
 }
 
 // cleanOrphanedFiles removes files that are no longer needed.
@@ -1650,6 +1673,11 @@ func (g *Generator) initInternal(ctx context.Context, target, outDir string) err
 	if err = c.Resolve(g.target, g.outDir, g); err != nil {
 		logging.From(ctx).Warn(fmt.Sprintf("Failed to resolve config: %v", err))
 	}
+	fixedConfig, err := templatesConfig.GetFixedConfig(g.target)
+	if err != nil {
+		return err
+	}
+	g.fixedConfigKeys = slices.Sorted(maps.Keys(fixedConfig))
 	logging.From(ctx).Debug("Configuration resolved")
 
 	// Honor versioningStrategy: manual from config
